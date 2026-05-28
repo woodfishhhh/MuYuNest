@@ -17,7 +17,7 @@
     "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^3.9.0",
     "js-yaml": "^4.1.1",
-    "markdown-it": "^14.1.1",
+    "markdown-it": "^14.2.0",
     "markdown-it-anchor": "^9.2.0",
     "sharp": "^0.34.5",
     "tsx": "^4.21.0"
