@@ -184,6 +184,37 @@ importers:
         specifier: ^3.2.6
         version: 3.3.0(typescript@5.9.3)
 
+  apps/lab-falling-cards:
+    dependencies:
+      gsap:
+        specifier: ^3.14.2
+        version: 3.15.0
+      three:
+        specifier: ^0.184.0
+        version: 0.184.0
+      vue:
+        specifier: ^3.5.32
+        version: 3.5.34(typescript@5.9.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^25.5.2
+        version: 25.9.0
+      '@types/three':
+        specifier: ^0.183.1
+        version: 0.183.1
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.5
+        version: 6.0.7(vite@7.3.3(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.2)(yaml@2.9.0))(vue@3.5.34(typescript@5.9.3))
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.3.0
+        version: 7.3.3(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.2)(yaml@2.9.0)
+      vue-tsc:
+        specifier: ^3.2.6
+        version: 3.3.0(typescript@5.9.3)
+
   packages/content-tools:
     dependencies:
       github-slugger:
@@ -1570,12 +1601,12 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@nuxt/cli-nightly@3.36.0-20260518-211527-f869c61':
-    resolution: {integrity: sha512-J+Pt+IY9GV8GMivbNr847luhZwxJutxU7ZKMLKqhdUqV0LLRuRDMbRb2k3wD9OHH3Y/W/14AY07TYjAOxXp+Ig==}
+  '@nuxt/cli-nightly@3.36.0-20260520-053237-f869c61':
+    resolution: {integrity: sha512-XigOZLnZ7rxEOfBP6wAhSw/XRDyY+YprIpeHuVpzqt/ihoQOEUNHDc7ZTqmx0cLDDlomwLVNjycvxDuKLG5uyQ==}
     engines: {node: ^16.14.0 || >=18.0.0}
     hasBin: true
     peerDependencies:
-      '@nuxt/schema': ^4.4.5
+      '@nuxt/schema': ^4.4.6
     peerDependenciesMeta:
       '@nuxt/schema':
         optional: true
@@ -5623,8 +5654,8 @@ packages:
   vue-component-type-helpers@3.2.9:
     resolution: {integrity: sha512-S3BiWYaLSzHxTpln665ELSrMR9UYmrIDUmhik7nVZxmJjTKL2/a+ew1hvGxksKelivm0ujjWfG1fYOiU/2e8rA==}
 
-  vue-component-type-helpers@3.3.0:
-    resolution: {integrity: sha512-vwR8DDsBysI9NWXa0okPFpCcW+BUC3sPTuLBNo1faMzw4QWMFd+3/lFYFu29ZN0q+8UReXWJHEYesC9dcXYCLg==}
+  vue-component-type-helpers@3.3.1:
+    resolution: {integrity: sha512-pu58kqxmVyEH6VfNYW1UyEfR3XAnJ27ZXT3yzXxxpjLxVzAbyC35Zk/nm/RMs7ijWnJNSd9fWkeex2OhUsx3MA==}
 
   vue-devtools-stub@0.1.0:
     resolution: {integrity: sha512-RutnB7X8c5hjq39NceArgXg28WZtZpGc3+J16ljMiYnFhKvd8hITxSWQSQ5bvldxMDU6gG5mkxl1MTQLXckVSQ==}
@@ -7034,7 +7065,7 @@ snapshots:
       '@tybys/wasm-util': 0.10.2
     optional: true
 
-  '@nuxt/cli-nightly@3.36.0-20260518-211527-f869c61(@nuxt/schema-nightly@5.0.0-29652384.c87f6633)(cac@6.7.14)(magicast@0.5.3)':
+  '@nuxt/cli-nightly@3.36.0-20260520-053237-f869c61(@nuxt/schema-nightly@5.0.0-29652384.c87f6633)(cac@6.7.14)(magicast@0.5.3)':
     dependencies:
       '@bomb.sh/tab': 0.0.15(cac@6.7.14)(citty@0.2.2)
       '@clack/prompts': 1.4.0
@@ -7993,7 +8024,7 @@ snapshots:
       ts-dedent: 2.2.0
       type-fest: 2.19.0
       vue: 3.5.34(typescript@5.9.3)
-      vue-component-type-helpers: 3.3.0
+      vue-component-type-helpers: 3.3.1
 
   '@tailwindcss/node@4.3.0':
     dependencies:
@@ -10053,7 +10084,7 @@ snapshots:
   nuxt-nightly@5.0.0-29652384.c87f6633(@parcel/watcher@2.5.6)(@rollup/plugin-babel@6.1.0(@babel/core@7.29.0)(rollup@4.60.4))(@types/node@25.9.0)(@vue/compiler-sfc@3.5.34)(better-sqlite3@11.10.0)(cac@6.7.14)(crossws@0.4.5(srvx@0.11.15))(db0@0.3.4(better-sqlite3@11.10.0))(dotenv@17.4.2)(esbuild@0.25.12)(giget@3.2.0)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt-nightly@5.0.0-29652384.c87f6633)(oxc-parser@0.127.0)(pinia@3.0.4(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3)))(rollup@4.60.4)(terser@5.47.1)(tsx@4.22.2)(typescript@5.9.3)(vite@7.3.3(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.2)(yaml@2.9.0))(vue-tsc@3.3.0(typescript@5.9.3))(yaml@2.9.0):
     dependencies:
       '@dxup/nuxt': 0.4.1(magicast@0.5.3)(typescript@5.9.3)
-      '@nuxt/cli': '@nuxt/cli-nightly@3.36.0-20260518-211527-f869c61(@nuxt/schema-nightly@5.0.0-29652384.c87f6633)(cac@6.7.14)(magicast@0.5.3)'
+      '@nuxt/cli': '@nuxt/cli-nightly@3.36.0-20260520-053237-f869c61(@nuxt/schema-nightly@5.0.0-29652384.c87f6633)(cac@6.7.14)(magicast@0.5.3)'
       '@nuxt/devtools': 3.2.4(vite@7.3.3(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.2)(yaml@2.9.0))(vue@3.5.34(typescript@5.9.3))
       '@nuxt/kit': '@nuxt/kit-nightly@5.0.0-29652384.c87f6633(magicast@0.5.3)'
       '@nuxt/nitro-server': '@nuxt/nitro-server-nightly@5.0.0-29652384.c87f6633(@rollup/plugin-babel@6.1.0(@babel/core@7.29.0)(rollup@4.60.4))(better-sqlite3@11.10.0)(chokidar@5.0.0)(crossws@0.4.5(srvx@0.11.15))(db0@0.3.4(better-sqlite3@11.10.0))(dotenv@17.4.2)(esbuild@0.25.12)(giget@3.2.0)(jiti@2.7.0)(lightningcss@1.32.0)(magicast@0.5.3)(nuxt-nightly@5.0.0-29652384.c87f6633)(ofetch@2.0.0-alpha.3)(rolldown@1.0.1)(rollup@4.60.4)(typescript@5.9.3)(vite@7.3.3(@types/node@25.9.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.47.1)(tsx@4.22.2)(yaml@2.9.0))'
@@ -11518,7 +11549,7 @@ snapshots:
 
   vue-component-type-helpers@3.2.9: {}
 
-  vue-component-type-helpers@3.3.0: {}
+  vue-component-type-helpers@3.3.1: {}
 
   vue-devtools-stub@0.1.0: {}
 
