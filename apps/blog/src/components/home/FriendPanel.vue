@@ -132,6 +132,15 @@ function visitRandomFriend() {
           >
             随机访问
           </button>
+          <a
+            data-testid="friend-travellings"
+            class="friend-links-pane__travellings"
+            href="https://www.travellings.cn/go.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🚇 开往
+          </a>
           <span class="friend-links-pane__count">{{ props.links.length }} 个站点</span>
         </div>
       </header>
@@ -247,6 +256,7 @@ function visitRandomFriend() {
 }
 
 .friend-links-pane__random,
+.friend-links-pane__travellings,
 .friend-links-pane__count {
   flex-shrink: 0;
   border: 1px solid var(--border-subtle);
@@ -266,6 +276,21 @@ function visitRandomFriend() {
 }
 
 .friend-links-pane__random:hover {
+  border-color: var(--border-strong);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--stage-fg);
+}
+
+.friend-links-pane__travellings {
+  background: rgba(255, 255, 255, 0.14);
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease;
+  text-decoration: none;
+}
+
+.friend-links-pane__travellings:hover {
   border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.2);
   color: var(--stage-fg);
@@ -376,6 +401,10 @@ function visitRandomFriend() {
 }
 
 :root[data-theme="night"] .friend-links-pane__random {
+  background: rgba(8, 12, 24, 0.28);
+}
+
+:root[data-theme="night"] .friend-links-pane__travellings {
   background: rgba(8, 12, 24, 0.28);
 }
 

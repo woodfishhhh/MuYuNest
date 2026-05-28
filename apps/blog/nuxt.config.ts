@@ -78,7 +78,7 @@ export default defineNuxtConfig({
 
   // ── CSS / Tailwind v4 via PostCSS ─────────────────────────────────────────
   // @tailwindcss/vite causes jiti load issues; PostCSS plugin is the safe path.
-  css: ["~/assets/main.css"],
+  css: ["~/assets/main.css", "~/assets/nprogress.css"],
   postcss: {
     plugins: {
       "@tailwindcss/postcss": {},
