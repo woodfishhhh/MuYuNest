@@ -233,6 +233,12 @@ export default defineNuxtConfig({
     output: {
       publicDir: "dist",
     },
+    storage: {
+      // Avoid Nuxt nightly's deep cache-driver path in generated Nitro storage imports on Linux CI.
+      "internal:nuxt:prerender": {
+        driver: "memory",
+      },
+    },
     prerender: {
       // Home routes to pre-render (post routes are client-side navigated)
       routes: ["/", "/blog", "/works", "/author", "/friend"],
