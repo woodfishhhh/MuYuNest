@@ -45,6 +45,7 @@ describe("FriendPanel", () => {
     expect(wrapper.findAll("[data-testid='friend-link-card']")).toHaveLength(2);
     expect(wrapper.get("[data-testid='friend-application-site-name']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-site-url']")).toBeTruthy();
+    expect(wrapper.get("[data-testid='friend-application-friend-page-url']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-avatar-url']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-description']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-contact']")).toBeTruthy();
@@ -53,6 +54,9 @@ describe("FriendPanel", () => {
     await wrapper
       .get("[data-testid='friend-application-site-url']")
       .setValue("https://orbiting.example");
+    await wrapper
+      .get("[data-testid='friend-application-friend-page-url']")
+      .setValue("https://orbiting.example/friends");
     await wrapper
       .get("[data-testid='friend-application-avatar-url']")
       .setValue("https://orbiting.example/avatar.png");
@@ -75,9 +79,10 @@ describe("FriendPanel", () => {
     const issueTitle = parsedIssueUrl.searchParams.get("title") ?? "";
     const issueBody = parsedIssueUrl.searchParams.get("body") ?? "";
 
-    expect(issueUrl).toContain("https://github.com/woodfishhhh/VueThreeBlog/issues/new");
+    expect(issueUrl).toContain("https://github.com/woodfishhhh/MuYuNest/issues/new");
     expect(issueTitle).toContain("Orbiting Notes");
     expect(issueBody).toContain("https://orbiting.example");
+    expect(issueBody).toContain("- Friend Page URL: https://orbiting.example/friends");
     expect(issueBody).toContain("@orbiting-notes");
   });
 

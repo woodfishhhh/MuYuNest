@@ -249,6 +249,7 @@ export async function resolveAssetReference(
       options.publicDir,
       options.siteBasePath,
       options.sourceProjectRoot,
+      options.reuseGeneratedAssets,
     );
   }
 
@@ -683,6 +684,7 @@ export async function localizeRemoteAsset(
   publicDir: string,
   siteBasePath?: string,
   sourceProjectRoot?: string,
+  reuseGeneratedAssets = false,
 ): Promise<string | null> {
   if (!isRemoteAssetReference(reference)) {
     return null;
@@ -712,6 +714,10 @@ export async function localizeRemoteAsset(
     if (mirroredAsset) {
       return mirroredAsset;
     }
+  }
+
+  if (reuseGeneratedAssets) {
+    return toSitePublicUrl(reference, siteBasePath);
   }
 
   const downloaded = await downloadRemoteAsset(reference);

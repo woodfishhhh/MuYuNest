@@ -182,7 +182,8 @@ export default defineNuxtConfig({
       navigateFallbackDenylist: [/^\/api\//i],
       runtimeCaching: [
         {
-          urlPattern: ({ request }: { request: Request }) => request.mode === "navigate",
+          // Workbox generateSW must serialize this into sw.js; regex matchers are stable here.
+          urlPattern: /\/($|index\.html$|blog\/?$|works\/?$|author\/?$|friend\/?$|posts\/.*)/i,
           handler: "NetworkFirst" as const,
           options: {
             cacheName: "page-shell-cache",

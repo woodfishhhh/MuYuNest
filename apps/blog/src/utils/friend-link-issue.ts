@@ -3,6 +3,7 @@ import { isSafeUrl } from "@/utils/input-validator";
 export interface FriendLinkIssueInput {
   siteName: string;
   siteUrl: string;
+  friendPageUrl: string;
   avatarUrl: string;
   description: string;
   contact: string;
@@ -24,6 +25,10 @@ export function validateFriendLinkInput(input: FriendLinkIssueInput): FriendLink
     invalidFields.push("siteUrl");
   }
 
+  if (!isSafeUrl(input.friendPageUrl)) {
+    invalidFields.push("friendPageUrl");
+  }
+
   if (input.avatarUrl && !isSafeUrl(input.avatarUrl)) {
     invalidFields.push("avatarUrl");
   }
@@ -42,7 +47,7 @@ export function validateFriendLinkInput(input: FriendLinkIssueInput): FriendLink
   };
 }
 
-const FRIEND_LINK_ISSUE_BASE_URL = "https://github.com/woodfishhhh/VueThreeBlog/issues/new";
+const FRIEND_LINK_ISSUE_BASE_URL = "https://github.com/woodfishhhh/MuYuNest/issues/new";
 
 export function buildFriendLinkIssueUrl(input: FriendLinkIssueInput) {
   const normalizedInput = normalizeInput(input);
@@ -60,6 +65,7 @@ function buildFriendLinkIssueBody(input: FriendLinkIssueInput) {
     "",
     `- Site Name: ${input.siteName}`,
     `- Site URL: ${input.siteUrl}`,
+    `- Friend Page URL: ${input.friendPageUrl}`,
     `- Avatar URL: ${input.avatarUrl}`,
     `- Short Description: ${input.description}`,
     `- Your Name / Contact: ${input.contact}`,
@@ -70,6 +76,7 @@ function normalizeInput(input: FriendLinkIssueInput): FriendLinkIssueInput {
   return {
     siteName: input.siteName.trim(),
     siteUrl: input.siteUrl.trim(),
+    friendPageUrl: input.friendPageUrl.trim(),
     avatarUrl: input.avatarUrl.trim(),
     description: input.description.trim(),
     contact: input.contact.trim(),

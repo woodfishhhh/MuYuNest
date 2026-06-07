@@ -6,6 +6,7 @@ import { buildFriendLinkIssueUrl, validateFriendLinkInput } from "@/utils/friend
 interface FriendLinkApplicationDraft {
   siteName: string;
   siteUrl: string;
+  friendPageUrl: string;
   avatarUrl: string;
   description: string;
   contact: string;
@@ -14,6 +15,7 @@ interface FriendLinkApplicationDraft {
 const draft = reactive<FriendLinkApplicationDraft>({
   siteName: "",
   siteUrl: "",
+  friendPageUrl: "",
   avatarUrl: "",
   description: "",
   contact: "",
@@ -51,6 +53,14 @@ const validationMessage = computed(() => {
     }
   }
 
+  if (!draft.friendPageUrl.trim()) {
+    return "请先填写友链页链接。";
+  }
+
+  if (result.invalidFields.includes("friendPageUrl")) {
+    return "友链页链接必须是可公开访问的 http:// 或 https:// 地址。";
+  }
+
   if (draft.avatarUrl.trim() && !result.invalidFields.includes("avatarUrl")) {
     try {
       const parsed = new URL(draft.avatarUrl);
@@ -77,6 +87,7 @@ const issueUrl = computed(() =>
   buildFriendLinkIssueUrl({
     siteName: draft.siteName,
     siteUrl: draft.siteUrl,
+    friendPageUrl: draft.friendPageUrl,
     avatarUrl: draft.avatarUrl,
     description: draft.description,
     contact: draft.contact,
@@ -166,6 +177,18 @@ function confirmIssueRedirect() {
             name="siteUrl"
             type="url"
             placeholder="https://example.com"
+          />
+        </label>
+
+        <label class="space-y-1.5">
+          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">友链页链接</span>
+          <input
+            v-model="draft.friendPageUrl"
+            data-testid="friend-application-friend-page-url"
+            class="friend-application-input"
+            name="friendPageUrl"
+            type="url"
+            placeholder="https://example.com/friends"
           />
         </label>
 

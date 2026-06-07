@@ -1,0 +1,52 @@
+name: Friend Link Bot
+
+on:
+  issues:
+    types:
+      - opened
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  friend-link-bot:
+    if: github.event_name != 'issues' || startsWith(github.event.issue.title, '[Friend Link]')
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git
+        run: |
+          git config user.name "woodfish-friend-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Reply to new friend-link issue
+        if: github.event_name == 'issues'
+        run: pnpm -F @woodfish-nest/content-tools exec tsx src/friend-link-bot.ts opened
+
+      - name: Review pending friend-link issues
+        if: github.event_name != 'issues'
+        run: pnpm -F @woodfish-nest/content-tools exec tsx src/friend-link-bot.ts review

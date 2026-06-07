@@ -1,6 +1,7 @@
 export * from "./content/build-site-content.js";
 export * from "./content/generator-core.js";
 export * from "./generate-content.js";
+export * from "./friend-link-bot.js";
 export * from "./image-optimizer-core.js";
 export { runCli } from "./cli.js";
 export * from "./migrate.js";

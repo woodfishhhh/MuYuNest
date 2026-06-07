@@ -50,8 +50,10 @@ $distDir = if ([string]::IsNullOrWhiteSpace($env:DEPLOY_DIST_DIR)) {
 }
 $deployId = Get-Date -Format "yyyyMMddHHmmss"
 $archive = Join-Path $env:TEMP "woodfishnest-$deployId.tar.gz"
+$remoteScriptPath = Join-Path $env:TEMP "woodfishnest-activate-$deployId.sh"
 $remoteArchive = "/tmp/woodfishnest-$deployId.tar.gz"
 $remoteNginxConf = "/tmp/woodfishnest-nginx-$deployId.conf"
+$remoteActivateScript = "/tmp/woodfishnest-activate-$deployId.sh"
 $sshOptions = @("-o", "StrictHostKeyChecking=accept-new")
 
 function Invoke-CheckedNative {
@@ -184,10 +186,14 @@ rm -f "$config_backup"
 rm -rf "$backup_dir"
 '@
 
-  $remoteScript | & ssh @sshOptions $Remote "$remoteEnv bash -se"
+  [System.IO.File]::WriteAllText($remoteScriptPath, $remoteScript, [System.Text.UTF8Encoding]::new($false))
+  Invoke-CheckedNative scp @sshOptions $remoteScriptPath "${Remote}:$remoteActivateScript"
+  Invoke-CheckedNative ssh @sshOptions $Remote "chmod 700 $(ConvertTo-BashSingleQuoted $remoteActivateScript)"
+  Invoke-CheckedNative ssh @sshOptions $Remote "$remoteEnv bash $(ConvertTo-BashSingleQuoted $remoteActivateScript)"
   if ($LASTEXITCODE -ne 0) {
     throw "remote activate failed with exit code $LASTEXITCODE"
   }
+  Invoke-CheckedNative ssh @sshOptions $Remote "rm -f $(ConvertTo-BashSingleQuoted $remoteActivateScript)"
 
   Write-Host "==> 5. Smoke live site..."
   $html = Invoke-WebRequest -Uri $SiteUrl -UseBasicParsing -TimeoutSec 30
@@ -203,5 +209,8 @@ rm -rf "$backup_dir"
   Pop-Location
   if (Test-Path -LiteralPath $archive) {
     Remove-Item -LiteralPath $archive -Force
+  }
+  if (Test-Path -LiteralPath $remoteScriptPath) {
+    Remove-Item -LiteralPath $remoteScriptPath -Force
   }
 }
