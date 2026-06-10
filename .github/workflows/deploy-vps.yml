@@ -112,12 +112,12 @@ jobs:
           )
 
           # shellcheck disable=SC2029
-          timeout 60s ssh "${ssh_options[@]}" "$ssh_dest" "rm -f '$remote_archive'"
+          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "rm -f '$remote_archive'"
 
           uploaded=0
           for attempt in 1 2 3; do
-            echo "Uploading site archive, attempt $attempt..."
-            if timeout 300s scp "${ssh_options[@]}" "${{ env.DEPLOY_ARCHIVE }}" "$ssh_dest:$remote_archive"; then
+            echo "Streaming site archive over SSH, attempt $attempt..."
+            if timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "cat > '$remote_archive'" < "${{ env.DEPLOY_ARCHIVE }}"; then
               uploaded=1
               break
             fi
@@ -130,7 +130,7 @@ jobs:
 
           local_sha="$(cut -d ' ' -f1 "${{ env.DEPLOY_ARCHIVE }}.sha256")"
           # shellcheck disable=SC2029
-          remote_sha="$(timeout 60s ssh "${ssh_options[@]}" "$ssh_dest" "sha256sum '$remote_archive' | cut -d ' ' -f1")"
+          remote_sha="$(timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "sha256sum '$remote_archive' | cut -d ' ' -f1")"
           test "$local_sha" = "$remote_sha"
 
       - name: Verify remote archive
