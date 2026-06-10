@@ -44,16 +44,6 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Download blog dist artifact
-        if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
-        with:
-          name: blog-dist
-          path: apps/blog/dist
-          repository: ${{ github.repository }}
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Setup pnpm
         if: github.event_name == 'workflow_dispatch'
         uses: pnpm/action-setup@v4
@@ -92,6 +82,7 @@ jobs:
           compression-level: 0
 
       - name: Verify dist artifact
+        if: github.event_name == 'workflow_dispatch'
         run: |
           test -f apps/blog/dist/index.html
           test -f apps/blog/dist/sw.js
