@@ -136,7 +136,7 @@ jobs:
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Download and stage site artifact
-        timeout-minutes: 18
+        timeout-minutes: 45
         env:
           ARTIFACT_URL: ${{ steps.blog-artifact.outputs.url }}
         run: |
@@ -155,7 +155,7 @@ jobs:
           timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_zip'"
 
           # shellcheck disable=SC2029
-          timeout 1200s ssh -T "${ssh_options[@]}" "$ssh_dest" "artifact_url=\"\$(printf '%s' '$artifact_url_b64' | base64 -d)\"; curl -fL --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 900 -o '$remote_zip' \"\$artifact_url\"; if command -v unzip >/dev/null 2>&1; then unzip -q '$remote_zip' -d '$remote_next'; else python3 -m zipfile -e '$remote_zip' '$remote_next'; fi; rm -f '$remote_zip'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          timeout 2700s ssh -T "${ssh_options[@]}" "$ssh_dest" "artifact_url=\"\$(printf '%s' '$artifact_url_b64' | base64 -d)\"; curl -fL --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 2400 -o '$remote_zip' \"\$artifact_url\"; if command -v unzip >/dev/null 2>&1; then unzip -q '$remote_zip' -d '$remote_next'; else python3 -m zipfile -e '$remote_zip' '$remote_next'; fi; rm -f '$remote_zip'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
 
       - name: Upload nginx config
         run: |
