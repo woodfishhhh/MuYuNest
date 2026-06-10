@@ -92,6 +92,7 @@ jobs:
       - name: Resolve blog dist artifact URL
         id: blog-artifact
         env:
+          GH_TOKEN: ${{ github.token }}
           ARTIFACT_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.run_id }}
         run: |
           artifact_id="$(
