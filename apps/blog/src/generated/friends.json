@@ -103,5 +103,12 @@
     "avatar": "/remote-assets/2d19ef45276407485996319d0518c6b7940188f8.gif",
     "descr": "愿美梦成真",
     "className": "友情链接"
+  },
+  {
+    "name": "maskviva",
+    "link": "https://www.maskviva.xyz/",
+    "avatar": "https://www.maskviva.xyz/images/Maskviva_unbackground_compressed.png",
+    "descr": "造轮子爱好者。",
+    "className": "友情链接"
   }
 ]
