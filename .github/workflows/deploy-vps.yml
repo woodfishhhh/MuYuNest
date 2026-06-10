@@ -91,7 +91,6 @@ jobs:
         run: |
           tar -czf "${{ env.DEPLOY_ARCHIVE }}" -C apps/blog/dist .
           sha256sum "${{ env.DEPLOY_ARCHIVE }}" > "${{ env.DEPLOY_ARCHIVE }}.sha256"
-          split -b 1m -d -a 4 "${{ env.DEPLOY_ARCHIVE }}" "${{ env.DEPLOY_ARCHIVE }}.part-"
 
       - name: Configure SSH
         run: |
@@ -100,45 +99,39 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Upload site archive chunks
+      - name: Upload site archive
+        timeout-minutes: 18
         run: |
           ssh_dest="${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
-          remote_chunks="${{ env.DEPLOY_REMOTE_CHUNKS }}"
           remote_archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
+          ssh_options=(
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=4
+          )
 
           # shellcheck disable=SC2029
-          ssh "$ssh_dest" "rm -rf '$remote_chunks'; mkdir -p '$remote_chunks'; rm -f '$remote_archive'"
+          timeout 60s ssh "${ssh_options[@]}" "$ssh_dest" "rm -f '$remote_archive'"
 
-          for part in "${{ env.DEPLOY_ARCHIVE }}".part-*; do
-            uploaded=0
-            for attempt in 1 2 3; do
-              if timeout 180s scp \
-                -o BatchMode=yes \
-                -o ServerAliveInterval=15 \
-                -o ServerAliveCountMax=4 \
-                "$part" \
-                "$ssh_dest:$remote_chunks/$(basename "$part")"; then
-                uploaded=1
-                break
-              fi
+          uploaded=0
+          for attempt in 1 2 3; do
+            echo "Uploading site archive, attempt $attempt..."
+            if timeout 300s scp "${ssh_options[@]}" "${{ env.DEPLOY_ARCHIVE }}" "$ssh_dest:$remote_archive"; then
+              uploaded=1
+              break
+            fi
 
-              if [ "$attempt" -lt 3 ]; then
-                sleep 5
-              fi
-            done
-
-            test "$uploaded" -eq 1
+            if [ "$attempt" -lt 3 ]; then
+              sleep 10
+            fi
           done
+          test "$uploaded" -eq 1
 
-          # shellcheck disable=SC2029
-          ssh "$ssh_dest" "cat '$remote_chunks'/${{ env.DEPLOY_ARCHIVE }}.part-* > '$remote_archive'"
           local_sha="$(cut -d ' ' -f1 "${{ env.DEPLOY_ARCHIVE }}.sha256")"
           # shellcheck disable=SC2029
-          remote_sha="$(ssh "$ssh_dest" "sha256sum '$remote_archive' | cut -d ' ' -f1")"
+          remote_sha="$(timeout 60s ssh "${ssh_options[@]}" "$ssh_dest" "sha256sum '$remote_archive' | cut -d ' ' -f1")"
           test "$local_sha" = "$remote_sha"
-
-          # shellcheck disable=SC2029
-          ssh "$ssh_dest" "rm -rf '$remote_chunks'"
 
       - name: Verify remote archive
         run: |
