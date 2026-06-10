@@ -33,6 +33,7 @@ jobs:
       DEPLOY_URL: https://woodfish.site/newBlog/
       DEPLOY_ARCHIVE: vue-three-blog-${{ github.run_id }}.tar.gz
       DEPLOY_REMOTE_ARCHIVE: /tmp/vue-three-blog-${{ github.run_id }}.tar.gz
+      DEPLOY_REMOTE_ZIP: /tmp/vue-three-blog-${{ github.run_id }}.zip
       DEPLOY_REMOTE_CHUNKS: /tmp/vue-three-blog-${{ github.run_id }}-chunks
       DEPLOY_DIR: ${{ secrets.DEPLOY_DIR || '/opt/blog-stack/sites/newBlog' }}
       DEPLOY_CONTAINER: blog-nginx
@@ -80,6 +81,16 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: pnpm -F @woodfish-nest/blog build:deploy:dist
 
+      - name: Upload blog dist artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blog-dist
+          path: apps/blog/dist
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
       - name: Verify dist artifact
         run: |
           test -f apps/blog/dist/index.html
@@ -87,10 +98,35 @@ jobs:
           test -f apps/blog/dist/manifest.webmanifest
           test -d apps/blog/dist/assets
 
-      - name: Package site archive
+      - name: Resolve blog dist artifact URL
+        id: blog-artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.run_id }}
         run: |
-          tar -czf "${{ env.DEPLOY_ARCHIVE }}" -C apps/blog/dist .
-          sha256sum "${{ env.DEPLOY_ARCHIVE }}" > "${{ env.DEPLOY_ARCHIVE }}.sha256"
+          artifact_id="$(
+            gh api "repos/${{ github.repository }}/actions/runs/${ARTIFACT_RUN_ID}/artifacts" \
+              --jq '.artifacts[] | select(.name == "blog-dist") | .id' \
+              | head -n 1
+          )"
+          test -n "$artifact_id"
+
+          download_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip"
+          signed_url="$(
+            curl -fsSIL \
+              -o /dev/null \
+              -w '%{url_effective}' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "$download_url"
+          )"
+          test "$signed_url" != "$download_url"
+
+          {
+            echo "url<<EOF"
+            echo "$signed_url"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Configure SSH
         run: |
@@ -99,50 +135,27 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Upload site archive
+      - name: Download and stage site artifact
         timeout-minutes: 18
+        env:
+          ARTIFACT_URL: ${{ steps.blog-artifact.outputs.url }}
         run: |
           ssh_dest="${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
-          remote_archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
+          remote_next="${{ env.DEPLOY_DIR }}.next.${{ github.run_id }}"
+          remote_zip="${{ env.DEPLOY_REMOTE_ZIP }}"
           ssh_options=(
             -o BatchMode=yes
             -o ConnectTimeout=20
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
+          artifact_url_b64="$(printf '%s' "$ARTIFACT_URL" | base64 -w0)"
 
           # shellcheck disable=SC2029
-          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "rm -f '$remote_archive'"
-
-          uploaded=0
-          for attempt in 1 2 3; do
-            echo "Streaming site archive over SSH, attempt $attempt..."
-            if timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "cat > '$remote_archive'" < "${{ env.DEPLOY_ARCHIVE }}"; then
-              uploaded=1
-              break
-            fi
-
-            if [ "$attempt" -lt 3 ]; then
-              sleep 10
-            fi
-          done
-          test "$uploaded" -eq 1
-
-          local_sha="$(cut -d ' ' -f1 "${{ env.DEPLOY_ARCHIVE }}.sha256")"
-          # shellcheck disable=SC2029
-          remote_sha="$(timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "sha256sum '$remote_archive' | cut -d ' ' -f1")"
-          test "$local_sha" = "$remote_sha"
-
-      - name: Verify remote archive
-        run: |
-          ssh_dest="${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
-          remote_archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
-          remote_next="${{ env.DEPLOY_DIR }}.next.${{ github.run_id }}"
+          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_zip'"
 
           # shellcheck disable=SC2029
-          ssh "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; tar -xzf '$remote_archive' -C '$remote_next'"
-          # shellcheck disable=SC2029
-          ssh "$ssh_dest" "test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          timeout 1200s ssh -T "${ssh_options[@]}" "$ssh_dest" "artifact_url=\"\$(printf '%s' '$artifact_url_b64' | base64 -d)\"; curl -fL --retry 3 --retry-delay 5 --connect-timeout 20 --max-time 900 -o '$remote_zip' \"\$artifact_url\"; if command -v unzip >/dev/null 2>&1; then unzip -q '$remote_zip' -d '$remote_next'; else python3 -m zipfile -e '$remote_zip' '$remote_next'; fi; rm -f '$remote_zip'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
 
       - name: Upload nginx config
         run: |
