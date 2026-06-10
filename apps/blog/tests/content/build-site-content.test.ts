@@ -77,6 +77,14 @@ describe("build-site-content", () => {
       "",
       "# AJAX 基础入门教程",
       "",
+      "[TOC]",
+      "",
+      "---",
+      "",
+      "| 字段 | 说明 |",
+      "| --- | --- |",
+      "| title | AJAX |",
+      "",
       "这是文章摘要第一段。",
       "",
       "这里补充一段更完整的正文内容，用来验证阅读时长会被正确估算，而不是遗漏掉文章正文元信息。",
@@ -182,6 +190,7 @@ describe("build-site-content", () => {
       expect(ajaxEntry?.aliases).toContain("AJAX 基础入门教程");
       expect(ajaxEntry?.readingMinutes).toBeGreaterThan(0);
       expect(ajaxEntry?.type).toBe("Tutorial");
+      expect(ajaxEntry?.excerpt).toBe("这是文章摘要第一段。");
       expect(ajaxEntry?.searchText).toContain("AJAX");
       expect(ajaxEntry?.searchText).toContain("请求生命周期");
       expect(notesEntry?.type).toBe("Notes");

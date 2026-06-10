@@ -411,15 +411,39 @@ function createExcerpt(markdown: string, title: string) {
   const paragraphs = markdown
     .split(/\n\s*\n/)
     .map((block) => block.trim())
-    .filter((block) => block.length > 0)
-    .filter((block) => !block.startsWith("#"))
-    .filter((block) => !block.startsWith("```"));
+    .filter(isExcerptCandidate)
+    .map(toExcerptPlainText)
+    .filter((block) => block.length > 0);
 
-  const firstParagraph = paragraphs[0] ?? `A deep dive into ${title}.`;
-  const plainText = stripInlineMarkdown(firstParagraph)
-    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
-    .trim();
+  const plainText = paragraphs[0] ?? `A deep dive into ${title}.`;
   return `${plainText.slice(0, 150)}${plainText.length > 150 ? "..." : ""}`;
+}
+
+function isExcerptCandidate(block: string) {
+  if (!block) return false;
+  if (block.startsWith("#")) return false;
+  if (block.startsWith("```")) return false;
+
+  const normalized = block.trim();
+  if (/^\[toc\]$/i.test(normalized)) return false;
+  if (/^[-*_]{3,}$/.test(normalized)) return false;
+  if (/^!\[[^\]]*\]\([^)]+\)$/.test(normalized)) return false;
+  if (/^<img\b[^>]*>$/i.test(normalized)) return false;
+
+  const lines = normalized.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const hasTableSeparator = lines.some((line) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line));
+  const everyLineLooksLikeTable = lines.length > 1 && lines.every((line) => line.includes("|"));
+  if (hasTableSeparator && everyLineLooksLikeTable) return false;
+
+  return true;
+}
+
+function toExcerptPlainText(block: string) {
+  return stripInlineMarkdown(
+    block.replace(/!\[[^\]]*\]\([^)]+\)/g, " ").replace(/<img\b[^>]*>/gi, " "),
+  )
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function resolvePostType(value: unknown) {

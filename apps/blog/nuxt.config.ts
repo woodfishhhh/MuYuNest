@@ -100,7 +100,17 @@ export default defineNuxtConfig({
       charset: "utf-8",
       viewport:
         "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
-      link: [],
+      link: [
+        {
+          rel: "icon",
+          type: "image/svg+xml",
+          href: `${process.env.NUXT_APP_BASE_URL || "/"}favicon.svg`,
+        },
+        {
+          rel: "apple-touch-icon",
+          href: `${process.env.NUXT_APP_BASE_URL || "/"}favicon.png`,
+        },
+      ],
       meta: [
         { name: "description", content: "木鱼的鱼窝 | Vue-powered immersive 3D blog experience." },
         { name: "theme-color", content: "#050510" },
@@ -179,6 +189,12 @@ export default defineNuxtConfig({
       skipWaiting: true,
       navigateFallback: "index.html",
       globPatterns: ["**/*.{js,css,svg,png,jpg,webp,ico,woff,woff2}"],
+      globIgnores: [
+        "content/**/*",
+        "content-assets/**/*",
+        "imported-assets/**/*",
+        "remote-assets/**/*",
+      ],
       navigateFallbackDenylist: [/^\/api\//i],
       runtimeCaching: [
         {
@@ -208,7 +224,7 @@ export default defineNuxtConfig({
           },
         },
         {
-          urlPattern: /\/content\/.*\.(png|jpg|jpeg|webp|gif|svg)/i,
+          urlPattern: /\/(?:content-assets|imported-assets|remote-assets|content)\/.*\.(png|jpg|jpeg|webp|gif|svg)/i,
           handler: "CacheFirst" as const,
           options: {
             cacheName: "content-images-cache",

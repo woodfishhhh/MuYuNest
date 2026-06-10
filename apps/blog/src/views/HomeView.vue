@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, defineAsyncComponent, onMounted } from "vue";
 
-import AuthorPanel from "@/components/home/AuthorPanel.vue";
-import FriendPanel from "@/components/home/FriendPanel.vue";
-import PostPanel from "@/components/home/PostPanel.vue";
 import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
 import SlideController from "@/components/home/SlideController.vue";
 import VisitorCountBadge from "@/components/home/VisitorCountBadge.vue";
-import WorksPanel from "@/components/home/WorksPanel.vue";
 import SiteNav from "@/components/layout/SiteNav.vue";
 import { useHomePanels } from "@/composables/useHomePanels";
 import { useTheme } from "@/composables/useTheme";
 import { useVisitorCount } from "@/composables/useVisitorCount";
 import { useSiteStore } from "@/stores/site";
+
+const AuthorPanel = defineAsyncComponent(() => import("@/components/home/AuthorPanel.vue"));
+const FriendPanel = defineAsyncComponent(() => import("@/components/home/FriendPanel.vue"));
+const PostPanel = defineAsyncComponent(() => import("@/components/home/PostPanel.vue"));
+const WorksPanel = defineAsyncComponent(() => import("@/components/home/WorksPanel.vue"));
 
 const siteStore = useSiteStore();
 const { theme } = useTheme();
