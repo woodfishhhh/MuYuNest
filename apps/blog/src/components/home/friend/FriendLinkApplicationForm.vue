@@ -10,6 +10,7 @@ interface FriendLinkApplicationDraft {
   avatarUrl: string;
   description: string;
   contact: string;
+  reciprocalLinkConfirmed: boolean;
 }
 
 const draft = reactive<FriendLinkApplicationDraft>({
@@ -19,12 +20,15 @@ const draft = reactive<FriendLinkApplicationDraft>({
   avatarUrl: "",
   description: "",
   contact: "",
+  reciprocalLinkConfirmed: false,
 });
 
 const showReminder = shallowRef(false);
 
 const hasDraftStarted = computed(() =>
-  Object.values(draft).some((value) => value.trim().length > 0),
+  Object.values(draft).some((value) =>
+    typeof value === "string" ? value.trim().length > 0 : value,
+  ),
 );
 
 const validationMessage = computed(() => {
@@ -80,6 +84,10 @@ const validationMessage = computed(() => {
     return "请先填写称呼或联系方式。";
   }
 
+  if (!draft.reciprocalLinkConfirmed) {
+    return "请先在你的博客友链页加入 woodfish，再勾选确认。";
+  }
+
   return "";
 });
 
@@ -91,6 +99,7 @@ const issueUrl = computed(() =>
     avatarUrl: draft.avatarUrl,
     description: draft.description,
     contact: draft.contact,
+    reciprocalLinkConfirmed: draft.reciprocalLinkConfirmed,
   }),
 );
 
@@ -151,11 +160,33 @@ function confirmIssueRedirect() {
         <div class="text-[11px] tracking-[0.18em] text-[var(--stage-hint-strong)]">提交友链</div>
         <h3 class="mt-2 text-2xl font-semibold text-[var(--stage-fg)]">投递你的站点</h3>
         <p class="mt-2 text-sm leading-6 text-[var(--stage-hint)]">
-          填完后会先确认，再打开预填好的 GitHub 提交草稿。
+          请先把 woodfish 加入你的友链页，再打开预填好的 GitHub 提交草稿。
         </p>
       </div>
 
       <form class="relative mt-5 grid gap-3 md:grid-cols-2" @submit.prevent="handleSubmit">
+        <div class="friend-application-prerequisite md:col-span-2">
+          <div class="text-xs font-semibold text-[var(--stage-fg)]">先添加本站友链</div>
+          <dl class="mt-2 grid gap-1.5 text-xs text-[var(--stage-hint)] sm:grid-cols-2">
+            <div>
+              <dt>名称</dt>
+              <dd>woodfish</dd>
+            </div>
+            <div>
+              <dt>链接</dt>
+              <dd>https://woodfish.site/newBlog/</dd>
+            </div>
+            <div>
+              <dt>头像</dt>
+              <dd>https://pic1.imgdb.cn/item/682f3d1658cb8da5c807b704.jpg</dd>
+            </div>
+            <div>
+              <dt>描述</dt>
+              <dd>我喜欢你</dd>
+            </div>
+          </dl>
+        </div>
+
         <label class="space-y-1.5">
           <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">站点名称</span>
           <input
@@ -225,6 +256,16 @@ function confirmIssueRedirect() {
             name="description"
             placeholder="写一句网站主题或你想说的话。"
           />
+        </label>
+
+        <label class="friend-application-confirmation md:col-span-2">
+          <input
+            v-model="draft.reciprocalLinkConfirmed"
+            data-testid="friend-application-reciprocal-confirmed"
+            name="reciprocalLinkConfirmed"
+            type="checkbox"
+          />
+          <span>我已经先在自己的博客友链页加入 woodfish，并确认这个友链页可以直接访问。</span>
         </label>
 
         <div class="md:col-span-2 flex flex-col gap-3">
@@ -433,6 +474,37 @@ function confirmIssueRedirect() {
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 0 3px rgba(53, 88, 204, 0.1);
   transform: translateY(-1px);
+}
+
+.friend-application-prerequisite {
+  border-left: 3px solid rgba(53, 88, 204, 0.36);
+  padding-left: 0.85rem;
+}
+
+.friend-application-prerequisite dt {
+  color: var(--stage-hint-strong);
+  font-weight: 600;
+}
+
+.friend-application-prerequisite dd {
+  overflow-wrap: anywhere;
+}
+
+.friend-application-confirmation {
+  display: flex;
+  gap: 0.62rem;
+  align-items: flex-start;
+  color: var(--stage-hint);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.friend-application-confirmation input {
+  margin-top: 0.22rem;
+  height: 1rem;
+  width: 1rem;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
 }
 
 .friend-application-submit,

@@ -20,6 +20,7 @@ describe("friend link bot", () => {
       "- Avatar URL: https://lemonadorable.github.io/favicon/favicon.gif",
       "- Short Description: 愿美梦成真",
       "- Your Name / Contact: lemon",
+      "- Reciprocal Link Added: yes",
     ].join("\n"));
 
     expect(parsed).toEqual({
@@ -50,6 +51,7 @@ describe("friend link bot", () => {
     const comment = buildInitialFriendLinkComment(WOODFISH_FRIEND_LINK);
 
     expect(comment).toContain("1 小时后");
+    expect(comment).toContain("自动关闭");
     expect(comment).toContain("名字：woodfish");
     expect(comment).toContain("描述：我喜欢你");
     expect(comment).toContain(`头像：${WOODFISH_FRIEND_LINK.avatar}`);

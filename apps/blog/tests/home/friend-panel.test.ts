@@ -49,6 +49,7 @@ describe("FriendPanel", () => {
     expect(wrapper.get("[data-testid='friend-application-avatar-url']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-description']")).toBeTruthy();
     expect(wrapper.get("[data-testid='friend-application-contact']")).toBeTruthy();
+    expect(wrapper.get("[data-testid='friend-application-reciprocal-confirmed']")).toBeTruthy();
 
     await wrapper.get("[data-testid='friend-application-site-name']").setValue("Orbiting Notes");
     await wrapper
@@ -64,6 +65,7 @@ describe("FriendPanel", () => {
       .get("[data-testid='friend-application-description']")
       .setValue("沉浸式前端与工程随记。");
     await wrapper.get("[data-testid='friend-application-contact']").setValue("@orbiting-notes");
+    await wrapper.get("[data-testid='friend-application-reciprocal-confirmed']").setValue(true);
     await wrapper.get("[data-testid='friend-application-submit']").trigger("click");
 
     expect(openSpy).not.toHaveBeenCalled();
@@ -84,6 +86,28 @@ describe("FriendPanel", () => {
     expect(issueBody).toContain("https://orbiting.example");
     expect(issueBody).toContain("- Friend Page URL: https://orbiting.example/friends");
     expect(issueBody).toContain("@orbiting-notes");
+    expect(issueBody).toContain("- Reciprocal Link Added: yes");
+  });
+
+  it("requires the reciprocal-link confirmation before generating a GitHub draft", async () => {
+    const wrapper = mount(FriendLinkApplicationForm);
+
+    await wrapper.get("[data-testid='friend-application-site-name']").setValue("Orbiting Notes");
+    await wrapper
+      .get("[data-testid='friend-application-site-url']")
+      .setValue("https://orbiting.example");
+    await wrapper
+      .get("[data-testid='friend-application-friend-page-url']")
+      .setValue("https://orbiting.example/friends");
+    await wrapper
+      .get("[data-testid='friend-application-description']")
+      .setValue("沉浸式前端与工程随记。");
+    await wrapper.get("[data-testid='friend-application-contact']").setValue("@orbiting-notes");
+    await wrapper.get("[data-testid='friend-application-submit']").trigger("click");
+
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("请先在你的博客友链页加入 woodfish，再勾选确认。");
+    expect(wrapper.find("[data-testid='friend-application-reminder']").exists()).toBe(false);
   });
 
   it("shows friend domains instead of legacy class labels", () => {

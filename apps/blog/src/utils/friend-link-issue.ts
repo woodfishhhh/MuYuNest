@@ -7,6 +7,7 @@ export interface FriendLinkIssueInput {
   avatarUrl: string;
   description: string;
   contact: string;
+  reciprocalLinkConfirmed: boolean;
 }
 
 export interface FriendLinkValidationResult {
@@ -41,6 +42,10 @@ export function validateFriendLinkInput(input: FriendLinkIssueInput): FriendLink
     invalidFields.push("contact");
   }
 
+  if (!input.reciprocalLinkConfirmed) {
+    invalidFields.push("reciprocalLinkConfirmed");
+  }
+
   return {
     isValid: invalidFields.length === 0,
     invalidFields,
@@ -69,6 +74,7 @@ function buildFriendLinkIssueBody(input: FriendLinkIssueInput) {
     `- Avatar URL: ${input.avatarUrl}`,
     `- Short Description: ${input.description}`,
     `- Your Name / Contact: ${input.contact}`,
+    `- Reciprocal Link Added: ${input.reciprocalLinkConfirmed ? "yes" : "no"}`,
   ].join("\n");
 }
 
@@ -80,5 +86,6 @@ function normalizeInput(input: FriendLinkIssueInput): FriendLinkIssueInput {
     avatarUrl: input.avatarUrl.trim(),
     description: input.description.trim(),
     contact: input.contact.trim(),
+    reciprocalLinkConfirmed: input.reciprocalLinkConfirmed,
   };
 }

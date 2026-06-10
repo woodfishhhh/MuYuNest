@@ -103,7 +103,7 @@ export function parseFriendLinkIssueBody(body: string): FriendLinkIssueData | nu
 export function buildInitialFriendLinkComment(ownLink: OwnFriendLink) {
   return [
     INITIAL_COMMENT_MARKER,
-    "收到友链申请啦！这个友链将会在 1 小时后被自动检验。",
+    "收到友链申请啦！这个友链将会在 1 小时后被自动检验；检测不到反链会自动关闭。",
     "",
     "请先在您的博客友链中加入 woodfish 的友链喔：",
     "",
