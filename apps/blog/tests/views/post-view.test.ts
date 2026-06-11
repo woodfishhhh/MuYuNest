@@ -207,6 +207,12 @@ describe("PostView", () => {
     expect(css).toMatch(/\.article-page\s*{[^}]*pointer-events:\s*auto;/s);
   });
 
+  it("keeps article reading locked to vertical page scrolling on narrow screens", () => {
+    const css = readFileSync("src/assets/main.css", "utf8");
+
+    expect(css).toMatch(/\.article-page\s*{[^}]*overflow-x:\s*hidden;/s);
+  });
+
   it("preserves the originating blog query in the back link", async () => {
     mocks.routeState.query = {
       q: "ajax",
