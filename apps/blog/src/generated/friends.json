@@ -110,5 +110,12 @@
     "avatar": "https://www.maskviva.xyz/images/Maskviva_unbackground_compressed.png",
     "descr": "造轮子爱好者。",
     "className": "友情链接"
+  },
+  {
+    "name": "chagumu's blog",
+    "link": "https://chagumu.site/",
+    "avatar": "https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEVnPlqMYbFvQjdTPScDRQX6XGI965oYAACtyUAAjRrkVXSZSl9-t3fpTwE.jpg",
+    "descr": "就这样，细水长流",
+    "className": "友情链接"
   }
 ]
