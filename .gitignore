@@ -65,6 +65,7 @@ public/asset/image.png
 .superpowers/
 .playwright-mcp/
 dist-manual-deploy.tar.gz
+*.uploading.cfg
 .claude/settings.local.json
 
 # 历史会话遗留(本地保留可,但不入仓)
