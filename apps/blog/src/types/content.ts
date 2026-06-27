@@ -31,7 +31,7 @@ export interface AuthorProfileData {
   postsCount: number;
   tagsCount: number;
   categoriesCount: number;
-  skills: { title: string; color: string; img: string }[];
+  skills: { title: string; color: string; img: string; officialUrl: string }[];
   poem: {
     title: string;
     author: string;

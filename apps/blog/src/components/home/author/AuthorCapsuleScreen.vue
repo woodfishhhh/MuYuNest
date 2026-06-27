@@ -36,6 +36,14 @@ const { activateSkill } = useMatterCapsules({
             <div class="watermark-cn">技术栈</div>
           </div>
 
+          <div
+            class="author-capsule author-capsule--dropzone"
+            data-author-dropzone
+            aria-label="这是什么?"
+          >
+            <span class="author-capsule__label">这是什么?</span>
+          </div>
+
           <button
             v-for="(skill, index) in props.skills"
             :key="skill.title"
@@ -148,6 +156,14 @@ const { activateSkill } = useMatterCapsules({
   border-color: var(--author-capsule-hover-border);
 }
 
+.author-capsule.is-snap-preview,
+.author-capsule--dropzone.is-snap-active {
+  box-shadow:
+    var(--author-capsule-shadow),
+    inset 0 0 0 2px var(--author-capsule-hover-ring);
+  border-color: var(--author-capsule-hover-border);
+}
+
 .author-capsule:active {
   cursor: grabbing;
 }
@@ -177,6 +193,50 @@ const { activateSkill } = useMatterCapsules({
   pointer-events: none;
 }
 
+.author-capsule--dropzone {
+  top: clamp(5.8rem, 13vh, 7.6rem);
+  right: clamp(1rem, 3vw, 2rem);
+  left: auto;
+  width: fit-content;
+  min-width: 0;
+  justify-content: center;
+  gap: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(
+      var(--dropzone-magnet-x, 0px),
+      calc(6px + var(--dropzone-magnet-y, 0px))
+    )
+    scale(var(--dropzone-magnet-scale, 0.96));
+  pointer-events: none;
+  z-index: 0;
+  cursor: default;
+  transition:
+    opacity 0.16s ease,
+    visibility 0s linear 0.16s,
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.author-capsule--dropzone.is-dropzone-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(var(--dropzone-magnet-x, 0px), var(--dropzone-magnet-y, 0px))
+    scale(var(--dropzone-magnet-scale, 1));
+  transition-delay: 0s;
+}
+
+.author-capsule--dropzone.is-dropzone-visible.is-snap-active {
+  transform: translate(var(--dropzone-magnet-x, 0px), var(--dropzone-magnet-y, 0px))
+    scale(var(--dropzone-magnet-scale, 1.02));
+}
+
+.author-capsule--dropzone.is-dropzone-visible.is-snap-locked {
+  transform: translate(var(--dropzone-magnet-x, 0px), var(--dropzone-magnet-y, 0px))
+    scale(var(--dropzone-magnet-scale, 1.04));
+}
+
 @media (max-width: 767px) {
   .author-capsule {
     min-width: 3.6rem;
@@ -191,6 +251,11 @@ const { activateSkill } = useMatterCapsules({
   .author-capsule__icon {
     width: 1.6rem;
     height: 1.6rem;
+  }
+
+  .author-capsule--dropzone {
+    top: clamp(4.6rem, 9vh, 6rem);
+    right: 0.9rem;
   }
 }
 </style>

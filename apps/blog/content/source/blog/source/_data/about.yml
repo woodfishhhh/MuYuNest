@@ -19,120 +19,159 @@ skills:
     - title: Java
       color: "#f89820"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg
+      officialUrl: https://www.java.com/
     - title: Docker
       color: "#2496ed"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg
+      officialUrl: https://www.docker.com/
     - title: Node.js
       color: "#5fa04e"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg
+      officialUrl: https://nodejs.org/
     - title: React
       color: "#61dafb"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg
+      officialUrl: https://react.dev/
     - title: Nuxt
       color: "#00dc82"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nuxtjs/nuxtjs-original.svg
+      officialUrl: https://nuxt.com/
     - title: Next.js
       color: "#ffffff"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg
+      officialUrl: https://nextjs.org/
     - title: Bun
       color: "#f3f0e7"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/bun/bun-original.svg
+      officialUrl: https://bun.sh/
     - title: MySQL
       color: "#00758f"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mysql/mysql-original-wordmark.svg
+      officialUrl: https://www.mysql.com/
     - title: Express
       color: "#ffffff"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original-wordmark.svg
+      officialUrl: https://expressjs.com/
     - title: Electron
       color: "#47848f"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/electron/electron-original.svg
+      officialUrl: https://www.electronjs.org/
     - title: Webpack
       color: "#8ed6fb"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/webpack/webpack-original.svg
+      officialUrl: https://webpack.js.org/
     - title: Vite
       color: "#646cff"
       img: https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@main/icons/vite.svg
+      officialUrl: https://vite.dev/
     - title: Vitest
       color: "#fcc72b"
       img: https://cdn.jsdelivr.net/gh/PKief/vscode-material-icon-theme@main/icons/vitest.svg
+      officialUrl: https://vitest.dev/
     - title: Tailwind CSS
       color: "#06b6d4"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg
+      officialUrl: https://tailwindcss.com/
     - title: Three.js
       color: "#ffffff"
       img: https://api.iconify.design/devicon:threejs.svg
+      officialUrl: https://threejs.org/
     - title: FL Studio
       color: "#f37c20"
       img: https://images.icon-icons.com/195/PNG/256/FL_Studio_23524.png
+      officialUrl: https://www.image-line.com/fl-studio/
     - title: Less
       color: "#1d365d"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/less/less-plain-wordmark.svg
+      officialUrl: https://lesscss.org/
     - title: SCSS
       color: "#cc6699"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sass/sass-original.svg
+      officialUrl: https://sass-lang.com/
     - title: C
       color: "#a8b9cc"
       img: https://api.iconify.design/logos:c.svg
+      officialUrl: https://en.cppreference.com/w/c
     - title: C++
       color: "#00599c"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg
+      officialUrl: https://isocpp.org/
     - title: Pinia
       color: "#ffe56c"
       img: https://api.iconify.design/logos:pinia.svg
+      officialUrl: https://pinia.vuejs.org/
     - title: TypeScript
       color: "#3178c6"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg
+      officialUrl: https://www.typescriptlang.org/
     - title: Python
       color: "#3776ab"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg
+      officialUrl: https://www.python.org/
     - title: Vue
       color: "#42b883"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg
+      officialUrl: https://vuejs.org/
     - title: CSS3
       color: "#1572b6"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg
+      officialUrl: https://developer.mozilla.org/docs/Web/CSS
     - title: JavaScript
       color: "#f7df1e"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg
+      officialUrl: https://developer.mozilla.org/docs/Web/JavaScript
     - title: HTML5
       color: "#e34f26"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg
+      officialUrl: https://developer.mozilla.org/docs/Web/HTML
     - title: Git
       color: "#f05032"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg
+      officialUrl: https://git-scm.com/
     - title: Redux
       color: "#764abc"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/redux/redux-original.svg
+      officialUrl: https://redux.js.org/
     - title: Kubernetes
       color: "#326ce5"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kubernetes/kubernetes-plain.svg
+      officialUrl: https://kubernetes.io/
     - title: MATLAB
       color: "#0076a8"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/matlab/matlab-original.svg
+      officialUrl: https://www.mathworks.com/products/matlab.html
     - title: shadcn/ui
       color: "#000000"
       img: https://api.iconify.design/simple-icons:shadcnui.svg
+      officialUrl: https://ui.shadcn.com/
     - title: Playwright
       color: "#2eab5c"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/playwright/playwright-original.svg
+      officialUrl: https://playwright.dev/
     - title: PostgreSQL
       color: "#336791"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original.svg
+      officialUrl: https://www.postgresql.org/
     - title: Redis
       color: "#dc382d"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/redis/redis-original.svg
+      officialUrl: https://redis.io/
     - title: Storybook
       color: "#ff4785"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/storybook/storybook-original.svg
+      officialUrl: https://storybook.js.org/
     - title: GSAP
       color: "#88ce02"
       img: /asset/gsap.svg
+      officialUrl: https://gsap.com/
     - title: Matter.js
       color: "#89A7B1"
       img: https://api.iconify.design/simple-icons:matterdotjs.svg
+      officialUrl: https://brm.io/matter-js/
     - title: GitHub Actions
       color: "#2088FF"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg
+      officialUrl: https://github.com/features/actions
 
 oneself:
   location: 中国，南昌市

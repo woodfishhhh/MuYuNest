@@ -1,21 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import AuthorPanel from "@/components/home/AuthorPanel.vue";
 import type { AuthorProfileData } from "@/types/content";
-
-vi.mock("@/composables/useAuthorSlider", () => ({
-  useAuthorSlider: () => ({
-    activeIndex: { value: 0 },
-    goToSlide: vi.fn(),
-  }),
-}));
-
-vi.mock("@/composables/useMatterCapsules", () => ({
-  useMatterCapsules: () => ({
-    activateSkill: vi.fn(),
-  }),
-}));
 
 const author: AuthorProfileData = {
   name: "木鱼",
@@ -25,9 +11,14 @@ const author: AuthorProfileData = {
   tagsCount: 283,
   categoriesCount: 32,
   skills: [
-    { title: "Vue", color: "#42b883", img: "/vue.png" },
-    { title: "React", color: "#61dafb", img: "/react.png" },
-    { title: "Node.js", color: "#5fa04e", img: "/node.png" },
+    { title: "Vue", color: "#42b883", img: "/vue.png", officialUrl: "https://vuejs.org/" },
+    { title: "React", color: "#61dafb", img: "/react.png", officialUrl: "https://react.dev/" },
+    {
+      title: "Node.js",
+      color: "#5fa04e",
+      img: "/node.png",
+      officialUrl: "https://nodejs.org/",
+    },
   ],
   poem: {
     title: "卜算子·勤",
@@ -67,7 +58,21 @@ describe("AuthorPanel", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the new 4-screen author narrative and navigation dots", () => {
+  it("renders the new 4-screen author narrative and navigation dots", async () => {
+    vi.resetModules();
+    vi.doMock("@/composables/useAuthorSlider", () => ({
+      useAuthorSlider: () => ({
+        activeIndex: { value: 0 },
+        goToSlide: () => {},
+      }),
+    }));
+    vi.doMock("@/composables/useMatterCapsules", () => ({
+      useMatterCapsules: () => ({
+        activateSkill: () => {},
+      }),
+    }));
+
+    const AuthorPanel = (await import("@/components/home/AuthorPanel.vue")).default;
     const wrapper = mount(AuthorPanel, {
       props: {
         author,

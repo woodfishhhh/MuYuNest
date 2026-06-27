@@ -57,7 +57,7 @@ export interface GeneratedAuthorProfile {
   postsCount: number;
   tagsCount: number;
   categoriesCount: number;
-  skills: { title: string; color: string; img: string }[];
+  skills: { title: string; color: string; img: string; officialUrl: string }[];
   poem: {
     title: string;
     author: string;
@@ -729,12 +729,14 @@ async function normalizeSkills(
         title,
         color: readString(typedItem?.color),
         img: image,
+        officialUrl: readString(typedItem?.officialUrl),
       };
     }),
   );
 
   return normalized.filter(
-    (item): item is { title: string; color: string; img: string } => item !== null,
+    (item): item is { title: string; color: string; img: string; officialUrl: string } =>
+      item !== null,
   );
 }
 

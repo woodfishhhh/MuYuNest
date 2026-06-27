@@ -9,197 +9,236 @@
     {
       "title": "Java",
       "color": "#f89820",
-      "img": "/remote-assets/36acd4efa4d1d541c1fa648a3aaf8a4ad54a18ed.svg"
+      "img": "/remote-assets/36acd4efa4d1d541c1fa648a3aaf8a4ad54a18ed.svg",
+      "officialUrl": "https://www.java.com/"
     },
     {
       "title": "Docker",
       "color": "#2496ed",
-      "img": "/remote-assets/e416886de9f85b2910d1e75bc2d92b60697c0496.svg"
+      "img": "/remote-assets/e416886de9f85b2910d1e75bc2d92b60697c0496.svg",
+      "officialUrl": "https://www.docker.com/"
     },
     {
       "title": "Node.js",
       "color": "#5fa04e",
-      "img": "/remote-assets/d13efe560eb5a67abbed2fd481abe2069bc49918.svg"
+      "img": "/remote-assets/d13efe560eb5a67abbed2fd481abe2069bc49918.svg",
+      "officialUrl": "https://nodejs.org/"
     },
     {
       "title": "React",
       "color": "#61dafb",
-      "img": "/remote-assets/62f0ebaf4ba438003f32bf99fb43d9ac487d663b.svg"
+      "img": "/remote-assets/62f0ebaf4ba438003f32bf99fb43d9ac487d663b.svg",
+      "officialUrl": "https://react.dev/"
     },
     {
       "title": "Nuxt",
       "color": "#00dc82",
-      "img": "/remote-assets/aef876977bd91ee0a3cd091155b6a281a72ff3ab.svg"
+      "img": "/remote-assets/aef876977bd91ee0a3cd091155b6a281a72ff3ab.svg",
+      "officialUrl": "https://nuxt.com/"
     },
     {
       "title": "Next.js",
       "color": "#ffffff",
-      "img": "/remote-assets/672aa8db55ec35aae1db006f948ae9346e4ca039.svg"
+      "img": "/remote-assets/672aa8db55ec35aae1db006f948ae9346e4ca039.svg",
+      "officialUrl": "https://nextjs.org/"
     },
     {
       "title": "Bun",
       "color": "#f3f0e7",
-      "img": "/remote-assets/0337d0b77ba743904d515d795389e391d2355799.svg"
+      "img": "/remote-assets/0337d0b77ba743904d515d795389e391d2355799.svg",
+      "officialUrl": "https://bun.sh/"
     },
     {
       "title": "MySQL",
       "color": "#00758f",
-      "img": "/remote-assets/41924b1961f5675efe543d7de454f6897d1c8271.svg"
+      "img": "/remote-assets/41924b1961f5675efe543d7de454f6897d1c8271.svg",
+      "officialUrl": "https://www.mysql.com/"
     },
     {
       "title": "Express",
       "color": "#ffffff",
-      "img": "/remote-assets/455bbc6b5e54dd46c998ad384009e2374a8fef5b.svg"
+      "img": "/remote-assets/455bbc6b5e54dd46c998ad384009e2374a8fef5b.svg",
+      "officialUrl": "https://expressjs.com/"
     },
     {
       "title": "Electron",
       "color": "#47848f",
-      "img": "/remote-assets/25c6d1212f8470adf0aecaa4875df3315148551a.svg"
+      "img": "/remote-assets/25c6d1212f8470adf0aecaa4875df3315148551a.svg",
+      "officialUrl": "https://www.electronjs.org/"
     },
     {
       "title": "Webpack",
       "color": "#8ed6fb",
-      "img": "/remote-assets/b7e7544ab7400e6d064b3f3be09b403c448ffc10.svg"
+      "img": "/remote-assets/b7e7544ab7400e6d064b3f3be09b403c448ffc10.svg",
+      "officialUrl": "https://webpack.js.org/"
     },
     {
       "title": "Vite",
       "color": "#646cff",
-      "img": "/remote-assets/11d81b29e2f4a4bd013b01f63c22dda5737a9f5d.svg"
+      "img": "/remote-assets/11d81b29e2f4a4bd013b01f63c22dda5737a9f5d.svg",
+      "officialUrl": "https://vite.dev/"
     },
     {
       "title": "Vitest",
       "color": "#fcc72b",
-      "img": "/remote-assets/938b72dfc2844557e7f1f67f8dc966e21d64a3c9.svg"
+      "img": "/remote-assets/938b72dfc2844557e7f1f67f8dc966e21d64a3c9.svg",
+      "officialUrl": "https://vitest.dev/"
     },
     {
       "title": "Tailwind CSS",
       "color": "#06b6d4",
-      "img": "/remote-assets/7447b22e61cee91633ed1e6095d9731bd6ba9828.svg"
+      "img": "/remote-assets/7447b22e61cee91633ed1e6095d9731bd6ba9828.svg",
+      "officialUrl": "https://tailwindcss.com/"
     },
     {
       "title": "Three.js",
       "color": "#ffffff",
-      "img": "/remote-assets/1d45e27d8501242fa3bb488364e219417f7d3a8f.svg"
+      "img": "/remote-assets/1d45e27d8501242fa3bb488364e219417f7d3a8f.svg",
+      "officialUrl": "https://threejs.org/"
     },
     {
       "title": "FL Studio",
       "color": "#f37c20",
-      "img": "/remote-assets/480078fdab2c95683060d0212227e48eefef14f5.png"
+      "img": "/remote-assets/480078fdab2c95683060d0212227e48eefef14f5.png",
+      "officialUrl": "https://www.image-line.com/fl-studio/"
     },
     {
       "title": "Less",
       "color": "#1d365d",
-      "img": "/remote-assets/d6a0d37d5a4edb6c1ee0c48bf423797ba25aaed8.svg"
+      "img": "/remote-assets/d6a0d37d5a4edb6c1ee0c48bf423797ba25aaed8.svg",
+      "officialUrl": "https://lesscss.org/"
     },
     {
       "title": "SCSS",
       "color": "#cc6699",
-      "img": "/remote-assets/703b6ab96980ae6093ccca7c4928a55dba15e54b.svg"
+      "img": "/remote-assets/703b6ab96980ae6093ccca7c4928a55dba15e54b.svg",
+      "officialUrl": "https://sass-lang.com/"
     },
     {
       "title": "C",
       "color": "#a8b9cc",
-      "img": "/remote-assets/1329930c647581f5e38816ff8b286526aa68b3d8.svg"
+      "img": "/remote-assets/1329930c647581f5e38816ff8b286526aa68b3d8.svg",
+      "officialUrl": "https://en.cppreference.com/w/c"
     },
     {
       "title": "C++",
       "color": "#00599c",
-      "img": "/remote-assets/a1598829e092549f688b4d08e34e5d858d15566f.svg"
+      "img": "/remote-assets/a1598829e092549f688b4d08e34e5d858d15566f.svg",
+      "officialUrl": "https://isocpp.org/"
     },
     {
       "title": "Pinia",
       "color": "#ffe56c",
-      "img": "/remote-assets/fa626c985b79ce335543635c95ac88721aa48abf.svg"
+      "img": "/remote-assets/fa626c985b79ce335543635c95ac88721aa48abf.svg",
+      "officialUrl": "https://pinia.vuejs.org/"
     },
     {
       "title": "TypeScript",
       "color": "#3178c6",
-      "img": "/remote-assets/1a07db62f56ca3b41207d606cf6e53771a82010d.svg"
+      "img": "/remote-assets/1a07db62f56ca3b41207d606cf6e53771a82010d.svg",
+      "officialUrl": "https://www.typescriptlang.org/"
     },
     {
       "title": "Python",
       "color": "#3776ab",
-      "img": "/remote-assets/e5e1378c33ede079a823d7983f337e835260d56e.svg"
+      "img": "/remote-assets/e5e1378c33ede079a823d7983f337e835260d56e.svg",
+      "officialUrl": "https://www.python.org/"
     },
     {
       "title": "Vue",
       "color": "#42b883",
-      "img": "/remote-assets/d27c46d2f7128f9080768bd730235d1e3402cb67.svg"
+      "img": "/remote-assets/d27c46d2f7128f9080768bd730235d1e3402cb67.svg",
+      "officialUrl": "https://vuejs.org/"
     },
     {
       "title": "CSS3",
       "color": "#1572b6",
-      "img": "/remote-assets/103f75839cd4eea0a0a3c6997435c0671bd86932.svg"
+      "img": "/remote-assets/103f75839cd4eea0a0a3c6997435c0671bd86932.svg",
+      "officialUrl": "https://developer.mozilla.org/docs/Web/CSS"
     },
     {
       "title": "JavaScript",
       "color": "#f7df1e",
-      "img": "/remote-assets/df4206fdd68ca85c54a2e5cb1f4b4953cbe9bd8b.svg"
+      "img": "/remote-assets/df4206fdd68ca85c54a2e5cb1f4b4953cbe9bd8b.svg",
+      "officialUrl": "https://developer.mozilla.org/docs/Web/JavaScript"
     },
     {
       "title": "HTML5",
       "color": "#e34f26",
-      "img": "/remote-assets/4e9cded7e8264953a331dc8616375c7133563267.svg"
+      "img": "/remote-assets/4e9cded7e8264953a331dc8616375c7133563267.svg",
+      "officialUrl": "https://developer.mozilla.org/docs/Web/HTML"
     },
     {
       "title": "Git",
       "color": "#f05032",
-      "img": "/remote-assets/56bfb128472d4a65b8886958bb690bb567afe27d.svg"
+      "img": "/remote-assets/56bfb128472d4a65b8886958bb690bb567afe27d.svg",
+      "officialUrl": "https://git-scm.com/"
     },
     {
       "title": "Redux",
       "color": "#764abc",
-      "img": "/remote-assets/3f9cde4e5fed958be8de447a281b3aa653c2503b.svg"
+      "img": "/remote-assets/3f9cde4e5fed958be8de447a281b3aa653c2503b.svg",
+      "officialUrl": "https://redux.js.org/"
     },
     {
       "title": "Kubernetes",
       "color": "#326ce5",
-      "img": "/remote-assets/a265d84a7f7f8edaf4b551a3d36f82cbc36e36f0.svg"
+      "img": "/remote-assets/a265d84a7f7f8edaf4b551a3d36f82cbc36e36f0.svg",
+      "officialUrl": "https://kubernetes.io/"
     },
     {
       "title": "MATLAB",
       "color": "#0076a8",
-      "img": "/remote-assets/845c81e14a5de8dd25a11dde525be92a224f290d.svg"
+      "img": "/remote-assets/845c81e14a5de8dd25a11dde525be92a224f290d.svg",
+      "officialUrl": "https://www.mathworks.com/products/matlab.html"
     },
     {
       "title": "shadcn/ui",
       "color": "#000000",
-      "img": "/remote-assets/e0e6716d0173bcce73b6b203ca6c34a74a731b15.svg"
+      "img": "/remote-assets/e0e6716d0173bcce73b6b203ca6c34a74a731b15.svg",
+      "officialUrl": "https://ui.shadcn.com/"
     },
     {
       "title": "Playwright",
       "color": "#2eab5c",
-      "img": "/remote-assets/9803b20dbaae6f7fe0009b6cd617ee945885ec86.svg"
+      "img": "/remote-assets/9803b20dbaae6f7fe0009b6cd617ee945885ec86.svg",
+      "officialUrl": "https://playwright.dev/"
     },
     {
       "title": "PostgreSQL",
       "color": "#336791",
-      "img": "/remote-assets/ea435dbc4a747a98b84e721cfa8aff9d10969177.svg"
+      "img": "/remote-assets/ea435dbc4a747a98b84e721cfa8aff9d10969177.svg",
+      "officialUrl": "https://www.postgresql.org/"
     },
     {
       "title": "Redis",
       "color": "#dc382d",
-      "img": "/remote-assets/814036b11679118076d13fd074bd098036cc120a.svg"
+      "img": "/remote-assets/814036b11679118076d13fd074bd098036cc120a.svg",
+      "officialUrl": "https://redis.io/"
     },
     {
       "title": "Storybook",
       "color": "#ff4785",
-      "img": "/remote-assets/048c3a1312a7b1997d6d2d2f0fa7080da821754d.svg"
+      "img": "/remote-assets/048c3a1312a7b1997d6d2d2f0fa7080da821754d.svg",
+      "officialUrl": "https://storybook.js.org/"
     },
     {
       "title": "GSAP",
       "color": "#88ce02",
-      "img": "/asset/gsap.svg"
+      "img": "/asset/gsap.svg",
+      "officialUrl": "https://gsap.com/"
     },
     {
       "title": "Matter.js",
       "color": "#89A7B1",
-      "img": "/remote-assets/243f536c3c4e8cfae58cd2bcf9ad4a4052989d7e.svg"
+      "img": "/remote-assets/243f536c3c4e8cfae58cd2bcf9ad4a4052989d7e.svg",
+      "officialUrl": "https://brm.io/matter-js/"
     },
     {
       "title": "GitHub Actions",
       "color": "#2088FF",
-      "img": "/remote-assets/bea24f7202ee81bb74b4034e86a0ee8bac6fdfb3.svg"
+      "img": "/remote-assets/bea24f7202ee81bb74b4034e86a0ee8bac6fdfb3.svg",
+      "officialUrl": "https://github.com/features/actions"
     }
   ],
   "poem": {

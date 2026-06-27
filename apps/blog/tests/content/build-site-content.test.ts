@@ -145,6 +145,7 @@ describe("build-site-content", () => {
         "    - title: Vue",
         "      color: '#42b883'",
         "      img: /asset/image.png",
+        "      officialUrl: https://vuejs.org/",
         "contacts:",
         "  github: https://github.com/woodfishhhh",
         "oneself:",
@@ -207,6 +208,10 @@ describe("build-site-content", () => {
       expect(result.author.name).toBe("木鱼");
       expect(result.author.postsCount).toBe(2);
       expect(result.author.heroImage).toBe("/newBlog/asset/image.png");
+      expect(result.author.skills[0]).toMatchObject({
+        title: "Vue",
+        officialUrl: "https://vuejs.org/",
+      });
       expect(result.author.poem.title).toBe("卜算子·勤");
       expect(result.author.poem.lines).toHaveLength(2);
       expect(result.author.contacts.github).toBe("https://github.com/woodfishhhh");

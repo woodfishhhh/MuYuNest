@@ -4,6 +4,7 @@ import Matter from "matter-js";
 type CapsuleSkill = {
   title: string;
   color: string;
+  officialUrl: string;
 };
 
 interface UseMatterCapsulesOptions {
@@ -19,10 +20,43 @@ interface CapsuleBody {
   released: boolean;
   width: number;
   height: number;
+  skill: CapsuleSkill;
+}
+
+interface SnapPreview {
+  locked: boolean;
+  proximity: number;
+  shouldSnap: boolean;
+  strength: number;
+  targetX: number;
+  targetY: number;
 }
 
 const WALL_THICKNESS = 96;
 const STEP_MS = 1000 / 60;
+const SNAP_OPEN_DELAY_MS = 90;
+const SNAP_VISUAL_MIN_STRENGTH = 0.08;
+const SNAP_VISUAL_MAX_STRENGTH = 0.42;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getDropzoneMetrics(container: HTMLElement, dropzone: HTMLElement) {
+  const containerRect = container.getBoundingClientRect();
+  const dropzoneRect = dropzone.getBoundingClientRect();
+  const localLeft = dropzoneRect.left - containerRect.left;
+  const localTop = dropzoneRect.top - containerRect.top;
+
+  return {
+    centerX: localLeft + dropzoneRect.width / 2,
+    centerY: localTop + dropzoneRect.height / 2,
+    height: dropzoneRect.height,
+    localLeft,
+    localTop,
+    width: dropzoneRect.width,
+  };
+}
 
 export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsulesOptions) {
   let engine: Matter.Engine | null = null;
@@ -38,6 +72,10 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
   let agitationTimer: number | null = null;
   let collisionHandler: ((event: Matter.IEventCollision<Matter.Engine>) => void) | null = null;
   let draggingBody: Matter.Body | null = null;
+  let dropzoneElement: HTMLElement | null = null;
+  let snapCandidate: CapsuleBody | null = null;
+  let snapPreviewState: SnapPreview | null = null;
+  let launchTimer: number | null = null;
 
   function stopAnimation() {
     if (animationFrameId !== null) {
@@ -46,8 +84,126 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     }
   }
 
+  function clearLaunchTimer() {
+    if (launchTimer !== null) {
+      window.clearTimeout(launchTimer);
+      launchTimer = null;
+    }
+  }
+
+  function clearSnapState() {
+    dropzoneElement?.classList.remove("is-snap-active", "is-snap-locked");
+    dropzoneElement?.style.removeProperty("--dropzone-magnet-x");
+    dropzoneElement?.style.removeProperty("--dropzone-magnet-y");
+    dropzoneElement?.style.removeProperty("--dropzone-magnet-scale");
+    for (const capsule of capsuleBodies) {
+      capsule.element.classList.remove("is-snap-preview", "is-snap-locked");
+    }
+    snapCandidate = null;
+    snapPreviewState = null;
+  }
+
+  function setDropzoneVisible(visible: boolean) {
+    dropzoneElement?.classList.toggle("is-dropzone-visible", visible);
+  }
+
+  function setSnapState(candidate: CapsuleBody | null, locked: boolean) {
+    snapCandidate = candidate;
+    dropzoneElement?.classList.toggle("is-snap-active", Boolean(candidate));
+    dropzoneElement?.classList.toggle("is-snap-locked", Boolean(candidate) && locked);
+
+    for (const capsule of capsuleBodies) {
+      const isCandidate = capsule === candidate;
+      capsule.element.classList.toggle("is-snap-preview", isCandidate);
+      capsule.element.classList.toggle("is-snap-locked", isCandidate && locked);
+    }
+  }
+
+  function setDropzoneMagnet(candidate: CapsuleBody, preview: SnapPreview) {
+    if (!dropzoneElement) {
+      return;
+    }
+
+    const targetPull = preview.strength * 0.12;
+    const offsetX = clamp((candidate.body.position.x - preview.targetX) * targetPull, -18, 18);
+    const offsetY = clamp((candidate.body.position.y - preview.targetY) * targetPull, -12, 12);
+
+    dropzoneElement.style.setProperty("--dropzone-magnet-x", `${offsetX.toFixed(2)}px`);
+    dropzoneElement.style.setProperty("--dropzone-magnet-y", `${offsetY.toFixed(2)}px`);
+    dropzoneElement.style.setProperty(
+      "--dropzone-magnet-scale",
+      (1 + preview.proximity * 0.045).toFixed(3),
+    );
+  }
+
+  function getCapsuleBody(body: Matter.Body | null) {
+    if (!body) {
+      return null;
+    }
+
+    return capsuleBodies.find((capsule) => capsule.body === body) ?? null;
+  }
+
+  function getSnapPreview(candidate: CapsuleBody) {
+    const container = sceneRef.value;
+    if (!container || !dropzoneElement) {
+      return null;
+    }
+
+    const dropzone = getDropzoneMetrics(container, dropzoneElement);
+    const targetX = dropzone.centerX;
+    const targetY = dropzone.centerY;
+    const distanceToCenter = Math.hypot(
+      candidate.body.position.x - dropzone.centerX,
+      candidate.body.position.y - dropzone.centerY,
+    );
+    const candidateLeft = candidate.body.position.x - candidate.width / 2;
+    const candidateRight = candidate.body.position.x + candidate.width / 2;
+    const candidateTop = candidate.body.position.y - candidate.height / 2;
+    const candidateBottom = candidate.body.position.y + candidate.height / 2;
+    const dropzoneRight = dropzone.localLeft + dropzone.width;
+    const dropzoneBottom = dropzone.localTop + dropzone.height;
+    const overlapX = Math.min(candidateRight, dropzoneRight) - Math.max(candidateLeft, dropzone.localLeft);
+    const overlapY = Math.min(candidateBottom, dropzoneBottom) - Math.max(candidateTop, dropzone.localTop);
+    const shouldSnap = overlapX > 0 && overlapY > 0;
+    const overlapDepth = shouldSnap
+      ? Math.min(
+          overlapX / Math.min(candidate.width, dropzone.width),
+          overlapY / Math.min(candidate.height, dropzone.height),
+        )
+      : 0;
+    const centerFalloff = clamp(
+      1 -
+        distanceToCenter /
+          Math.max(
+            Math.hypot(candidate.width, candidate.height),
+            Math.hypot(dropzone.width, dropzone.height),
+          ),
+      0,
+      1,
+    );
+    const proximity = shouldSnap ? clamp(Math.max(overlapDepth, centerFalloff), 0, 1) : 0;
+    const easedProximity = proximity * proximity * (3 - 2 * proximity);
+    const strength = shouldSnap
+      ? SNAP_VISUAL_MIN_STRENGTH +
+        easedProximity * (SNAP_VISUAL_MAX_STRENGTH - SNAP_VISUAL_MIN_STRENGTH)
+      : 0;
+
+    return {
+      locked: proximity > 0.82,
+      proximity,
+      shouldSnap,
+      strength,
+      targetX,
+      targetY,
+    };
+  }
+
   function cleanup() {
     stopAnimation();
+    clearLaunchTimer();
+    clearSnapState();
+    setDropzoneVisible(false);
     if (windowResizeHandler !== null) {
       window.removeEventListener("resize", windowResizeHandler);
       windowResizeHandler = null;
@@ -85,11 +241,19 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     accumulatedTime = 0;
     suppressNextClick = false;
     draggingBody = null;
+    dropzoneElement = null;
   }
 
   function syncBodies() {
     for (const capsule of capsuleBodies) {
-      capsule.element.style.transform = `translate(${capsule.body.position.x - capsule.width / 2}px, ${capsule.body.position.y - capsule.height / 2}px) rotate(${capsule.body.angle}rad)`;
+      const isDraggedCapsule = capsule.body === draggingBody;
+      const snapPreview =
+        isDraggedCapsule && capsule === snapCandidate ? snapPreviewState : null;
+      const snapProximity = snapPreview?.shouldSnap ? snapPreview.proximity : 0;
+      const angle = isDraggedCapsule && snapPreview?.shouldSnap ? 0 : capsule.body.angle;
+      const scale = snapProximity > 0 ? ` scale(${1 + snapProximity * 0.012})` : "";
+
+      capsule.element.style.transform = `translate(${capsule.body.position.x - capsule.width / 2}px, ${capsule.body.position.y - capsule.height / 2}px) rotate(${angle}rad)${scale}`;
     }
   }
 
@@ -178,12 +342,22 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
       accumulatedTime -= STEP_MS;
     }
 
-    // Smoothly rotate the grabbed capsule back to upright (angle → nearest 0)
+    // Keep the magnetic pull visual-only while Matter's mouse constraint owns the drag.
     if (draggingBody) {
+      const draggingCapsule = getCapsuleBody(draggingBody);
+      const snapPreview = draggingCapsule ? getSnapPreview(draggingCapsule) : null;
+      if (draggingCapsule && snapPreview?.shouldSnap) {
+        snapPreviewState = snapPreview;
+        setSnapState(draggingCapsule, snapPreview.locked);
+        setDropzoneMagnet(draggingCapsule, snapPreview);
+      } else {
+        clearSnapState();
+      }
+
       const angle = draggingBody.angle;
       const turns = Math.round(angle / (2 * Math.PI));
       const targetAngle = turns * 2 * Math.PI;
-      Matter.Body.setAngle(draggingBody, angle + (targetAngle - angle) * 0.12);
+      Matter.Body.setAngle(draggingBody, angle + (targetAngle - angle) * 0.14);
       Matter.Body.setAngularVelocity(draggingBody, 0);
     }
 
@@ -202,6 +376,7 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     const capsuleElements = Array.from(
       container.querySelectorAll<HTMLElement>("[data-author-capsule]"),
     );
+    dropzoneElement = container.querySelector<HTMLElement>("[data-author-dropzone]");
     if (capsuleElements.length === 0) {
       return;
     }
@@ -277,9 +452,7 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
 
     const gutter = Math.min(40, bounds.width * 0.06);
     const usableWidth = Math.max(1, bounds.width - gutter * 2);
-    let freeBodyIndex = 0;
-
-    capsuleBodies = capsuleElements.map((element) => {
+    capsuleBodies = capsuleElements.map((element, index) => {
       const initiallyStatic = element.hasAttribute("data-author-fixed");
       const isMobile = bounds.width < 768;
       const width = Math.max(element.offsetWidth, initiallyStatic ? 288 : isMobile ? 60 : 120);
@@ -297,9 +470,6 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
 
       const verticalSpread = bounds.height * 0.4;
       const y = initiallyStatic ? staticY : height / 2 + 10 + Math.random() * verticalSpread;
-      if (!initiallyStatic) {
-        freeBodyIndex += 1;
-      }
 
       const body = Matter.Bodies.rectangle(x, y, width, height, {
         isStatic: initiallyStatic,
@@ -329,6 +499,11 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
         released: !initiallyStatic,
         width,
         height,
+        skill: skills.value[index] ?? {
+          title: element.getAttribute("aria-label") ?? "",
+          color: "",
+          officialUrl: "",
+        },
       };
     });
 
@@ -373,17 +548,60 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
 
     Matter.Events.on(mouseConstraint, "startdrag", (event) => {
       const dragEvent = event as typeof event & { body: Matter.Body };
+      const draggingCapsule = getCapsuleBody(dragEvent.body);
+      clearLaunchTimer();
+      clearSnapState();
       suppressNextClick = true;
       draggingBody = dragEvent.body;
+      setDropzoneVisible(Boolean(draggingCapsule));
       setDraggingState(dragEvent.body, true);
     });
 
     Matter.Events.on(mouseConstraint, "enddrag", (event) => {
       const dragEvent = event as typeof event & { body: Matter.Body };
+      const draggingCapsule = getCapsuleBody(dragEvent.body);
+      const snapPreview = draggingCapsule ? getSnapPreview(draggingCapsule) : null;
+      const shouldLaunch = Boolean(draggingCapsule && snapPreview?.shouldSnap);
       draggingBody = null;
+      snapPreviewState = null;
       setDraggingState(dragEvent.body, false);
+
+      if (draggingCapsule && snapPreview?.shouldSnap) {
+        Matter.Body.setPosition(dragEvent.body, {
+          x: snapPreview.targetX,
+          y: snapPreview.targetY,
+        });
+        Matter.Body.setVelocity(dragEvent.body, { x: 0, y: 0 });
+        Matter.Body.setAngle(dragEvent.body, 0);
+        Matter.Body.setAngularVelocity(dragEvent.body, 0);
+        setSnapState(draggingCapsule, true);
+        syncBodies();
+
+        if (draggingCapsule.skill.officialUrl) {
+          clearLaunchTimer();
+          launchTimer = window.setTimeout(() => {
+            window.open(draggingCapsule.skill.officialUrl, "_blank", "noopener,noreferrer");
+            clearSnapState();
+            setDropzoneVisible(false);
+            clearLaunchTimer();
+          }, SNAP_OPEN_DELAY_MS);
+        } else {
+          window.setTimeout(() => {
+            clearSnapState();
+            setDropzoneVisible(false);
+          }, SNAP_OPEN_DELAY_MS);
+        }
+      } else {
+        clearSnapState();
+        setDropzoneVisible(false);
+      }
+
       window.setTimeout(() => {
         suppressNextClick = false;
+        if (shouldLaunch && draggingCapsule && !draggingCapsule.skill.officialUrl) {
+          clearSnapState();
+          setDropzoneVisible(false);
+        }
       }, 120);
     });
 
