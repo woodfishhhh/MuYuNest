@@ -1,19 +1,12 @@
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { defineComponent, ref } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { defineComponent } from "vue";
+import { beforeEach, describe, expect, it } from "vite-plus/test";
 
 import SiteNav from "@/components/layout/SiteNav.vue";
+import { useTheme } from "@/composables/useTheme";
 import { useSiteStore } from "@/stores/site";
-
-const toggleThemeAtMock = vi.fn();
-
-vi.mock("@/composables/useTheme", () => ({
-  useTheme: () => ({
-    theme: ref<"night" | "day">("night"),
-    toggleThemeAt: toggleThemeAtMock,
-  }),
-}));
+import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const RouterLinkStub = defineComponent({
   name: "RouterLink",
@@ -48,7 +41,8 @@ const ThemeToggleStub = defineComponent({
 
 describe("SiteNav", () => {
   beforeEach(() => {
-    toggleThemeAtMock.mockReset();
+    window.localStorage.setItem("vuecubeblog-theme", "night");
+    useTheme().initializeTheme();
     setActivePinia(createPinia());
   });
 
@@ -92,7 +86,18 @@ describe("SiteNav", () => {
     expect(wrapper.find("[data-nav-theme-toggle='mobile']").exists()).toBe(true);
   });
 
-  it("clicking theme toggle calls handler path without changing active nav state", async () => {
+  it("renders a visible Travellings entry beside the brand", () => {
+    const wrapper = mountNav();
+    const travellings = wrapper.get("[data-testid='nav-travellings']");
+
+    expect(travellings.text()).toBe("开往");
+    expect(travellings.attributes("href")).toBe(TRAVELLINGS_URL);
+    expect(travellings.attributes("aria-label")).toBe(TRAVELLINGS_TITLE);
+    expect(travellings.attributes("target")).toBe("_blank");
+    expect(travellings.attributes("rel")).toContain("noopener");
+  });
+
+  it("clicking theme toggle changes theme without changing active nav state", async () => {
     const siteStore = useSiteStore();
     siteStore.goBlog();
 
@@ -101,7 +106,7 @@ describe("SiteNav", () => {
 
     await wrapper.get("[data-nav-theme-toggle='desktop']").trigger("click");
 
-    expect(toggleThemeAtMock).toHaveBeenCalledWith(111, 222);
+    expect(document.documentElement.dataset.theme).toBe("day");
     expect(siteStore.mode).toBe(beforeMode);
   });
 });

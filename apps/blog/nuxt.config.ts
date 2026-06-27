@@ -113,6 +113,7 @@ export default defineNuxtConfig({
       ],
       meta: [
         { name: "description", content: "木鱼的鱼窝 | Vue-powered immersive 3D blog experience." },
+        { name: "travellings", content: "https://www.travellings.cn/go.html" },
         { name: "theme-color", content: "#050510" },
         { property: "og:type", content: "website" },
         { property: "og:title", content: "木鱼的鱼窝 | WoodFishNest" },

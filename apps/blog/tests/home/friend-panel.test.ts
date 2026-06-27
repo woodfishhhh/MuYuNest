@@ -5,6 +5,7 @@ import { nextTick } from "vue";
 import FriendPanel from "@/components/home/FriendPanel.vue";
 import FriendLinkApplicationForm from "@/components/home/friend/FriendLinkApplicationForm.vue";
 import FriendLinkCard from "@/components/home/friend/FriendLinkCard.vue";
+import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const links = [
   {
@@ -134,6 +135,22 @@ describe("FriendPanel", () => {
 
     expect(openSpy).toHaveBeenCalledWith("https://blog.mohao.me/", "_blank", "noopener,noreferrer");
     randomSpy.mockRestore();
+  });
+
+  it("renders a Travellings button beside the random friend action", () => {
+    const wrapper = mount(FriendPanel, {
+      props: {
+        links,
+      },
+    });
+    const travellings = wrapper.get("[data-testid='friend-travellings']");
+
+    expect(wrapper.get("[data-testid='friend-random-visit']").text()).toBe("随机前往");
+    expect(travellings.text()).toBe("开往");
+    expect(travellings.attributes("href")).toBe(TRAVELLINGS_URL);
+    expect(travellings.attributes("aria-label")).toBe(TRAVELLINGS_TITLE);
+    expect(travellings.attributes("target")).toBe("_blank");
+    expect(travellings.attributes("rel")).toContain("noopener");
   });
 
   it("opens and closes the mobile application drawer", async () => {

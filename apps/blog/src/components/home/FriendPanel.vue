@@ -4,6 +4,7 @@ import { computed, shallowRef } from "vue";
 import FriendLinkApplicationForm from "@/components/home/friend/FriendLinkApplicationForm.vue";
 import FriendLinkGrid from "@/components/home/friend/FriendLinkGrid.vue";
 import type { FriendLinkData } from "@/types/content";
+import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const props = defineProps<{
   links: FriendLinkData[];
@@ -130,16 +131,18 @@ function visitRandomFriend() {
             type="button"
             @click="visitRandomFriend"
           >
-            随机访问
+            随机前往
           </button>
           <a
             data-testid="friend-travellings"
             class="friend-links-pane__travellings"
-            href="https://www.travellings.cn/go.html"
+            :href="TRAVELLINGS_URL"
+            :aria-label="TRAVELLINGS_TITLE"
+            :title="TRAVELLINGS_TITLE"
             target="_blank"
             rel="noopener noreferrer"
           >
-            🚇 开往
+            开往
           </a>
           <span class="friend-links-pane__count">{{ props.links.length }} 个站点</span>
         </div>
