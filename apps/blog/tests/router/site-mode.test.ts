@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { getRouteLocationForSiteMode, resolveSiteModeFromRoute } from "@/router/site-mode";
+import { getRouteLocationForSiteMode, resolveSiteModeFromRoute } from "@/utils/site-mode";
 
 describe("site-mode routing helpers", () => {
   it("maps home panel route names back to site modes", () => {

@@ -1,48 +1,58 @@
-import { describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vitest";
 
-const rendererInstances: MockWebGLRenderer[] = [];
+const threeMock = vi.hoisted(() => {
+  class MockWebGLRenderer {
+    readonly options: Record<string, unknown>;
+    clearColorAlpha: number | undefined;
 
-class MockWebGLRenderer {
-  readonly options: Record<string, unknown>;
-  clearColorAlpha: number | undefined;
+    constructor(options: Record<string, unknown>) {
+      this.options = options;
+      rendererInstances.push(this);
+    }
 
-  constructor(options: Record<string, unknown>) {
-    this.options = options;
-    rendererInstances.push(this);
+    dispose() {}
+    forceContextLoss() {}
+    render() {}
+    setClearColor(_color: unknown, alpha?: number) {
+      this.clearColorAlpha = alpha;
+    }
+    setPixelRatio() {}
+    setSize() {}
   }
 
-  dispose() {}
-  forceContextLoss() {}
-  render() {}
-  setClearColor(_color: unknown, alpha?: number) {
-    this.clearColorAlpha = alpha;
-  }
-  setPixelRatio() {}
-  setSize() {}
-}
-
-class MockScene {
-  background: unknown = undefined;
-  add() {}
-  clear() {}
-}
-
-class MockPerspectiveCamera {
-  aspect: number;
-
-  constructor(_fov: number, aspect: number) {
-    this.aspect = aspect;
+  class MockScene {
+    background: unknown = undefined;
+    add() {}
+    clear() {}
   }
 
-  updateProjectionMatrix() {}
-}
+  class MockPerspectiveCamera {
+    aspect: number;
 
-class MockLight {
-  readonly position = { set() {} };
-}
+    constructor(_fov: number, aspect: number) {
+      this.aspect = aspect;
+    }
+
+    updateProjectionMatrix() {}
+  }
+
+  class MockLight {
+    readonly position = { set() {} };
+  }
+
+  const rendererInstances: MockWebGLRenderer[] = [];
+
+  return {
+    MockLight,
+    MockPerspectiveCamera,
+    MockScene,
+    MockWebGLRenderer,
+    rendererInstances,
+  };
+});
 
 vi.mock("three", () => ({
-  AmbientLight: MockLight,
+  AmbientLight: threeMock.MockLight,
   Color: class MockColor {
     readonly value: string;
 
@@ -50,11 +60,11 @@ vi.mock("three", () => ({
       this.value = value;
     }
   },
-  PerspectiveCamera: MockPerspectiveCamera,
-  PointLight: MockLight,
-  Scene: MockScene,
-  SpotLight: MockLight,
-  WebGLRenderer: MockWebGLRenderer,
+  PerspectiveCamera: threeMock.MockPerspectiveCamera,
+  PointLight: threeMock.MockLight,
+  Scene: threeMock.MockScene,
+  SpotLight: threeMock.MockLight,
+  WebGLRenderer: threeMock.MockWebGLRenderer,
 }));
 
 describe("useThreeScene", () => {
@@ -68,8 +78,8 @@ describe("useThreeScene", () => {
       width: 800,
     });
 
-    expect(rendererInstances.at(-1)?.options.alpha).toBe(true);
-    expect(rendererInstances.at(-1)?.clearColorAlpha).toBe(0);
+    expect(threeMock.rendererInstances.at(-1)?.options.alpha).toBe(true);
+    expect(threeMock.rendererInstances.at(-1)?.clearColorAlpha).toBe(0);
     expect(scene.scene.background).toBeNull();
   });
 });

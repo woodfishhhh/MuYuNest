@@ -1,28 +1,31 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { defineComponent, ref } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { defineComponent } from "vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomeView from "@/views/HomeView.vue";
 import { useSiteStore } from "@/stores/site";
 
-const hydrateMock = vi.fn();
-const total = ref<number | null>(32);
-const isLoading = ref(false);
-const hasError = ref(false);
+const visitorMock = vi.hoisted(() => ({
+  hasError: { __v_isRef: true, value: false },
+  hydrateMock: vi.fn(),
+  isLoading: { __v_isRef: true, value: false },
+  theme: { __v_isRef: true, value: "night" as "night" | "day" },
+  total: { __v_isRef: true, value: 32 as number | null },
+}));
 
 vi.mock("@/composables/useVisitorCount", () => ({
   useVisitorCount: () => ({
-    total,
-    isLoading,
-    hasError,
-    hydrate: hydrateMock,
+    total: visitorMock.total,
+    isLoading: visitorMock.isLoading,
+    hasError: visitorMock.hasError,
+    hydrate: visitorMock.hydrateMock,
   }),
 }));
 
 vi.mock("@/composables/useTheme", () => ({
   useTheme: () => ({
-    theme: ref<"night" | "day">("night"),
+    theme: visitorMock.theme,
   }),
 }));
 
@@ -55,10 +58,11 @@ const ReadingOverlayStub = defineComponent({
 
 describe("HomeView", () => {
   beforeEach(() => {
-    hydrateMock.mockReset();
-    total.value = 32;
-    isLoading.value = false;
-    hasError.value = false;
+    visitorMock.hydrateMock.mockReset();
+    visitorMock.total.value = 32;
+    visitorMock.isLoading.value = false;
+    visitorMock.hasError.value = false;
+    visitorMock.theme.value = "night";
     setActivePinia(createPinia());
   });
 
@@ -79,7 +83,7 @@ describe("HomeView", () => {
     const wrapper = mountHomeView();
     await flushPromises();
 
-    expect(hydrateMock).toHaveBeenCalledTimes(1);
+    expect(visitorMock.hydrateMock).toHaveBeenCalledTimes(1);
     expect(wrapper.get("[data-testid='visitor-count-badge']").text()).toContain("32");
   });
 
