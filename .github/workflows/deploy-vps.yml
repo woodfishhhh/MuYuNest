@@ -89,7 +89,7 @@ jobs:
           test -f apps/blog/dist/manifest.webmanifest
           test -d apps/blog/dist/assets
 
-      - name: Resolve blog dist artifact URL
+      - name: Resolve blog dist artifact
         id: blog-artifact
         env:
           GH_TOKEN: ${{ github.token }}
@@ -102,13 +102,7 @@ jobs:
           )"
           test -n "$artifact_id"
 
-          download_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${artifact_id}/zip"
-
-          {
-            echo "url<<EOF"
-            echo "$download_url"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "id=$artifact_id" >> "$GITHUB_OUTPUT"
 
       - name: Configure SSH
         run: |
@@ -118,28 +112,46 @@ jobs:
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Download and stage site artifact
-        timeout-minutes: 45
+        timeout-minutes: 20
         env:
-          ARTIFACT_URL: ${{ steps.blog-artifact.outputs.url }}
+          ARTIFACT_ID: ${{ steps.blog-artifact.outputs.id }}
+          ARTIFACT_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || github.run_id }}
           GH_TOKEN: ${{ github.token }}
         run: |
           ssh_dest="${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
           remote_next="${{ env.DEPLOY_DIR }}.next.${{ github.run_id }}"
-          remote_zip="${{ env.DEPLOY_REMOTE_ZIP }}"
+          remote_archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
+          local_dist="${RUNNER_TEMP}/blog-dist"
+          local_archive="${RUNNER_TEMP}/blog-dist-${{ github.run_id }}.tar.gz"
           ssh_options=(
             -o BatchMode=yes
             -o ConnectTimeout=20
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
-          artifact_url_b64="$(printf '%s' "$ARTIFACT_URL" | base64 -w0)"
-          artifact_token_b64="$(printf '%s' "$GH_TOKEN" | base64 -w0)"
+
+          test -n "$ARTIFACT_ID"
+          rm -rf "$local_dist"
+          mkdir -p "$local_dist"
+          gh run download "$ARTIFACT_RUN_ID" --name blog-dist --dir "$local_dist"
+          test -f "$local_dist/index.html"
+          test -d "$local_dist/assets"
+          tar -C "$local_dist" -czf "$local_archive" .
 
           # shellcheck disable=SC2029
-          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_zip'"
+          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_archive'"
+
+          timeout 600s scp \
+            -C \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
+            "$local_archive" \
+            "$ssh_dest:$remote_archive"
 
           # shellcheck disable=SC2029
-          timeout 2700s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; artifact_url=\"\$(printf '%s' '$artifact_url_b64' | base64 -d)\"; artifact_token=\"\$(printf '%s' '$artifact_token_b64' | base64 -d)\"; rm -f '$remote_zip'; curl -fL --retry 8 --retry-all-errors --retry-delay 10 --connect-timeout 20 --max-time 2400 -C - -H \"Authorization: Bearer \$artifact_token\" -H \"Accept: application/vnd.github+json\" -o '$remote_zip' \"\$artifact_url\"; if command -v unzip >/dev/null 2>&1; then unzip -tq '$remote_zip'; unzip -q '$remote_zip' -d '$remote_next'; else python3 -m zipfile -e '$remote_zip' '$remote_next'; fi; rm -f '$remote_zip'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; tar -xzf '$remote_archive' -C '$remote_next'; rm -f '$remote_archive'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
 
       - name: Upload nginx config
         run: |
