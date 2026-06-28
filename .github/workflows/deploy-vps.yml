@@ -126,9 +126,27 @@ jobs:
           ssh_options=(
             -o BatchMode=yes
             -o ConnectTimeout=20
+            -o ConnectionAttempts=5
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
+          retry() {
+            local attempt=1
+            local max_attempts=5
+            local delay=8
+
+            until "$@"; do
+              local exit_code=$?
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                return "$exit_code"
+              fi
+
+              echo "Command failed with exit code ${exit_code}; retrying in ${delay}s (${attempt}/${max_attempts})" >&2
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
 
           test -n "$ARTIFACT_ID"
           rm -rf "$local_dist"
@@ -139,19 +157,20 @@ jobs:
           tar -C "$local_dist" -czf "$local_archive" .
 
           # shellcheck disable=SC2029
-          timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_archive'"
+          retry timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_archive'"
 
-          timeout 600s scp \
+          retry timeout 600s scp \
             -C \
             -o BatchMode=yes \
             -o ConnectTimeout=20 \
+            -o ConnectionAttempts=5 \
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4 \
             "$local_archive" \
             "$ssh_dest:$remote_archive"
 
           # shellcheck disable=SC2029
-          timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; tar -xzf '$remote_archive' -C '$remote_next'; rm -f '$remote_archive'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          retry timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; tar -xzf '$remote_archive' -C '$remote_next'; rm -f '$remote_archive'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
 
       - name: Upload nginx config
         run: |
