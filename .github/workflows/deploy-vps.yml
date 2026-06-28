@@ -31,10 +31,6 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VITE_BASE_PATH: /newBlog/
       DEPLOY_URL: https://woodfish.site/newBlog/
-      DEPLOY_ARCHIVE: vue-three-blog-${{ github.run_id }}.tar.gz
-      DEPLOY_REMOTE_ARCHIVE: /tmp/vue-three-blog-${{ github.run_id }}.tar.gz
-      DEPLOY_REMOTE_ZIP: /tmp/vue-three-blog-${{ github.run_id }}.zip
-      DEPLOY_REMOTE_CHUNKS: /tmp/vue-three-blog-${{ github.run_id }}-chunks
       DEPLOY_DIR: ${{ secrets.DEPLOY_DIR || '/opt/blog-stack/sites/newBlog' }}
       DEPLOY_CONTAINER: blog-nginx
 
@@ -119,10 +115,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ssh_dest="${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
+          target_dir="${{ env.DEPLOY_DIR }}"
           remote_next="${{ env.DEPLOY_DIR }}.next.${{ github.run_id }}"
-          remote_archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
           local_dist="${RUNNER_TEMP}/blog-dist"
-          local_archive="${RUNNER_TEMP}/blog-dist-${{ github.run_id }}.tar.gz"
           ssh_options=(
             -o BatchMode=yes
             -o ConnectTimeout=20
@@ -154,23 +149,23 @@ jobs:
           gh run download "$ARTIFACT_RUN_ID" --name blog-dist --dir "$local_dist"
           test -f "$local_dist/index.html"
           test -d "$local_dist/assets"
-          tar -C "$local_dist" -czf "$local_archive" .
+          rsync_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
           # shellcheck disable=SC2029
-          retry timeout 60s ssh -T "${ssh_options[@]}" "$ssh_dest" "case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; rm -f '$remote_archive'"
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; if [ -d '$target_dir' ]; then cp -a '$target_dir/.' '$remote_next/'; fi; command -v rsync >/dev/null"
 
-          retry timeout 600s scp \
-            -C \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            -o ConnectionAttempts=5 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            "$local_archive" \
-            "$ssh_dest:$remote_archive"
+          retry timeout 900s rsync \
+            -az \
+            --delete \
+            --partial \
+            --delay-updates \
+            --info=stats2,progress2 \
+            -e "$rsync_ssh" \
+            "$local_dist/" \
+            "$ssh_dest:$remote_next/"
 
           # shellcheck disable=SC2029
-          retry timeout 300s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; tar -xzf '$remote_archive' -C '$remote_next'; rm -f '$remote_archive'; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
 
       - name: Upload nginx config
         run: |
@@ -186,7 +181,6 @@ jobs:
           ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" <<EOF
           set -eu
 
-          archive="${{ env.DEPLOY_REMOTE_ARCHIVE }}"
           target_dir="${{ env.DEPLOY_DIR }}"
           base_path="${{ env.VITE_BASE_PATH }}"
           container="${{ env.DEPLOY_CONTAINER }}"
@@ -251,7 +245,6 @@ jobs:
             exit 1
           fi
 
-          rm -f "\$archive"
           rm -rf "\$backup_dir"
           rm -f "\$config_backup"
           rm -f /tmp/default.conf
