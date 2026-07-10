@@ -9,9 +9,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 
 const matterState: {
   bodies: Array<Record<string, any>>;
+  mouse: Record<string, any> | null;
   mouseConstraint: Record<string, any> | null;
 } = {
   bodies: [],
+  mouse: null,
   mouseConstraint: null,
 };
 
@@ -51,6 +53,7 @@ describe("useMatterCapsules", () => {
 
   beforeEach(async () => {
     matterState.bodies = [];
+    matterState.mouse = null;
     matterState.mouseConstraint = null;
     openSpy.mockClear();
     setPositionSpy.mockClear();
@@ -126,11 +129,28 @@ describe("useMatterCapsules", () => {
           update: () => {},
         },
         Mouse: {
-          create: (element: HTMLElement) => ({
-            element,
-            mousewheel: () => {},
-            pixelRatio: 1,
-          }),
+          create: (element: HTMLElement) => {
+            const mouse = {
+              element,
+              mousedown: vi.fn(),
+              mousemove: vi.fn(),
+              mouseup: vi.fn(),
+              mousewheel: vi.fn(),
+              pixelRatio: 1,
+            };
+
+            element.addEventListener("mousemove", mouse.mousemove, { passive: true });
+            element.addEventListener("mousedown", mouse.mousedown, { passive: true });
+            element.addEventListener("mouseup", mouse.mouseup, { passive: true });
+            element.addEventListener("wheel", mouse.mousewheel, { passive: false });
+            element.addEventListener("touchmove", mouse.mousemove, { passive: false });
+            element.addEventListener("touchstart", mouse.mousedown, { passive: false });
+            element.addEventListener("touchend", mouse.mouseup, { passive: false });
+
+            matterState.mouse = mouse;
+            return mouse;
+          },
+          clearSourceEvents: () => {},
           setOffset: () => {},
         },
         MouseConstraint: {
@@ -431,5 +451,85 @@ describe("useMatterCapsules", () => {
 
     expect(dropzone.element.classList.contains("is-dropzone-visible")).toBe(false);
     expect(openSpy).not.toHaveBeenCalled();
+  });
+
+  it("detaches the previous Matter mouse listeners before rebuilding after resize", async () => {
+    const wrapper = mount(Harness);
+    await nextTick();
+    await nextTick();
+
+    const firstMouse = matterState.mouse;
+    expect(firstMouse).toBeTruthy();
+
+    window.dispatchEvent(new Event("resize"));
+    await vi.advanceTimersByTimeAsync(200);
+    await nextTick();
+
+    const currentMouse = matterState.mouse;
+    expect(currentMouse).not.toBe(firstMouse);
+    firstMouse?.mousemove.mockClear();
+    firstMouse?.mousedown.mockClear();
+    firstMouse?.mouseup.mockClear();
+    firstMouse?.mousewheel.mockClear();
+
+    const scene = wrapper.get<HTMLElement>("[data-scene]").element;
+    scene.dispatchEvent(new Event("mousemove"));
+    scene.dispatchEvent(new Event("mousedown"));
+    scene.dispatchEvent(new Event("mouseup"));
+    scene.dispatchEvent(new Event("wheel", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchmove", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchstart", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchend", { cancelable: true }));
+
+    expect(firstMouse?.mousemove).not.toHaveBeenCalled();
+    expect(firstMouse?.mousedown).not.toHaveBeenCalled();
+    expect(firstMouse?.mouseup).not.toHaveBeenCalled();
+    expect(firstMouse?.mousewheel).not.toHaveBeenCalled();
+  });
+
+  it("leaves wheel scrolling to the page because capsule dragging does not use it", async () => {
+    const wrapper = mount(Harness);
+    await nextTick();
+    await nextTick();
+
+    const scene = wrapper.get<HTMLElement>("[data-scene]").element;
+    const currentMouse = matterState.mouse;
+    expect(currentMouse).toBeTruthy();
+    currentMouse?.mousewheel.mockClear();
+
+    const wheelEvent = new Event("wheel", { cancelable: true });
+    scene.dispatchEvent(wheelEvent);
+
+    expect(currentMouse?.mousewheel).not.toHaveBeenCalled();
+    expect(wheelEvent.defaultPrevented).toBe(false);
+  });
+
+  it("detaches the current Matter mouse listeners when the composable unmounts", async () => {
+    const wrapper = mount(Harness);
+    await nextTick();
+    await nextTick();
+
+    const scene = wrapper.get<HTMLElement>("[data-scene]").element;
+    const currentMouse = matterState.mouse;
+    expect(currentMouse).toBeTruthy();
+    currentMouse?.mousemove.mockClear();
+    currentMouse?.mousedown.mockClear();
+    currentMouse?.mouseup.mockClear();
+    currentMouse?.mousewheel.mockClear();
+
+    wrapper.unmount();
+
+    scene.dispatchEvent(new Event("mousemove"));
+    scene.dispatchEvent(new Event("mousedown"));
+    scene.dispatchEvent(new Event("mouseup"));
+    scene.dispatchEvent(new Event("wheel", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchmove", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchstart", { cancelable: true }));
+    scene.dispatchEvent(new Event("touchend", { cancelable: true }));
+
+    expect(currentMouse?.mousemove).not.toHaveBeenCalled();
+    expect(currentMouse?.mousedown).not.toHaveBeenCalled();
+    expect(currentMouse?.mouseup).not.toHaveBeenCalled();
+    expect(currentMouse?.mousewheel).not.toHaveBeenCalled();
   });
 });

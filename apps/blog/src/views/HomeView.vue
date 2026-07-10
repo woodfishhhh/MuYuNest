@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  useTemplateRef,
+  watch,
+} from "vue";
 
 import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
 import SlideController from "@/components/home/SlideController.vue";
@@ -18,6 +26,7 @@ const WorksPanel = defineAsyncComponent(() => import("@/components/home/WorksPan
 const siteStore = useSiteStore();
 const { theme } = useTheme();
 const currentMode = computed(() => siteStore.mode);
+const blogScrollContainerRef = useTemplateRef<HTMLElement>("blogScrollContainer");
 const { posts, author, friendLinks, works, isPostsLoading, isAuthorLoading, isFriendLinksLoading } =
   useHomePanels(currentMode);
 
@@ -31,9 +40,137 @@ const {
   hasError: visitorCountError,
   hydrate: hydrateVisitorCount,
 } = useVisitorCount();
+const MAX_BLOG_SCROLL_RESTORE_FRAMES = 120;
+let pendingBlogScrollTop: number | null = null;
+let blogScrollRestoreFrame: number | null = null;
+let blogScrollRestoreFrameCount = 0;
+
+function clearPendingBlogScrollRestore() {
+  if (blogScrollRestoreFrame !== null) {
+    cancelAnimationFrame(blogScrollRestoreFrame);
+  }
+
+  blogScrollRestoreFrame = null;
+  blogScrollRestoreFrameCount = 0;
+  pendingBlogScrollTop = null;
+}
+
+function finishBlogScrollRestore(container: HTMLElement, target: number) {
+  const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  if (target > maxScrollTop + 1) {
+    return false;
+  }
+
+  const expectedScrollTop = Math.min(target, maxScrollTop);
+  if (Math.abs(container.scrollTop - expectedScrollTop) > 1) {
+    return false;
+  }
+
+  clearPendingBlogScrollRestore();
+  siteStore.setBlogScrollTop(container.scrollTop);
+  return true;
+}
+
+function scheduleBlogScrollRestore(target: number) {
+  if (
+    blogScrollRestoreFrame !== null ||
+    blogScrollRestoreFrameCount >= MAX_BLOG_SCROLL_RESTORE_FRAMES
+  ) {
+    return;
+  }
+
+  blogScrollRestoreFrame = requestAnimationFrame(() => {
+    blogScrollRestoreFrame = null;
+    blogScrollRestoreFrameCount += 1;
+    attemptBlogScrollRestore(target);
+  });
+}
+
+function attemptBlogScrollRestore(target: number) {
+  if (pendingBlogScrollTop !== target || currentMode.value !== "blog") {
+    return;
+  }
+
+  const container = blogScrollContainerRef.value;
+  if (!container) {
+    scheduleBlogScrollRestore(target);
+    return;
+  }
+
+  container.scrollTo({ top: target, behavior: "auto" });
+  if (!finishBlogScrollRestore(container, target)) {
+    scheduleBlogScrollRestore(target);
+  }
+}
+
+async function replayPendingBlogScrollPosition() {
+  const target = pendingBlogScrollTop;
+  if (target === null || currentMode.value !== "blog") {
+    return;
+  }
+
+  await nextTick();
+
+  attemptBlogScrollRestore(target);
+}
+
+function saveBlogScrollPosition() {
+  const container = blogScrollContainerRef.value;
+  if (container && pendingBlogScrollTop === null) {
+    siteStore.setBlogScrollTop(container.scrollTop);
+  }
+}
+
+function cancelPendingBlogScrollRestore() {
+  clearPendingBlogScrollRestore();
+  saveBlogScrollPosition();
+}
+
+function handleBlogScroll(event: Event) {
+  const container = event.currentTarget as HTMLElement;
+  if (pendingBlogScrollTop !== null) {
+    finishBlogScrollRestore(container, pendingBlogScrollTop);
+    return;
+  }
+
+  siteStore.setBlogScrollTop(container.scrollTop);
+}
+
+watch(
+  currentMode,
+  async (nextMode, previousMode) => {
+    if (previousMode === "blog") {
+      saveBlogScrollPosition();
+    }
+
+    if (nextMode === "blog") {
+      clearPendingBlogScrollRestore();
+      pendingBlogScrollTop = siteStore.blogScrollTop > 0 ? siteStore.blogScrollTop : null;
+      await replayPendingBlogScrollPosition();
+    } else {
+      clearPendingBlogScrollRestore();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  [() => posts.value.length, () => isPostsLoading.value],
+  () => {
+    if (currentMode.value === "blog" && pendingBlogScrollTop !== null) {
+      void replayPendingBlogScrollPosition();
+    }
+  },
+  { flush: "post" },
+);
 
 onMounted(() => {
   void hydrateVisitorCount();
+});
+
+onBeforeUnmount(() => {
+  saveBlogScrollPosition();
+  clearPendingBlogScrollRestore();
 });
 </script>
 
@@ -41,7 +178,7 @@ onMounted(() => {
   <main data-home-stage class="relative min-h-screen overflow-hidden text-[var(--stage-fg)]">
     <SiteNav />
 
-    <SlideController>
+    <SlideController :blog-scroll-container="blogScrollContainerRef">
       <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
         <Transition name="home-hint" mode="out-in">
           <div v-if="homeHint" class="pointer-events-auto absolute bottom-8 flex w-full justify-center">
@@ -79,10 +216,16 @@ onMounted(() => {
 
         <div
           v-if="siteStore.mode === 'blog'"
+          ref="blogScrollContainer"
+          data-blog-scroll-container
           data-panel-layer="blog"
           data-panel-active="true"
           data-testid="blog-panel-overlay"
           class="stage-panel-gradient stage-panel-gradient--blog pointer-events-auto absolute inset-0 h-full w-full overflow-y-auto overscroll-contain p-4 pt-20 sm:p-6 sm:pt-24 md:p-8 md:pt-24 md:pl-16 lg:p-10 lg:pt-24 lg:pl-20"
+          @pointerdown.capture="cancelPendingBlogScrollRestore"
+          @scroll.passive="handleBlogScroll"
+          @touchstart.capture.passive="cancelPendingBlogScrollRestore"
+          @wheel.capture.passive="cancelPendingBlogScrollRestore"
         >
           <div class="flex min-h-full w-full flex-col justify-start">
             <PostPanel v-if="posts.length > 0" :posts="posts" />

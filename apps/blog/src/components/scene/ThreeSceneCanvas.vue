@@ -109,7 +109,7 @@ let circleTexture: THREE.CanvasTexture | null = null;
 let reducedMotionQuery: MediaQueryList | null = null;
 let prefersReducedMotion = false;
 let suppressNextCanvasClick = false;
-// let sceneDisposed = false;
+let sceneDisposed = false;
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -473,7 +473,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
 
 onMounted(async () => {
   if (!container.value || !canvasRef.value) return;
-  // sceneDisposed = false;
+  sceneDisposed = false;
 
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
@@ -521,8 +521,19 @@ onMounted(async () => {
   });
   threeScene.scene.add(worksOrbitCards.group);
 
+  const mountedScene = threeScene;
   const { TrackballControls } = await import("three/examples/jsm/controls/TrackballControls.js");
-  controls = new TrackballControls(threeScene.camera, threeScene.renderer.domElement);
+  if (sceneDisposed || threeScene !== mountedScene || !container.value || !canvasRef.value) {
+    return;
+  }
+
+  const nextControls = new TrackballControls(mountedScene.camera, mountedScene.renderer.domElement);
+  if (sceneDisposed || threeScene !== mountedScene || !container.value || !canvasRef.value) {
+    nextControls.dispose();
+    return;
+  }
+
+  controls = nextControls;
   controls.noZoom = false;
   controls.noPan = true;
   controls.rotateSpeed = 2;
@@ -712,7 +723,7 @@ watch(theme, (nextTheme) => {
 });
 
 onBeforeUnmount(() => {
-  // sceneDisposed = true;
+  sceneDisposed = true;
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
   if (container.value) container.value.removeEventListener("pointermove", handlePointerMove);

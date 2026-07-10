@@ -9,6 +9,65 @@ interface UseAuthorSliderOptions {
 const WHEEL_THRESHOLD = 42;
 const TOUCH_THRESHOLD = 56;
 const SLIDE_DURATION = 0.92;
+const SCROLL_EDGE_EPSILON = 1;
+
+interface ScrollableAncestorState {
+  clientHeight: number;
+  scrollHeight: number;
+  scrollTop: number;
+}
+
+function getTargetElement(target: EventTarget | null) {
+  if (target instanceof Element) {
+    return target;
+  }
+
+  return target instanceof Node ? target.parentElement : null;
+}
+
+function getScrollableAncestorStates(
+  target: EventTarget | null,
+  boundary: HTMLElement | null,
+): ScrollableAncestorState[] {
+  let element = getTargetElement(target);
+  if (!element || (boundary && !boundary.contains(element))) {
+    return [];
+  }
+
+  const states: ScrollableAncestorState[] = [];
+  while (element) {
+    const style = window.getComputedStyle(element);
+    const isScrollable = /^(auto|scroll|overlay)$/.test(style.overflowY);
+
+    if (isScrollable && element.scrollHeight > element.clientHeight + SCROLL_EDGE_EPSILON) {
+      states.push({
+        clientHeight: element.clientHeight,
+        scrollHeight: element.scrollHeight,
+        scrollTop: element.scrollTop,
+      });
+    }
+
+    if (element === boundary) {
+      break;
+    }
+    element = element.parentElement;
+  }
+
+  return states;
+}
+
+function canScrollableStateConsumeGesture(state: ScrollableAncestorState, deltaY: number) {
+  if (deltaY > 0) {
+    const maxScrollTop = state.scrollHeight - state.clientHeight;
+    return state.scrollTop < maxScrollTop - SCROLL_EDGE_EPSILON;
+  }
+
+  return deltaY < 0 && state.scrollTop > SCROLL_EDGE_EPSILON;
+}
+
+function canScrollableStatesConsumeGesture(states: ScrollableAncestorState[], deltaY: number) {
+  return states.some((state) => canScrollableStateConsumeGesture(state, deltaY));
+}
 
 export function stepAuthorSlideIndex(currentIndex: number, direction: -1 | 1, totalSlides: number) {
   return Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
@@ -21,6 +80,7 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   let gestureLocked = false;
   let touchStartY = 0;
   let touchStartTarget: EventTarget | null = null;
+  let touchStartScrollableStates: ScrollableAncestorState[] = [];
   let unlockTimer: number | null = null;
 
   function getSlides() {
@@ -129,6 +189,11 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
       return;
     }
 
+    const scrollableStates = getScrollableAncestorStates(event.target, viewportRef.value);
+    if (canScrollableStatesConsumeGesture(scrollableStates, event.deltaY)) {
+      return;
+    }
+
     event.preventDefault();
     step(event.deltaY > 0 ? 1 : -1);
   }
@@ -136,11 +201,14 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   function handleTouchStart(event: TouchEvent) {
     touchStartY = event.touches[0]?.clientY ?? 0;
     touchStartTarget = event.target;
+    touchStartScrollableStates = getScrollableAncestorStates(event.target, viewportRef.value);
   }
 
   function handleTouchEnd(event: TouchEvent) {
     const target = touchStartTarget;
+    const scrollableStates = touchStartScrollableStates;
     touchStartTarget = null;
+    touchStartScrollableStates = [];
 
     // If the touch started on a physics capsule, the user was dragging it — suppress page navigation.
     if (target instanceof Element && target.closest("[data-author-capsule]")) {
@@ -150,6 +218,10 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
     const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
     const deltaY = touchStartY - touchEndY;
     if (Math.abs(deltaY) < TOUCH_THRESHOLD) {
+      return;
+    }
+
+    if (canScrollableStatesConsumeGesture(scrollableStates, deltaY)) {
       return;
     }
 
@@ -174,6 +246,7 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
     transitionTween = null;
     gestureLocked = false;
     touchStartTarget = null;
+    touchStartScrollableStates = [];
     if (unlockTimer !== null) {
       window.clearTimeout(unlockTimer);
       unlockTimer = null;

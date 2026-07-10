@@ -8,6 +8,7 @@ interface SiteState {
   mode: SiteMode;
   isFocusing: boolean;
   activePostSlug: string | null;
+  blogScrollTop: number;
   cubeStep: number;
   worksViewMode: WorksViewMode;
 }
@@ -17,6 +18,7 @@ export const useSiteStore = defineStore("site", {
     mode: "home",
     isFocusing: false,
     activePostSlug: null,
+    blogScrollTop: 0,
     cubeStep: 0,
     worksViewMode: "orbit",
   }),
@@ -40,6 +42,9 @@ export const useSiteStore = defineStore("site", {
     },
     goBlog() {
       this.setPanelMode("blog");
+    },
+    setBlogScrollTop(scrollTop: number) {
+      this.blogScrollTop = Number.isFinite(scrollTop) ? Math.max(0, scrollTop) : 0;
     },
     goAuthor() {
       this.setPanelMode("author");

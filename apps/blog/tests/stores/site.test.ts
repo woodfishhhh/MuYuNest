@@ -32,4 +32,14 @@ describe("site store", () => {
 
     expect(store.worksViewMode).toBe("case");
   });
+
+  it("keeps the Blog scroll position while navigating through other modes", () => {
+    const store = useSiteStore();
+
+    store.setBlogScrollTop(640);
+    store.goAuthor();
+    store.goBlog();
+
+    expect(store.blogScrollTop).toBe(640);
+  });
 });

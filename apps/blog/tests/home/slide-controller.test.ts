@@ -94,4 +94,41 @@ describe("SlideController", () => {
     expect(scrollBy).not.toHaveBeenCalled();
     expect(router.currentRoute.value.name).toBe("friend");
   });
+
+  it("uses the provided Blog scroll container to return Home from the top", async () => {
+    const router = createTestRouter();
+    await router.push({ name: "blog" });
+    await router.isReady();
+
+    const siteStore = useSiteStore();
+    siteStore.goBlog();
+
+    const blogScroll = document.createElement("div");
+    blogScroll.scrollTop = 0;
+    document.body.appendChild(blogScroll);
+
+    mount(SlideController, {
+      props: {
+        blogScrollContainer: blogScroll,
+      },
+      slots: {
+        default: "<div />",
+      },
+      global: {
+        plugins: [router],
+      },
+    });
+
+    blogScroll.dispatchEvent(
+      new WheelEvent("wheel", {
+        deltaY: -120,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+
+    await vi.waitFor(() => {
+      expect(router.currentRoute.value.name).toBe("home");
+    });
+  });
 });

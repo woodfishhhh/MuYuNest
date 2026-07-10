@@ -5,6 +5,10 @@ import { useRouter } from "vue-router";
 import { getRouteLocationForSiteMode } from "@/utils/site-mode";
 import { useSiteStore } from "@/stores/site";
 
+const props = defineProps<{
+  blogScrollContainer?: HTMLElement | null;
+}>();
+
 const siteStore = useSiteStore();
 const router = useRouter();
 let touchStartY = 0;
@@ -49,7 +53,7 @@ function handleWheel(event: WheelEvent) {
   }
 
   if (siteStore.mode === "blog") {
-    const list = document.getElementById("post-list-container");
+    const list = props.blogScrollContainer;
     if (list) {
       if (event.deltaY < 0 && list.scrollTop <= 0) {
         setModeWithLock("home");
@@ -90,7 +94,7 @@ function handleTouchMove(event: TouchEvent) {
   }
 
   if (siteStore.mode === "blog") {
-    const list = document.getElementById("post-list-container");
+    const list = props.blogScrollContainer;
     if (list) {
       if (diff < 0 && list.scrollTop <= 0) {
         setModeWithLock("home");

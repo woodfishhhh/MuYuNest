@@ -32,6 +32,13 @@ interface SnapPreview {
   targetY: number;
 }
 
+type MatterMouseWithHandlers = Matter.Mouse & {
+  mousedown: EventListener;
+  mousemove: EventListener;
+  mouseup: EventListener;
+  mousewheel: EventListener;
+};
+
 const WALL_THICKNESS = 96;
 const STEP_MS = 1000 / 60;
 const SNAP_OPEN_DELAY_MS = 90;
@@ -101,6 +108,23 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     }
     snapCandidate = null;
     snapPreviewState = null;
+  }
+
+  function detachMouseListeners() {
+    if (!mouse) {
+      return;
+    }
+
+    const matterMouse = mouse as MatterMouseWithHandlers;
+    const element = matterMouse.element;
+    element.removeEventListener("mousemove", matterMouse.mousemove);
+    element.removeEventListener("mousedown", matterMouse.mousedown);
+    element.removeEventListener("mouseup", matterMouse.mouseup);
+    element.removeEventListener("wheel", matterMouse.mousewheel);
+    element.removeEventListener("touchmove", matterMouse.mousemove);
+    element.removeEventListener("touchstart", matterMouse.mousedown);
+    element.removeEventListener("touchend", matterMouse.mouseup);
+    Matter.Mouse.clearSourceEvents(mouse);
   }
 
   function setDropzoneVisible(visible: boolean) {
@@ -223,6 +247,8 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
       Matter.Events.off(mouseConstraint, "mousedown");
       Matter.Events.off(mouseConstraint, "mouseup");
     }
+
+    detachMouseListeners();
 
     if (engine) {
       if (collisionHandler) {
@@ -399,13 +425,9 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     mouse = Matter.Mouse.create(container);
     // Explicitly correct for non-fullscreen scale and positions (like the 50vw panel layout).
     // This allows mouse clicks to map exactly to the physics bodies correctly within that constrained layout.
-    if (
-      (mouse as any).element &&
-      typeof (mouse as any).element.removeEventListener === "function"
-    ) {
-      (mouse as any).element.removeEventListener("mousewheel", (mouse as any).mousewheel);
-      (mouse as any).element.removeEventListener("DOMMouseScroll", (mouse as any).mousewheel);
-    }
+    const matterMouse = mouse as MatterMouseWithHandlers;
+    // Capsule dragging does not use wheel input, so keep page scrolling available.
+    matterMouse.element.removeEventListener("wheel", matterMouse.mousewheel);
     Matter.Mouse.setOffset(mouse, { x: 0, y: 0 }); // reset default offset
     mouse.pixelRatio = 1; // DO NOT set to window.devicePixelRatio for DOM nodes. DOM works in CSS pixels, otherwise click will be divided by DPR!
     mouseConstraint = Matter.MouseConstraint.create(engine, {
