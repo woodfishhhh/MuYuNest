@@ -85,6 +85,16 @@ describe("build-site-content", () => {
       "| --- | --- |",
       "| title | AJAX |",
       "",
+      "     ```ts",
+      "     const initialState = {",
+      "",
+      "       message: 'hello',",
+      "     };",
+      "     ```",
+      "",
+      "---",
+      "# 这段标题不能成为摘要",
+      "",
       "这是文章摘要第一段。",
       "",
       "这里补充一段更完整的正文内容，用来验证阅读时长会被正确估算，而不是遗漏掉文章正文元信息。",
@@ -194,6 +204,8 @@ describe("build-site-content", () => {
       expect(ajaxEntry?.excerpt).toBe("这是文章摘要第一段。");
       expect(ajaxEntry?.searchText).toContain("AJAX");
       expect(ajaxEntry?.searchText).toContain("请求生命周期");
+      expect(ajaxEntry?.searchText).not.toContain("initialState");
+      expect(ajaxEntry?.searchText).not.toContain("message: 'hello'");
       expect(notesEntry?.type).toBe("Notes");
       expect(notesEntry?.searchText).toContain("观测性");
       expect(result.postsBySlug["ajax-basics-intro"]?.html).toContain('id="核心概念"');

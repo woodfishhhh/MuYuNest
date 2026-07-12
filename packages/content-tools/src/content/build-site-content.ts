@@ -408,35 +408,54 @@ function stripInlineMarkdown(value: string) {
     .replace(/`([^`]+)`/g, "$1");
 }
 
+function stripFencedCodeBlocks(markdown: string) {
+  const output: string[] = [];
+  let activeFence: { marker: "`" | "~"; length: number } | null = null;
+
+  for (const line of markdown.split(/\r?\n/)) {
+    if (!activeFence) {
+      const openingFence = line.match(/^[ \t]*(`{3,}|~{3,})/);
+
+      if (!openingFence) {
+        output.push(line);
+        continue;
+      }
+
+      activeFence = {
+        marker: openingFence[1][0] as "`" | "~",
+        length: openingFence[1].length,
+      };
+      output.push("");
+      continue;
+    }
+
+    const closingFence = line.match(/^[ \t]*(`{3,}|~{3,})[ \t]*$/);
+    if (
+      closingFence &&
+      closingFence[1][0] === activeFence.marker &&
+      closingFence[1].length >= activeFence.length
+    ) {
+      activeFence = null;
+      output.push("");
+    }
+  }
+
+  return output.join("\n");
+}
+
 function createExcerpt(markdown: string, title: string) {
-  const paragraphs = markdown
-    .split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .filter(isExcerptCandidate)
-    .map(toExcerptPlainText)
-    .filter((block) => block.length > 0);
+  const tokens = MarkdownIt({ html: true }).parse(markdown, {});
+  const paragraphs = tokens.flatMap((token, index) => {
+    if (token.type !== "paragraph_open" || tokens[index + 1]?.type !== "inline") {
+      return [];
+    }
+
+    const plainText = toExcerptPlainText(tokens[index + 1].content);
+    return plainText && !/^\[toc\]$/i.test(plainText) ? [plainText] : [];
+  });
 
   const plainText = paragraphs[0] ?? `A deep dive into ${title}.`;
   return `${plainText.slice(0, 150)}${plainText.length > 150 ? "..." : ""}`;
-}
-
-function isExcerptCandidate(block: string) {
-  if (!block) return false;
-  if (block.startsWith("#")) return false;
-  if (block.startsWith("```")) return false;
-
-  const normalized = block.trim();
-  if (/^\[toc\]$/i.test(normalized)) return false;
-  if (/^[-*_]{3,}$/.test(normalized)) return false;
-  if (/^!\[[^\]]*\]\([^)]+\)$/.test(normalized)) return false;
-  if (/^<img\b[^>]*>$/i.test(normalized)) return false;
-
-  const lines = normalized.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-  const hasTableSeparator = lines.some((line) => /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/.test(line));
-  const everyLineLooksLikeTable = lines.length > 1 && lines.every((line) => line.includes("|"));
-  if (hasTableSeparator && everyLineLooksLikeTable) return false;
-
-  return true;
 }
 
 function toExcerptPlainText(block: string) {
@@ -493,8 +512,7 @@ function estimateReadingMinutes(markdown: string) {
 }
 
 function toSearchablePlainText(markdown: string) {
-  return markdown
-    .replace(/```[\s\S]*?```/g, " ")
+  return stripFencedCodeBlocks(markdown)
     .replace(/`[^`]+`/g, " ")
     .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, " $1 ")
