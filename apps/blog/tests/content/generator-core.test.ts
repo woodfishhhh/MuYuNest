@@ -49,6 +49,33 @@ describe("generator-core", () => {
     expect(result.aliases).toContain("全中文标题");
   });
 
+  it("keeps an explicit canonical slug when the article body changes", () => {
+    const result = resolveCanonicalSlug({
+      title: "AJAX 基础入门教程",
+      date: "2025-12-20 12:00:04",
+      rawMarkdown: "---\ntitle: AJAX 基础入门教程\nslug: ajax-basics-intro\n---\n\n改写后的正文",
+      sourceRelativePath: "前端/AJAX 基础入门教程.md",
+      preferredSlug: "ajax-basics-intro",
+      legacyIndex: new Map(),
+    });
+
+    expect(result.canonicalSlug).toBe("ajax-basics-intro");
+    expect(result.aliases).toContain("AJAX 基础入门教程");
+  });
+
+  it("rejects an explicit canonical slug that is not URL-safe", () => {
+    expect(() =>
+      resolveCanonicalSlug({
+        title: "不安全 slug",
+        date: "2026-01-01 08:00:00",
+        rawMarkdown: "---\ntitle: 不安全 slug\n---\n\n正文",
+        sourceRelativePath: "前端/不安全 slug.md",
+        preferredSlug: "../outside",
+        legacyIndex: new Map(),
+      }),
+    ).toThrow("Invalid preferred slug");
+  });
+
   it("removes a duplicated first-level title heading from the markdown body", () => {
     const rawMarkdown = "# C++ STL 到 JavaScript：常用数据结构映射速查\n\n## 小节\n\n正文内容";
 

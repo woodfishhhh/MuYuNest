@@ -66,6 +66,7 @@ export interface CanonicalSlugOptions {
   date: string;
   rawMarkdown: string;
   sourceRelativePath: string;
+  preferredSlug?: string;
   legacyIndex: ReadonlyMap<string, string>;
 }
 
@@ -114,6 +115,19 @@ export function resolveCanonicalSlug(options: CanonicalSlugOptions): CanonicalSl
     options.sourceRelativePath,
     path.extname(options.sourceRelativePath),
   );
+
+  const preferredSlug = options.preferredSlug?.trim();
+
+  if (preferredSlug) {
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(preferredSlug)) {
+      throw new Error(`Invalid preferred slug: ${preferredSlug}`);
+    }
+
+    return {
+      canonicalSlug: preferredSlug,
+      aliases: uniqueStrings([sourceStem, legacySlug ?? ""]),
+    };
+  }
 
   if (legacySlug) {
     return {

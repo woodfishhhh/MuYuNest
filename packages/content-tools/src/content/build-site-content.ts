@@ -167,6 +167,7 @@ export async function buildSiteContent(
       date,
       rawMarkdown,
       sourceRelativePath,
+      preferredSlug: readString(parsed.data.slug),
       legacyIndex,
     });
 
