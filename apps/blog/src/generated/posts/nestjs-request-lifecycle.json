@@ -1,0 +1,153 @@
+{
+  "canonicalSlug": "nestjs-request-lifecycle",
+  "aliases": [
+    "01-NestJS起步与请求链路"
+  ],
+  "title": "NestJS 起步与请求链路",
+  "publishedAt": "2026-07-12T00:00:00.000Z",
+  "publishedLabel": "Jul 12, 2026",
+  "excerpt": "课程没有一上来就让 CLI 生成完整项目，而是先手动拼出一个最小 NestJS 应用。这样安排看似绕路，实际是在回答两个很重要的问题：一个 HTTP 请求进入 Nest 后经过哪些部件，以及 CLI 生成的那些文件到底各自负责什么。",
+  "type": "Notes",
+  "searchText": "NestJS 起步与请求链路 Notes 后端开发 NestJS NestJS TypeScript Controller ValidationPipe DTO 课程没有一上来就让 CLI 生成完整项目，而是先手动拼出一个最小 NestJS 应用。这样安排看似绕路，实际是在回答两个很重要的问题：一个 HTTP 请求进入 Nest 后经过哪些部件，以及 CLI 生成的那些文件到底各自负责什么。 来源与覆盖 课程： BV1D9MezXExs 字幕来源：Bilibili 自动翻译中文字幕，P1 P18 均取得接近完整的字幕覆盖。 P1 P7：手工搭建最小 Nest 应用，理解 Module、Controller、启动流程和路由拼接。 P8 P14：使用 CLI 创建消息 API，设计路由并读取 Body、Param 等请求数据。 P15 P18：配置 、DTO、 ，追踪运行时元数据来源。 正文按课程推进顺序重新整理，代码是便于复习和动手的教学版示例，不是视频代码的逐字还原。课程录制时使用的依赖版本较旧，下面不抄死旧版本号，重点保留仍然有效的结构和机制。 1. 先把请求链路看清楚 任何 Web 服务都绕不开一条请求响应链路：客户端发出请求，服务端读取请求数据，做校验和权限判断，执行对应业务，再把结果写进响应。NestJS 的做法不是把这些逻辑全塞进一个回调，而是给每类职责一个明确的位置。 这一阶段课程真正动手写的是 、 和 。 、 、异常过滤器等部件只是先放进全景图中，后续再逐一展开。 理解这张图时，要把 Controller 看成 HTTP 边界，而不是所有逻辑的容器。它应该知道请求从哪里取值、该调用哪个服务、返回什么状态；复杂计算和数据访问不应该长期留在 Controller 中。 2. 手动搭出最小应用 Nest 项目常用 TypeScript 编写，底层 HTTP 服务器默认由 Express 适配器提供。手动搭建时会接触到几类关键依赖： ：Controller、Module、路由装饰器、Pipe 等常用 API。 ： 和框架启动逻辑。 ：Nest 与 Express 之间的适配层。 ：让框架能在运行时读取装饰器元数据。 ：把 TypeScript 转译为可执行的 JavaScript。 如果只是新建项目，直接用 CLI 即可；手动安装核心包的价值主要是看清框架由哪些部分组成。 2.1 TypeScript 配置为什么重要 课程特别回看了下面两个编译选项： 允许使用课程所采用的装饰器语法； 会把一部分类型信息写进编译后的 JavaScript 元数据。Nest 后面的参数注入和 DTO 校验都依赖这条线索。普通 TypeScript 类型通常会在编译后消失，所以这里不是一个无关紧要的格式选项。 2.2 Controller 定义路由 下面是整理后的最小 Controller： 两个装饰器会共同组成最终路由： 类名和方法名不会参与 URL 匹配，真正决定路由的是装饰器参数。方法返回的字符串或对象会由 Nest 写入 HTTP 响应。 2.3 Module 负责登记组件 Controller 写出来以后，还需要让 Nest 知道它属于哪个模块： 不是简单的文件夹说明。它描述了一个功能边界：模块有哪些 Controller、Provider，以及需要从其他模块导入或向外导出什么。当前最小示例只有 Controller，后面加入 Service 后才会用到 。 2.4 main.ts 创建并启动应用 启动过程可以拆成三步： 1. 以根模块为入口建立应用。 2. Nest 扫描模块中的 Controller 和 Provider，建立依赖关系与路由表。 3. 让底层 HTTP 适配器开始接收请求。 如果访问路由时得到 404，先检查 Controller 前缀和方法路由是否拼对；如果应用根本没有启动，先看终端错误，而不是只刷新浏览器。 3. 从手工项目切换到 Nest CLI 看过最小结构后，再用 CLI 生成项目就不会被一堆文件吓住了。 会监听源码变化并重启开发服务器。课程随后使用生成器创建功能模块和控制器： 常用缩写是： 的前半段表示目标目录，后半段表示生成的类名； 表示不要再额外套一层目录。生成 Controller 时，CLI 还会尝试把它登记到同目录的 Module 中。命令执行后仍要打开模块文件确认结果，不能因为 CLI 没报错就默认注册一定符合预期。 Nest 常见文件名由“功能名 + 角色”组成： 这种命名让人不打开文件就能判断职责。一个文件通常只放一个主要类，也更方便 CLI、测试和依赖注入按约定工作。 4. 先设计请求，再决定需要哪些部件 课程的第二个小项目是消息 API。它先列出要支持的请求，再反推 Controller、Pipe、Service 和 Repository，而不是先随手建文件。 | 方法与路径 | 输入 | 目的 | 主要部件 | | | | | | | | 无 | 列出全部消息 | Controller、Service、Repository | | | 路径参数 | 获取一条消息 | Controller、Service、Repository | | | JSON 请求体 | 创建消息 | Pipe、Controller、Service、Repository | 三个请求不需要三个 Controller。它们都围绕 资源，可以放进同一个 ，再由同一个模块封装。这里也没有认证需求，因此暂时不需要 Guard。 这个版本只用于看路由和取值， 也提醒我们：请求体来自外部，在校验之前不该假定它符合某个结构。 5. 参数装饰器如何读取请求 HTTP 请求大致由起始行、Headers 和可选的 Body 组成。Nest 用参数装饰器把这些位置映射成方法参数： 装饰器所在位置也有区别： 是类装饰器，定义一组路由的公共前缀。 、 是方法装饰器，定义 HTTP 方法和子路径。 、 是参数装饰器，告诉 Nest 给某个参数注入什么值。 中的名字必须和路由中的 一致。路径参数默认仍然是字符串，即使 TypeScript 上写成 也不会自动把运行时值变成数字；需要转换时应使用 或开启并配置转换逻辑。 6. 用请求文件保留可复现样例 浏览器地址栏只适合快速测试 GET。POST、PATCH 等请求最好交给 Postman、curl 或 VS Code REST Client。课程选择 ，因为它能和源码一起版本管理，也能留下接口的可执行示例。 请求头和 JSON Body 之间必须有一个空行。若服务端拿不到 Body，先检查 、JSON 语法和请求是否真的发到了当前端口。 7. ValidationPipe 把不可信输入挡在 Controller 外 期望收到这样的数据： 只写一个 TypeScript 类型并不能校验真实请求。客户端仍然可以发送数字、 、拼错的字段甚至完全空的对象。课程的处理方式是全局启用 ，再用 DTO 描述每个接口的输入规则。 7.1 安装验证依赖 7.2 全局启用验证管道 课程最初只使用了 。上面的教学版额外打开了三个常见选项： 只保留 DTO 中有验证装饰器的字段， 遇到额外字段时直接报错， 允许管道按目标类型做转换。具体项目是否全部启用，要看接口兼容性要求。 7.3 用 DTO 写出运行时规则 然后把 DTO 类用于 Controller 参数： 这里必须使用 ，不能只写 。接口只存在于 TypeScript 编译阶段，运行时没有可供 实例化、也没有可供 读取的装饰器元数据。 8. 验证背后到底发生了什么 一次合法或非法的 POST 请求会经过下面这条链路： 怎么知道目标类是 ？关键仍然是前面的装饰器元数据。启用 后，编译器会在装饰过的方法附近生成类似 的元数据，里面保留参数对应的类构造器。Nest 通过 读取它，才知道该把 Body 转成哪个类的实例。 这也解释了两个容易混淆的现象： 1. 大多数 TypeScript 类型在运行时确实会消失。 2. 开启装饰器元数据后，某些类类型会以元数据形式保留一小部分运行时线索。 它不是“TypeScript 运行时类型系统”，只是编译器为装饰器写下的有限信息。 9. 一条请求的完整走法 把前面的代码连起来， 会这样执行： 1. HTTP 适配器收到请求并解析 JSON Body。 2. 路由表根据 和 找到 。 3. 全局 看到参数类型是 。 4. 创建 DTO 实例， 检查 。 5. 校验失败时直接返回 400，Controller 不会执行。 6. 校验通过后，DTO 被传入 Controller，Controller 再调用后续 Service。 7. Controller 的返回值由 Nest 序列化并写入响应。 这条链路比死记装饰器更重要。调试时只要判断请求停在了哪一层，排查范围会小很多。 10. 常见误区与调试顺序 10.1 路由一直 404 先看启动日志里是否打印了对应路由，再检查 前缀和 、 子路径。还要确认 Controller 已经登记在当前模块的 中，根模块也确实导入了这个功能模块。 10.2 端口启动失败 表示端口已被占用。停止旧进程或换一个端口，不要把它当成 Controller 代码错误。 10.3 POST 能进 Controller，但没有校验 按这个顺序检查： 1. 是否安装 和 。 2. 是否调用了 ，或者给当前路由单独加了 Pipe。 3. 参数类型是否为带验证装饰器的 DTO 类，而不是 、对象字面量或 interface。 4. DTO 属性上是否真的有验证装饰器。 5. 的装饰器相关设置是否和项目要求一致。 10.4 DTO 写了字段，额外字段却仍被接收 DTO 的字段声明本身不会删除未知属性。需要 ；想把未知属性视为错误，再加 。 10.5 把类型注解当成数据转换 这句不会单凭 注解把字符串路径参数转成数字。更明确的写法是： 11. 动手复现这一章 可以用一个很小的练习确认自己不是只看懂了代码： 1. 新建 项目，生成 和 。 2. 实现 、 、 三个路由。 3. 建立 ，要求 是 1 到 200 个字符的非空字符串。 4. 在 中分别发送合法 Body、数字 Body、缺字段 Body 和多余字段 Body。 5. 给 加 ，观察非数字参数对应的响应。 练习的检查点不是先接数据库，而是确认路由、取值、转换、校验和错误响应都按预期发生。 12. 章节回顾 P1 P18 完成了两层铺垫。第一层是框架结构： 启动应用，Module 登记功能，Controller 把 HTTP 请求映射到方法。第二层是请求输入：参数装饰器负责取值，DTO 写出数据契约， 在 Controller 执行前完成转换与校验。 接下来进入 Service、Repository 和依赖注入时，可以一直沿用同一条判断：HTTP 细节留在 Controller，业务规则放进 Service，存储细节交给 Repository；Module 决定这些类在哪个范围内可见。",
+  "readingMinutes": 14,
+  "coverImage": null,
+  "categories": [
+    "后端开发",
+    "NestJS"
+  ],
+  "tags": [
+    "NestJS",
+    "TypeScript",
+    "Controller",
+    "ValidationPipe",
+    "DTO"
+  ],
+  "html": "<p>课程没有一上来就让 CLI 生成完整项目，而是先手动拼出一个最小 NestJS 应用。这样安排看似绕路，实际是在回答两个很重要的问题：一个 HTTP 请求进入 Nest 后经过哪些部件，以及 CLI 生成的那些文件到底各自负责什么。</p>\n<h2 id=\"来源与覆盖\">来源与覆盖</h2>\n<ul>\n<li>课程：<a href=\"https://www.bilibili.com/video/BV1D9MezXExs/\">BV1D9MezXExs</a></li>\n<li>字幕来源：Bilibili 自动翻译中文字幕，P1-P18 均取得接近完整的字幕覆盖。</li>\n<li>P1-P7：手工搭建最小 Nest 应用，理解 Module、Controller、启动流程和路由拼接。</li>\n<li>P8-P14：使用 CLI 创建消息 API，设计路由并读取 Body、Param 等请求数据。</li>\n<li>P15-P18：配置 <code>ValidationPipe</code>、DTO、<code>class-validator</code>，追踪运行时元数据来源。</li>\n</ul>\n<p>正文按课程推进顺序重新整理，代码是便于复习和动手的教学版示例，不是视频代码的逐字还原。课程录制时使用的依赖版本较旧，下面不抄死旧版本号，重点保留仍然有效的结构和机制。</p>\n<h2 id=\"1-先把请求链路看清楚\">1. 先把请求链路看清楚</h2>\n<p>任何 Web 服务都绕不开一条请求响应链路：客户端发出请求，服务端读取请求数据，做校验和权限判断，执行对应业务，再把结果写进响应。NestJS 的做法不是把这些逻辑全塞进一个回调，而是给每类职责一个明确的位置。</p>\n<pre><code class=\"hljs language-text\">HTTP Request\n    ↓\nMiddleware\n    ↓\nGuard             身份认证与授权\n    ↓\nInterceptor       进入处理器前的横切逻辑\n    ↓\nPipe              转换和校验输入\n    ↓\nController        匹配路由，接收 HTTP 数据\n    ↓\nService           执行业务逻辑\n    ↓\nRepository        访问文件或数据库\n    ↓\nHTTP Response\n</code></pre>\n<p>这一阶段课程真正动手写的是 <code>Module</code>、<code>Controller</code> 和 <code>Pipe</code>。<code>Guard</code>、<code>Interceptor</code>、异常过滤器等部件只是先放进全景图中，后续再逐一展开。</p>\n<p>理解这张图时，要把 Controller 看成 HTTP 边界，而不是所有逻辑的容器。它应该知道请求从哪里取值、该调用哪个服务、返回什么状态；复杂计算和数据访问不应该长期留在 Controller 中。</p>\n<h2 id=\"2-手动搭出最小应用\">2. 手动搭出最小应用</h2>\n<p>Nest 项目常用 TypeScript 编写，底层 HTTP 服务器默认由 Express 适配器提供。手动搭建时会接触到几类关键依赖：</p>\n<ul>\n<li><code>@nestjs/common</code>：Controller、Module、路由装饰器、Pipe 等常用 API。</li>\n<li><code>@nestjs/core</code>：<code>NestFactory</code> 和框架启动逻辑。</li>\n<li><code>@nestjs/platform-express</code>：Nest 与 Express 之间的适配层。</li>\n<li><code>reflect-metadata</code>：让框架能在运行时读取装饰器元数据。</li>\n<li><code>typescript</code>：把 TypeScript 转译为可执行的 JavaScript。</li>\n</ul>\n<p>如果只是新建项目，直接用 CLI 即可；手动安装核心包的价值主要是看清框架由哪些部分组成。</p>\n<h3 id=\"21-typescript-配置为什么重要\">2.1 TypeScript 配置为什么重要</h3>\n<p>课程特别回看了下面两个编译选项：</p>\n<pre><code class=\"hljs language-json\"><span class=\"hljs-punctuation\">{</span>\n  <span class=\"hljs-attr\">\"compilerOptions\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-punctuation\">{</span>\n    <span class=\"hljs-attr\">\"module\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-string\">\"commonjs\"</span><span class=\"hljs-punctuation\">,</span>\n    <span class=\"hljs-attr\">\"target\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-string\">\"ES2021\"</span><span class=\"hljs-punctuation\">,</span>\n    <span class=\"hljs-attr\">\"experimentalDecorators\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-literal\"><span class=\"hljs-keyword\">true</span></span><span class=\"hljs-punctuation\">,</span>\n    <span class=\"hljs-attr\">\"emitDecoratorMetadata\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-literal\"><span class=\"hljs-keyword\">true</span></span>\n  <span class=\"hljs-punctuation\">}</span>\n<span class=\"hljs-punctuation\">}</span>\n</code></pre>\n<p><code>experimentalDecorators</code> 允许使用课程所采用的装饰器语法；<code>emitDecoratorMetadata</code> 会把一部分类型信息写进编译后的 JavaScript 元数据。Nest 后面的参数注入和 DTO 校验都依赖这条线索。普通 TypeScript 类型通常会在编译后消失，所以这里不是一个无关紧要的格式选项。</p>\n<h3 id=\"22-controller-定义路由\">2.2 Controller 定义路由</h3>\n<p>下面是整理后的最小 Controller：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// app.controller.ts</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Controller</span>, <span class=\"hljs-title class_\">Get</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n\n<span class=\"hljs-meta\">@Controller</span>(<span class=\"hljs-string\">'app'</span>)\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">AppController</span> {\n  <span class=\"hljs-meta\">@Get</span>(<span class=\"hljs-string\">'hello'</span>)\n  <span class=\"hljs-title function_\">getHello</span>(): <span class=\"hljs-built_in\">string</span> {\n    <span class=\"hljs-keyword\">return</span> <span class=\"hljs-string\">'hello from Nest'</span>;\n  }\n}\n</code></pre>\n<p>两个装饰器会共同组成最终路由：</p>\n<pre><code class=\"hljs language-text\">@Controller('app') + @Get('hello')\n                 ↓\n          GET /app/hello\n</code></pre>\n<p>类名和方法名不会参与 URL 匹配，真正决定路由的是装饰器参数。方法返回的字符串或对象会由 Nest 写入 HTTP 响应。</p>\n<h3 id=\"23-module-负责登记组件\">2.3 Module 负责登记组件</h3>\n<p>Controller 写出来以后，还需要让 Nest 知道它属于哪个模块：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// app.module.ts</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Module</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">AppController</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./app.controller'</span>;\n\n<span class=\"hljs-meta\">@Module</span>({\n  <span class=\"hljs-attr\">controllers</span>: [<span class=\"hljs-title class_\">AppController</span>],\n})\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">AppModule</span> {}\n</code></pre>\n<p><code>@Module()</code> 不是简单的文件夹说明。它描述了一个功能边界：模块有哪些 Controller、Provider，以及需要从其他模块导入或向外导出什么。当前最小示例只有 Controller，后面加入 Service 后才会用到 <code>providers</code>。</p>\n<h3 id=\"24-maints-创建并启动应用\">2.4 main.ts 创建并启动应用</h3>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// main.ts</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">NestFactory</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/core'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">AppModule</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./app.module'</span>;\n\n<span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">bootstrap</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> app = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title class_\">NestFactory</span>.<span class=\"hljs-title function_\">create</span>(<span class=\"hljs-title class_\">AppModule</span>);\n  <span class=\"hljs-keyword\">await</span> app.<span class=\"hljs-title function_\">listen</span>(<span class=\"hljs-number\">3000</span>);\n}\n\n<span class=\"hljs-built_in\">void</span> <span class=\"hljs-title function_\">bootstrap</span>();\n</code></pre>\n<p>启动过程可以拆成三步：</p>\n<ol>\n<li><code>NestFactory.create(AppModule)</code> 以根模块为入口建立应用。</li>\n<li>Nest 扫描模块中的 Controller 和 Provider，建立依赖关系与路由表。</li>\n<li><code>listen(3000)</code> 让底层 HTTP 适配器开始接收请求。</li>\n</ol>\n<p>如果访问路由时得到 404，先检查 Controller 前缀和方法路由是否拼对；如果应用根本没有启动，先看终端错误，而不是只刷新浏览器。</p>\n<h2 id=\"3-从手工项目切换到-nest-cli\">3. 从手工项目切换到 Nest CLI</h2>\n<p>看过最小结构后，再用 CLI 生成项目就不会被一堆文件吓住了。</p>\n<pre><code class=\"hljs language-bash\">npx @nestjs/cli new messages\n<span class=\"hljs-built_in\">cd</span> messages\nnpm run start:dev\n</code></pre>\n<p><code>start:dev</code> 会监听源码变化并重启开发服务器。课程随后使用生成器创建功能模块和控制器：</p>\n<pre><code class=\"hljs language-bash\">nest generate module messages\nnest generate controller messages/messages --flat\n</code></pre>\n<p>常用缩写是：</p>\n<pre><code class=\"hljs language-bash\">nest g module messages\nnest g controller messages/messages --flat\nnest g service messages/messages --flat\n</code></pre>\n<p><code>messages/messages</code> 的前半段表示目标目录，后半段表示生成的类名；<code>--flat</code> 表示不要再额外套一层目录。生成 Controller 时，CLI 还会尝试把它登记到同目录的 Module 中。命令执行后仍要打开模块文件确认结果，不能因为 CLI 没报错就默认注册一定符合预期。</p>\n<p>Nest 常见文件名由“功能名 + 角色”组成：</p>\n<pre><code class=\"hljs language-text\">messages.controller.ts\nmessages.service.ts\nmessages.module.ts\ncreate-message.dto.ts\n</code></pre>\n<p>这种命名让人不打开文件就能判断职责。一个文件通常只放一个主要类，也更方便 CLI、测试和依赖注入按约定工作。</p>\n<h2 id=\"4-先设计请求再决定需要哪些部件\">4. 先设计请求，再决定需要哪些部件</h2>\n<p>课程的第二个小项目是消息 API。它先列出要支持的请求，再反推 Controller、Pipe、Service 和 Repository，而不是先随手建文件。</p>\n<table>\n<thead>\n<tr>\n<th>方法与路径</th>\n<th>输入</th>\n<th>目的</th>\n<th>主要部件</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>GET /messages</code></td>\n<td>无</td>\n<td>列出全部消息</td>\n<td>Controller、Service、Repository</td>\n</tr>\n<tr>\n<td><code>GET /messages/:id</code></td>\n<td>路径参数 <code>id</code></td>\n<td>获取一条消息</td>\n<td>Controller、Service、Repository</td>\n</tr>\n<tr>\n<td><code>POST /messages</code></td>\n<td>JSON 请求体</td>\n<td>创建消息</td>\n<td>Pipe、Controller、Service、Repository</td>\n</tr>\n</tbody>\n</table>\n<p>三个请求不需要三个 Controller。它们都围绕 <code>messages</code> 资源，可以放进同一个 <code>MessagesController</code>，再由同一个模块封装。这里也没有认证需求，因此暂时不需要 Guard。</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Body</span>, <span class=\"hljs-title class_\">Controller</span>, <span class=\"hljs-title class_\">Get</span>, <span class=\"hljs-title class_\">Param</span>, <span class=\"hljs-title class_\">Post</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n\n<span class=\"hljs-meta\">@Controller</span>(<span class=\"hljs-string\">'messages'</span>)\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">MessagesController</span> {\n  <span class=\"hljs-meta\">@Get</span>()\n  <span class=\"hljs-title function_\">findAll</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-keyword\">return</span> [];\n  }\n\n  <span class=\"hljs-meta\">@Get</span>(<span class=\"hljs-string\">':id'</span>)\n  <span class=\"hljs-title function_\">findOne</span>(<span class=\"hljs-params\"><span class=\"hljs-meta\">@Param</span>(<span class=\"hljs-string\">'id'</span>) <span class=\"hljs-attr\">id</span>: <span class=\"hljs-built_in\">string</span></span>) {\n    <span class=\"hljs-keyword\">return</span> { id };\n  }\n\n  <span class=\"hljs-meta\">@Post</span>()\n  <span class=\"hljs-title function_\">create</span>(<span class=\"hljs-params\"><span class=\"hljs-meta\">@Body</span>() <span class=\"hljs-attr\">body</span>: <span class=\"hljs-built_in\">unknown</span></span>) {\n    <span class=\"hljs-keyword\">return</span> body;\n  }\n}\n</code></pre>\n<p>这个版本只用于看路由和取值，<code>unknown</code> 也提醒我们：请求体来自外部，在校验之前不该假定它符合某个结构。</p>\n<h2 id=\"5-参数装饰器如何读取请求\">5. 参数装饰器如何读取请求</h2>\n<p>HTTP 请求大致由起始行、Headers 和可选的 Body 组成。Nest 用参数装饰器把这些位置映射成方法参数：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-meta\">@Param</span>(<span class=\"hljs-string\">'id'</span>)       <span class=\"hljs-comment\">// /messages/:id 中的 id</span>\n<span class=\"hljs-meta\">@Query</span>(<span class=\"hljs-string\">'page'</span>)     <span class=\"hljs-comment\">// ?page=2 中的 page</span>\n<span class=\"hljs-meta\">@Headers</span>(<span class=\"hljs-string\">'x-id'</span>)   <span class=\"hljs-comment\">// 指定请求头</span>\n<span class=\"hljs-meta\">@Body</span>()            <span class=\"hljs-comment\">// 解析后的完整请求体</span>\n<span class=\"hljs-meta\">@Body</span>(<span class=\"hljs-string\">'content'</span>)   <span class=\"hljs-comment\">// 请求体中的 content 字段</span>\n</code></pre>\n<p>装饰器所在位置也有区别：</p>\n<ul>\n<li><code>@Controller()</code> 是类装饰器，定义一组路由的公共前缀。</li>\n<li><code>@Get()</code>、<code>@Post()</code> 是方法装饰器，定义 HTTP 方法和子路径。</li>\n<li><code>@Body()</code>、<code>@Param()</code> 是参数装饰器，告诉 Nest 给某个参数注入什么值。</li>\n</ul>\n<p><code>@Param('id')</code> 中的名字必须和路由中的 <code>:id</code> 一致。路径参数默认仍然是字符串，即使 TypeScript 上写成 <code>number</code> 也不会自动把运行时值变成数字；需要转换时应使用 <code>ParseIntPipe</code> 或开启并配置转换逻辑。</p>\n<h2 id=\"6-用请求文件保留可复现样例\">6. 用请求文件保留可复现样例</h2>\n<p>浏览器地址栏只适合快速测试 GET。POST、PATCH 等请求最好交给 Postman、curl 或 VS Code REST Client。课程选择 <code>requests.http</code>，因为它能和源码一起版本管理，也能留下接口的可执行示例。</p>\n<pre><code class=\"hljs language-http\">### 列出全部消息\nGET http://localhost:3000/messages\n\n### 创建消息\nPOST http://localhost:3000/messages\n<span class=\"hljs-attribute\">Content-Type</span><span class=\"hljs-punctuation\">: </span>application/json\n\n{\n  \"content\": \"hello Nest\"\n}\n\n### 获取指定消息\nGET http://localhost:3000/messages/123\n</code></pre>\n<p>请求头和 JSON Body 之间必须有一个空行。若服务端拿不到 Body，先检查 <code>Content-Type: application/json</code>、JSON 语法和请求是否真的发到了当前端口。</p>\n<h2 id=\"7-validationpipe-把不可信输入挡在-controller-外\">7. ValidationPipe 把不可信输入挡在 Controller 外</h2>\n<p><code>POST /messages</code> 期望收到这样的数据：</p>\n<pre><code class=\"hljs language-json\"><span class=\"hljs-punctuation\">{</span>\n  <span class=\"hljs-attr\">\"content\"</span><span class=\"hljs-punctuation\">:</span> <span class=\"hljs-string\">\"hello Nest\"</span>\n<span class=\"hljs-punctuation\">}</span>\n</code></pre>\n<p>只写一个 TypeScript 类型并不能校验真实请求。客户端仍然可以发送数字、<code>null</code>、拼错的字段甚至完全空的对象。课程的处理方式是全局启用 <code>ValidationPipe</code>，再用 DTO 描述每个接口的输入规则。</p>\n<h3 id=\"71-安装验证依赖\">7.1 安装验证依赖</h3>\n<pre><code class=\"hljs language-bash\">npm install class-validator class-transformer\n</code></pre>\n<h3 id=\"72-全局启用验证管道\">7.2 全局启用验证管道</h3>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// main.ts</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">ValidationPipe</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">NestFactory</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/core'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">AppModule</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./app.module'</span>;\n\n<span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">bootstrap</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> app = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title class_\">NestFactory</span>.<span class=\"hljs-title function_\">create</span>(<span class=\"hljs-title class_\">AppModule</span>);\n\n  app.<span class=\"hljs-title function_\">useGlobalPipes</span>(\n    <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">ValidationPipe</span>({\n      <span class=\"hljs-attr\">whitelist</span>: <span class=\"hljs-literal\">true</span>,\n      <span class=\"hljs-attr\">forbidNonWhitelisted</span>: <span class=\"hljs-literal\">true</span>,\n      <span class=\"hljs-attr\">transform</span>: <span class=\"hljs-literal\">true</span>,\n    }),\n  );\n\n  <span class=\"hljs-keyword\">await</span> app.<span class=\"hljs-title function_\">listen</span>(<span class=\"hljs-number\">3000</span>);\n}\n\n<span class=\"hljs-built_in\">void</span> <span class=\"hljs-title function_\">bootstrap</span>();\n</code></pre>\n<p>课程最初只使用了 <code>new ValidationPipe()</code>。上面的教学版额外打开了三个常见选项：<code>whitelist</code> 只保留 DTO 中有验证装饰器的字段，<code>forbidNonWhitelisted</code> 遇到额外字段时直接报错，<code>transform</code> 允许管道按目标类型做转换。具体项目是否全部启用，要看接口兼容性要求。</p>\n<h3 id=\"73-用-dto-写出运行时规则\">7.3 用 DTO 写出运行时规则</h3>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// messages/dto/create-message.dto.ts</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">IsNotEmpty</span>, <span class=\"hljs-title class_\">IsString</span>, <span class=\"hljs-title class_\">MaxLength</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'class-validator'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">CreateMessageDto</span> {\n  <span class=\"hljs-meta\">@IsString</span>()\n  <span class=\"hljs-meta\">@IsNotEmpty</span>()\n  <span class=\"hljs-meta\">@MaxLength</span>(<span class=\"hljs-number\">200</span>)\n  content!: <span class=\"hljs-built_in\">string</span>;\n}\n</code></pre>\n<p>然后把 DTO 类用于 Controller 参数：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Body</span>, <span class=\"hljs-title class_\">Controller</span>, <span class=\"hljs-title class_\">Post</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">CreateMessageDto</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./dto/create-message.dto'</span>;\n\n<span class=\"hljs-meta\">@Controller</span>(<span class=\"hljs-string\">'messages'</span>)\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">MessagesController</span> {\n  <span class=\"hljs-meta\">@Post</span>()\n  <span class=\"hljs-title function_\">create</span>(<span class=\"hljs-params\"><span class=\"hljs-meta\">@Body</span>() <span class=\"hljs-attr\">body</span>: <span class=\"hljs-title class_\">CreateMessageDto</span></span>) {\n    <span class=\"hljs-keyword\">return</span> { <span class=\"hljs-attr\">content</span>: body.<span class=\"hljs-property\">content</span> };\n  }\n}\n</code></pre>\n<p>这里必须使用 <code>class</code>，不能只写 <code>interface CreateMessageDto</code>。接口只存在于 TypeScript 编译阶段，运行时没有可供 <code>class-transformer</code> 实例化、也没有可供 <code>class-validator</code> 读取的装饰器元数据。</p>\n<h2 id=\"8-验证背后到底发生了什么\">8. 验证背后到底发生了什么</h2>\n<p>一次合法或非法的 POST 请求会经过下面这条链路：</p>\n<pre><code class=\"hljs language-text\">原始 JSON Body\n    ↓ class-transformer\nCreateMessageDto 实例\n    ↓ class-validator 读取属性装饰器\n验证结果\n    ├─ 失败：ValidationPipe 直接返回 400\n    └─ 成功：把值传给 Controller 方法\n</code></pre>\n<p><code>ValidationPipe</code> 怎么知道目标类是 <code>CreateMessageDto</code>？关键仍然是前面的装饰器元数据。启用 <code>emitDecoratorMetadata</code> 后，编译器会在装饰过的方法附近生成类似 <code>design:paramtypes</code> 的元数据，里面保留参数对应的类构造器。Nest 通过 <code>reflect-metadata</code> 读取它，才知道该把 Body 转成哪个类的实例。</p>\n<p>这也解释了两个容易混淆的现象：</p>\n<ol>\n<li>大多数 TypeScript 类型在运行时确实会消失。</li>\n<li>开启装饰器元数据后，某些类类型会以元数据形式保留一小部分运行时线索。</li>\n</ol>\n<p>它不是“TypeScript 运行时类型系统”，只是编译器为装饰器写下的有限信息。</p>\n<h2 id=\"9-一条请求的完整走法\">9. 一条请求的完整走法</h2>\n<p>把前面的代码连起来，<code>POST /messages</code> 会这样执行：</p>\n<ol>\n<li>HTTP 适配器收到请求并解析 JSON Body。</li>\n<li>路由表根据 <code>POST</code> 和 <code>/messages</code> 找到 <code>MessagesController.create()</code>。</li>\n<li>全局 <code>ValidationPipe</code> 看到参数类型是 <code>CreateMessageDto</code>。</li>\n<li><code>class-transformer</code> 创建 DTO 实例，<code>class-validator</code> 检查 <code>content</code>。</li>\n<li>校验失败时直接返回 400，Controller 不会执行。</li>\n<li>校验通过后，DTO 被传入 Controller，Controller 再调用后续 Service。</li>\n<li>Controller 的返回值由 Nest 序列化并写入响应。</li>\n</ol>\n<p>这条链路比死记装饰器更重要。调试时只要判断请求停在了哪一层，排查范围会小很多。</p>\n<h2 id=\"10-常见误区与调试顺序\">10. 常见误区与调试顺序</h2>\n<h3 id=\"101-路由一直-404\">10.1 路由一直 404</h3>\n<p>先看启动日志里是否打印了对应路由，再检查 <code>@Controller()</code> 前缀和 <code>@Get()</code>、<code>@Post()</code> 子路径。还要确认 Controller 已经登记在当前模块的 <code>controllers</code> 中，根模块也确实导入了这个功能模块。</p>\n<h3 id=\"102-端口启动失败\">10.2 端口启动失败</h3>\n<p><code>EADDRINUSE</code> 表示端口已被占用。停止旧进程或换一个端口，不要把它当成 Controller 代码错误。</p>\n<h3 id=\"103-post-能进-controller但没有校验\">10.3 POST 能进 Controller，但没有校验</h3>\n<p>按这个顺序检查：</p>\n<ol>\n<li>是否安装 <code>class-validator</code> 和 <code>class-transformer</code>。</li>\n<li>是否调用了 <code>app.useGlobalPipes()</code>，或者给当前路由单独加了 Pipe。</li>\n<li>参数类型是否为带验证装饰器的 DTO 类，而不是 <code>any</code>、对象字面量或 interface。</li>\n<li>DTO 属性上是否真的有验证装饰器。</li>\n<li><code>tsconfig.json</code> 的装饰器相关设置是否和项目要求一致。</li>\n</ol>\n<h3 id=\"104-dto-写了字段额外字段却仍被接收\">10.4 DTO 写了字段，额外字段却仍被接收</h3>\n<p>DTO 的字段声明本身不会删除未知属性。需要 <code>whitelist: true</code>；想把未知属性视为错误，再加 <code>forbidNonWhitelisted: true</code>。</p>\n<h3 id=\"105-把类型注解当成数据转换\">10.5 把类型注解当成数据转换</h3>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-title function_\">findOne</span>(<span class=\"hljs-params\"><span class=\"hljs-meta\">@Param</span>(<span class=\"hljs-string\">'id'</span>) <span class=\"hljs-attr\">id</span>: <span class=\"hljs-built_in\">number</span></span>) {}\n</code></pre>\n<p>这句不会单凭 <code>number</code> 注解把字符串路径参数转成数字。更明确的写法是：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Controller</span>, <span class=\"hljs-title class_\">Get</span>, <span class=\"hljs-title class_\">Param</span>, <span class=\"hljs-title class_\">ParseIntPipe</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@nestjs/common'</span>;\n\n<span class=\"hljs-meta\">@Controller</span>(<span class=\"hljs-string\">'messages'</span>)\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">MessagesController</span> {\n  <span class=\"hljs-meta\">@Get</span>(<span class=\"hljs-string\">':id'</span>)\n  <span class=\"hljs-title function_\">findOne</span>(<span class=\"hljs-params\"><span class=\"hljs-meta\">@Param</span>(<span class=\"hljs-string\">'id'</span>, ParseIntPipe) <span class=\"hljs-attr\">id</span>: <span class=\"hljs-built_in\">number</span></span>) {\n    <span class=\"hljs-keyword\">return</span> { id };\n  }\n}\n</code></pre>\n<h2 id=\"11-动手复现这一章\">11. 动手复现这一章</h2>\n<p>可以用一个很小的练习确认自己不是只看懂了代码：</p>\n<ol>\n<li>新建 <code>messages</code> 项目，生成 <code>MessagesModule</code> 和 <code>MessagesController</code>。</li>\n<li>实现 <code>GET /messages</code>、<code>GET /messages/:id</code>、<code>POST /messages</code> 三个路由。</li>\n<li>建立 <code>CreateMessageDto</code>，要求 <code>content</code> 是 1 到 200 个字符的非空字符串。</li>\n<li>在 <code>requests.http</code> 中分别发送合法 Body、数字 Body、缺字段 Body 和多余字段 Body。</li>\n<li>给 <code>GET /messages/:id</code> 加 <code>ParseIntPipe</code>，观察非数字参数对应的响应。</li>\n</ol>\n<p>练习的检查点不是先接数据库，而是确认路由、取值、转换、校验和错误响应都按预期发生。</p>\n<h2 id=\"12-章节回顾\">12. 章节回顾</h2>\n<p>P1-P18 完成了两层铺垫。第一层是框架结构：<code>main.ts</code> 启动应用，Module 登记功能，Controller 把 HTTP 请求映射到方法。第二层是请求输入：参数装饰器负责取值，DTO 写出数据契约，<code>ValidationPipe</code> 在 Controller 执行前完成转换与校验。</p>\n<p>接下来进入 Service、Repository 和依赖注入时，可以一直沿用同一条判断：HTTP 细节留在 Controller，业务规则放进 Service，存储细节交给 Repository；Module 决定这些类在哪个范围内可见。</p>\n",
+  "toc": [
+    {
+      "id": "来源与覆盖",
+      "level": 2,
+      "text": "来源与覆盖"
+    },
+    {
+      "id": "1-先把请求链路看清楚",
+      "level": 2,
+      "text": "1. 先把请求链路看清楚"
+    },
+    {
+      "id": "2-手动搭出最小应用",
+      "level": 2,
+      "text": "2. 手动搭出最小应用"
+    },
+    {
+      "id": "21-typescript-配置为什么重要",
+      "level": 3,
+      "text": "2.1 TypeScript 配置为什么重要"
+    },
+    {
+      "id": "22-controller-定义路由",
+      "level": 3,
+      "text": "2.2 Controller 定义路由"
+    },
+    {
+      "id": "23-module-负责登记组件",
+      "level": 3,
+      "text": "2.3 Module 负责登记组件"
+    },
+    {
+      "id": "24-maints-创建并启动应用",
+      "level": 3,
+      "text": "2.4 main.ts 创建并启动应用"
+    },
+    {
+      "id": "3-从手工项目切换到-nest-cli",
+      "level": 2,
+      "text": "3. 从手工项目切换到 Nest CLI"
+    },
+    {
+      "id": "4-先设计请求再决定需要哪些部件",
+      "level": 2,
+      "text": "4. 先设计请求，再决定需要哪些部件"
+    },
+    {
+      "id": "5-参数装饰器如何读取请求",
+      "level": 2,
+      "text": "5. 参数装饰器如何读取请求"
+    },
+    {
+      "id": "6-用请求文件保留可复现样例",
+      "level": 2,
+      "text": "6. 用请求文件保留可复现样例"
+    },
+    {
+      "id": "7-validationpipe-把不可信输入挡在-controller-外",
+      "level": 2,
+      "text": "7. ValidationPipe 把不可信输入挡在 Controller 外"
+    },
+    {
+      "id": "71-安装验证依赖",
+      "level": 3,
+      "text": "7.1 安装验证依赖"
+    },
+    {
+      "id": "72-全局启用验证管道",
+      "level": 3,
+      "text": "7.2 全局启用验证管道"
+    },
+    {
+      "id": "73-用-dto-写出运行时规则",
+      "level": 3,
+      "text": "7.3 用 DTO 写出运行时规则"
+    },
+    {
+      "id": "8-验证背后到底发生了什么",
+      "level": 2,
+      "text": "8. 验证背后到底发生了什么"
+    },
+    {
+      "id": "9-一条请求的完整走法",
+      "level": 2,
+      "text": "9. 一条请求的完整走法"
+    },
+    {
+      "id": "10-常见误区与调试顺序",
+      "level": 2,
+      "text": "10. 常见误区与调试顺序"
+    },
+    {
+      "id": "101-路由一直-404",
+      "level": 3,
+      "text": "10.1 路由一直 404"
+    },
+    {
+      "id": "102-端口启动失败",
+      "level": 3,
+      "text": "10.2 端口启动失败"
+    },
+    {
+      "id": "103-post-能进-controller但没有校验",
+      "level": 3,
+      "text": "10.3 POST 能进 Controller，但没有校验"
+    },
+    {
+      "id": "104-dto-写了字段额外字段却仍被接收",
+      "level": 3,
+      "text": "10.4 DTO 写了字段，额外字段却仍被接收"
+    },
+    {
+      "id": "105-把类型注解当成数据转换",
+      "level": 3,
+      "text": "10.5 把类型注解当成数据转换"
+    },
+    {
+      "id": "11-动手复现这一章",
+      "level": 2,
+      "text": "11. 动手复现这一章"
+    },
+    {
+      "id": "12-章节回顾",
+      "level": 2,
+      "text": "12. 章节回顾"
+    }
+  ]
+}
