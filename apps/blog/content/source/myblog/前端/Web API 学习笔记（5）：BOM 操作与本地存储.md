@@ -12,11 +12,10 @@ categories:
   - "Web API"
 ---
 
-# Web API 学习笔记（5）：BOM 操作与本地存储
 
 ## window 对象
 
-### （一）核心概念
+### （一）概念
 
 BOM（Browser Object Model）即浏览器对象模型，`window`对象是 BOM 的顶级对象，也是 JavaScript 中的全局对象。
 
@@ -35,7 +34,7 @@ BOM（Browser Object Model）即浏览器对象模型，`window`对象是 BOM �
 
 ## 定时器 - 延迟函数
 
-### （一）核心概念
+### （一）概念
 
 `setTimeout`是 JavaScript 内置的用于延迟执行代码的函数，只执行一次；`setInterval`为间歇函数，每隔一段时间执行一次。
 
@@ -84,7 +83,7 @@ let intervalId = setInterval(function () {
 
 ## location 对象
 
-### （一）核心概念
+### （一）概念
 
 `location`对象拆分并保存了 URL 地址的各个组成部分，用于操作和获取当前页面的地址信息。
 
@@ -134,7 +133,7 @@ let intervalId = setInterval(function () {
 
 ## navigator 对象
 
-### （一）核心概念
+### （一）概念
 
 `navigator`对象记录了浏览器自身的相关信息，可用于检测浏览器版本及平台等。
 
@@ -166,7 +165,7 @@ let intervalId = setInterval(function () {
 
 ## history 对象
 
-### （一）核心概念
+### （一）概念
 
 `history`对象主要管理历史记录，与浏览器地址栏的前进、后退等操作相对应。
 
@@ -212,7 +211,7 @@ let intervalId = setInterval(function () {
 
 ## 本地存储（今日重点）
 
-### （一）核心概念
+### （一）概念
 
 本地存储用于将数据存储在本地浏览器中，实现数据持久化，即使页面刷新或关闭，数据也可保留。
 
@@ -236,7 +235,7 @@ let intervalId = setInterval(function () {
      - **存储**：`sessionStorage.setItem('key', 'value')`
      - **获取**：`sessionStorage.getItem('key')`
      - **删除**：`sessionStorage.removeItem('key')`
-   
+
 3. `localStorage`存储复杂数据类型
 
    - **问题**：本地只能存储字符串，无法直接存储复杂数据类型。
@@ -297,7 +296,7 @@ let intervalId = setInterval(function () {
 
 ### （一）数组`map`方法
 
-1. **核心概念**：用于遍历数组处理数据，并返回一个新数组。
+1. **概念**：用于遍历数组处理数据，并返回一个新数组。
 2. **用法**：`数组.map(function (ele, index) { /* 处理逻辑 */ return 处理后的值; })`，`ele`为数组元素，`index`为索引。
 
 ```javascript
@@ -309,13 +308,12 @@ console.log(newArr);
 ```
 
 
-
 1. **案例**：上述代码展示了`map`方法遍历数组并添加固定字符串的案例。
 2. **拓展**：`map`方法常与其他数组方法如`filter`、`reduce`等结合使用，实现复杂的数据处理逻辑。
 
 ### （二）数组`join`方法
 
-1. **核心概念**：将数组中的所有元素转换为一个字符串。
+1. **概念**：将数组中的所有元素转换为一个字符串。
 2. **用法**：`数组.join(分隔符)`，分隔符为空时默认用逗号分隔，为空字符串时元素之间无分隔符。
 
 ```html
@@ -331,7 +329,6 @@ console.log(newArr);
     </script>
 </body>
 ```
-
 
 
 1. **案例**：上述代码展示了`join`方法将数组转换为不同分隔符字符串的案例。

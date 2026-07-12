@@ -1,6 +1,7 @@
 ---
 title: "Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路）"
 date: 2025-12-20 12:00:03
+slug: codeforces-2162f-beautiful-intervals
 tags:
   - "Codeforces 2162F"
   - "MEX"
@@ -11,7 +12,6 @@ categories:
   - "Codeforces"
 ---
 
-# Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路）
 
 cf 1059
 https://codeforces.com/contest/2162

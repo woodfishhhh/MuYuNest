@@ -11,7 +11,6 @@ categories:
   - "Java"
 ---
 
-# Java的包装类
 
 ## 为什么要有包装类，包装类有哪些？
 
@@ -22,7 +21,7 @@ categories:
 
 - 可以把基本类型的数据转换成字符串类型。
   - public static String toString(double d)
-  - public String toString()
+  - public String toString
 - 可以把字符串类型的数值转换成真实的数据类型。
   - public static int parseInt(String s)
   - public static Integer valueOf(String s)

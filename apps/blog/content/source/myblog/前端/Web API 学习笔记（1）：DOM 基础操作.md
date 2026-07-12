@@ -1,6 +1,7 @@
 ---
 title: "Web API 学习笔记（1）：DOM 基础操作"
 date: 2025-11-03 12:39:05
+slug: web-api-dom-basics
 tags:
   - "前端开发"
   - "HTML"
@@ -12,11 +13,10 @@ categories:
   - "Web API"
 ---
 
-# Web API 学习笔记（1）：DOM 基础操作
 
 复习：
 
-splice() 方法用于添加或删除数组中的元素。
+splice 方法用于添加或删除数组中的元素。
 
 **注意：**这种方法会改变原始数组。
 
@@ -45,7 +45,6 @@ console.log(arr) // ['red', 'pink', 'hotpink', 'green', 'blue']
 ~~~
 
 
-
 > 了解 DOM 的结构并掌握其基本的操作，体验 DOM 的在开发中的作用
 
 - 知道 ECMAScript 与 JavaScript 的关系
@@ -67,7 +66,6 @@ ECMAScript 运行在浏览器中然后再结合 Web APIs 才是真正的 JavaScr
 扩展阅读：ECMAScript 规范在不断的更新中，存在多个不同的版本，早期的版本号采用数字顺序编号如 ECMAScript3、ECMAScript5，后来由于更新速度较快便采用年份做为版本号，如 ECMAScript2017、ECMAScript2018 这种格式，ECMAScript6 是 2015 年发布的，常叫做 EMCAScript2015。
 
 关于 JavaScript 历史的[扩展阅读](https://javascript.ruanyifeng.com/introduction/history.html)。
-
 
 
 > 知道 DOM 相关的概念，建立对 DOM 的初步认识，学习 DOM 的基本操作，体会 DOM 的作用
@@ -191,9 +189,6 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 - 选择器必须是**字符串格式**，需用引号（单 / 双引号均可 ）包裹，否则会因语法错误无法执行。
 
 
-
-
-
 ## 操作元素内容
 
 通过修改 DOM 的文本内容，动态改变网页的内容。
@@ -222,7 +217,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 总结：如果文本内容中包含 `html` 标签时推荐使用 `innerHTML`，否则建议使用 `innerText` 属性。
 
-##操作元素属性 
+##操作元素属性
 
 有3种方式可以实现对属性的修改：
 
@@ -408,7 +403,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 自定义属性：
 
-在html5中推出来了专门的data-自定义属性  
+在html5中推出来了专门的data-自定义属性
 
 在标签上一律以data-开头
 
@@ -500,7 +495,5 @@ function greet(name) {
 // 传递参数
 setInterval(greet, 3000, 'John'); // 每3秒输出 "Hello, John!"
 ```
-
-
 
 

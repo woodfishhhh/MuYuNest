@@ -11,10 +11,8 @@ categories:
   - "Java"
 ---
 
-# Java List 集合：特点与常用 API
 
 List继承了Collection
-
 
 
 1、List 系列集合的特点是什么？

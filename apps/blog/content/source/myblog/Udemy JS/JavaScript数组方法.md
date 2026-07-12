@@ -12,7 +12,6 @@ categories:
   - "JavaScript"
 ---
 
-# 112 JavaScript数组方法(forEach, map, filter, reduce等)笔记
 
 ## 一、核心主题
 

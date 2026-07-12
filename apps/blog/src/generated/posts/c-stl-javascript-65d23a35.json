@@ -6,7 +6,7 @@
   "title": "C++ STL 到 JavaScript：常用数据结构映射速查",
   "publishedAt": "2025-12-24T15:58:56.000Z",
   "publishedLabel": "Dec 24, 2025",
-  "excerpt": "// 2. std::stack (栈)\n// C++: std::stack s; s.push(1); s.pop();\n// JS: Array (使用 push 和 pop)\nconst stack = [];\nstack.push(1);\nstack.push(2);\nconst top ...",
+  "excerpt": "A deep dive into C++ STL 到 JavaScript：常用数据结构映射速查.",
   "type": "Notes",
   "searchText": "C++ STL 到 JavaScript：常用数据结构映射速查 Notes 编程语言 JavaScript C++ STL JavaScript Array Map 数据结构 C++ STL 与 JavaScript 的对应关系学习笔记 函数 Array 事件监听与类操作",
   "readingMinutes": 1,

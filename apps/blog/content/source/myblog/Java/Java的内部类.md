@@ -11,7 +11,6 @@ categories:
   - "Java"
 ---
 
-# Java的内部类
 
 ### 成员内部类
 

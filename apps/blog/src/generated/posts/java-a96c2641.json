@@ -6,9 +6,9 @@
   "title": "Java的多态",
   "publishedAt": "2025-08-29T13:49:40.000Z",
   "publishedLabel": "Aug 29, 2025",
-  "excerpt": "多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。\n多态的具体代码体现",
+  "excerpt": "多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。 多态的具体代码体现",
   "type": "Notes",
-  "searchText": "Java的多态 Notes 编程语言 Java Java Java的多态 继承 多态 对象 什么是多态？ 多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。 多态的具体代码体现 多态的前提 有继承 / 实现关系；存在父类引用子类对象；存在方法重写。 多态的一个注意事项 多态是对象、行为的多态，Java 中的属性 (成员变量) 不谈多态。 使用多态有什么好处？存在什么问题？ 解耦合；使用父类类型的变量作为方法的形参时，可以接收一切子类对象。 多态下不能直接调用子类的独有方法。 多态下的类型转换问题 自动类型转换 ：父类 变量名 = new 子类 (); 例如： 强制类型转换 ：子类变量名 =(子类) 父类变量 例如 强制类型转换的一个注意事项 存在继承 / 实现关系就可以在编译阶段进行强制类型转换，编译降阶段不会报错。 运行时，如果发现对象的真实类型与强转后的类型不同，就会报类型转换异常 (ClassCastException) 的错误出来。 强转前，Java 建议: 使用 instanceof 关键字，判断当前对象的真实类型，再进行强转。",
+  "searchText": "Java的多态 Notes 编程语言 Java Java Java的多态 继承 多态 对象 多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。 多态的具体代码体现 多态的前提 有继承 / 实现关系；存在父类引用子类对象；存在方法重写。 多态的一个注意事项 多态是对象、行为的多态，Java 中的属性 (成员变量) 不谈多态。 使用多态有什么好处？存在什么问题？ 解耦合；使用父类类型的变量作为方法的形参时，可以接收一切子类对象。 多态下不能直接调用子类的独有方法。 多态下的类型转换问题 自动类型转换 ：父类 变量名 = new 子类 ; 例如： 强制类型转换 ：子类变量名 =(子类) 父类变量 例如 强制类型转换的一个注意事项 存在继承 / 实现关系就可以在编译阶段进行强制类型转换，编译降阶段不会报错。 运行时，如果发现对象的真实类型与强转后的类型不同，就会报类型转换异常 (ClassCastException) 的错误出来。 强转前，Java 建议: 使用 instanceof 关键字，判断当前对象的真实类型，再进行强转。",
   "readingMinutes": 2,
   "coverImage": null,
   "categories": [
@@ -22,7 +22,7 @@
     "多态",
     "对象"
   ],
-  "html": "<h1>什么是多态？</h1>\n<p>多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。\n多态的具体代码体现</p>\n<pre><code class=\"hljs language-java\"><span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p1</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Student</span> ()\np1.run (); \n\n<span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p2</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ()\np2.run ();\n</code></pre>\n<h3 id=\"多态的前提\">多态的前提</h3>\n<ul>\n<li>有继承 / 实现关系；存在父类引用子类对象；存在方法重写。</li>\n</ul>\n<h3 id=\"多态的一个注意事项\">多态的一个注意事项</h3>\n<ul>\n<li>多态是对象、行为的多态，Java 中的属性 (成员变量) 不谈多态。</li>\n</ul>\n<h3 id=\"使用多态有什么好处存在什么问题\">使用多态有什么好处？存在什么问题？</h3>\n<ul>\n<li>解耦合；使用父类类型的变量作为方法的形参时，可以接收一切子类对象。</li>\n<li>多态下不能直接调用子类的独有方法。</li>\n</ul>\n<h1>多态下的类型转换问题</h1>\n<p><strong>自动类型转换</strong>：父类 变量名 = new 子类 (); 例如：</p>\n<pre><code class=\"hljs language-java\">People = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ();\n</code></pre>\n<p><strong>强制类型转换</strong>：子类变量名 =(子类) 父类变量 例如</p>\n<pre><code class=\"hljs\">Teacher t = (Teacher) p;\n</code></pre>\n<h3 id=\"强制类型转换的一个注意事项\">强制类型转换的一个注意事项</h3>\n<ul>\n<li>存在继承 / 实现关系就可以在编译阶段进行强制类型转换，编译降阶段不会报错。</li>\n<li>运行时，如果发现对象的真实类型与强转后的类型不同，就会报类型转换异常 (ClassCastException) 的错误出来。</li>\n</ul>\n<pre><code class=\"hljs language-java\"><span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ();\n<span class=\"hljs-type\">Student</span> <span class=\"hljs-variable\">s</span> <span class=\"hljs-operator\">=</span> (Student) p; <span class=\"hljs-comment\">//java.Lang.CLassCastEception</span>\n</code></pre>\n<p><strong>强转前，Java 建议:</strong>\n使用 instanceof 关键字，判断当前对象的真实类型，再进行强转。</p>\n<pre><code class=\"hljs language-java\">p <span class=\"hljs-keyword\">instanceof</span> Student\n</code></pre>\n",
+  "html": "<p>多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。\n多态的具体代码体现</p>\n<pre><code class=\"hljs language-java\"><span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p1</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Student</span> ()\np1.run (); \n\n<span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p2</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ()\np2.run ();\n</code></pre>\n<h3 id=\"多态的前提\">多态的前提</h3>\n<ul>\n<li>有继承 / 实现关系；存在父类引用子类对象；存在方法重写。</li>\n</ul>\n<h3 id=\"多态的一个注意事项\">多态的一个注意事项</h3>\n<ul>\n<li>多态是对象、行为的多态，Java 中的属性 (成员变量) 不谈多态。</li>\n</ul>\n<h3 id=\"使用多态有什么好处存在什么问题\">使用多态有什么好处？存在什么问题？</h3>\n<ul>\n<li>解耦合；使用父类类型的变量作为方法的形参时，可以接收一切子类对象。</li>\n<li>多态下不能直接调用子类的独有方法。</li>\n</ul>\n<h2 id=\"多态下的类型转换问题\">多态下的类型转换问题</h2>\n<p><strong>自动类型转换</strong>：父类 变量名 = new 子类 ; 例如：</p>\n<pre><code class=\"hljs language-java\">People = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ();\n</code></pre>\n<p><strong>强制类型转换</strong>：子类变量名 =(子类) 父类变量 例如</p>\n<pre><code class=\"hljs\">Teacher t = (Teacher) p;\n</code></pre>\n<h3 id=\"强制类型转换的一个注意事项\">强制类型转换的一个注意事项</h3>\n<ul>\n<li>存在继承 / 实现关系就可以在编译阶段进行强制类型转换，编译降阶段不会报错。</li>\n<li>运行时，如果发现对象的真实类型与强转后的类型不同，就会报类型转换异常 (ClassCastException) 的错误出来。</li>\n</ul>\n<pre><code class=\"hljs language-java\"><span class=\"hljs-type\">People</span> <span class=\"hljs-variable\">p</span> <span class=\"hljs-operator\">=</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Teacher</span> ();\n<span class=\"hljs-type\">Student</span> <span class=\"hljs-variable\">s</span> <span class=\"hljs-operator\">=</span> (Student) p; <span class=\"hljs-comment\">//java.Lang.CLassCastEception</span>\n</code></pre>\n<p><strong>强转前，Java 建议:</strong>\n使用 instanceof 关键字，判断当前对象的真实类型，再进行强转。</p>\n<pre><code class=\"hljs language-java\">p <span class=\"hljs-keyword\">instanceof</span> Student\n</code></pre>\n",
   "toc": [
     {
       "id": "多态的前提",
@@ -38,6 +38,11 @@
       "id": "使用多态有什么好处存在什么问题",
       "level": 3,
       "text": "使用多态有什么好处？存在什么问题？"
+    },
+    {
+      "id": "多态下的类型转换问题",
+      "level": 2,
+      "text": "多态下的类型转换问题"
     },
     {
       "id": "强制类型转换的一个注意事项",

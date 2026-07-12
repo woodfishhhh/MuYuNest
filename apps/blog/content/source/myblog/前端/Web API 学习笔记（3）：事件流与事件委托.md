@@ -12,7 +12,6 @@ categories:
   - "Web API"
 ---
 
-# Web API 学习笔记（3）：事件流与事件委托
 
 ![](https://www.woodfishhhh.xyz/images/event.png?_t=1753287581197)
 
@@ -68,7 +67,6 @@ categories:
  - `mouseover`/`mouseout` 会触发冒泡，`mouseenter`/`mouseleave` 不会，后者更适合处理鼠标进出效果。
 
 
-
 ### 3. 解绑事件
 
 - **绑定 / 解绑方式**：使用 `addEventListener` 绑定事件后，需通过 `removeEventListener(事件类型, 事件处理函数, [捕获/冒泡阶段])` 解绑。
@@ -85,7 +83,6 @@ btn.removeEventListener('click', fn)
 ```
 
 
-
 - **关键注意**：匿名函数无法被解绑，需用具名函数（如示例中 `fn` ）才能正常绑定和解绑 。
 
  ## 二、事件委托
@@ -93,8 +90,7 @@ btn.removeEventListener('click', fn)
  事件委托利用事件冒泡的特性，将子元素的事件监听委托给父元素，从而减少事件绑定次数，提升性能（尤其适合动态生成的元素）。
 
 
-
- ### 1. 核心原理
+ ### 1. 原理
 
  - 父元素监听事件，通过事件对象的 **`target`** 属性判断触发事件的具体子元素。
 
@@ -199,15 +195,11 @@ window.addEventListener('resize', () => {
   **注意**：如果元素隐藏（`display: none`），返回值为 0。
 
 
-
   ## 五、总结
 
   - 事件流分为捕获和冒泡阶段，默认在冒泡阶段触发事件，可通过 `stopPropagation()` 阻止冒泡。
   - 事件委托利用冒泡特性，将子元素事件委托给父元素，提升性能并适配动态元素。
   - 滚动、加载、尺寸改变等事件是实现交互效果的重要工具，结合元素尺寸属性可实现复杂交互（如滚动动画、响应式布局）。
-
-
-
 
 
 ## 复习：自定义属性

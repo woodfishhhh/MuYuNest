@@ -6,9 +6,9 @@
   "title": "Java的final",
   "publishedAt": "2025-08-29T13:50:04.000Z",
   "publishedLabel": "Aug 29, 2025",
-  "excerpt": "- 修饰类：该类被称为最终类，特点是不能被继承了。\n- 修饰方法：该方法被称为最终方法，特点是不能被重写了。\n- 修饰变量：该变量有且仅能被赋值一次。",
+  "excerpt": "修饰类：该类被称为最终类，特点是不能被继承了。",
   "type": "Notes",
-  "searchText": "Java的final Notes 编程语言 Java Java Java的final 继承 final 对象 final 关键字是最终的意思，可以修饰：类、方法、变量。 修饰类：该类被称为最终类，特点是不能被继承了。 修饰方法：该方法被称为最终方法，特点是不能被重写了。 修饰变量：该变量有且仅能被赋值一次。 final 修饰变量的注意 final 修饰 基本类型 的变量，变量存储的 数据 不能被改变。 final 修饰 引用类型 的变量，变量存储的 地址 不能被改变，但地址所指向对象的内容是可以被改变的。",
+  "searchText": "Java的final Notes 编程语言 Java Java Java的final 继承 final 对象 修饰类：该类被称为最终类，特点是不能被继承了。 修饰方法：该方法被称为最终方法，特点是不能被重写了。 修饰变量：该变量有且仅能被赋值一次。 final 修饰变量的注意 final 修饰 基本类型 的变量，变量存储的 数据 不能被改变。 final 修饰 引用类型 的变量，变量存储的 地址 不能被改变，但地址所指向对象的内容是可以被改变的。",
   "readingMinutes": 1,
   "coverImage": null,
   "categories": [
@@ -22,7 +22,7 @@
     "final",
     "对象"
   ],
-  "html": "<h1>final 关键字是最终的意思，可以修饰：类、方法、变量。</h1>\n<ul>\n<li>修饰类：该类被称为最终类，特点是不能被继承了。</li>\n<li>修饰方法：该方法被称为最终方法，特点是不能被重写了。</li>\n<li>修饰变量：该变量有且仅能被赋值一次。</li>\n</ul>\n<h2 id=\"final-修饰变量的注意\">final 修饰变量的注意</h2>\n<ul>\n<li>final 修饰<strong>基本类型</strong>的变量，变量存储的<strong>数据</strong>不能被改变。</li>\n<li>final 修饰<strong>引用类型</strong>的变量，变量存储的<strong>地址</strong>不能被改变，但地址所指向对象的内容是可以被改变的。</li>\n</ul>\n",
+  "html": "<ul>\n<li>修饰类：该类被称为最终类，特点是不能被继承了。</li>\n<li>修饰方法：该方法被称为最终方法，特点是不能被重写了。</li>\n<li>修饰变量：该变量有且仅能被赋值一次。</li>\n</ul>\n<h2 id=\"final-修饰变量的注意\">final 修饰变量的注意</h2>\n<ul>\n<li>final 修饰<strong>基本类型</strong>的变量，变量存储的<strong>数据</strong>不能被改变。</li>\n<li>final 修饰<strong>引用类型</strong>的变量，变量存储的<strong>地址</strong>不能被改变，但地址所指向对象的内容是可以被改变的。</li>\n</ul>\n",
   "toc": [
     {
       "id": "final-修饰变量的注意",

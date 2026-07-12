@@ -12,9 +12,8 @@ categories:
   - "JavaScript"
 ---
 
-# 106 Rest Pattern and Parameters 学习笔记
 
-## 一、核心概念：Rest 模式与扩展运算符的对比
+## 一、概念：Rest 模式与扩展运算符的对比
 
 ### 1.1 语法共性
 
@@ -87,7 +86,7 @@ console.log(others); // 输出：["orange", "grape", "mango"]
 
    ：若 Rest 不在末尾，JavaScript 无法判断 “收集到何时停止”，会报错。
 
-   ❌ 错误示例：
+    错误示例：
 
    ```
    const [a, ...rest, b] = [1,2,3,4];
@@ -95,7 +94,7 @@ console.log(others); // 输出：["orange", "grape", "mango"]
 
    （Uncaught SyntaxError: Rest element must be last in a destructuring pattern）
 
-   ✅ 正确示例：
+    正确示例：
 
    ```
    const [a, b, ...rest] = [1,2,3,4];
@@ -121,7 +120,7 @@ console.log(others); // 输出：["orange", "grape", "mango"]
 
    ：多个 Rest 会导致语法冲突。
 
-   ❌ 错误示例：
+    错误示例：
 
    ```
    const [a, ...rest1, b, ...rest2] = [1,2,3,4];
@@ -227,7 +226,7 @@ orderPizza("培根", "蘑菇", "洋葱");
 // 输出：您点的披萨主料是：培根，可选配料是：蘑菇、洋葱（otherIngredients = ["蘑菇","洋葱"]）
 ```
 
-## 四、核心总结：如何区分 Rest 与扩展运算符？
+## 四、小结：如何区分 Rest 与扩展运算符？
 
 | 使用场景                  | 判定规则                                | 对应语法                         |
 | ------------------------- | --------------------------------------- | -------------------------------- |

@@ -6,10 +6,10 @@
   "title": "数据库安全性：安全标准、存取控制与审计",
   "publishedAt": "2026-03-16T17:37:26.000Z",
   "publishedLabel": "Mar 16, 2026",
-  "excerpt": "- 关键参数：\n  - PUBLIC：表示授予所有用户该权限\n  - WITH GRANT OPTION：允许被授权用户转授该权限给其他用户\n  - 对属性列授权时，必须明确指定列名（如UPDATE(Sno)）\n- 授权者范围：数据库管理员（DBA）、数据库对象创建者、拥有WITH GRANT OP...",
+  "excerpt": "数据库安全要回答三个问题：谁在访问、能访问哪些对象、操作发生后如何追查。身份鉴别负责确认用户，存取控制负责限制权限，审计则保留事后证据。",
   "type": "Notes",
-  "searchText": "数据库安全性：安全标准、存取控制与审计 Notes 数据库 数据库原理 数据库安全 DAC MAC 审计 一、安全标准 1. TCSEC（1985年，核心考点） 分 A、B、C、D 四组7个等级，安全程度从D→A逐级提升，核心考点标注★ D：最低等级，所有不满足更高标准的系统归为此类 C1：初级自主安全保护，实现 DAC（自主存取控制） ，分离用户与数据，限制权限传播 ★C2：安全产品最低档，细化DAC，支持个人身份注册、审计、资源隔离 ★B1：真正意义上的安全产品，对数据标记，实现 MAC（强制存取控制） B2：结构化保护，建立形式化安全策略模型，对所有主/客体实施DAC+MAC B3：安全域，TCB满足访问监控器要求，审计/跟踪能力强化 A1：验证设计，基于B3级保护，增加系统形式化设计说明与验证 2. CC（1999年，国际标准） 按安全保证程度分 EAL1 EAL7 7个等级，程度逐级升高，核心对应关系： EAL2 ↔ TCSEC C1 EAL7 ↔ TCSEC A1 二、数据库安全性控制框架 1. 整体安全措施（层层设计） 用户身份鉴别 → 数据库管理系统（DBMS）安全保护 → 操作系统保护 → 敏感数据传输加密 → 数据库密码存储保护 2. DBMS安全控制模型 分为 事前、事中、事后、存储保护、传输保护 五类，核心围绕「身份验证 权限控制 操作审计」展开 三、用户身份鉴别（最外层安全保护） 1. 用户标识 由 用户名 + 唯一用户标识号 组成（标识号全系统生命周期唯一） 2. 4种鉴别方法 | 方法 | 核心特点 | 应用场景 | | | | | | 静态口令 | 自定义、简单，可双因子（口令+数字证书） | 常规用户日常登录 | | 动态口令 | 一次一密、动态变化 | 临时访问、高安全需求场景 | | 生物特征识别 | 指纹、掌纹、虹膜等唯一特征 | 高安全等级的身份验证 | | 智能卡 | 不可复制硬件，常结合PIN码 | 线下终端、专用系统登录 | 四、存取控制机制（核心） 1. 机制组成（选择/填空考点） 1. 定义用户权限，将权限登记至 数据字典 （该过程称 授权规则/安全规则 ） 2. 用户发起操作时，DBMS查询数据字典进行 合法权限检查 两者共同组成DBMS的 存取控制子系统 2. 自主存取控制（DAC，C1/C2级） 核心特点 用户对不同数据对象、不同用户对同一数据对象的权限均可差异化配置，通过SQL的 （授权）和 （收回）实现。 （1）GRANT 授权语句 基本格式 ： 关键参数： ：表示授予 所有用户 该权限 ：允许被授权用户 转授 该权限给其他用户 对 属性列 授权时，必须明确指定列名（如 ） 授权者范围：数据库管理员（DBA）、数据库对象创建者、拥有 的用户 （2）REVOKE 收回语句 基本格式 ： 关键参数（默认 ）： ：若被收回权限的用户已转授权限， 收回失败 ： 级联收回 ，不仅收回目标用户权限，还收回其转授给其他用户的同名权限 典型例题 1. 授予U1查询Student表的权限： 2. 授予U5插入SC表的权限并允许转授： 3. 级联收回U5插入SC表的权限： 3. 强制存取控制（MAC，B1级，核心考点） 适用场景 军事、政府等对数据严格保密的部门， 必须先实现DAC，再叠加MAC 。 核心概念 主体 ：系统活动实体（用户、代表用户的进程），标记为 许可证级别 客体 ：系统被动实体（文件、基本表、视图、索引），标记为 密级 敏感级标记 （从高到低）：绝密（PS） 机密（S） 可信（C） 公开（P） 核心存取规则（必记） 1. 仅当 主体许可证级别 ≥ 客体密级 时，主体 可读取 该客体 2. 仅当 主体许可证级别 ≤ 客体密级 时，主体 可写入 该客体 规则目的：防止高权限用户将敏感数据写入低密级对象，避免数据泄露。 关键特性 数据的密级标记与数据本身 不可分割 ，无论数据如何复制，标记始终伴随，仅符合密级要求的用户可操作。 五、数据库角色 1. 核心定义 角色是权限的集合 ，用于简化对「具有相同权限的一组用户」的授权操作，与「用户」是不同概念。 2. 核心操作（SQL语句） （1）创建角色 $$\\text{CREATE ROLE ;}$$ （2）为角色授权（与用户授权格式一致） $$\\text{GRANT ON TO ;}$$ （3）将角色授予用户/其他角色 $$\\text{GRANT TO [WITH ADMIN OPTION];}$$ ：允许被授权者将该角色转授给其他用户/角色 （4）收回角色权限/角色 $$\\text{REVOKE ON FROM ;}$$ $$\\text{REVOKE FROM ;}$$ 典型例题 1. 创建角色R1： 2. 为R1授予Student表的查/改/插权限： 3. 将R1授予王平、张明： 4. 收回王平的R1角色： 六、视图机制（间接实现权限控制） 1. 核心作用 通过创建视图 隐藏保密数据 ，仅向用户展示其有权限查看的内容，配合 实现精细化权限控制。 2. 核心操作 （1）创建视图（带完整性检查） $$\\text{CREATE VIEW AS [WITH CHECK OPTION];}$$ ：对视图进行增/删/改时，强制检查数据是否满足视图的创建条件（如专业、年级）。 （2）对视图授权 与普通表的授权格式完全一致。 典型例题 创建计算机专业学生视图CS Student，并授予王平查询权限、张明所有操作权限： 七、审计（事后安全控制，C2级及以上必带功能） 1. 核心定义 启用 专用审计日志 ，记录数据库的所有操作（操作人、时间、内容、结果），由审计员监控日志，排查非法操作。 2. 核心特点 耗费系统时间和存储空间，DBA可根据安全需求 手动开启/关闭 仅适用于安全性要求高的部门（军事、金融、政府） 3. 高频考点（必记） 1. C2级及以上的DBMS必须具备审计功能 2. 审计记录 必须先转储，再删除 （防止审计员误删/故意删除） 3. 转储后的审计记录文件需做 完整性+保密性保护 ，仅审计员可查阅/转储，禁止任何用户新增/修改。 4. 审计相关SQL语句 设置审计： 取消审计： 审计类型：用户级审计（用户对自己创建的表/视图审计）、系统级审计（DBA操作，监控登录/系统权限等） 八、用户创建（CREATE USER，了解即可） 1. 超级用户（super user） $$\\text{CREATE USER WITH SUPERUSER [PASSWORD ];}$$ 权限：可执行数据库所有操作，仅由系统初始化指定的超级用户创建。 2. 建库用户（CREATE DB） $$\\text{CREATE USER WITH CREATEDB [PASSWORD ];}$$ 权限：可创建数据库并成为数据库属主，可创建模式并授予权限。 3. 普通用户 $$\\text{CREATE USER PASSWORD ;}$$ 权限：仅拥有被授予的基础操作权限。 核心总结（必背考点） 1. TCSEC核心：C2（安全产品最低档）、B1（真正安全产品，MAC）、DAC（C1/C2）、MAC（B1+） 2. 存取控制：DAC靠 ，MAC靠主/客体密级匹配，先DAC后MAC 3. 审计：C2及以上必备，记录先转储后删除，仅审计员可操作 4. 角色：权限集合，简化授权， 控制角色转授 5. 视图：隐藏保密数据，配合授权实现精细化权限控制",
-  "readingMinutes": 10,
+  "searchText": "数据库安全性：安全标准、存取控制与审计 Notes 数据库 数据库原理 数据库安全 DAC MAC 审计 数据库安全要回答三个问题：谁在访问、能访问哪些对象、操作发生后如何追查。身份鉴别负责确认用户，存取控制负责限制权限，审计则保留事后证据。 一、安全标准 1. TCSEC（1985年） 分 A、B、C、D 四组7个等级，安全程度从D→A逐级提升。 D：最低等级，所有不满足更高标准的系统归为此类 C1：初级自主安全保护，实现 DAC（自主存取控制） ，分离用户与数据，限制权限传播 C2：安全产品最低档，细化DAC，支持个人身份注册、审计、资源隔离 B1：真正意义上的安全产品，对数据标记，实现 MAC（强制存取控制） B2：结构化保护，建立形式化安全策略模型，对所有主/客体实施DAC+MAC B3：安全域，TCB满足访问监控器要求，审计/跟踪能力强化 A1：验证设计，基于B3级保护，增加系统形式化设计说明与验证 2. CC（1999年，国际标准） 按安全保证程度分 EAL1 EAL7 7个等级，程度逐级升高，核心对应关系： EAL2 ↔ TCSEC C1 EAL7 ↔ TCSEC A1 二、数据库安全性控制框架 1. 整体安全措施 用户身份鉴别 → 数据库管理系统（DBMS）安全保护 → 操作系统保护 → 敏感数据传输加密 → 数据库密码存储保护 2. DBMS安全控制模型 分为 事前、事中、事后、存储保护、传输保护 五类，核心围绕「身份验证 权限控制 操作审计」展开 三、用户身份鉴别 1. 用户标识 由 用户名 + 唯一用户标识号 组成（标识号全系统生命周期唯一） 2. 4种鉴别方法 | 方法 | 核心特点 | 应用场景 | | | | | | 静态口令 | 自定义、简单，可双因子（口令+数字证书） | 常规用户日常登录 | | 动态口令 | 一次一密、动态变化 | 临时访问、高安全需求场景 | | 生物特征识别 | 指纹、掌纹、虹膜等唯一特征 | 高安全等级的身份验证 | | 智能卡 | 不可复制硬件，常结合PIN码 | 线下终端、专用系统登录 | 四、存取控制机制 1. 授权与权限检查 1. 定义用户权限，将权限登记至 数据字典 （该过程称 授权规则/安全规则 ） 2. 用户发起操作时，DBMS查询数据字典进行 合法权限检查 两者共同组成DBMS的 存取控制子系统 2. 自主存取控制（DAC，C1/C2级） 适用方式 用户对不同数据对象、不同用户对同一数据对象的权限均可差异化配置，通过SQL的 （授权）和 （收回）实现。 （1）GRANT 授权语句 基本格式 ： 关键参数： ：表示授予 所有用户 该权限 ：允许被授权用户 转授 该权限给其他用户 对 属性列 授权时，必须明确指定列名（如 ） 授权者范围：数据库管理员（DBA）、数据库对象创建者、拥有 的用户 （2）REVOKE 收回语句 基本格式 ： 关键参数（默认 ）： ：若被收回权限的用户已转授权限， 收回失败 ： 级联收回 ，不仅收回目标用户权限，还收回其转授给其他用户的同名权限 典型例题 1. 授予U1查询Student表的权限： 2. 授予U5插入SC表的权限并允许转授： 3. 级联收回U5插入SC表的权限： 3. 强制存取控制（MAC，B1级） 适用场景 军事、政府等对数据严格保密的部门， 必须先实现DAC，再叠加MAC 。 主体、客体与密级 主体 ：系统活动实体（用户、代表用户的进程），标记为 许可证级别 客体 ：系统被动实体（文件、基本表、视图、索引），标记为 密级 敏感级标记 （从高到低）：绝密（PS） 机密（S） 可信（C） 公开（P） 读写规则 1. 仅当 主体许可证级别 ≥ 客体密级 时，主体 可读取 该客体 2. 仅当 主体许可证级别 ≤ 客体密级 时，主体 可写入 该客体 规则目的：防止高权限用户将敏感数据写入低密级对象，避免数据泄露。 关键特性 数据的密级标记与数据本身 不可分割 ，无论数据如何复制，标记始终伴随，仅符合密级要求的用户可操作。 五、数据库角色 1. 角色与用户的区别 角色是权限的集合 ，用于简化对「具有相同权限的一组用户」的授权操作，与「用户」是不同概念。 2. 角色操作 （1）创建角色 $$\\text{CREATE ROLE ;}$$ （2）为角色授权（与用户授权格式一致） $$\\text{GRANT ON TO ;}$$ （3）将角色授予用户/其他角色 $$\\text{GRANT TO [WITH ADMIN OPTION];}$$ ：允许被授权者将该角色转授给其他用户/角色 （4）收回角色权限/角色 $$\\text{REVOKE ON FROM ;}$$ $$\\text{REVOKE FROM ;}$$ 典型例题 1. 创建角色R1： 2. 为R1授予Student表的查/改/插权限： 3. 将R1授予王平、张明： 4. 收回王平的R1角色： 六、视图机制（间接实现权限控制） 1. 视图如何限制可见数据 通过创建视图 隐藏保密数据 ，仅向用户展示其有权限查看的内容，配合 实现精细化权限控制。 2. 创建并授权视图 （1）创建视图（带完整性检查） $$\\text{CREATE VIEW AS [WITH CHECK OPTION];}$$ ：对视图进行增/删/改时，强制检查数据是否满足视图的创建条件（如专业、年级）。 （2）对视图授权 与普通表的授权格式完全一致。 典型例题 创建计算机专业学生视图CS Student，并授予王平查询权限、张明所有操作权限： 七、审计（C2级及以上的事后安全控制） 1. 审计日志 启用 专用审计日志 ，记录数据库的所有操作（操作人、时间、内容、结果），由审计员监控日志，排查非法操作。 2. 开启审计的代价 耗费系统时间和存储空间，DBA可根据安全需求 手动开启/关闭 仅适用于安全性要求高的部门（军事、金融、政府） 3. 审计记录的约束 1. C2级及以上的DBMS必须具备审计功能 2. 审计记录 必须先转储，再删除 （防止审计员误删/故意删除） 3. 转储后的审计记录文件需做 完整性+保密性保护 ，仅审计员可查阅/转储，禁止任何用户新增/修改。 4. 审计相关SQL语句 设置审计： 取消审计： 审计类型：用户级审计（用户对自己创建的表/视图审计）、系统级审计（DBA操作，监控登录/系统权限等） 八、创建不同权限的用户 1. 超级用户（super user） $$\\text{CREATE USER WITH SUPERUSER [PASSWORD ];}$$ 权限：可执行数据库所有操作，仅由系统初始化指定的超级用户创建。 2. 建库用户（CREATE DB） $$\\text{CREATE USER WITH CREATEDB [PASSWORD ];}$$ 权限：可创建数据库并成为数据库属主，可创建模式并授予权限。 3. 普通用户 $$\\text{CREATE USER PASSWORD ;}$$ 权限：仅拥有被授予的基础操作权限。 九、选择安全机制的依据 不同机制解决的问题不同，可以按下面的边界选择： 1. TCSEC核心：C2（安全产品最低档）、B1（真正安全产品，MAC）、DAC（C1/C2）、MAC（B1+） 2. 存取控制：DAC靠 ，MAC靠主/客体密级匹配，先DAC后MAC 3. 审计：C2及以上必备，记录先转储后删除，仅审计员可操作 4. 角色：权限集合，简化授权， 控制角色转授 5. 视图：隐藏保密数据，配合授权实现精细化权限控制",
+  "readingMinutes": 11,
   "coverImage": null,
   "categories": [
     "数据库",
@@ -21,7 +21,7 @@
     "MAC",
     "审计"
   ],
-  "html": "<h2 id=\"一安全标准\">一、安全标准</h2>\n<h3 id=\"1-tcsec1985年核心考点\">1. TCSEC（1985年，核心考点）</h3>\n<p>分<strong>A、B、C、D</strong>四组7个等级，安全程度从D→A逐级提升，核心考点标注★</p>\n<ul>\n<li>D：最低等级，所有不满足更高标准的系统归为此类</li>\n<li>C1：初级自主安全保护，实现<strong>DAC（自主存取控制）</strong>，分离用户与数据，限制权限传播</li>\n<li>★C2：安全产品最低档，细化DAC，支持个人身份注册、审计、资源隔离</li>\n<li>★B1：真正意义上的安全产品，对数据标记，实现<strong>MAC（强制存取控制）</strong></li>\n<li>B2：结构化保护，建立形式化安全策略模型，对所有主/客体实施DAC+MAC</li>\n<li>B3：安全域，TCB满足访问监控器要求，审计/跟踪能力强化</li>\n<li>A1：验证设计，基于B3级保护，增加系统形式化设计说明与验证</li>\n</ul>\n<h3 id=\"2-cc1999年国际标准\">2. CC（1999年，国际标准）</h3>\n<p>按安全保证程度分<strong>EAL1~EAL7</strong> 7个等级，程度逐级升高，核心对应关系：</p>\n<ul>\n<li>EAL2 ↔ TCSEC-C1</li>\n<li>EAL7 ↔ TCSEC-A1</li>\n</ul>\n<h2 id=\"二数据库安全性控制框架\">二、数据库安全性控制框架</h2>\n<h3 id=\"1-整体安全措施层层设计\">1. 整体安全措施（层层设计）</h3>\n<p>用户身份鉴别 → 数据库管理系统（DBMS）安全保护 → 操作系统保护 → 敏感数据传输加密 → 数据库密码存储保护</p>\n<h3 id=\"2-dbms安全控制模型\">2. DBMS安全控制模型</h3>\n<p>分为<strong>事前、事中、事后、存储保护、传输保护</strong>五类，核心围绕「身份验证-权限控制-操作审计」展开</p>\n<h2 id=\"三用户身份鉴别最外层安全保护\">三、用户身份鉴别（最外层安全保护）</h2>\n<h3 id=\"1-用户标识\">1. 用户标识</h3>\n<p>由<strong>用户名 + 唯一用户标识号</strong>组成（标识号全系统生命周期唯一）</p>\n<h3 id=\"2-4种鉴别方法\">2. 4种鉴别方法</h3>\n<table>\n<thead>\n<tr>\n<th>方法</th>\n<th>核心特点</th>\n<th>应用场景</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>静态口令</td>\n<td>自定义、简单，可双因子（口令+数字证书）</td>\n<td>常规用户日常登录</td>\n</tr>\n<tr>\n<td>动态口令</td>\n<td>一次一密、动态变化</td>\n<td>临时访问、高安全需求场景</td>\n</tr>\n<tr>\n<td>生物特征识别</td>\n<td>指纹、掌纹、虹膜等唯一特征</td>\n<td>高安全等级的身份验证</td>\n</tr>\n<tr>\n<td>智能卡</td>\n<td>不可复制硬件，常结合PIN码</td>\n<td>线下终端、专用系统登录</td>\n</tr>\n</tbody>\n</table>\n<h2 id=\"四存取控制机制核心\">四、存取控制机制（核心）</h2>\n<h3 id=\"1-机制组成选择填空考点\">1. 机制组成（选择/填空考点）</h3>\n<ol>\n<li>定义用户权限，将权限登记至<strong>数据字典</strong>（该过程称<strong>授权规则/安全规则</strong>）</li>\n<li>用户发起操作时，DBMS查询数据字典进行<strong>合法权限检查</strong></li>\n</ol>\n<blockquote>\n<p>两者共同组成DBMS的<strong>存取控制子系统</strong></p>\n</blockquote>\n<h3 id=\"2-自主存取控制dacc1c2级\">2. 自主存取控制（DAC，C1/C2级）</h3>\n<h4 id=\"核心特点\">核心特点</h4>\n<p>用户对不同数据对象、不同用户对同一数据对象的权限均可差异化配置，通过SQL的<code>GRANT</code>（授权）和<code>REVOKE</code>（收回）实现。</p>\n<h4 id=\"1grant-授权语句\">（1）GRANT 授权语句</h4>\n<p><strong>基本格式</strong>：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">GRANT</span> 权限<span class=\"hljs-number\">1</span>[, 权限<span class=\"hljs-number\">2</span>, ...]\n<span class=\"hljs-keyword\">ON</span> 对象名\n<span class=\"hljs-keyword\">TO</span> 用户<span class=\"hljs-number\">1</span>[, 用户<span class=\"hljs-number\">2</span>, ... <span class=\"hljs-operator\">|</span> PUBLIC]\n[<span class=\"hljs-keyword\">WITH</span> <span class=\"hljs-keyword\">GRANT</span> OPTION];\n</code></pre>\n<ul>\n<li>关键参数：\n<ul>\n<li><code>PUBLIC</code>：表示授予<strong>所有用户</strong>该权限</li>\n<li><code>WITH GRANT OPTION</code>：允许被授权用户<strong>转授</strong>该权限给其他用户</li>\n<li>对<strong>属性列</strong>授权时，必须明确指定列名（如<code>UPDATE(Sno)</code>）</li>\n</ul>\n</li>\n<li>授权者范围：数据库管理员（DBA）、数据库对象创建者、拥有<code>WITH GRANT OPTION</code>的用户</li>\n</ul>\n<h4 id=\"2revoke-收回语句\">（2）REVOKE 收回语句</h4>\n<p><strong>基本格式</strong>：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">REVOKE</span> 权限<span class=\"hljs-number\">1</span>[, 权限<span class=\"hljs-number\">2</span>, ...]\n<span class=\"hljs-keyword\">ON</span> 对象名\n<span class=\"hljs-keyword\">FROM</span> 用户<span class=\"hljs-number\">1</span>[, 用户<span class=\"hljs-number\">2</span>, ... <span class=\"hljs-operator\">|</span> PUBLIC]\n[CASCADE];\n</code></pre>\n<ul>\n<li>关键参数（默认<code>RESTRICT</code>）：\n<ul>\n<li><code>RESTRICT</code>：若被收回权限的用户已转授权限，<strong>收回失败</strong></li>\n<li><code>CASCADE</code>：<strong>级联收回</strong>，不仅收回目标用户权限，还收回其转授给其他用户的同名权限</li>\n</ul>\n</li>\n</ul>\n<h4 id=\"典型例题\">典型例题</h4>\n<ol>\n<li>授予U1查询Student表的权限：<code>GRANT SELECT ON TABLE Student TO U1;</code></li>\n<li>授予U5插入SC表的权限并允许转授：<code>GRANT INSERT ON TABLE SC TO U5 WITH GRANT OPTION;</code></li>\n<li>级联收回U5插入SC表的权限：<code>REVOKE INSERT ON TABLE SC FROM U5 CASCADE;</code></li>\n</ol>\n<h3 id=\"3-强制存取控制macb1级核心考点\">3. 强制存取控制（MAC，B1级，核心考点）</h3>\n<h4 id=\"适用场景\">适用场景</h4>\n<p>军事、政府等对数据严格保密的部门，<strong>必须先实现DAC，再叠加MAC</strong>。</p>\n<h4 id=\"核心概念\">核心概念</h4>\n<ul>\n<li><strong>主体</strong>：系统活动实体（用户、代表用户的进程），标记为<strong>许可证级别</strong></li>\n<li><strong>客体</strong>：系统被动实体（文件、基本表、视图、索引），标记为<strong>密级</strong></li>\n<li><strong>敏感级标记</strong>（从高到低）：绝密（PS）&gt; 机密（S）&gt; 可信（C）&gt; 公开（P）</li>\n</ul>\n<h4 id=\"核心存取规则必记\">核心存取规则（必记）</h4>\n<ol>\n<li>仅当<strong>主体许可证级别 ≥ 客体密级</strong>时，主体<strong>可读取</strong>该客体</li>\n<li>仅当<strong>主体许可证级别 ≤ 客体密级</strong>时，主体<strong>可写入</strong>该客体</li>\n</ol>\n<blockquote>\n<p>规则目的：防止高权限用户将敏感数据写入低密级对象，避免数据泄露。</p>\n</blockquote>\n<h4 id=\"关键特性\">关键特性</h4>\n<p>数据的密级标记与数据本身<strong>不可分割</strong>，无论数据如何复制，标记始终伴随，仅符合密级要求的用户可操作。</p>\n<h2 id=\"五数据库角色\">五、数据库角色</h2>\n<h3 id=\"1-核心定义\">1. 核心定义</h3>\n<p><strong>角色是权限的集合</strong>，用于简化对「具有相同权限的一组用户」的授权操作，与「用户」是不同概念。</p>\n<h3 id=\"2-核心操作sql语句\">2. 核心操作（SQL语句）</h3>\n<h4 id=\"1创建角色\">（1）创建角色</h4>\n<p>$$\\text{CREATE ROLE &lt;角色名&gt;;}$$</p>\n<h4 id=\"2为角色授权与用户授权格式一致\">（2）为角色授权（与用户授权格式一致）</h4>\n<p>$$\\text{GRANT &lt;权限&gt; ON &lt;对象&gt; TO &lt;角色名&gt;;}$$</p>\n<h4 id=\"3将角色授予用户其他角色\">（3）将角色授予用户/其他角色</h4>\n<p>$$\\text{GRANT &lt;角色名1&gt; TO &lt;用户/角色名2&gt; [WITH ADMIN OPTION];}$$</p>\n<ul>\n<li><code>WITH ADMIN OPTION</code>：允许被授权者将该角色转授给其他用户/角色</li>\n</ul>\n<h4 id=\"4收回角色权限角色\">（4）收回角色权限/角色</h4>\n<p>$$\\text{REVOKE &lt;权限&gt; ON &lt;对象&gt; FROM &lt;角色名&gt;;}$$\n$$\\text{REVOKE &lt;角色名&gt; FROM &lt;用户/其他角色&gt;;}$$</p>\n<h4 id=\"典型例题-1\">典型例题</h4>\n<ol>\n<li>创建角色R1：<code>CREATE ROLE R1;</code></li>\n<li>为R1授予Student表的查/改/插权限：<code>GRANT SELECT,UPDATE,INSERT ON TABLE Student TO R1;</code></li>\n<li>将R1授予王平、张明：<code>GRANT R1 TO 王平,张明;</code></li>\n<li>收回王平的R1角色：<code>REVOKE R1 FROM 王平;</code></li>\n</ol>\n<h2 id=\"六视图机制间接实现权限控制\">六、视图机制（间接实现权限控制）</h2>\n<h3 id=\"1-核心作用\">1. 核心作用</h3>\n<p>通过创建视图<strong>隐藏保密数据</strong>，仅向用户展示其有权限查看的内容，配合<code>GRANT/REVOKE</code>实现精细化权限控制。</p>\n<h3 id=\"2-核心操作\">2. 核心操作</h3>\n<h4 id=\"1创建视图带完整性检查\">（1）创建视图（带完整性检查）</h4>\n<p>$$\\text{CREATE VIEW &lt;视图名&gt; AS &lt;查询语句&gt; [WITH CHECK OPTION];}$$</p>\n<ul>\n<li><code>WITH CHECK OPTION</code>：对视图进行增/删/改时，强制检查数据是否满足视图的创建条件（如专业、年级）。</li>\n</ul>\n<h4 id=\"2对视图授权\">（2）对视图授权</h4>\n<p>与普通表的授权格式完全一致。</p>\n<h4 id=\"典型例题-2\">典型例题</h4>\n<p>创建计算机专业学生视图CS_Student，并授予王平查询权限、张明所有操作权限：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">CREATE</span> <span class=\"hljs-keyword\">VIEW</span> CS_Student <span class=\"hljs-keyword\">AS</span>\n<span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-operator\">*</span> <span class=\"hljs-keyword\">FROM</span> Student <span class=\"hljs-keyword\">WHERE</span> Smajor<span class=\"hljs-operator\">=</span><span class=\"hljs-string\">'计算机科学技术'</span>\n<span class=\"hljs-keyword\">WITH</span> <span class=\"hljs-keyword\">CHECK</span> OPTION;\n\n<span class=\"hljs-keyword\">GRANT</span> <span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-keyword\">ON</span> CS_Student <span class=\"hljs-keyword\">TO</span> 王平;\n<span class=\"hljs-keyword\">GRANT</span> <span class=\"hljs-keyword\">ALL</span> PRIVILEGES <span class=\"hljs-keyword\">ON</span> CS_Student <span class=\"hljs-keyword\">TO</span> 张明;\n</code></pre>\n<h2 id=\"七审计事后安全控制c2级及以上必带功能\">七、审计（事后安全控制，C2级及以上必带功能）</h2>\n<h3 id=\"1-核心定义-1\">1. 核心定义</h3>\n<p>启用<strong>专用审计日志</strong>，记录数据库的所有操作（操作人、时间、内容、结果），由审计员监控日志，排查非法操作。</p>\n<h3 id=\"2-核心特点\">2. 核心特点</h3>\n<ul>\n<li>耗费系统时间和存储空间，DBA可根据安全需求<strong>手动开启/关闭</strong></li>\n<li>仅适用于安全性要求高的部门（军事、金融、政府）</li>\n</ul>\n<h3 id=\"3-高频考点必记\">3. 高频考点（必记）</h3>\n<ol>\n<li><strong>C2级及以上的DBMS必须具备审计功能</strong></li>\n<li>审计记录<strong>必须先转储，再删除</strong>（防止审计员误删/故意删除）</li>\n<li>转储后的审计记录文件需做<strong>完整性+保密性保护</strong>，仅审计员可查阅/转储，禁止任何用户新增/修改。</li>\n</ol>\n<h3 id=\"4-审计相关sql语句\">4. 审计相关SQL语句</h3>\n<ul>\n<li>设置审计：<code>AUDIT &lt;操作类型&gt; ON &lt;对象&gt; [BY ACCESS];</code></li>\n<li>取消审计：<code>NOAUDIT &lt;操作类型&gt; ON &lt;对象&gt;;</code></li>\n<li>审计类型：用户级审计（用户对自己创建的表/视图审计）、系统级审计（DBA操作，监控登录/系统权限等）</li>\n</ul>\n<h2 id=\"八用户创建create-user了解即可\">八、用户创建（CREATE USER，了解即可）</h2>\n<h3 id=\"1-超级用户super-user\">1. 超级用户（super user）</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; WITH SUPERUSER [PASSWORD &lt;密码&gt;];}$$</p>\n<ul>\n<li>权限：可执行数据库所有操作，仅由系统初始化指定的超级用户创建。</li>\n</ul>\n<h3 id=\"2-建库用户create-db\">2. 建库用户（CREATE DB）</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; WITH CREATEDB [PASSWORD &lt;密码&gt;];}$$</p>\n<ul>\n<li>权限：可创建数据库并成为数据库属主，可创建模式并授予权限。</li>\n</ul>\n<h3 id=\"3-普通用户\">3. 普通用户</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; PASSWORD &lt;密码&gt;;}$$</p>\n<ul>\n<li>权限：仅拥有被授予的基础操作权限。</li>\n</ul>\n<h3 id=\"核心总结必背考点\">核心总结（必背考点）</h3>\n<ol>\n<li>TCSEC核心：C2（安全产品最低档）、B1（真正安全产品，MAC）、DAC（C1/C2）、MAC（B1+）</li>\n<li>存取控制：DAC靠<code>GRANT/REVOKE</code>，MAC靠主/客体密级匹配，先DAC后MAC</li>\n<li>审计：C2及以上必备，记录先转储后删除，仅审计员可操作</li>\n<li>角色：权限集合，简化授权，<code>WITH ADMIN OPTION</code>控制角色转授</li>\n<li>视图：隐藏保密数据，配合授权实现精细化权限控制</li>\n</ol>\n",
+  "html": "<p>数据库安全要回答三个问题：谁在访问、能访问哪些对象、操作发生后如何追查。身份鉴别负责确认用户，存取控制负责限制权限，审计则保留事后证据。</p>\n<h2 id=\"一安全标准\">一、安全标准</h2>\n<h3 id=\"1-tcsec1985年\">1. TCSEC（1985年）</h3>\n<p>分<strong>A、B、C、D</strong>四组7个等级，安全程度从D→A逐级提升。</p>\n<ul>\n<li>D：最低等级，所有不满足更高标准的系统归为此类</li>\n<li>C1：初级自主安全保护，实现<strong>DAC（自主存取控制）</strong>，分离用户与数据，限制权限传播</li>\n<li>C2：安全产品最低档，细化DAC，支持个人身份注册、审计、资源隔离</li>\n<li>B1：真正意义上的安全产品，对数据标记，实现<strong>MAC（强制存取控制）</strong></li>\n<li>B2：结构化保护，建立形式化安全策略模型，对所有主/客体实施DAC+MAC</li>\n<li>B3：安全域，TCB满足访问监控器要求，审计/跟踪能力强化</li>\n<li>A1：验证设计，基于B3级保护，增加系统形式化设计说明与验证</li>\n</ul>\n<h3 id=\"2-cc1999年国际标准\">2. CC（1999年，国际标准）</h3>\n<p>按安全保证程度分<strong>EAL1~EAL7</strong> 7个等级，程度逐级升高，核心对应关系：</p>\n<ul>\n<li>EAL2 ↔ TCSEC-C1</li>\n<li>EAL7 ↔ TCSEC-A1</li>\n</ul>\n<h2 id=\"二数据库安全性控制框架\">二、数据库安全性控制框架</h2>\n<h3 id=\"1-整体安全措施\">1. 整体安全措施</h3>\n<p>用户身份鉴别 → 数据库管理系统（DBMS）安全保护 → 操作系统保护 → 敏感数据传输加密 → 数据库密码存储保护</p>\n<h3 id=\"2-dbms安全控制模型\">2. DBMS安全控制模型</h3>\n<p>分为<strong>事前、事中、事后、存储保护、传输保护</strong>五类，核心围绕「身份验证-权限控制-操作审计」展开</p>\n<h2 id=\"三用户身份鉴别\">三、用户身份鉴别</h2>\n<h3 id=\"1-用户标识\">1. 用户标识</h3>\n<p>由<strong>用户名 + 唯一用户标识号</strong>组成（标识号全系统生命周期唯一）</p>\n<h3 id=\"2-4种鉴别方法\">2. 4种鉴别方法</h3>\n<table>\n<thead>\n<tr>\n<th>方法</th>\n<th>核心特点</th>\n<th>应用场景</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>静态口令</td>\n<td>自定义、简单，可双因子（口令+数字证书）</td>\n<td>常规用户日常登录</td>\n</tr>\n<tr>\n<td>动态口令</td>\n<td>一次一密、动态变化</td>\n<td>临时访问、高安全需求场景</td>\n</tr>\n<tr>\n<td>生物特征识别</td>\n<td>指纹、掌纹、虹膜等唯一特征</td>\n<td>高安全等级的身份验证</td>\n</tr>\n<tr>\n<td>智能卡</td>\n<td>不可复制硬件，常结合PIN码</td>\n<td>线下终端、专用系统登录</td>\n</tr>\n</tbody>\n</table>\n<h2 id=\"四存取控制机制\">四、存取控制机制</h2>\n<h3 id=\"1-授权与权限检查\">1. 授权与权限检查</h3>\n<ol>\n<li>定义用户权限，将权限登记至<strong>数据字典</strong>（该过程称<strong>授权规则/安全规则</strong>）</li>\n<li>用户发起操作时，DBMS查询数据字典进行<strong>合法权限检查</strong></li>\n</ol>\n<blockquote>\n<p>两者共同组成DBMS的<strong>存取控制子系统</strong></p>\n</blockquote>\n<h3 id=\"2-自主存取控制dacc1c2级\">2. 自主存取控制（DAC，C1/C2级）</h3>\n<h4 id=\"适用方式\">适用方式</h4>\n<p>用户对不同数据对象、不同用户对同一数据对象的权限均可差异化配置，通过SQL的<code>GRANT</code>（授权）和<code>REVOKE</code>（收回）实现。</p>\n<h4 id=\"1grant-授权语句\">（1）GRANT 授权语句</h4>\n<p><strong>基本格式</strong>：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">GRANT</span> 权限<span class=\"hljs-number\">1</span>[, 权限<span class=\"hljs-number\">2</span>, ...]\n<span class=\"hljs-keyword\">ON</span> 对象名\n<span class=\"hljs-keyword\">TO</span> 用户<span class=\"hljs-number\">1</span>[, 用户<span class=\"hljs-number\">2</span>, ... <span class=\"hljs-operator\">|</span> PUBLIC]\n[<span class=\"hljs-keyword\">WITH</span> <span class=\"hljs-keyword\">GRANT</span> OPTION];\n</code></pre>\n<ul>\n<li>关键参数：\n<ul>\n<li><code>PUBLIC</code>：表示授予<strong>所有用户</strong>该权限</li>\n<li><code>WITH GRANT OPTION</code>：允许被授权用户<strong>转授</strong>该权限给其他用户</li>\n<li>对<strong>属性列</strong>授权时，必须明确指定列名（如<code>UPDATE(Sno)</code>）</li>\n</ul>\n</li>\n<li>授权者范围：数据库管理员（DBA）、数据库对象创建者、拥有<code>WITH GRANT OPTION</code>的用户</li>\n</ul>\n<h4 id=\"2revoke-收回语句\">（2）REVOKE 收回语句</h4>\n<p><strong>基本格式</strong>：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">REVOKE</span> 权限<span class=\"hljs-number\">1</span>[, 权限<span class=\"hljs-number\">2</span>, ...]\n<span class=\"hljs-keyword\">ON</span> 对象名\n<span class=\"hljs-keyword\">FROM</span> 用户<span class=\"hljs-number\">1</span>[, 用户<span class=\"hljs-number\">2</span>, ... <span class=\"hljs-operator\">|</span> PUBLIC]\n[CASCADE];\n</code></pre>\n<ul>\n<li>关键参数（默认<code>RESTRICT</code>）：\n<ul>\n<li><code>RESTRICT</code>：若被收回权限的用户已转授权限，<strong>收回失败</strong></li>\n<li><code>CASCADE</code>：<strong>级联收回</strong>，不仅收回目标用户权限，还收回其转授给其他用户的同名权限</li>\n</ul>\n</li>\n</ul>\n<h4 id=\"典型例题\">典型例题</h4>\n<ol>\n<li>授予U1查询Student表的权限：<code>GRANT SELECT ON TABLE Student TO U1;</code></li>\n<li>授予U5插入SC表的权限并允许转授：<code>GRANT INSERT ON TABLE SC TO U5 WITH GRANT OPTION;</code></li>\n<li>级联收回U5插入SC表的权限：<code>REVOKE INSERT ON TABLE SC FROM U5 CASCADE;</code></li>\n</ol>\n<h3 id=\"3-强制存取控制macb1级\">3. 强制存取控制（MAC，B1级）</h3>\n<h4 id=\"适用场景\">适用场景</h4>\n<p>军事、政府等对数据严格保密的部门，<strong>必须先实现DAC，再叠加MAC</strong>。</p>\n<h4 id=\"主体客体与密级\">主体、客体与密级</h4>\n<ul>\n<li><strong>主体</strong>：系统活动实体（用户、代表用户的进程），标记为<strong>许可证级别</strong></li>\n<li><strong>客体</strong>：系统被动实体（文件、基本表、视图、索引），标记为<strong>密级</strong></li>\n<li><strong>敏感级标记</strong>（从高到低）：绝密（PS）&gt; 机密（S）&gt; 可信（C）&gt; 公开（P）</li>\n</ul>\n<h4 id=\"读写规则\">读写规则</h4>\n<ol>\n<li>仅当<strong>主体许可证级别 ≥ 客体密级</strong>时，主体<strong>可读取</strong>该客体</li>\n<li>仅当<strong>主体许可证级别 ≤ 客体密级</strong>时，主体<strong>可写入</strong>该客体</li>\n</ol>\n<blockquote>\n<p>规则目的：防止高权限用户将敏感数据写入低密级对象，避免数据泄露。</p>\n</blockquote>\n<h4 id=\"关键特性\">关键特性</h4>\n<p>数据的密级标记与数据本身<strong>不可分割</strong>，无论数据如何复制，标记始终伴随，仅符合密级要求的用户可操作。</p>\n<h2 id=\"五数据库角色\">五、数据库角色</h2>\n<h3 id=\"1-角色与用户的区别\">1. 角色与用户的区别</h3>\n<p><strong>角色是权限的集合</strong>，用于简化对「具有相同权限的一组用户」的授权操作，与「用户」是不同概念。</p>\n<h3 id=\"2-角色操作\">2. 角色操作</h3>\n<h4 id=\"1创建角色\">（1）创建角色</h4>\n<p>$$\\text{CREATE ROLE &lt;角色名&gt;;}$$</p>\n<h4 id=\"2为角色授权与用户授权格式一致\">（2）为角色授权（与用户授权格式一致）</h4>\n<p>$$\\text{GRANT &lt;权限&gt; ON &lt;对象&gt; TO &lt;角色名&gt;;}$$</p>\n<h4 id=\"3将角色授予用户其他角色\">（3）将角色授予用户/其他角色</h4>\n<p>$$\\text{GRANT &lt;角色名1&gt; TO &lt;用户/角色名2&gt; [WITH ADMIN OPTION];}$$</p>\n<ul>\n<li><code>WITH ADMIN OPTION</code>：允许被授权者将该角色转授给其他用户/角色</li>\n</ul>\n<h4 id=\"4收回角色权限角色\">（4）收回角色权限/角色</h4>\n<p>$$\\text{REVOKE &lt;权限&gt; ON &lt;对象&gt; FROM &lt;角色名&gt;;}$$\n$$\\text{REVOKE &lt;角色名&gt; FROM &lt;用户/其他角色&gt;;}$$</p>\n<h4 id=\"典型例题-1\">典型例题</h4>\n<ol>\n<li>创建角色R1：<code>CREATE ROLE R1;</code></li>\n<li>为R1授予Student表的查/改/插权限：<code>GRANT SELECT,UPDATE,INSERT ON TABLE Student TO R1;</code></li>\n<li>将R1授予王平、张明：<code>GRANT R1 TO 王平,张明;</code></li>\n<li>收回王平的R1角色：<code>REVOKE R1 FROM 王平;</code></li>\n</ol>\n<h2 id=\"六视图机制间接实现权限控制\">六、视图机制（间接实现权限控制）</h2>\n<h3 id=\"1-视图如何限制可见数据\">1. 视图如何限制可见数据</h3>\n<p>通过创建视图<strong>隐藏保密数据</strong>，仅向用户展示其有权限查看的内容，配合<code>GRANT/REVOKE</code>实现精细化权限控制。</p>\n<h3 id=\"2-创建并授权视图\">2. 创建并授权视图</h3>\n<h4 id=\"1创建视图带完整性检查\">（1）创建视图（带完整性检查）</h4>\n<p>$$\\text{CREATE VIEW &lt;视图名&gt; AS &lt;查询语句&gt; [WITH CHECK OPTION];}$$</p>\n<ul>\n<li><code>WITH CHECK OPTION</code>：对视图进行增/删/改时，强制检查数据是否满足视图的创建条件（如专业、年级）。</li>\n</ul>\n<h4 id=\"2对视图授权\">（2）对视图授权</h4>\n<p>与普通表的授权格式完全一致。</p>\n<h4 id=\"典型例题-2\">典型例题</h4>\n<p>创建计算机专业学生视图CS_Student，并授予王平查询权限、张明所有操作权限：</p>\n<pre><code class=\"hljs language-sql\"><span class=\"hljs-keyword\">CREATE</span> <span class=\"hljs-keyword\">VIEW</span> CS_Student <span class=\"hljs-keyword\">AS</span>\n<span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-operator\">*</span> <span class=\"hljs-keyword\">FROM</span> Student <span class=\"hljs-keyword\">WHERE</span> Smajor<span class=\"hljs-operator\">=</span><span class=\"hljs-string\">'计算机科学技术'</span>\n<span class=\"hljs-keyword\">WITH</span> <span class=\"hljs-keyword\">CHECK</span> OPTION;\n\n<span class=\"hljs-keyword\">GRANT</span> <span class=\"hljs-keyword\">SELECT</span> <span class=\"hljs-keyword\">ON</span> CS_Student <span class=\"hljs-keyword\">TO</span> 王平;\n<span class=\"hljs-keyword\">GRANT</span> <span class=\"hljs-keyword\">ALL</span> PRIVILEGES <span class=\"hljs-keyword\">ON</span> CS_Student <span class=\"hljs-keyword\">TO</span> 张明;\n</code></pre>\n<h2 id=\"七审计c2级及以上的事后安全控制\">七、审计（C2级及以上的事后安全控制）</h2>\n<h3 id=\"1-审计日志\">1. 审计日志</h3>\n<p>启用<strong>专用审计日志</strong>，记录数据库的所有操作（操作人、时间、内容、结果），由审计员监控日志，排查非法操作。</p>\n<h3 id=\"2-开启审计的代价\">2. 开启审计的代价</h3>\n<ul>\n<li>耗费系统时间和存储空间，DBA可根据安全需求<strong>手动开启/关闭</strong></li>\n<li>仅适用于安全性要求高的部门（军事、金融、政府）</li>\n</ul>\n<h3 id=\"3-审计记录的约束\">3. 审计记录的约束</h3>\n<ol>\n<li><strong>C2级及以上的DBMS必须具备审计功能</strong></li>\n<li>审计记录<strong>必须先转储，再删除</strong>（防止审计员误删/故意删除）</li>\n<li>转储后的审计记录文件需做<strong>完整性+保密性保护</strong>，仅审计员可查阅/转储，禁止任何用户新增/修改。</li>\n</ol>\n<h3 id=\"4-审计相关sql语句\">4. 审计相关SQL语句</h3>\n<ul>\n<li>设置审计：<code>AUDIT &lt;操作类型&gt; ON &lt;对象&gt; [BY ACCESS];</code></li>\n<li>取消审计：<code>NOAUDIT &lt;操作类型&gt; ON &lt;对象&gt;;</code></li>\n<li>审计类型：用户级审计（用户对自己创建的表/视图审计）、系统级审计（DBA操作，监控登录/系统权限等）</li>\n</ul>\n<h2 id=\"八创建不同权限的用户\">八、创建不同权限的用户</h2>\n<h3 id=\"1-超级用户super-user\">1. 超级用户（super user）</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; WITH SUPERUSER [PASSWORD &lt;密码&gt;];}$$</p>\n<ul>\n<li>权限：可执行数据库所有操作，仅由系统初始化指定的超级用户创建。</li>\n</ul>\n<h3 id=\"2-建库用户create-db\">2. 建库用户（CREATE DB）</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; WITH CREATEDB [PASSWORD &lt;密码&gt;];}$$</p>\n<ul>\n<li>权限：可创建数据库并成为数据库属主，可创建模式并授予权限。</li>\n</ul>\n<h3 id=\"3-普通用户\">3. 普通用户</h3>\n<p>$$\\text{CREATE USER &lt;用户名&gt; PASSWORD &lt;密码&gt;;}$$</p>\n<ul>\n<li>权限：仅拥有被授予的基础操作权限。</li>\n</ul>\n<h2 id=\"九选择安全机制的依据\">九、选择安全机制的依据</h2>\n<p>不同机制解决的问题不同，可以按下面的边界选择：</p>\n<ol>\n<li>TCSEC核心：C2（安全产品最低档）、B1（真正安全产品，MAC）、DAC（C1/C2）、MAC（B1+）</li>\n<li>存取控制：DAC靠<code>GRANT/REVOKE</code>，MAC靠主/客体密级匹配，先DAC后MAC</li>\n<li>审计：C2及以上必备，记录先转储后删除，仅审计员可操作</li>\n<li>角色：权限集合，简化授权，<code>WITH ADMIN OPTION</code>控制角色转授</li>\n<li>视图：隐藏保密数据，配合授权实现精细化权限控制</li>\n</ol>\n",
   "toc": [
     {
       "id": "一安全标准",
@@ -29,9 +29,9 @@
       "text": "一、安全标准"
     },
     {
-      "id": "1-tcsec1985年核心考点",
+      "id": "1-tcsec1985年",
       "level": 3,
-      "text": "1. TCSEC（1985年，核心考点）"
+      "text": "1. TCSEC（1985年）"
     },
     {
       "id": "2-cc1999年国际标准",
@@ -44,9 +44,9 @@
       "text": "二、数据库安全性控制框架"
     },
     {
-      "id": "1-整体安全措施层层设计",
+      "id": "1-整体安全措施",
       "level": 3,
-      "text": "1. 整体安全措施（层层设计）"
+      "text": "1. 整体安全措施"
     },
     {
       "id": "2-dbms安全控制模型",
@@ -54,9 +54,9 @@
       "text": "2. DBMS安全控制模型"
     },
     {
-      "id": "三用户身份鉴别最外层安全保护",
+      "id": "三用户身份鉴别",
       "level": 2,
-      "text": "三、用户身份鉴别（最外层安全保护）"
+      "text": "三、用户身份鉴别"
     },
     {
       "id": "1-用户标识",
@@ -69,14 +69,14 @@
       "text": "2. 4种鉴别方法"
     },
     {
-      "id": "四存取控制机制核心",
+      "id": "四存取控制机制",
       "level": 2,
-      "text": "四、存取控制机制（核心）"
+      "text": "四、存取控制机制"
     },
     {
-      "id": "1-机制组成选择填空考点",
+      "id": "1-授权与权限检查",
       "level": 3,
-      "text": "1. 机制组成（选择/填空考点）"
+      "text": "1. 授权与权限检查"
     },
     {
       "id": "2-自主存取控制dacc1c2级",
@@ -84,9 +84,9 @@
       "text": "2. 自主存取控制（DAC，C1/C2级）"
     },
     {
-      "id": "核心特点",
+      "id": "适用方式",
       "level": 4,
-      "text": "核心特点"
+      "text": "适用方式"
     },
     {
       "id": "1grant-授权语句",
@@ -104,9 +104,9 @@
       "text": "典型例题"
     },
     {
-      "id": "3-强制存取控制macb1级核心考点",
+      "id": "3-强制存取控制macb1级",
       "level": 3,
-      "text": "3. 强制存取控制（MAC，B1级，核心考点）"
+      "text": "3. 强制存取控制（MAC，B1级）"
     },
     {
       "id": "适用场景",
@@ -114,14 +114,14 @@
       "text": "适用场景"
     },
     {
-      "id": "核心概念",
+      "id": "主体客体与密级",
       "level": 4,
-      "text": "核心概念"
+      "text": "主体、客体与密级"
     },
     {
-      "id": "核心存取规则必记",
+      "id": "读写规则",
       "level": 4,
-      "text": "核心存取规则（必记）"
+      "text": "读写规则"
     },
     {
       "id": "关键特性",
@@ -134,14 +134,14 @@
       "text": "五、数据库角色"
     },
     {
-      "id": "1-核心定义",
+      "id": "1-角色与用户的区别",
       "level": 3,
-      "text": "1. 核心定义"
+      "text": "1. 角色与用户的区别"
     },
     {
-      "id": "2-核心操作sql语句",
+      "id": "2-角色操作",
       "level": 3,
-      "text": "2. 核心操作（SQL语句）"
+      "text": "2. 角色操作"
     },
     {
       "id": "1创建角色",
@@ -174,14 +174,14 @@
       "text": "六、视图机制（间接实现权限控制）"
     },
     {
-      "id": "1-核心作用",
+      "id": "1-视图如何限制可见数据",
       "level": 3,
-      "text": "1. 核心作用"
+      "text": "1. 视图如何限制可见数据"
     },
     {
-      "id": "2-核心操作",
+      "id": "2-创建并授权视图",
       "level": 3,
-      "text": "2. 核心操作"
+      "text": "2. 创建并授权视图"
     },
     {
       "id": "1创建视图带完整性检查",
@@ -199,24 +199,24 @@
       "text": "典型例题"
     },
     {
-      "id": "七审计事后安全控制c2级及以上必带功能",
+      "id": "七审计c2级及以上的事后安全控制",
       "level": 2,
-      "text": "七、审计（事后安全控制，C2级及以上必带功能）"
+      "text": "七、审计（C2级及以上的事后安全控制）"
     },
     {
-      "id": "1-核心定义-1",
+      "id": "1-审计日志",
       "level": 3,
-      "text": "1. 核心定义"
+      "text": "1. 审计日志"
     },
     {
-      "id": "2-核心特点",
+      "id": "2-开启审计的代价",
       "level": 3,
-      "text": "2. 核心特点"
+      "text": "2. 开启审计的代价"
     },
     {
-      "id": "3-高频考点必记",
+      "id": "3-审计记录的约束",
       "level": 3,
-      "text": "3. 高频考点（必记）"
+      "text": "3. 审计记录的约束"
     },
     {
       "id": "4-审计相关sql语句",
@@ -224,9 +224,9 @@
       "text": "4. 审计相关SQL语句"
     },
     {
-      "id": "八用户创建create-user了解即可",
+      "id": "八创建不同权限的用户",
       "level": 2,
-      "text": "八、用户创建（CREATE USER，了解即可）"
+      "text": "八、创建不同权限的用户"
     },
     {
       "id": "1-超级用户super-user",
@@ -244,9 +244,9 @@
       "text": "3. 普通用户"
     },
     {
-      "id": "核心总结必背考点",
-      "level": 3,
-      "text": "核心总结（必背考点）"
+      "id": "九选择安全机制的依据",
+      "level": 2,
+      "text": "九、选择安全机制的依据"
     }
   ]
 }

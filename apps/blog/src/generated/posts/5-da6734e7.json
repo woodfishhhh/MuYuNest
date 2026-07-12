@@ -1,0 +1,117 @@
+{
+  "canonicalSlug": "5-da6734e7",
+  "aliases": [
+    "5"
+  ],
+  "title": "React 条件渲染与列表循环（对照 Vue）",
+  "publishedAt": "2026-04-23T22:42:44.000Z",
+  "publishedLabel": "Apr 23, 2026",
+  "excerpt": "React 没有指令体系，渲染内容由 JS 逻辑运算生成，这和 Vue 的指令（v-if/v-for）不同。",
+  "type": "Notes",
+  "searchText": "React 条件渲染与列表循环（对照 Vue） Notes 前端开发 React React 条件渲染 列表渲染 JSX 一、React 把渲染交给 JS 1. React 没有指令体系， 渲染内容由 JS 逻辑运算生成 ，这和 Vue 的指令（ / ）不同。 2. JSX 对返回值的处理很直接： 返回 → 不生成任何DOM 返回 JSX 标签结构 → 转为 ，再渲染成真实DOM节点 3. 布尔值和空值不会占用页面元素位置，条件渲染正是利用了这一点。 二、React 条件渲染（对标 Vue ） 1. 条件最后要返回什么 条件渲染就是一次 JS逻辑表达式运算 ： 需要显示时，返回 JSX 结构。 需要隐藏时，返回 ，React 不会渲染这些值。 2. 三种常用写法 （1）三元表达式：二选一 （2）逻辑与 ：只控制显示 写法是 ： 条件为 时返回右侧DOM。 条件为 时直接返回 ，页面上不渲染。 （3）函数返回式：处理复杂分支 把判断单独封装成函数，在里面写 ，最后返回JSX或空值，再到模板中调用。 3. 案例：状态切换显隐 用 中的布尔值控制内容显示或隐藏。 按钮文字用三元表达式动态判断，点击时通过箭头函数修改state。 布尔值可以直接取反： 。 类组件行内绑定事件必须用 箭头函数 ，否则 指向会丢失。 三、React 列表循环（对标 Vue ） 1. 列表先变成 JSX 数组 1. JSX 可以直接渲染 数组 ，数组里的每一项会被依次处理。 2. 原始业务数据（纯数组/对象数组）→ 用数组方法转成 存放ReactElement的JSX数组 → 直接交给页面渲染。 2. 三种遍历写法 （1）forEach + 手动push 先定义空数组，再遍历原数据，把拼好的JSX元素push进新数组，最后渲染这个数组。 这种写法代码较多，项目中很少使用，主要用来理解过程。 （2）map 遍历 会 直接返回新数组 ，因此可以在JSX里直接链式书写，也是项目中的常用方式： （3）filter + map 组合 先用 过滤数据，再用 渲染，就能得到 条件列表渲染 。 3. 列表项别忘了 key 1. key 和Vue里的作用相同，Diff算法会用它对比列表项，提高DOM更新效率。 2. 它必须 唯一且稳定 ，优先使用后端返回的唯一ID，其次才是index。 3. 没有 key 时，控制台会报错，还可能造成Diff性能下降和列表数据错乱。 4. 更新列表时先复制一份 类组件更新状态时，不要直接修改原state数组： 等方法会改动原数组。 应该先 浅拷贝原数组 得到新数组，修改后再通过 更新，这样才会触发视图刷新。 四、和 Vue 对照着看 1. 编程方式 Vue 由指令驱动，内置了大量开箱即用的指令，简单场景写起来更快。 React 由 JS原生逻辑驱动 ，没有额外指令，自由度更高，也更方便定制复杂逻辑。 2. 学习成本 Vue 需要记忆各类指令语法。 React 只依赖原生JS语法，没有额外的指令语法需要记。 3. 更适合的场景 Vue 适合轻量化、快速开发中小型项目。 React 更适合复杂业务、逻辑嵌套和定制化需求。 五、写完后检查这四处 1. 条件渲染不要用 硬写样式代替， 逻辑销毁 优于样式隐藏。 2. 列表渲染 必须配套 ，不能省略。 3. 更新数组或对象这类状态时，必须替换引用，不能原地修改。 4. 类组件行内绑定事件时优先用箭头函数，避免this指向出错。",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "条件渲染",
+    "列表渲染",
+    "JSX"
+  ],
+  "html": "<h2 id=\"一react-把渲染交给-js\">一、React 把渲染交给 JS</h2>\n<ol>\n<li>React 没有指令体系，<strong>渲染内容由 JS 逻辑运算生成</strong>，这和 Vue 的指令（<code>v-if</code>/<code>v-for</code>）不同。</li>\n<li>JSX 对返回值的处理很直接：\n<ul>\n<li>返回 <code>undefined / null / 空字符串 / false</code> → <strong>不生成任何DOM</strong></li>\n<li>返回 JSX 标签结构 → 转为 <code>ReactElement</code>，再渲染成真实DOM节点</li>\n</ul>\n</li>\n<li>布尔值和空值不会占用页面元素位置，条件渲染正是利用了这一点。</li>\n</ol>\n<hr>\n<h2 id=\"二react-条件渲染对标-vue-v-if\">二、React 条件渲染（对标 Vue <code>v-if</code>）</h2>\n<h3 id=\"1-条件最后要返回什么\">1. 条件最后要返回什么</h3>\n<p>条件渲染就是一次<strong>JS逻辑表达式运算</strong>：</p>\n<ul>\n<li>需要显示时，返回 JSX 结构。</li>\n<li>需要隐藏时，返回 <code>false / '' / null</code>，React 不会渲染这些值。</li>\n</ul>\n<h3 id=\"2-三种常用写法\">2. 三种常用写法</h3>\n<h4 id=\"1三元表达式二选一\">（1）三元表达式：二选一</h4>\n<pre><code class=\"hljs language-jsx\">{ show ? <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>展示内容<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span> : <span class=\"hljs-string\">''</span> }\n</code></pre>\n<h4 id=\"2逻辑与-只控制显示\">（2）逻辑与 <code>&amp;&amp;</code>：只控制显示</h4>\n<p>写法是 <code>条件 &amp;&amp; 展示DOM</code>：</p>\n<ul>\n<li>条件为 <code>true</code> 时返回右侧DOM。</li>\n<li>条件为 <code>false</code> 时直接返回 <code>false</code>，页面上不渲染。</li>\n</ul>\n<pre><code class=\"hljs language-jsx\">{ show &amp;&amp; <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>展示内容<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span> }\n</code></pre>\n<h4 id=\"3函数返回式处理复杂分支\">（3）函数返回式：处理复杂分支</h4>\n<p>把判断单独封装成函数，在里面写 <code>if/else</code>，最后返回JSX或空值，再到模板中调用。</p>\n<h3 id=\"3-案例状态切换显隐\">3. 案例：状态切换显隐</h3>\n<ul>\n<li>用 <code>state</code> 中的布尔值控制内容显示或隐藏。</li>\n<li>按钮文字用三元表达式动态判断，点击时通过箭头函数修改state。</li>\n<li>布尔值可以直接取反：<code>this.setState({show: !this.state.show})</code>。</li>\n</ul>\n<blockquote>\n<p>类组件行内绑定事件必须用<strong>箭头函数</strong>，否则 <code>this</code> 指向会丢失。</p>\n</blockquote>\n<hr>\n<h2 id=\"三react-列表循环对标-vue-v-for\">三、React 列表循环（对标 Vue <code>v-for</code>）</h2>\n<h3 id=\"1-列表先变成-jsx-数组\">1. 列表先变成 JSX 数组</h3>\n<ol>\n<li>JSX 可以直接渲染<strong>数组</strong>，数组里的每一项会被依次处理。</li>\n<li>原始业务数据（纯数组/对象数组）→ 用数组方法转成<strong>存放ReactElement的JSX数组</strong> → 直接交给页面渲染。</li>\n</ol>\n<h3 id=\"2-三种遍历写法\">2. 三种遍历写法</h3>\n<h4 id=\"1foreach-手动push\">（1）forEach + 手动push</h4>\n<p>先定义空数组，再遍历原数据，把拼好的JSX元素push进新数组，最后渲染这个数组。</p>\n<blockquote>\n<p>这种写法代码较多，项目中很少使用，主要用来理解过程。</p>\n</blockquote>\n<h4 id=\"2map-遍历\">（2）map 遍历</h4>\n<p><code>map</code> 会<strong>直接返回新数组</strong>，因此可以在JSX里直接链式书写，也是项目中的常用方式：</p>\n<pre><code class=\"hljs language-jsx\">{ list.<span class=\"hljs-title function_\">map</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">item, index</span>) =&gt;</span> (\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">key</span>=<span class=\"hljs-string\">{index}</span>&gt;</span>{item}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n))}\n</code></pre>\n<h4 id=\"3filter-map-组合\">（3）filter + map 组合</h4>\n<p>先用<code>filter</code>过滤数据，再用<code>map</code>渲染，就能得到<strong>条件列表渲染</strong>。</p>\n<h3 id=\"3-列表项别忘了-key\">3. 列表项别忘了 key</h3>\n<ol>\n<li>key 和Vue里的作用相同，Diff算法会用它对比列表项，提高DOM更新效率。</li>\n<li>它必须<strong>唯一且稳定</strong>，优先使用后端返回的唯一ID，其次才是index。</li>\n<li>没有 key 时，控制台会报错，还可能造成Diff性能下降和列表数据错乱。</li>\n</ol>\n<h3 id=\"4-更新列表时先复制一份\">4. 更新列表时先复制一份</h3>\n<p>类组件更新状态时，不要直接修改原state数组：</p>\n<ul>\n<li><code>push/pop</code> 等方法会改动原数组。</li>\n<li>应该先<strong>浅拷贝原数组</strong>得到新数组，修改后再通过<code>setState</code>更新，这样才会触发视图刷新。</li>\n</ul>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 正确写法</span>\n<span class=\"hljs-keyword\">const</span> newList = [...<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">list</span>];\nnewList.<span class=\"hljs-title function_\">push</span>(<span class=\"hljs-title class_\">Math</span>.<span class=\"hljs-title function_\">floor</span>(<span class=\"hljs-title class_\">Math</span>.<span class=\"hljs-title function_\">random</span>()*<span class=\"hljs-number\">10</span>));\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({<span class=\"hljs-attr\">list</span>: newList});\n</code></pre>\n<hr>\n<h2 id=\"四和-vue-对照着看\">四、和 Vue 对照着看</h2>\n<ol>\n<li><strong>编程方式</strong>\n<ul>\n<li>Vue 由指令驱动，内置了大量开箱即用的指令，简单场景写起来更快。</li>\n<li>React 由<strong>JS原生逻辑驱动</strong>，没有额外指令，自由度更高，也更方便定制复杂逻辑。</li>\n</ul>\n</li>\n<li><strong>学习成本</strong>\n<ul>\n<li>Vue 需要记忆各类指令语法。</li>\n<li>React 只依赖原生JS语法，没有额外的指令语法需要记。</li>\n</ul>\n</li>\n<li><strong>更适合的场景</strong>\n<ul>\n<li>Vue 适合轻量化、快速开发中小型项目。</li>\n<li>React 更适合复杂业务、逻辑嵌套和定制化需求。</li>\n</ul>\n</li>\n</ol>\n<hr>\n<h2 id=\"五写完后检查这四处\">五、写完后检查这四处</h2>\n<ol>\n<li>条件渲染不要用<code>display</code>硬写样式代替，<strong>逻辑销毁</strong>优于样式隐藏。</li>\n<li>列表渲染<code>map</code>必须配套<code>key</code>，不能省略。</li>\n<li>更新数组或对象这类状态时，必须替换引用，不能原地修改。</li>\n<li>类组件行内绑定事件时优先用箭头函数，避免this指向出错。</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "一react-把渲染交给-js",
+      "level": 2,
+      "text": "一、React 把渲染交给 JS"
+    },
+    {
+      "id": "二react-条件渲染对标-vue-v-if",
+      "level": 2,
+      "text": "二、React 条件渲染（对标 Vue v-if）"
+    },
+    {
+      "id": "1-条件最后要返回什么",
+      "level": 3,
+      "text": "1. 条件最后要返回什么"
+    },
+    {
+      "id": "2-三种常用写法",
+      "level": 3,
+      "text": "2. 三种常用写法"
+    },
+    {
+      "id": "1三元表达式二选一",
+      "level": 4,
+      "text": "（1）三元表达式：二选一"
+    },
+    {
+      "id": "2逻辑与-只控制显示",
+      "level": 4,
+      "text": "（2）逻辑与 &&：只控制显示"
+    },
+    {
+      "id": "3函数返回式处理复杂分支",
+      "level": 4,
+      "text": "（3）函数返回式：处理复杂分支"
+    },
+    {
+      "id": "3-案例状态切换显隐",
+      "level": 3,
+      "text": "3. 案例：状态切换显隐"
+    },
+    {
+      "id": "三react-列表循环对标-vue-v-for",
+      "level": 2,
+      "text": "三、React 列表循环（对标 Vue v-for）"
+    },
+    {
+      "id": "1-列表先变成-jsx-数组",
+      "level": 3,
+      "text": "1. 列表先变成 JSX 数组"
+    },
+    {
+      "id": "2-三种遍历写法",
+      "level": 3,
+      "text": "2. 三种遍历写法"
+    },
+    {
+      "id": "1foreach-手动push",
+      "level": 4,
+      "text": "（1）forEach + 手动push"
+    },
+    {
+      "id": "2map-遍历",
+      "level": 4,
+      "text": "（2）map 遍历"
+    },
+    {
+      "id": "3filter-map-组合",
+      "level": 4,
+      "text": "（3）filter + map 组合"
+    },
+    {
+      "id": "3-列表项别忘了-key",
+      "level": 3,
+      "text": "3. 列表项别忘了 key"
+    },
+    {
+      "id": "4-更新列表时先复制一份",
+      "level": 3,
+      "text": "4. 更新列表时先复制一份"
+    },
+    {
+      "id": "四和-vue-对照着看",
+      "level": 2,
+      "text": "四、和 Vue 对照着看"
+    },
+    {
+      "id": "五写完后检查这四处",
+      "level": 2,
+      "text": "五、写完后检查这四处"
+    }
+  ]
+}

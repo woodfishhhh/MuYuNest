@@ -11,7 +11,6 @@ categories:
   - "JavaScript"
 ---
 
-# JavaScript try...catch 错误处理笔记（对应选集263 Error Handling With try...catch）
 
 ## 一、try...catch 与 async/await 的关联（核心应用场景）
 
@@ -19,7 +18,7 @@ categories:
 
 - async/await 语法中，无法像普通 Promise 那样直接使用 `.catch()` 方法捕获错误，需借助 try...catch 语句实现错误处理
 - try...catch 并非专为 async/await 设计，是 JavaScript 语言原生特性（可能从语言初始阶段就存在），可同时用于同步代码和异步代码的错误捕获
-- 核心价值：在不中断脚本执行的前提下，捕获代码中的异常并进行自定义处理
+- 作用：在不中断脚本执行的前提下，捕获代码中的异常并进行自定义处理
 
 ### 1.2 应用示例（async/await 场景）
 

@@ -12,7 +12,6 @@ categories:
   - "JavaScript"
 ---
 
-# C++ STL 到 JavaScript：常用数据结构映射速查
 
 ## C++ STL 与 JavaScript 的对应关系学习笔记
 

@@ -1,0 +1,112 @@
+{
+  "canonicalSlug": "3-ea102520",
+  "aliases": [
+    "3"
+  ],
+  "title": "React Class 组件事件绑定：this 指向、传参与事件对象",
+  "publishedAt": "2026-04-23T22:40:24.000Z",
+  "publishedLabel": "Apr 23, 2026",
+  "excerpt": "学习顺序仍是先Class组件（老写法）→ 后函数组件（新写法），这里先把Class组件里的事件绑定讲清楚。",
+  "type": "Notes",
+  "searchText": "React Class 组件事件绑定：this 指向、传参与事件对象 Notes 前端开发 React React Class 组件 事件绑定 this 一、这篇先解决什么 学习顺序仍是先Class组件（老写法）→ 后函数组件（新写法），这里先把Class组件里的事件绑定讲清楚。 如果你已经有Vue或原生JS基础，可以直接对照语法差异来看。 二、先把事件写对 1. React 事件采用 的形式， 事件名首字母必须大写 。例如要写 （非 ）、 （非 ），这点和原生JS不同。 2. 等号右侧要放 方法引用 ，并用花括号 包住JS表达式，不能传字符串，也不能在渲染时直接执行函数。 正确示例： 或 错误示例： （字符串形式）、 （直接调用函数） 三、先写一个能点击的 Class 组件 1. 把函数组件改成Class组件时，需要继承 ，并把模板写进 函数： 2. 事件逻辑可以直接写，也可以拆成类方法： 写法1：逻辑很短时用内联匿名函数。 写法2：逻辑较多时绑定类中定义的方法，代码更容易维护。 四、为什么方法里的 this 会丢 1. 问题出在哪里 Class组件直接绑定类方法（如 ）时，方法内部的 默认指向 ，而不是组件实例，所以也就访问不到 、 等组件属性。 2. 三种处理方式（优先级：bind绑定 箭头函数包裹 方法箭头化） 方案1：用 绑定this（推荐，支持传参） 调用函数的 方法，把 固定为组件实例，同时得到一个新的函数引用： 方案2：用内联匿名箭头函数包一层 箭头函数的“this继承自外层作用域”特性可以保住组件实例，直接在里面调用方法即可： 这里容易写错：如果换成普通匿名函数（非箭头函数）， 仍会指向 ： 方案3：把类方法直接写成箭头函数 这样定义后，方法里的 会固定指向组件实例，渲染时不必再绑定： 五、事件参数怎么传 1. 先守住方法引用 传参后， 绑定的仍然必须是 方法引用 。如果直接写 ，函数会在页面渲染时立刻执行。 2. 这里用 传参 这套写法只用 传参：它绑定 的同时也能带上自定义参数，顺序是 ： 六、事件对象（Event）获取 1. 拿到的是 SyntheticEvent React传入的是 合成事件对象（SyntheticEvent） ，不是原生JS的 对象，不过常用属性和方法都在。 极少数需要原生事件对象的场景，可以通过 获取。 2. 参数位置 没有自定义参数时，事件对象会作为 唯一参数 传入方法： 有自定义参数时，事件对象放在 最后一个参数 ，同时配合 传参： 3. 合成事件对象里常用的内容 | 属性/方法 | 作用 | | | | | | 获取触发事件的DOM元素 | | | 阻止事件冒泡（同原生） | | | 阻止默认行为（如表单提交、链接跳转） | | / | 鼠标触发位置的坐标（相对视口） | 七、四个常见错误 1. 错误1：绑定时直接调用方法 错误写法： 后果：页面渲染时立即执行方法，点击事件无响应（绑定值为方法返回值，而非方法本身）。 修正： 或 2. 错误2：没有处理this指向 错误写法：未处理this，直接调用 或 后果：报错 修正：采用上述三种this绑定方案之一。 3. 错误3：事件名首字母写成小写 错误写法： 后果：事件无法触发（React无法识别小写事件名） 修正： 4. 错误4：传参时没有使用bind 错误写法： 后果：页面渲染即执行方法，点击无响应 修正：",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "Class 组件",
+    "事件绑定",
+    "this"
+  ],
+  "html": "<h2 id=\"一这篇先解决什么\">一、这篇先解决什么</h2>\n<ul>\n<li>学习顺序仍是先Class组件（老写法）→ 后函数组件（新写法），这里先把Class组件里的事件绑定讲清楚。</li>\n<li>如果你已经有Vue或原生JS基础，可以直接对照语法差异来看。</li>\n</ul>\n<h2 id=\"二先把事件写对\">二、先把事件写对</h2>\n<ol>\n<li>React 事件采用 <code>on+事件名</code> 的形式，<strong>事件名首字母必须大写</strong>。例如要写 <code>onClick</code>（非<code>onclick</code>）、<code>onChange</code>（非<code>onchange</code>），这点和原生JS不同。</li>\n<li><code>onXXX</code> 等号右侧要放<strong>方法引用</strong>，并用花括号 <code>{}</code> 包住JS表达式，不能传字符串，也不能在渲染时直接执行函数。\n<ul>\n<li>正确示例：<code>&lt;div onClick={this.handleClick}&gt;</code> 或 <code>&lt;div onClick={() =&gt; console.log(1)}&gt;</code></li>\n<li>错误示例：<code>&lt;div onClick=\"handleClick()\"&gt;</code>（字符串形式）、<code>&lt;div onClick={this.handleClick()}&gt;</code>（直接调用函数）</li>\n</ul>\n</li>\n</ol>\n<h2 id=\"三先写一个能点击的-class-组件\">三、先写一个能点击的 Class 组件</h2>\n<ol>\n<li>把函数组件改成Class组件时，需要继承 <code>React.Component</code>，并把模板写进 <code>render()</code> 函数：<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{()</span> =&gt;</span> console.log(\"点击触发\")}&gt;点击测试<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>;\n  }\n}\n</code></pre>\n</li>\n<li>事件逻辑可以直接写，也可以拆成类方法：\n<ul>\n<li>写法1：逻辑很短时用内联匿名函数。<pre><code class=\"hljs language-jsx\"><span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{()</span> =&gt;</span> alert(\"按钮被点击\")}&gt;点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n}\n</code></pre>\n</li>\n<li>写法2：逻辑较多时绑定类中定义的方法，代码更容易维护。<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-title function_\">handleClick</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"类方法触发\"</span>);\n  }\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick}</span>&gt;</span>点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n  }\n}\n</code></pre>\n</li>\n</ul>\n</li>\n</ol>\n<h2 id=\"四为什么方法里的-this-会丢\">四、为什么方法里的 this 会丢</h2>\n<h3 id=\"1-问题出在哪里\">1. 问题出在哪里</h3>\n<p>Class组件直接绑定类方法（如 <code>onClick={this.handleClick}</code>）时，方法内部的 <code>this</code> 默认指向 <code>undefined</code>，而不是组件实例，所以也就访问不到 <code>this.state</code>、<code>this.props</code> 等组件属性。</p>\n<h3 id=\"2-三种处理方式优先级bind绑定--箭头函数包裹--方法箭头化\">2. 三种处理方式（优先级：bind绑定 &gt; 箭头函数包裹 &gt; 方法箭头化）</h3>\n<h4 id=\"方案1用-bind-绑定this推荐支持传参\">方案1：用 <code>bind</code> 绑定this（推荐，支持传参）</h4>\n<p>调用函数的 <code>bind</code> 方法，把 <code>this</code> 固定为组件实例，同时得到一个新的函数引用：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-title function_\">handleClick</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"this指向组件实例：\"</span>, <span class=\"hljs-variable language_\">this</span>); <span class=\"hljs-comment\">// 正确指向App实例</span>\n  }\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-comment\">// 绑定this，生成新方法</span>\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick.bind(this)}</span>&gt;</span>点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n  }\n}\n</code></pre>\n<h4 id=\"方案2用内联匿名箭头函数包一层\">方案2：用内联匿名箭头函数包一层</h4>\n<p>箭头函数的“this继承自外层作用域”特性可以保住组件实例，直接在里面调用方法即可：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-comment\">// 箭头函数的this指向render函数的this（即组件实例）</span>\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{()</span> =&gt;</span> this.handleClick()}&gt;点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n}\n</code></pre>\n<p>这里容易写错：如果换成普通匿名函数（非箭头函数），<code>this</code> 仍会指向 <code>undefined</code>：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 错误写法：this指向undefined</span>\n<span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{function()</span> { <span class=\"hljs-attr\">this.handleClick</span>(); }}&gt;</span>点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n</code></pre>\n<h4 id=\"方案3把类方法直接写成箭头函数\">方案3：把类方法直接写成箭头函数</h4>\n<p>这样定义后，方法里的 <code>this</code> 会固定指向组件实例，渲染时不必再绑定：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-comment\">// 方法本身为箭头函数，this固定指向组件实例</span>\n  handleClick = <span class=\"hljs-function\">() =&gt;</span> {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"this指向组件实例：\"</span>, <span class=\"hljs-variable language_\">this</span>);\n  };\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-comment\">// 直接绑定方法引用，无需额外处理</span>\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick}</span>&gt;</span>点击按钮<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n  }\n}\n</code></pre>\n<h2 id=\"五事件参数怎么传\">五、事件参数怎么传</h2>\n<h3 id=\"1-先守住方法引用\">1. 先守住方法引用</h3>\n<p>传参后，<code>onXXX</code> 绑定的仍然必须是<strong>方法引用</strong>。如果直接写 <code>this.handleClick(1,2)</code>，函数会在页面渲染时立刻执行。</p>\n<h3 id=\"2-这里用-bind-传参\">2. 这里用 <code>bind</code> 传参</h3>\n<p>这套写法只用 <code>bind</code> 传参：它绑定 <code>this</code> 的同时也能带上自定义参数，顺序是 <code>bind(this, 参数1, 参数2, ...)</code>：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-comment\">// 接收参数：先自定义参数，最后接收事件对象（若需）</span>\n  handleClick = <span class=\"hljs-function\">(<span class=\"hljs-params\">num1, num2, e</span>) =&gt;</span> {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"参数1：\"</span>, num1, <span class=\"hljs-string\">\"参数2：\"</span>, num2);\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"事件对象：\"</span>, e);\n  };\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-comment\">// 用bind传递参数，this作为第一个参数，后续为自定义参数</span>\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick.bind(this,</span> <span class=\"hljs-attr\">10</span>, <span class=\"hljs-attr\">20</span>)}&gt;</span>传递参数<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n  }\n}\n</code></pre>\n<h2 id=\"六事件对象event获取\">六、事件对象（Event）获取</h2>\n<h3 id=\"1-拿到的是-syntheticevent\">1. 拿到的是 SyntheticEvent</h3>\n<p>React传入的是<strong>合成事件对象（SyntheticEvent）</strong>，不是原生JS的 <code>Event</code> 对象，不过常用属性和方法都在。</p>\n<ul>\n<li>极少数需要原生事件对象的场景，可以通过 <code>e.nativeEvent</code> 获取。</li>\n</ul>\n<h3 id=\"2-参数位置\">2. 参数位置</h3>\n<ul>\n<li>没有自定义参数时，事件对象会作为<strong>唯一参数</strong>传入方法：<pre><code class=\"hljs language-jsx\">handleClick = <span class=\"hljs-function\">(<span class=\"hljs-params\">e</span>) =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"合成事件对象：\"</span>, e); <span class=\"hljs-comment\">// 直接接收事件对象</span>\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"原生事件对象：\"</span>, e.<span class=\"hljs-property\">nativeEvent</span>);\n};\n<span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick}</span>&gt;</span>获取事件对象<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n}\n</code></pre>\n</li>\n<li>有自定义参数时，事件对象放在<strong>最后一个参数</strong>，同时配合 <code>bind</code> 传参：<pre><code class=\"hljs language-jsx\">handleClick = <span class=\"hljs-function\">(<span class=\"hljs-params\">num, e</span>) =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"自定义参数：\"</span>, num);\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"事件对象：\"</span>, e); <span class=\"hljs-comment\">// 最后一个参数为事件对象</span>\n};\n<span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{this.handleClick.bind(this,</span> <span class=\"hljs-attr\">100</span>)}&gt;</span>传参+事件对象<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>;\n}\n</code></pre>\n</li>\n</ul>\n<h3 id=\"3-合成事件对象里常用的内容\">3. 合成事件对象里常用的内容</h3>\n<table>\n<thead>\n<tr>\n<th>属性/方法</th>\n<th>作用</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>e.target</code></td>\n<td>获取触发事件的DOM元素</td>\n</tr>\n<tr>\n<td><code>e.stopPropagation()</code></td>\n<td>阻止事件冒泡（同原生）</td>\n</tr>\n<tr>\n<td><code>e.preventDefault()</code></td>\n<td>阻止默认行为（如表单提交、链接跳转）</td>\n</tr>\n<tr>\n<td><code>e.clientX</code>/<code>e.clientY</code></td>\n<td>鼠标触发位置的坐标（相对视口）</td>\n</tr>\n</tbody>\n</table>\n<h2 id=\"七四个常见错误\">七、四个常见错误</h2>\n<ol>\n<li>\n<p><strong>错误1：绑定时直接调用方法</strong></p>\n<ul>\n<li>错误写法：<code>&lt;button onClick={this.handleClick()}&gt;</code></li>\n<li>后果：页面渲染时立即执行方法，点击事件无响应（绑定值为方法返回值，而非方法本身）。</li>\n<li>修正：<code>&lt;button onClick={this.handleClick}&gt;</code> 或 <code>&lt;button onClick={() =&gt; this.handleClick()}&gt;</code></li>\n</ul>\n</li>\n<li>\n<p><strong>错误2：没有处理this指向</strong></p>\n<ul>\n<li>错误写法：未处理this，直接调用 <code>this.setState()</code> 或 <code>this.props</code></li>\n<li>后果：报错 <code>Cannot read property 'setState' of undefined</code></li>\n<li>修正：采用上述三种this绑定方案之一。</li>\n</ul>\n</li>\n<li>\n<p><strong>错误3：事件名首字母写成小写</strong></p>\n<ul>\n<li>错误写法：<code>&lt;div onclick={this.handleClick}&gt;</code></li>\n<li>后果：事件无法触发（React无法识别小写事件名）</li>\n<li>修正：<code>&lt;div onClick={this.handleClick}&gt;</code></li>\n</ul>\n</li>\n<li>\n<p><strong>错误4：传参时没有使用bind</strong></p>\n<ul>\n<li>错误写法：<code>&lt;button onClick={this.handleClick(10)}&gt;</code></li>\n<li>后果：页面渲染即执行方法，点击无响应</li>\n<li>修正：<code>&lt;button onClick={this.handleClick.bind(this, 10)}&gt;</code></li>\n</ul>\n</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "一这篇先解决什么",
+      "level": 2,
+      "text": "一、这篇先解决什么"
+    },
+    {
+      "id": "二先把事件写对",
+      "level": 2,
+      "text": "二、先把事件写对"
+    },
+    {
+      "id": "三先写一个能点击的-class-组件",
+      "level": 2,
+      "text": "三、先写一个能点击的 Class 组件"
+    },
+    {
+      "id": "四为什么方法里的-this-会丢",
+      "level": 2,
+      "text": "四、为什么方法里的 this 会丢"
+    },
+    {
+      "id": "1-问题出在哪里",
+      "level": 3,
+      "text": "1. 问题出在哪里"
+    },
+    {
+      "id": "2-三种处理方式优先级bind绑定--箭头函数包裹--方法箭头化",
+      "level": 3,
+      "text": "2. 三种处理方式（优先级：bind绑定 > 箭头函数包裹 > 方法箭头化）"
+    },
+    {
+      "id": "方案1用-bind-绑定this推荐支持传参",
+      "level": 4,
+      "text": "方案1：用 bind 绑定this（推荐，支持传参）"
+    },
+    {
+      "id": "方案2用内联匿名箭头函数包一层",
+      "level": 4,
+      "text": "方案2：用内联匿名箭头函数包一层"
+    },
+    {
+      "id": "方案3把类方法直接写成箭头函数",
+      "level": 4,
+      "text": "方案3：把类方法直接写成箭头函数"
+    },
+    {
+      "id": "五事件参数怎么传",
+      "level": 2,
+      "text": "五、事件参数怎么传"
+    },
+    {
+      "id": "1-先守住方法引用",
+      "level": 3,
+      "text": "1. 先守住方法引用"
+    },
+    {
+      "id": "2-这里用-bind-传参",
+      "level": 3,
+      "text": "2. 这里用 bind 传参"
+    },
+    {
+      "id": "六事件对象event获取",
+      "level": 2,
+      "text": "六、事件对象（Event）获取"
+    },
+    {
+      "id": "1-拿到的是-syntheticevent",
+      "level": 3,
+      "text": "1. 拿到的是 SyntheticEvent"
+    },
+    {
+      "id": "2-参数位置",
+      "level": 3,
+      "text": "2. 参数位置"
+    },
+    {
+      "id": "3-合成事件对象里常用的内容",
+      "level": 3,
+      "text": "3. 合成事件对象里常用的内容"
+    },
+    {
+      "id": "七四个常见错误",
+      "level": 2,
+      "text": "七、四个常见错误"
+    }
+  ]
+}

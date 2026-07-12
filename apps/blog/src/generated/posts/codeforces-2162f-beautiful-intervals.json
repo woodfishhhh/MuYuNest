@@ -1,12 +1,13 @@
 {
   "canonicalSlug": "codeforces-2162f-beautiful-intervals",
   "aliases": [
-    "Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路）"
+    "Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路）",
+    "codeforces-2162f-beautiful-intervals"
   ],
   "title": "Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路）",
   "publishedAt": "2025-12-20T12:00:03.000Z",
   "publishedLabel": "Dec 20, 2025",
-  "excerpt": "cf 1059\nhttps://codeforces.com/contest/2162",
+  "excerpt": "cf 1059 https://codeforces.com/contest/2162",
   "type": "Notes",
   "searchText": "Codeforces 2162F Beautiful Intervals 题解（MEX 枚举思路） Notes 算法题解 Codeforces Codeforces 2162F MEX 区间问题 题解 cf 1059 https://codeforces.com/contest/2162 涉及mex的题，一般会考虑枚举出现mex的地方",
   "readingMinutes": 1,

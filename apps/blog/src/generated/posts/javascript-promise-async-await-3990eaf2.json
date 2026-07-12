@@ -1,0 +1,303 @@
+{
+  "canonicalSlug": "javascript-promise-async-await-3990eaf2",
+  "aliases": [
+    "JavaScript 核心机制（下）：事件循环、Promise、async await、原型链与继承"
+  ],
+  "title": "JavaScript 异步与原型链：事件循环、Promise 和继承",
+  "publishedAt": "2026-04-22T21:30:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "定时器为什么晚于同步代码，async / await 为什么仍受事件循环调度，调用 new 后实例如何沿原型链查找属性，instanceof、Object.create 和 class 又分别操作哪一层关系，这些问题可以分成异步执行与对象继承两条线来理解。",
+  "type": "Notes",
+  "searchText": "JavaScript 异步与原型链：事件循环、Promise 和继承 Notes 前端开发 前端八股 前端八股 JavaScript 事件循环 Promise 原型链 定时器为什么晚于同步代码， 为什么仍受事件循环调度，调用 后实例如何沿原型链查找属性， 、 和 又分别操作哪一层关系，这些问题可以分成异步执行与对象继承两条线来理解。 一、为什么 JavaScript 需要事件循环 JavaScript 是单线程，同一时刻只执行一段 JavaScript 代码。 单线程意味着同一时刻只能做一件事。那么问题来了： 网络请求怎么办 定时器怎么办 DOM 事件怎么办 Promise 回调怎么办 事件循环就是为了解决单线程下的异步协调问题。 它的价值主要体现在三点： 1. 实现非阻塞 I/O 2. 保证界面响应性 3. 支持异步编程模型 二、事件循环的核心组成 通常可以从这几个部分理解： 调用栈（Call Stack） 堆（Heap） 宏任务队列 微任务队列 事件循环本身 1. 宏任务 常见宏任务有： DOM 事件回调 I/O 回调 UI 渲染 2. 微任务 常见微任务有： （Node 环境） 3. 一轮事件循环大致做什么 简化理解： 1. 先执行同步代码，清空当前调用栈 2. 执行当前轮次产生的所有微任务 3. 可能进行页面渲染 4. 再从宏任务队列中取下一个任务执行 这就是为什么大家常说： “微任务优先于下一轮宏任务。” 三、经典异步题为什么总考 因为它能同时检查你对这几件事的理解： 同步与异步 宏任务与微任务 本质 Promise 回调调度时机 比如这段代码： 输出顺序是： 原因就在于： 同步代码先跑完 微任务队列先清空 然后才轮到定时器宏任务 四、Promise 到底解决了什么问题 Promise 的作用是把异步结果包装成“未来可用的值”，并提供统一的状态流转和链式调用能力。 1. 三种状态 2. 状态不可逆 状态变化有明确边界： 一旦从 变成成功或失败 状态就不会再变回去 3. 是同步执行的 很多人以为 Promise 一创建就是异步，这不对。Promise 构造器里的执行器函数本身是同步执行的，异步的是后续回调调度。 五、Promise 的常用实例方法 1. 用于处理成功结果，也可以接收失败处理函数。 2. 用于集中处理失败分支。 3. 不关心成功还是失败，只在最终收尾时执行。 六、 和 的区别 两种写法的错误边界不同。 更推荐： 原因是第二种写法只会处理 Promise 本身的拒绝，而 回调里如果再抛错， 并不能像链式 那样自然兜住所有后续错误。 七、 为什么更好用 1. 可读性更强 它把异步流程写出了同步代码的结构感。 2. 错误处理更自然 可以直接配合 。 3. 调试体验更好 链式 Promise 写长了之后，栈和分支都不好跟； 通常更清晰。 4. 本质并没有改变事件循环规则 不是阻塞主线程，它只是把后续逻辑放到 Promise resolve 之后继续执行。 八、 默认是串行的，想并发要主动设计 这点非常关键。 1. 串行写法 如果两个请求彼此独立，上面这样会让第二个请求白白等待第一个请求结束。 2. 并发写法 优化异步请求时要先判断依赖关系： 能串行就串行 能并发就并发 注意失败策略和兜底逻辑 九、Promise 并发工具怎么选 1. 全成功才成功 任何一个失败就整体失败 适合“必须全部完成”的场景。 2. 不要求全成功 会告诉你每一项最终是 fulfilled 还是 rejected 适合批量任务统计结果。 3. 谁先结束就用谁 适合超时控制、抢首个结果。 4. 谁先成功就返回谁 全失败才整体失败 适合多源兜底。 十、手写 Promise 该抓哪些核心点 简化实现先保留四个必要部分： 1. Promise 有状态 2. 状态只能从 变一次 3. 需要收集成功和失败回调 4. 状态改变后要触发对应回调 简化版思路通常如下： 完整实现还要遵守 Promises/A+ 的解析过程；这个简化版本只覆盖状态、回调队列、链式返回和异常捕获的基本方向。 十一、构造函数和 到底发生了什么 1. 构造函数是什么 本质上还是普通函数，只不过约定俗成用来创建同类对象实例。 2. 的执行机制 大致会做这几步： 1. 创建一个新对象 2. 把新对象的隐式原型指向 3. 用新对象作为 执行构造函数 4. 如果构造函数没有显式返回对象，则返回这个新对象 这就是很多手写 题的来源。 十二、原型、 和原型链 这部分是 JavaScript 面向对象的底层基础。 1. 函数对象才有显式的 属性，它通常用来放实例共享的方法。 2. 对象实例通常可以通过 访问其隐式原型。虽然平时不推荐业务代码依赖它，但理解它非常重要。 3. 原型链 当你读取对象属性时： 1. 先找对象自身 2. 没找到就沿着原型向上找 3. 一直找到 为止 这条查找链路就是原型链。 4. 两个很重要的特性 共享性：方法挂原型上，实例共享，节省内存 动态性：原型上新增方法，已有实例通常也能访问到 十三、 的原理 一句话概括： 它是沿着左侧对象的原型链，去找右侧构造函数的 是否出现过。 所以它的局限也很明显： 不能正确判断原始类型 跨 iframe / realm 可能失真 原型链被改动后结果也可能变化 十四、 为什么重要 的作用是：创建一个新对象，并让它的原型指向 。 它常用于： 更纯粹的原型继承 创建无原型对象 组合继承里的中间桥梁 这也是“寄生组合式继承”常见的关键步骤。 十五、 本质上还是原型链 ES6 的 是语法糖，不是完全不同的一套机制。 1. 它带来了更清晰的写法 2. 但底层仍然是原型 实例方法仍然挂在原型上 继承仍然建立在原型链之上 3. 为什么必须先调 在子类构造函数里，必须先调用 ，本质上是先完成父类初始化，才能继续使用子类实例的 。 十六、常见继承方式怎么理解 1. 原型链继承 让子类实例通过原型链访问父类方法，但容易共享引用属性。 2. 构造函数继承 在子类构造函数中调用父类构造函数，能拿到独立实例属性，但拿不到父类原型方法复用。 3. 组合继承 把上面两种拼起来，能用，但父类构造函数可能执行两次。 4. 寄生组合式继承 ES5 时代比较推荐的写法，兼顾实例属性独立与原型方法复用。 5. ES6 现代开发里最推荐的写法，本质上是对原型链继承的语法糖封装。 十七、几个容易混淆的边界 1. 宏任务和微任务要按轮次分析 一轮同步代码结束后会先清空微任务队列，所以 早于下一轮 。 2. Promise 的三个状态约束 executor 是同步的 状态不可逆 返回新 Promise，可链式调用 3. 没有改变调度模型 它改善了顺序代码的表达方式，后续逻辑仍由 Promise 和微任务继续调度。 4. new、原型链与继承是一组连续操作 沿原型链判断关系，继承负责建立这条关系， 则直接指定新对象的原型。 5. 执行时机与属性来源分开判断 事件循环、Promise 和 决定代码何时继续执行；构造函数、原型链、 和继承决定对象从哪里取得属性与方法。遇到混合题时，先判断它属于哪一条线。",
+  "readingMinutes": 11,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "前端八股"
+  ],
+  "tags": [
+    "前端八股",
+    "JavaScript",
+    "事件循环",
+    "Promise",
+    "原型链"
+  ],
+  "html": "<p>定时器为什么晚于同步代码，<code>async / await</code> 为什么仍受事件循环调度，调用 <code>new</code> 后实例如何沿原型链查找属性，<code>instanceof</code>、<code>Object.create</code> 和 <code>class</code> 又分别操作哪一层关系，这些问题可以分成异步执行与对象继承两条线来理解。</p>\n<h2 id=\"一为什么-javascript-需要事件循环\">一、为什么 JavaScript 需要事件循环</h2>\n<p>JavaScript 是单线程，同一时刻只执行一段 JavaScript 代码。</p>\n<p>单线程意味着同一时刻只能做一件事。那么问题来了：</p>\n<ul>\n<li>网络请求怎么办</li>\n<li>定时器怎么办</li>\n<li>DOM 事件怎么办</li>\n<li>Promise 回调怎么办</li>\n</ul>\n<p>事件循环就是为了解决单线程下的异步协调问题。</p>\n<p>它的价值主要体现在三点：</p>\n<ol>\n<li>实现非阻塞 I/O</li>\n<li>保证界面响应性</li>\n<li>支持异步编程模型</li>\n</ol>\n<h2 id=\"二事件循环的核心组成\">二、事件循环的核心组成</h2>\n<p>通常可以从这几个部分理解：</p>\n<ul>\n<li>调用栈（Call Stack）</li>\n<li>堆（Heap）</li>\n<li>宏任务队列</li>\n<li>微任务队列</li>\n<li>事件循环本身</li>\n</ul>\n<h3 id=\"1-宏任务\">1. 宏任务</h3>\n<p>常见宏任务有：</p>\n<ul>\n<li><code>setTimeout</code></li>\n<li><code>setInterval</code></li>\n<li>DOM 事件回调</li>\n<li>I/O 回调</li>\n<li>UI 渲染</li>\n</ul>\n<h3 id=\"2-微任务\">2. 微任务</h3>\n<p>常见微任务有：</p>\n<ul>\n<li><code>Promise.then / catch / finally</code></li>\n<li><code>queueMicrotask</code></li>\n<li><code>MutationObserver</code></li>\n<li><code>process.nextTick</code>（Node 环境）</li>\n</ul>\n<h3 id=\"3-一轮事件循环大致做什么\">3. 一轮事件循环大致做什么</h3>\n<p>简化理解：</p>\n<ol>\n<li>先执行同步代码，清空当前调用栈</li>\n<li>执行当前轮次产生的所有微任务</li>\n<li>可能进行页面渲染</li>\n<li>再从宏任务队列中取下一个任务执行</li>\n</ol>\n<p>这就是为什么大家常说：</p>\n<p>“微任务优先于下一轮宏任务。”</p>\n<h2 id=\"三经典异步题为什么总考\">三、经典异步题为什么总考</h2>\n<p>因为它能同时检查你对这几件事的理解：</p>\n<ul>\n<li>同步与异步</li>\n<li>宏任务与微任务</li>\n<li><code>async / await</code> 本质</li>\n<li>Promise 回调调度时机</li>\n</ul>\n<p>比如这段代码：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"script start\"</span>);\n\n<span class=\"hljs-built_in\">setTimeout</span>(<span class=\"hljs-function\">() =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"setTimeout\"</span>);\n}, <span class=\"hljs-number\">0</span>);\n\n<span class=\"hljs-title class_\">Promise</span>.<span class=\"hljs-title function_\">resolve</span>().<span class=\"hljs-title function_\">then</span>(<span class=\"hljs-function\">() =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"promise then\"</span>);\n});\n\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"script end\"</span>);\n</code></pre>\n<p>输出顺序是：</p>\n<pre><code class=\"hljs language-js\">script start\nscript end\npromise then\n<span class=\"hljs-built_in\">setTimeout</span>\n</code></pre>\n<p>原因就在于：</p>\n<ul>\n<li>同步代码先跑完</li>\n<li>微任务队列先清空</li>\n<li>然后才轮到定时器宏任务</li>\n</ul>\n<h2 id=\"四promise-到底解决了什么问题\">四、Promise 到底解决了什么问题</h2>\n<p>Promise 的作用是把异步结果包装成“未来可用的值”，并提供统一的状态流转和链式调用能力。</p>\n<h3 id=\"1-三种状态\">1. 三种状态</h3>\n<ul>\n<li><code>pending</code></li>\n<li><code>fulfilled</code></li>\n<li><code>rejected</code></li>\n</ul>\n<h3 id=\"2-状态不可逆\">2. 状态不可逆</h3>\n<p>状态变化有明确边界：</p>\n<ul>\n<li>一旦从 <code>pending</code> 变成成功或失败</li>\n<li>状态就不会再变回去</li>\n</ul>\n<h3 id=\"3-executor-是同步执行的\">3. <code>executor</code> 是同步执行的</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> p = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Promise</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">resolve, reject</span>) =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"executor\"</span>);\n  <span class=\"hljs-title function_\">resolve</span>(<span class=\"hljs-number\">1</span>);\n});\n</code></pre>\n<p>很多人以为 Promise 一创建就是异步，这不对。Promise 构造器里的执行器函数本身是同步执行的，异步的是后续回调调度。</p>\n<h2 id=\"五promise-的常用实例方法\">五、Promise 的常用实例方法</h2>\n<h3 id=\"1-then\">1. <code>.then</code></h3>\n<p>用于处理成功结果，也可以接收失败处理函数。</p>\n<pre><code class=\"hljs language-js\">promise.<span class=\"hljs-title function_\">then</span>(onFulfilled, onRejected);\n</code></pre>\n<h3 id=\"2-catch\">2. <code>.catch</code></h3>\n<p>用于集中处理失败分支。</p>\n<h3 id=\"3-finally\">3. <code>.finally</code></h3>\n<p>不关心成功还是失败，只在最终收尾时执行。</p>\n<h2 id=\"六thencatch-和-thensuccess-fail-的区别\">六、<code>.then().catch()</code> 和 <code>.then(success, fail)</code> 的区别</h2>\n<p>两种写法的错误边界不同。</p>\n<p>更推荐：</p>\n<pre><code class=\"hljs language-js\">promise.<span class=\"hljs-title function_\">then</span>(success).<span class=\"hljs-title function_\">catch</span>(fail);\n</code></pre>\n<p>原因是第二种写法只会处理 Promise 本身的拒绝，而 <code>success</code> 回调里如果再抛错，<code>then(success, fail)</code> 并不能像链式 <code>catch</code> 那样自然兜住所有后续错误。</p>\n<h2 id=\"七async--await-为什么更好用\">七、<code>async / await</code> 为什么更好用</h2>\n<h3 id=\"1-可读性更强\">1. 可读性更强</h3>\n<p>它把异步流程写出了同步代码的结构感。</p>\n<h3 id=\"2-错误处理更自然\">2. 错误处理更自然</h3>\n<p>可以直接配合 <code>try...catch</code>。</p>\n<h3 id=\"3-调试体验更好\">3. 调试体验更好</h3>\n<p>链式 Promise 写长了之后，栈和分支都不好跟；<code>async / await</code> 通常更清晰。</p>\n<h3 id=\"4-本质并没有改变事件循环规则\">4. 本质并没有改变事件循环规则</h3>\n<p><code>await</code> 不是阻塞主线程，它只是把后续逻辑放到 Promise resolve 之后继续执行。</p>\n<h2 id=\"八await-默认是串行的想并发要主动设计\">八、<code>await</code> 默认是串行的，想并发要主动设计</h2>\n<p>这点非常关键。</p>\n<h3 id=\"1-串行写法\">1. 串行写法</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> a = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetchA</span>();\n<span class=\"hljs-keyword\">const</span> b = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetchB</span>();\n</code></pre>\n<p>如果两个请求彼此独立，上面这样会让第二个请求白白等待第一个请求结束。</p>\n<h3 id=\"2-并发写法\">2. 并发写法</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> pa = <span class=\"hljs-title function_\">fetchA</span>();\n<span class=\"hljs-keyword\">const</span> pb = <span class=\"hljs-title function_\">fetchB</span>();\n\n<span class=\"hljs-keyword\">const</span> [a, b] = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title class_\">Promise</span>.<span class=\"hljs-title function_\">all</span>([pa, pb]);\n</code></pre>\n<p>优化异步请求时要先判断依赖关系：</p>\n<ul>\n<li>能串行就串行</li>\n<li>能并发就并发</li>\n<li>注意失败策略和兜底逻辑</li>\n</ul>\n<h2 id=\"九promise-并发工具怎么选\">九、Promise 并发工具怎么选</h2>\n<h3 id=\"1-promiseall\">1. <code>Promise.all</code></h3>\n<ul>\n<li>全成功才成功</li>\n<li>任何一个失败就整体失败</li>\n</ul>\n<p>适合“必须全部完成”的场景。</p>\n<h3 id=\"2-promiseallsettled\">2. <code>Promise.allSettled</code></h3>\n<ul>\n<li>不要求全成功</li>\n<li>会告诉你每一项最终是 fulfilled 还是 rejected</li>\n</ul>\n<p>适合批量任务统计结果。</p>\n<h3 id=\"3-promiserace\">3. <code>Promise.race</code></h3>\n<ul>\n<li>谁先结束就用谁</li>\n</ul>\n<p>适合超时控制、抢首个结果。</p>\n<h3 id=\"4-promiseany\">4. <code>Promise.any</code></h3>\n<ul>\n<li>谁先成功就返回谁</li>\n<li>全失败才整体失败</li>\n</ul>\n<p>适合多源兜底。</p>\n<h2 id=\"十手写-promise-该抓哪些核心点\">十、手写 Promise 该抓哪些核心点</h2>\n<p>简化实现先保留四个必要部分：</p>\n<ol>\n<li>Promise 有状态</li>\n<li>状态只能从 <code>pending</code> 变一次</li>\n<li><code>then</code> 需要收集成功和失败回调</li>\n<li>状态改变后要触发对应回调</li>\n</ol>\n<p>简化版思路通常如下：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">MyPromise</span> {\n  <span class=\"hljs-title function_\">constructor</span>(<span class=\"hljs-params\">executor</span>) {\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> = <span class=\"hljs-string\">\"pending\"</span>;\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">value</span> = <span class=\"hljs-literal\">undefined</span>;\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">reason</span> = <span class=\"hljs-literal\">undefined</span>;\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">onFulfilledCallbacks</span> = [];\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">onRejectedCallbacks</span> = [];\n\n    <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">resolve</span> = (<span class=\"hljs-params\">value</span>) =&gt; {\n      <span class=\"hljs-keyword\">if</span> (<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> !== <span class=\"hljs-string\">\"pending\"</span>) <span class=\"hljs-keyword\">return</span>;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> = <span class=\"hljs-string\">\"fulfilled\"</span>;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">value</span> = value;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">onFulfilledCallbacks</span>.<span class=\"hljs-title function_\">forEach</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">fn</span>) =&gt;</span> <span class=\"hljs-title function_\">fn</span>());\n    };\n\n    <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">reject</span> = (<span class=\"hljs-params\">reason</span>) =&gt; {\n      <span class=\"hljs-keyword\">if</span> (<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> !== <span class=\"hljs-string\">\"pending\"</span>) <span class=\"hljs-keyword\">return</span>;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> = <span class=\"hljs-string\">\"rejected\"</span>;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">reason</span> = reason;\n      <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">onRejectedCallbacks</span>.<span class=\"hljs-title function_\">forEach</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">fn</span>) =&gt;</span> <span class=\"hljs-title function_\">fn</span>());\n    };\n\n    <span class=\"hljs-keyword\">try</span> {\n      <span class=\"hljs-title function_\">executor</span>(resolve, reject);\n    } <span class=\"hljs-keyword\">catch</span> (err) {\n      <span class=\"hljs-title function_\">reject</span>(err);\n    }\n  }\n}\n</code></pre>\n<p>完整实现还要遵守 Promises/A+ 的解析过程；这个简化版本只覆盖状态、回调队列、链式返回和异常捕获的基本方向。</p>\n<h2 id=\"十一构造函数和-new-到底发生了什么\">十一、构造函数和 <code>new</code> 到底发生了什么</h2>\n<h3 id=\"1-构造函数是什么\">1. 构造函数是什么</h3>\n<p>本质上还是普通函数，只不过约定俗成用来创建同类对象实例。</p>\n<h3 id=\"2-new-的执行机制\">2. <code>new</code> 的执行机制</h3>\n<p><code>new Foo()</code> 大致会做这几步：</p>\n<ol>\n<li>创建一个新对象</li>\n<li>把新对象的隐式原型指向 <code>Foo.prototype</code></li>\n<li>用新对象作为 <code>this</code> 执行构造函数</li>\n<li>如果构造函数没有显式返回对象，则返回这个新对象</li>\n</ol>\n<p>这就是很多手写 <code>new</code> 题的来源。</p>\n<h2 id=\"十二原型__proto__-和原型链\">十二、原型、<code>__proto__</code> 和原型链</h2>\n<p>这部分是 JavaScript 面向对象的底层基础。</p>\n<h3 id=\"1-prototype\">1. <code>prototype</code></h3>\n<p>函数对象才有显式的 <code>prototype</code> 属性，它通常用来放实例共享的方法。</p>\n<h3 id=\"2-__proto__\">2. <code>__proto__</code></h3>\n<p>对象实例通常可以通过 <code>__proto__</code> 访问其隐式原型。虽然平时不推荐业务代码依赖它，但理解它非常重要。</p>\n<h3 id=\"3-原型链\">3. 原型链</h3>\n<p>当你读取对象属性时：</p>\n<ol>\n<li>先找对象自身</li>\n<li>没找到就沿着原型向上找</li>\n<li>一直找到 <code>null</code> 为止</li>\n</ol>\n<p>这条查找链路就是原型链。</p>\n<h3 id=\"4-两个很重要的特性\">4. 两个很重要的特性</h3>\n<ul>\n<li>共享性：方法挂原型上，实例共享，节省内存</li>\n<li>动态性：原型上新增方法，已有实例通常也能访问到</li>\n</ul>\n<h2 id=\"十三instanceof-的原理\">十三、<code>instanceof</code> 的原理</h2>\n<p>一句话概括：</p>\n<p>它是沿着左侧对象的原型链，去找右侧构造函数的 <code>prototype</code> 是否出现过。</p>\n<p>所以它的局限也很明显：</p>\n<ul>\n<li>不能正确判断原始类型</li>\n<li>跨 iframe / realm 可能失真</li>\n<li>原型链被改动后结果也可能变化</li>\n</ul>\n<h2 id=\"十四objectcreate-为什么重要\">十四、<code>Object.create</code> 为什么重要</h2>\n<p><code>Object.create(proto)</code> 的作用是：创建一个新对象，并让它的原型指向 <code>proto</code>。</p>\n<p>它常用于：</p>\n<ul>\n<li>更纯粹的原型继承</li>\n<li>创建无原型对象</li>\n<li>组合继承里的中间桥梁</li>\n</ul>\n<p>这也是“寄生组合式继承”常见的关键步骤。</p>\n<h2 id=\"十五class-本质上还是原型链\">十五、<code>class</code> 本质上还是原型链</h2>\n<p>ES6 的 <code>class</code> 是语法糖，不是完全不同的一套机制。</p>\n<h3 id=\"1-它带来了更清晰的写法\">1. 它带来了更清晰的写法</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">Person</span> {\n  <span class=\"hljs-title function_\">constructor</span>(<span class=\"hljs-params\">name</span>) {\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = name;\n  }\n\n  <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-keyword\">return</span> <span class=\"hljs-string\">`Hi, <span class=\"hljs-subst\">${<span class=\"hljs-variable language_\">this</span>.name}</span>`</span>;\n  }\n}\n</code></pre>\n<h3 id=\"2-但底层仍然是原型\">2. 但底层仍然是原型</h3>\n<ul>\n<li>实例方法仍然挂在原型上</li>\n<li>继承仍然建立在原型链之上</li>\n</ul>\n<h3 id=\"3-super-为什么必须先调\">3. <code>super()</code> 为什么必须先调</h3>\n<p>在子类构造函数里，必须先调用 <code>super()</code>，本质上是先完成父类初始化，才能继续使用子类实例的 <code>this</code>。</p>\n<h2 id=\"十六常见继承方式怎么理解\">十六、常见继承方式怎么理解</h2>\n<h3 id=\"1-原型链继承\">1. 原型链继承</h3>\n<p>让子类实例通过原型链访问父类方法，但容易共享引用属性。</p>\n<h3 id=\"2-构造函数继承\">2. 构造函数继承</h3>\n<p>在子类构造函数中调用父类构造函数，能拿到独立实例属性，但拿不到父类原型方法复用。</p>\n<h3 id=\"3-组合继承\">3. 组合继承</h3>\n<p>把上面两种拼起来，能用，但父类构造函数可能执行两次。</p>\n<h3 id=\"4-寄生组合式继承\">4. 寄生组合式继承</h3>\n<p>ES5 时代比较推荐的写法，兼顾实例属性独立与原型方法复用。</p>\n<h3 id=\"5-es6-extends\">5. ES6 <code>extends</code></h3>\n<p>现代开发里最推荐的写法，本质上是对原型链继承的语法糖封装。</p>\n<h2 id=\"十七几个容易混淆的边界\">十七、几个容易混淆的边界</h2>\n<h3 id=\"1-宏任务和微任务要按轮次分析\">1. 宏任务和微任务要按轮次分析</h3>\n<p>一轮同步代码结束后会先清空微任务队列，所以 <code>Promise.then</code> 早于下一轮 <code>setTimeout</code>。</p>\n<h3 id=\"2-promise-的三个状态约束\">2. Promise 的三个状态约束</h3>\n<ul>\n<li>executor 是同步的</li>\n<li>状态不可逆</li>\n<li><code>then</code> 返回新 Promise，可链式调用</li>\n</ul>\n<h3 id=\"3-async--await-没有改变调度模型\">3. <code>async / await</code> 没有改变调度模型</h3>\n<p>它改善了顺序代码的表达方式，后续逻辑仍由 Promise 和微任务继续调度。</p>\n<h3 id=\"4-new原型链与继承是一组连续操作\">4. new、原型链与继承是一组连续操作</h3>\n<p><code>instanceof</code> 沿原型链判断关系，继承负责建立这条关系，<code>Object.create</code> 则直接指定新对象的原型。</p>\n<h3 id=\"5-执行时机与属性来源分开判断\">5. 执行时机与属性来源分开判断</h3>\n<p>事件循环、Promise 和 <code>async / await</code> 决定代码何时继续执行；构造函数、原型链、<code>class</code> 和继承决定对象从哪里取得属性与方法。遇到混合题时，先判断它属于哪一条线。</p>\n",
+  "toc": [
+    {
+      "id": "一为什么-javascript-需要事件循环",
+      "level": 2,
+      "text": "一、为什么 JavaScript 需要事件循环"
+    },
+    {
+      "id": "二事件循环的核心组成",
+      "level": 2,
+      "text": "二、事件循环的核心组成"
+    },
+    {
+      "id": "1-宏任务",
+      "level": 3,
+      "text": "1. 宏任务"
+    },
+    {
+      "id": "2-微任务",
+      "level": 3,
+      "text": "2. 微任务"
+    },
+    {
+      "id": "3-一轮事件循环大致做什么",
+      "level": 3,
+      "text": "3. 一轮事件循环大致做什么"
+    },
+    {
+      "id": "三经典异步题为什么总考",
+      "level": 2,
+      "text": "三、经典异步题为什么总考"
+    },
+    {
+      "id": "四promise-到底解决了什么问题",
+      "level": 2,
+      "text": "四、Promise 到底解决了什么问题"
+    },
+    {
+      "id": "1-三种状态",
+      "level": 3,
+      "text": "1. 三种状态"
+    },
+    {
+      "id": "2-状态不可逆",
+      "level": 3,
+      "text": "2. 状态不可逆"
+    },
+    {
+      "id": "3-executor-是同步执行的",
+      "level": 3,
+      "text": "3. executor 是同步执行的"
+    },
+    {
+      "id": "五promise-的常用实例方法",
+      "level": 2,
+      "text": "五、Promise 的常用实例方法"
+    },
+    {
+      "id": "1-then",
+      "level": 3,
+      "text": "1. .then"
+    },
+    {
+      "id": "2-catch",
+      "level": 3,
+      "text": "2. .catch"
+    },
+    {
+      "id": "3-finally",
+      "level": 3,
+      "text": "3. .finally"
+    },
+    {
+      "id": "六thencatch-和-thensuccess-fail-的区别",
+      "level": 2,
+      "text": "六、.then().catch() 和 .then(success, fail) 的区别"
+    },
+    {
+      "id": "七async--await-为什么更好用",
+      "level": 2,
+      "text": "七、async / await 为什么更好用"
+    },
+    {
+      "id": "1-可读性更强",
+      "level": 3,
+      "text": "1. 可读性更强"
+    },
+    {
+      "id": "2-错误处理更自然",
+      "level": 3,
+      "text": "2. 错误处理更自然"
+    },
+    {
+      "id": "3-调试体验更好",
+      "level": 3,
+      "text": "3. 调试体验更好"
+    },
+    {
+      "id": "4-本质并没有改变事件循环规则",
+      "level": 3,
+      "text": "4. 本质并没有改变事件循环规则"
+    },
+    {
+      "id": "八await-默认是串行的想并发要主动设计",
+      "level": 2,
+      "text": "八、await 默认是串行的，想并发要主动设计"
+    },
+    {
+      "id": "1-串行写法",
+      "level": 3,
+      "text": "1. 串行写法"
+    },
+    {
+      "id": "2-并发写法",
+      "level": 3,
+      "text": "2. 并发写法"
+    },
+    {
+      "id": "九promise-并发工具怎么选",
+      "level": 2,
+      "text": "九、Promise 并发工具怎么选"
+    },
+    {
+      "id": "1-promiseall",
+      "level": 3,
+      "text": "1. Promise.all"
+    },
+    {
+      "id": "2-promiseallsettled",
+      "level": 3,
+      "text": "2. Promise.allSettled"
+    },
+    {
+      "id": "3-promiserace",
+      "level": 3,
+      "text": "3. Promise.race"
+    },
+    {
+      "id": "4-promiseany",
+      "level": 3,
+      "text": "4. Promise.any"
+    },
+    {
+      "id": "十手写-promise-该抓哪些核心点",
+      "level": 2,
+      "text": "十、手写 Promise 该抓哪些核心点"
+    },
+    {
+      "id": "十一构造函数和-new-到底发生了什么",
+      "level": 2,
+      "text": "十一、构造函数和 new 到底发生了什么"
+    },
+    {
+      "id": "1-构造函数是什么",
+      "level": 3,
+      "text": "1. 构造函数是什么"
+    },
+    {
+      "id": "2-new-的执行机制",
+      "level": 3,
+      "text": "2. new 的执行机制"
+    },
+    {
+      "id": "十二原型__proto__-和原型链",
+      "level": 2,
+      "text": "十二、原型、__proto__ 和原型链"
+    },
+    {
+      "id": "1-prototype",
+      "level": 3,
+      "text": "1. prototype"
+    },
+    {
+      "id": "2-__proto__",
+      "level": 3,
+      "text": "2. __proto__"
+    },
+    {
+      "id": "3-原型链",
+      "level": 3,
+      "text": "3. 原型链"
+    },
+    {
+      "id": "4-两个很重要的特性",
+      "level": 3,
+      "text": "4. 两个很重要的特性"
+    },
+    {
+      "id": "十三instanceof-的原理",
+      "level": 2,
+      "text": "十三、instanceof 的原理"
+    },
+    {
+      "id": "十四objectcreate-为什么重要",
+      "level": 2,
+      "text": "十四、Object.create 为什么重要"
+    },
+    {
+      "id": "十五class-本质上还是原型链",
+      "level": 2,
+      "text": "十五、class 本质上还是原型链"
+    },
+    {
+      "id": "1-它带来了更清晰的写法",
+      "level": 3,
+      "text": "1. 它带来了更清晰的写法"
+    },
+    {
+      "id": "2-但底层仍然是原型",
+      "level": 3,
+      "text": "2. 但底层仍然是原型"
+    },
+    {
+      "id": "3-super-为什么必须先调",
+      "level": 3,
+      "text": "3. super() 为什么必须先调"
+    },
+    {
+      "id": "十六常见继承方式怎么理解",
+      "level": 2,
+      "text": "十六、常见继承方式怎么理解"
+    },
+    {
+      "id": "1-原型链继承",
+      "level": 3,
+      "text": "1. 原型链继承"
+    },
+    {
+      "id": "2-构造函数继承",
+      "level": 3,
+      "text": "2. 构造函数继承"
+    },
+    {
+      "id": "3-组合继承",
+      "level": 3,
+      "text": "3. 组合继承"
+    },
+    {
+      "id": "4-寄生组合式继承",
+      "level": 3,
+      "text": "4. 寄生组合式继承"
+    },
+    {
+      "id": "5-es6-extends",
+      "level": 3,
+      "text": "5. ES6 extends"
+    },
+    {
+      "id": "十七几个容易混淆的边界",
+      "level": 2,
+      "text": "十七、几个容易混淆的边界"
+    },
+    {
+      "id": "1-宏任务和微任务要按轮次分析",
+      "level": 3,
+      "text": "1. 宏任务和微任务要按轮次分析"
+    },
+    {
+      "id": "2-promise-的三个状态约束",
+      "level": 3,
+      "text": "2. Promise 的三个状态约束"
+    },
+    {
+      "id": "3-async--await-没有改变调度模型",
+      "level": 3,
+      "text": "3. async / await 没有改变调度模型"
+    },
+    {
+      "id": "4-new原型链与继承是一组连续操作",
+      "level": 3,
+      "text": "4. new、原型链与继承是一组连续操作"
+    },
+    {
+      "id": "5-执行时机与属性来源分开判断",
+      "level": 3,
+      "text": "5. 执行时机与属性来源分开判断"
+    }
+  ]
+}

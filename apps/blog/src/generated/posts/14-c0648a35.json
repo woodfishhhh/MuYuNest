@@ -1,0 +1,142 @@
+{
+  "canonicalSlug": "14-c0648a35",
+  "aliases": [
+    "14"
+  ],
+  "title": "React Router：路由匹配、参数、权限与懒加载",
+  "publishedAt": "2026-04-26T16:08:57.000Z",
+  "publishedLabel": "Apr 26, 2026",
+  "excerpt": "浏览器端项目（99%前端场景）直接使用：npm install react-router-dom",
+  "type": "Notes",
+  "searchText": "React Router：路由匹配、参数、权限与懒加载 Notes 前端开发 React React React Router 前端路由 路由守卫 一、先确认运行环境和版本 1. 路由包怎么选 浏览器端项目（99%前端场景）直接使用： 服务端渲染（SSR）会用到： ，它提供的是平台无关的路由能力，并不只服务于浏览器 DOM React Native混合开发： 2. V5与V6不要混着查文档 | 功能点 | V5版本 | V6版本 | | | | | | 路由容器 | | | | 组件挂载属性 | | 或 （等价） | | 路由跳转Hook | | | | 嵌套路由占位 | 无内置组件 | | | 查询参数Hook | 无内置Hook，需解析location | | 二、先决定 URL 由谁管理 1. 两种路由模式 History模式 ： 引入 后，URL无 。部署时要让后端把前端路由 fallback 到入口文件，否则刷新404 示例： 哈希模式 ： 引入 后，URL含 ，路由片段不会作为服务端路径发送，因此通常不需要额外配置 fallback 示例： 2. Router 放在哪一层 大多数项目会在入口处包住整个应用。局部 Router 只适合目标子树外部还没有其他 Router 的情况，不能把两个 Router 随意嵌套。 三、把路径映射到组件 1. 两个组件各管一件事 的作用接近Vue的 ，它会从子级 中计算当前 location 的最佳匹配 描述一条路由规则，声明式配置时放在 内 2. 一个最小配置 四、页面里的链接怎么选 1. ：需要匹配态的导航 这一版可以通过回调拿到匹配状态，再决定 className 或 style。下面第二个示例直接根据 isActive 设置颜色；第一个固定使用 类，需要样式或回调逻辑自行配合。 2. ：只负责跳转 不需要匹配态时用它即可。它的行为类似 标签，但由前端路由接管，不会进行整页刷新： 五、重定向和嵌套路由 1. （路由重定向） 当渲染条件不满足时，可以返回它做声明式重定向： 2. （嵌套路由占位） 父路由组件需要明确告诉子路由渲染到哪里，Outlet 就是这个占位位置，作用接近Vue的 。 六、从 URL 里取参数 1. 动态路由定义（路径参数） 在路径中用 声明动态段， 后面的内容是参数名： 2. 3种参数来源对应三个Hook （1）路径参数（params）： 路径参数来自动态路由片段： （2）查询参数（query）： 查询参数位于URL的 后面，例如 ： （3）路径信息： 如果不只需要某个参数，而是要读取路径、查询字符串或 state，可以取完整 location： 七、编程式路由跳转： 事件处理函数里需要跳转时，使用它替代V5的 ： 八、把权限判断和懒加载接进路由 1. 基础权限控制有两种思路 思路1：重定向（未授权跳转） 思路2：隐藏路由（未授权不生成路由） 2. 异步路由（懒加载） 组件不必在首屏一次性加载。下面用 拆分组件，再用 提供加载期间的内容： 这个示例把 放进 的 。也可以在更高层统一设置 Suspense 边界；但声明式写法中， 的直接子项仍应是 。 九、最后检查这几处 1. 路由组件层级： 仅能直接包含 ， 的 可嵌套任意组件 2. 组件挂载： 需传入组件实例（ ）， 需传入组件本身（ ） 3. 版本兼容：项目中需统一使用V5或V6，不可混合使用（API不兼容） 4. 动态路由参数： 返回值均为字符串，需手动转换类型（如 ）",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "React Router",
+    "前端路由",
+    "路由守卫"
+  ],
+  "html": "<h3 id=\"一先确认运行环境和版本\">一、先确认运行环境和版本</h3>\n<h4 id=\"1-路由包怎么选\">1. 路由包怎么选</h4>\n<ul>\n<li>浏览器端项目（99%前端场景）直接使用：<code>npm install react-router-dom</code></li>\n<li>服务端渲染（SSR）会用到：<code>react-router</code>，它提供的是平台无关的路由能力，并不只服务于浏览器 DOM</li>\n<li>React Native混合开发：<code>react-router-native</code></li>\n</ul>\n<h4 id=\"2-v5与v6不要混着查文档\">2. V5与V6不要混着查文档</h4>\n<table>\n<thead>\n<tr>\n<th>功能点</th>\n<th>V5版本</th>\n<th>V6版本</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>路由容器</td>\n<td><code>&lt;Switch&gt;</code></td>\n<td><code>&lt;Routes&gt;</code></td>\n</tr>\n<tr>\n<td>组件挂载属性</td>\n<td><code>component={Component}</code></td>\n<td><code>element={&lt;Component /&gt;}</code> 或 <code>Component={Component}</code>（等价）</td>\n</tr>\n<tr>\n<td>路由跳转Hook</td>\n<td><code>useHistory()</code></td>\n<td><code>useNavigate()</code></td>\n</tr>\n<tr>\n<td>嵌套路由占位</td>\n<td>无内置组件</td>\n<td><code>&lt;Outlet&gt;</code></td>\n</tr>\n<tr>\n<td>查询参数Hook</td>\n<td>无内置Hook，需解析location</td>\n<td><code>useSearchParams()</code></td>\n</tr>\n</tbody>\n</table>\n<h3 id=\"二先决定-url-由谁管理\">二、先决定 URL 由谁管理</h3>\n<h4 id=\"1-两种路由模式\">1. 两种路由模式</h4>\n<ul>\n<li><strong>History模式</strong>：\n引入 <code>&lt;BrowserRouter&gt;</code> 后，URL无<code>#</code>。部署时要让后端把前端路由 fallback 到入口文件，否则刷新404\n示例：<code>http://localhost:3000/config1</code></li>\n<li><strong>哈希模式</strong>：\n引入 <code>&lt;HashRouter&gt;</code> 后，URL含<code>#</code>，路由片段不会作为服务端路径发送，因此通常不需要额外配置 fallback\n示例：<code>http://localhost:3000/#/config1</code></li>\n</ul>\n<h4 id=\"2-router-放在哪一层\">2. Router 放在哪一层</h4>\n<p>大多数项目会在入口处包住整个应用。局部 Router 只适合目标子树外部还没有其他 Router 的情况，不能把两个 Router 随意嵌套。</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 全局使用路由（常用）</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">BrowserRouter</span> <span class=\"hljs-keyword\">as</span> <span class=\"hljs-title class_\">Router</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">render</span>(\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Router</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">App</span> /&gt;</span> {/* 根组件 */}\n  <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Router</span>&gt;</span></span>,\n  <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">getElementById</span>(<span class=\"hljs-string\">'root'</span>)\n);\n\n<span class=\"hljs-comment\">// 局部使用路由（特殊场景）</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">App</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>\n      {/* 仅SubComponent1使用路由 */}\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Router</span>&gt;</span>\n        <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">SubComponent1</span> /&gt;</span>\n      <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Router</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">SubComponent2</span> /&gt;</span> {/* 无路由功能 */}\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<h3 id=\"三把路径映射到组件\">三、把路径映射到组件</h3>\n<h4 id=\"1-两个组件各管一件事\">1. 两个组件各管一件事</h4>\n<ul>\n<li><code>&lt;Routes&gt;</code> 的作用接近Vue的<code>&lt;router-view&gt;</code>，它会从子级<code>&lt;Route&gt;</code>中计算当前 location 的最佳匹配</li>\n<li><code>&lt;Route&gt;</code> 描述一条路由规则，声明式配置时放在<code>&lt;Routes&gt;</code>内</li>\n</ul>\n<h4 id=\"2-一个最小配置\">2. 一个最小配置</h4>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Routes</span>, <span class=\"hljs-title class_\">Route</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">Config1</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./Config1'</span>;\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">Config2</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./Config2'</span>;\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">App</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Routes</span>&gt;</span>\n      {/* 两种组件挂载方式（等价） */}\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"/config1\"</span> <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">Config1</span> /&gt;</span>} /&gt; \n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"/config2\"</span> <span class=\"hljs-attr\">Component</span>=<span class=\"hljs-string\">{Config2}</span> /&gt;</span> \n      {/* 404路由（path=\"*\"匹配所有未定义路径） */}\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"*\"</span> <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">NotFound</span> /&gt;</span>} /&gt;\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Routes</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<h3 id=\"四页面里的链接怎么选\">四、页面里的链接怎么选</h3>\n<h4 id=\"1-需要匹配态的导航\">1. <code>&lt;NavLink&gt;</code>：需要匹配态的导航</h4>\n<p>这一版可以通过回调拿到匹配状态，再决定 className 或 style。下面第二个示例直接根据 isActive 设置颜色；第一个固定使用<code>active</code>类，需要样式或回调逻辑自行配合。</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">NavLink</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-comment\">// 选中时文字变红（通过active类控制）</span>\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">NavLink</span> <span class=\"hljs-attr\">to</span>=<span class=\"hljs-string\">\"/config1\"</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"nav-link\"</span>&gt;</span>配置1<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">NavLink</span>&gt;</span></span>\n<span class=\"hljs-comment\">// 自定义激活样式</span>\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">NavLink</span> <span class=\"hljs-attr\">to</span>=<span class=\"hljs-string\">\"/config2\"</span> <span class=\"hljs-attr\">style</span>=<span class=\"hljs-string\">{({isActive})</span> =&gt;</span> ({color: isActive ? 'red' : 'black'})}&gt;配置2<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">NavLink</span>&gt;</span></span>\n</code></pre>\n<h4 id=\"2-只负责跳转\">2. <code>&lt;Link&gt;</code>：只负责跳转</h4>\n<p>不需要匹配态时用它即可。它的行为类似<code>&lt;a&gt;</code>标签，但由前端路由接管，不会进行整页刷新：<code>&lt;Link to=\"/config3\"&gt;跳转到配置3&lt;/Link&gt;</code></p>\n<h3 id=\"五重定向和嵌套路由\">五、重定向和嵌套路由</h3>\n<h4 id=\"1-路由重定向\">1. <code>&lt;Navigate&gt;</code>（路由重定向）</h4>\n<p>当渲染条件不满足时，可以返回它做声明式重定向：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Navigate</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-comment\">// 声明式：未登录时重定向到登录页</span>\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"/profile\"</span> <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{localStorage.getItem(</span>'<span class=\"hljs-attr\">token</span>') ? &lt;<span class=\"hljs-attr\">Profile</span> /&gt;</span> : <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Navigate</span> <span class=\"hljs-attr\">to</span>=<span class=\"hljs-string\">\"/login\"</span> /&gt;</span>} /&gt;</span>\n</code></pre>\n<h4 id=\"2-嵌套路由占位\">2. <code>&lt;Outlet&gt;</code>（嵌套路由占位）</h4>\n<p>父路由组件需要明确告诉子路由渲染到哪里，Outlet 就是这个占位位置，作用接近Vue的<code>&lt;router-view&gt;</code>。</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 父组件 Config2.jsx</span>\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Outlet</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Config2</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>配置2<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Outlet</span> /&gt;</span> {/* 子路由内容渲染此处 */}\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n  );\n}\n\n<span class=\"hljs-comment\">// 路由配置</span>\n&lt;<span class=\"hljs-title class_\">Route</span> path=<span class=\"hljs-string\">\"/config2\"</span> element={<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Config2</span> /&gt;</span></span>}&gt;\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"sub1\"</span> <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">Config2Sub1</span> /&gt;</span>} /&gt;</span> {<span class=\"hljs-comment\">/* 匹配 /config2/sub1 */</span>}\n  &lt;<span class=\"hljs-title class_\">Route</span> path=<span class=\"hljs-string\">\"sub2\"</span> element={<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Config2Sub2</span> /&gt;</span></span>} /&gt; {<span class=\"hljs-comment\">/* 匹配 /config2/sub2 */</span>}\n&lt;/<span class=\"hljs-title class_\">Route</span>&gt;\n</code></pre>\n<h3 id=\"六从-url-里取参数\">六、从 URL 里取参数</h3>\n<h4 id=\"1-动态路由定义路径参数\">1. 动态路由定义（路径参数）</h4>\n<p>在路径中用 <code>path=\"/config3/:id\"</code> 声明动态段，<code>:</code>后面的内容是参数名：</p>\n<pre><code class=\"hljs language-jsx\">&lt;<span class=\"hljs-title class_\">Route</span> path=<span class=\"hljs-string\">\"/config3/:id\"</span> element={<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Config3</span> /&gt;</span></span>} /&gt;\n<span class=\"hljs-comment\">// 匹配路径：/config3/123、/config3/456 等</span>\n</code></pre>\n<h4 id=\"2-3种参数来源对应三个hook\">2. 3种参数来源对应三个Hook</h4>\n<h5>（1）路径参数（params）：<code>useParams()</code></h5>\n<p>路径参数来自动态路由片段：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { useParams } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Config3</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> { id } = <span class=\"hljs-title function_\">useParams</span>(); <span class=\"hljs-comment\">// 解构获取id，类型为字符串</span>\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>配置3的ID：{id}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>;\n}\n</code></pre>\n<h5>（2）查询参数（query）：<code>useSearchParams()</code></h5>\n<p>查询参数位于URL的<code>?</code>后面，例如<code>?a=1&amp;b=2</code>：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { useSearchParams } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Config4</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> [searchParams, setSearchParams] = <span class=\"hljs-title function_\">useSearchParams</span>();\n  <span class=\"hljs-comment\">// 获取参数：searchParams.get(参数名)</span>\n  <span class=\"hljs-keyword\">const</span> a = searchParams.<span class=\"hljs-title function_\">get</span>(<span class=\"hljs-string\">'a'</span>); <span class=\"hljs-comment\">// 读取a的值</span>\n  <span class=\"hljs-comment\">// 设置参数：setSearchParams({key: value})</span>\n  <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">handleSetParams</span> = (<span class=\"hljs-params\"></span>) =&gt; <span class=\"hljs-title function_\">setSearchParams</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">888</span>, <span class=\"hljs-attr\">b</span>: <span class=\"hljs-number\">666</span> });\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>查询参数a：{a}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">p</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{handleSetParams}</span>&gt;</span>修改参数<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<h5>（3）路径信息：<code>useLocation()</code></h5>\n<p>如果不只需要某个参数，而是要读取路径、查询字符串或 state，可以取完整 location：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { useLocation } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Config1</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> location = <span class=\"hljs-title function_\">useLocation</span>();\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(location);\n  <span class=\"hljs-comment\">/* 输出结构：\n  {\n    pathname: \"/config1\", // 路径\n    search: \"?a=1&amp;b=2\",   // 查询参数字符串\n    hash: \"\",             // 哈希值\n    state: {},            // 路由跳转时传递的状态（不显示在URL）\n    key: \"x123y456\"       // 唯一标识\n  }\n  */</span>\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>当前路径：{location.pathname}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>;\n}\n</code></pre>\n<h3 id=\"七编程式路由跳转usenavigate\">七、编程式路由跳转：<code>useNavigate()</code></h3>\n<p>事件处理函数里需要跳转时，使用它替代V5的<code>useHistory()</code>：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { useNavigate } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Config2</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> navigate = <span class=\"hljs-title function_\">useNavigate</span>();\n  <span class=\"hljs-comment\">// 基础跳转：navigate(路径)</span>\n  <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">goToConfig1</span> = (<span class=\"hljs-params\"></span>) =&gt; <span class=\"hljs-title function_\">navigate</span>(<span class=\"hljs-string\">'/config1'</span>);\n  <span class=\"hljs-comment\">// 带查询参数跳转</span>\n  <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">goToConfig4</span> = (<span class=\"hljs-params\"></span>) =&gt; <span class=\"hljs-title function_\">navigate</span>(<span class=\"hljs-string\">'/config4?a=123&amp;b=456'</span>);\n  <span class=\"hljs-comment\">// 带状态跳转（state不显示在URL）</span>\n  <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">goToConfig3</span> = (<span class=\"hljs-params\"></span>) =&gt; <span class=\"hljs-title function_\">navigate</span>(<span class=\"hljs-string\">'/config3/789'</span>, { <span class=\"hljs-attr\">state</span>: { <span class=\"hljs-attr\">name</span>: <span class=\"hljs-string\">'配置3'</span> } });\n  <span class=\"hljs-comment\">// 后退/前进：navigate(数字)（-1=后退1步，1=前进1步）</span>\n  <span class=\"hljs-keyword\">const</span> <span class=\"hljs-title function_\">goBack</span> = (<span class=\"hljs-params\"></span>) =&gt; <span class=\"hljs-title function_\">navigate</span>(-<span class=\"hljs-number\">1</span>);\n  \n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{goToConfig1}</span>&gt;</span>跳转到配置1<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{goBack}</span>&gt;</span>后退<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<h3 id=\"八把权限判断和懒加载接进路由\">八、把权限判断和懒加载接进路由</h3>\n<h4 id=\"1-基础权限控制有两种思路\">1. 基础权限控制有两种思路</h4>\n<h5>思路1：重定向（未授权跳转）</h5>\n<pre><code class=\"hljs language-jsx\">&lt;<span class=\"hljs-title class_\">Route</span> \n  path=<span class=\"hljs-string\">\"/profile\"</span> \n  element={<span class=\"hljs-variable language_\">localStorage</span>.<span class=\"hljs-title function_\">getItem</span>(<span class=\"hljs-string\">'token'</span>) ? <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Profile</span> /&gt;</span></span> : <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Navigate</span> <span class=\"hljs-attr\">to</span>=<span class=\"hljs-string\">\"/login\"</span> /&gt;</span></span>} \n/&gt;\n</code></pre>\n<h5>思路2：隐藏路由（未授权不生成路由）</h5>\n<pre><code class=\"hljs language-jsx\">{<span class=\"hljs-variable language_\">localStorage</span>.<span class=\"hljs-title function_\">getItem</span>(<span class=\"hljs-string\">'token'</span>) &amp;&amp; (\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"/profile\"</span> <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">Profile</span> /&gt;</span>} /&gt;</span>\n)}\n</code></pre>\n<h4 id=\"2-异步路由懒加载\">2. 异步路由（懒加载）</h4>\n<p>组件不必在首屏一次性加载。下面用 <code>React.lazy()</code> 拆分组件，再用 <code>&lt;Suspense&gt;</code> 提供加载期间的内容：</p>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> { lazy, <span class=\"hljs-title class_\">Suspense</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react'</span>;\n<span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Routes</span>, <span class=\"hljs-title class_\">Route</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-router-dom'</span>;\n<span class=\"hljs-comment\">// 懒加载组件（替代直接import）</span>\n<span class=\"hljs-keyword\">const</span> <span class=\"hljs-title class_\">LazyConfig4</span> = <span class=\"hljs-title function_\">lazy</span>(<span class=\"hljs-function\">() =&gt;</span> <span class=\"hljs-keyword\">import</span>(<span class=\"hljs-string\">'./Config4'</span>));\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">App</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Routes</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Route</span> \n        <span class=\"hljs-attr\">path</span>=<span class=\"hljs-string\">\"/config4\"</span> \n        <span class=\"hljs-attr\">element</span>=<span class=\"hljs-string\">{</span>\n          // <span class=\"hljs-attr\">Suspense</span>：<span class=\"hljs-attr\">指定加载时的过渡内容</span>\n          &lt;<span class=\"hljs-attr\">Suspense</span> <span class=\"hljs-attr\">fallback</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">h2</span>&gt;</span>加载中...<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h2</span>&gt;</span>}&gt;\n            <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">LazyConfig4</span> /&gt;</span>\n          <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Suspense</span>&gt;</span>\n        }\n      /&gt;\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Routes</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p>这个示例把 <code>&lt;Suspense&gt;</code> 放进<code>&lt;Route&gt;</code>的<code>element</code>。也可以在更高层统一设置 Suspense 边界；但声明式写法中，<code>&lt;Routes&gt;</code>的直接子项仍应是<code>&lt;Route&gt;</code>。</p>\n<h3 id=\"九最后检查这几处\">九、最后检查这几处</h3>\n<ol>\n<li>路由组件层级：<code>&lt;Routes&gt;</code>仅能直接包含<code>&lt;Route&gt;</code>，<code>&lt;Route&gt;</code>的<code>element</code>可嵌套任意组件</li>\n<li>组件挂载：<code>element</code>需传入组件实例（<code>&lt;Component /&gt;</code>），<code>Component</code>需传入组件本身（<code>Component</code>）</li>\n<li>版本兼容：项目中需统一使用V5或V6，不可混合使用（API不兼容）</li>\n<li>动态路由参数：<code>useParams()</code>返回值均为字符串，需手动转换类型（如<code>Number(id)</code>）</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "一先确认运行环境和版本",
+      "level": 3,
+      "text": "一、先确认运行环境和版本"
+    },
+    {
+      "id": "1-路由包怎么选",
+      "level": 4,
+      "text": "1. 路由包怎么选"
+    },
+    {
+      "id": "2-v5与v6不要混着查文档",
+      "level": 4,
+      "text": "2. V5与V6不要混着查文档"
+    },
+    {
+      "id": "二先决定-url-由谁管理",
+      "level": 3,
+      "text": "二、先决定 URL 由谁管理"
+    },
+    {
+      "id": "1-两种路由模式",
+      "level": 4,
+      "text": "1. 两种路由模式"
+    },
+    {
+      "id": "2-router-放在哪一层",
+      "level": 4,
+      "text": "2. Router 放在哪一层"
+    },
+    {
+      "id": "三把路径映射到组件",
+      "level": 3,
+      "text": "三、把路径映射到组件"
+    },
+    {
+      "id": "1-两个组件各管一件事",
+      "level": 4,
+      "text": "1. 两个组件各管一件事"
+    },
+    {
+      "id": "2-一个最小配置",
+      "level": 4,
+      "text": "2. 一个最小配置"
+    },
+    {
+      "id": "四页面里的链接怎么选",
+      "level": 3,
+      "text": "四、页面里的链接怎么选"
+    },
+    {
+      "id": "1-需要匹配态的导航",
+      "level": 4,
+      "text": "1. ：需要匹配态的导航"
+    },
+    {
+      "id": "2-只负责跳转",
+      "level": 4,
+      "text": "2. ：只负责跳转"
+    },
+    {
+      "id": "五重定向和嵌套路由",
+      "level": 3,
+      "text": "五、重定向和嵌套路由"
+    },
+    {
+      "id": "1-路由重定向",
+      "level": 4,
+      "text": "1. （路由重定向）"
+    },
+    {
+      "id": "2-嵌套路由占位",
+      "level": 4,
+      "text": "2. （嵌套路由占位）"
+    },
+    {
+      "id": "六从-url-里取参数",
+      "level": 3,
+      "text": "六、从 URL 里取参数"
+    },
+    {
+      "id": "1-动态路由定义路径参数",
+      "level": 4,
+      "text": "1. 动态路由定义（路径参数）"
+    },
+    {
+      "id": "2-3种参数来源对应三个hook",
+      "level": 4,
+      "text": "2. 3种参数来源对应三个Hook"
+    },
+    {
+      "id": "七编程式路由跳转usenavigate",
+      "level": 3,
+      "text": "七、编程式路由跳转：useNavigate()"
+    },
+    {
+      "id": "八把权限判断和懒加载接进路由",
+      "level": 3,
+      "text": "八、把权限判断和懒加载接进路由"
+    },
+    {
+      "id": "1-基础权限控制有两种思路",
+      "level": 4,
+      "text": "1. 基础权限控制有两种思路"
+    },
+    {
+      "id": "2-异步路由懒加载",
+      "level": 4,
+      "text": "2. 异步路由（懒加载）"
+    },
+    {
+      "id": "九最后检查这几处",
+      "level": 3,
+      "text": "九、最后检查这几处"
+    }
+  ]
+}

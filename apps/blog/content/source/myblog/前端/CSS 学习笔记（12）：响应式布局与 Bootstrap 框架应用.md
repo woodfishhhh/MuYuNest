@@ -12,14 +12,13 @@ categories:
   - "CSS"
 ---
 
-# CSS 学习笔记（12）：响应式布局与 Bootstrap 框架应用
 
 响应式布局方案
 
 * 媒体查询
 * Bootstrap框架
 
-## 01-媒体查询 
+## 01-媒体查询
 
 ### 基本写法
 
@@ -112,9 +111,9 @@ categories:
 
 ### 简介
 
-Bootstrap 是由 Twitter 公司开发维护的前端 UI 框架，它提供了大量编写好的 CSS 样式，允许开发者结合一定 HTML 结构及JavaScript，快速编写功能完善的网页及常见交互效果。 
+Bootstrap 是由 Twitter 公司开发维护的前端 UI 框架，它提供了大量编写好的 CSS 样式，允许开发者结合一定 HTML 结构及JavaScript，快速编写功能完善的网页及常见交互效果。
 
-中文官网: <https://www.bootcss.com/> 
+中文官网: <https://www.bootcss.com/>
 
 ### 使用步骤
 

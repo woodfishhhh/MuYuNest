@@ -1,6 +1,7 @@
 ---
 title: "JavaScript 异步编程核心：AJAX、Promise 与 Async/Await"
 date: 2025-12-27 17:49:23
+slug: javascript-async-core
 tags:
   - "异步编程"
   - "AJAX"
@@ -11,7 +12,6 @@ categories:
   - "JavaScript"
 ---
 
-# JavaScript 异步编程核心笔记（基于 Udemy 课程选集）
 
 ## 一、异步 JavaScript 基础（对应选集 246：Asynchronous JavaScript, AJAX and APIs）
 
@@ -45,7 +45,7 @@ categories:
 ### 1.2 AJAX 技术
 
 - **定义**：AJAX（Asynchronous JavaScript and XML）是一种异步请求数据的技术，核心是在不刷新页面的情况下与服务器交换数据并更新页面部分内容。
-- **核心原理**：通过 `XMLHttpRequest` 对象（或后续的 `fetch` API）向服务器发送请求，接收响应后解析数据并操作 DOM。
+- **原理**：通过 `XMLHttpRequest` 对象（或后续的 `fetch` API）向服务器发送请求，接收响应后解析数据并操作 DOM。
 - **数据格式**：早期常用 XML，现在主流使用 JSON（轻量、易解析）。
 
 ## 二、XMLHttpRequest（对应选集 248：Our First AJAX Call: XMLHttpRequest）
@@ -176,7 +176,7 @@ getUser(1, (user) => {
 “这个算 return 吗？”
 
 - 不是。resolve/reject 是函数调用，用来“结算”Promise；不是 return 的语义。
-- 在 executor 或 setTimeout 回调里写 return resolve() 只是从那个回调返回，没必要；resolve() 本身已经结算 Promise。
+- 在 executor 或 setTimeout 回调里写 return resolve 只是从那个回调返回，没必要；resolve 本身已经结算 Promise。
 - 真正有意义的 return 是在 .then 回调里：return 的值会成为“下一个 Promise”的完成值。
 
 示例：
@@ -271,7 +271,7 @@ fetchData("https://jsonplaceholder.typicode.com/users/1")
 
 ### 4.4 Promise 链式调用
 
-- **核心特点**：`then()` 方法返回一个新的 Promise，因此可以连续调用 `then()`，将多个异步操作按顺序串联起来，避免回调地狱。
+- **特点**：`then()` 方法返回一个新的 Promise，因此可以连续调用 `then()`，将多个异步操作按顺序串联起来，避免回调地狱。
 - **示例：链式调用解决回调地狱**
 
 ```javascript
@@ -384,7 +384,7 @@ getUser(1)
   - `value`：仅当 `status` 为 `fulfilled` 时存在，对应 Promise 成功的结果；
   - `reason`：仅当 `status` 为 `rejected` 时存在，对应 Promise 失败的原因。
 
-- 核心特点：**不会因某个 Promise 失败而中断**，会等待所有任务结束后统一返回结果，适合需要获取所有请求完整状态的场景（如批量操作结果统计、多接口并行调用且需处理部分失败的情况）。
+- 特点：**不会因某个 Promise 失败而中断**，会等待所有任务结束后统一返回结果，适合需要获取所有请求完整状态的场景（如批量操作结果统计、多接口并行调用且需处理部分失败的情况）。
 
 - 示例：
 
@@ -441,7 +441,7 @@ getUser(1)
 
 - 接收一个 Promise 数组，**等待第一个成功的 Promise** 并返回其结果；若所有 Promise 都失败，则返回一个包含所有失败原因的 `AggregateError`（聚合错误）。
 
-- 核心特点：与 `Promise.race` 类似（关注“第一个完成的结果”），但仅筛选“成功的结果”——忽略所有失败的 Promise，直到找到第一个成功的；只有当所有 Promise 都失败时，才会触发 `catch`。
+- 特点：与 `Promise.race` 类似（关注“第一个完成的结果”），但仅筛选“成功的结果”——忽略所有失败的 Promise，直到找到第一个成功的；只有当所有 Promise 都失败时，才会触发 `catch`。
 
 - 示例 1：存在成功的 Promise
 
@@ -514,7 +514,7 @@ getUser(1)
 - **定义**：Fetch API 是现代浏览器提供的用于替代 `XMLHttpRequest` 的异步请求接口，基于 Promise，语法更简洁，支持链式调用。
 - **基本语法**：`fetch(url, [options])`，返回一个 Promise 对象（resolve 时返回 `Response` 对象，reject 时仅捕获网络错误）。
 
-### 5.2 核心特点
+### 5.2 特点
 
 - 默认请求方式为 `GET`
 - 仅当网络错误（如无法连接服务器）时，Promise 才会 reject；HTTP 错误（如 404、500）不会导致 reject，需手动判断 `Response.ok` 属性
@@ -739,7 +739,7 @@ testWhereAmI();
 
 ## 八、总结
 
-1. **异步编程演进**：`XMLHttpRequest` → `Promise` → `fetch` → `async/await`，核心目标是简化异步代码、避免回调地狱、统一错误处理。
+1. **异步编程演进**：`XMLHttpRequest` → `Promise` → `fetch` → `async/await`，目标是简化异步代码、避免回调地狱、统一错误处理。
 2. **Promise 核心**：三种状态、`then()`/`catch()` 链式调用、静态方法（`all`/`race`），是现代异步编程的基础。
 3. **Fetch 要点**：基于 Promise，需手动处理 HTTP 错误，通过 `json()` 解析响应。
 4. **Async/Await 优势**：同步式写法、`try...catch` 错误处理、调试友好，是当前主流的异步编程方案。

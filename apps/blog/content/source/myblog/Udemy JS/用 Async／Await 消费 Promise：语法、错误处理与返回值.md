@@ -11,9 +11,8 @@ categories:
   - "JavaScript"
 ---
 
-# 262 Consuming Promises with Async_Await 笔记
 
-## 一、Async/Await 基础概念与核心特性
+## 一、Async/Await 基础概念与特点
 
 ### 1.1 Async 函数的定义与创建
 
@@ -32,7 +31,7 @@ categories:
   };
   ```
 
-- **核心特性**：
+- **特点**：
   1. 自动返回 Promise：无论 Async 函数内部返回什么值（非 Promise 类型值会被自动包装成已resolved的 Promise），函数最终的返回结果一定是 Promise 对象。例如：
      ```javascript
      async function getNum() {
@@ -250,7 +249,7 @@ async function getGeoData(lat, lng) {
 
 ## 四、总结与核心考点
 
-### 4.1 核心知识点总结
+### 4.1 知识点总结
 
 1. **Async 函数**：用 `async` 声明，自动返回 Promise，后台异步执行，不阻塞主线程；
 2. **Await 关键字**：仅在 Async 函数内使用，等待 Promise 状态变更，获取 resolved 结果，暂停函数内部执行但不阻塞主线程；

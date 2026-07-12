@@ -12,7 +12,6 @@ categories:
   - "Web API"
 ---
 
-# Web API 学习笔记（4）：Date 对象与 DOM 节点操作要点
 
 ![](https://www.woodfishhhh.xyz/images/5ba36430ed24eb0ddce808e101bd6cae.png?_t=1753598894432)
 
@@ -123,7 +122,6 @@ console.log(Date.now());
 - **`createElement`**：动态创建任意 DOM 节点。
 - **`cloneNode`**：复制现有的 DOM 节点，传入参数 `true` 会复制所有子节点。
 - **`appendChild`**：在末尾（结束标签前）插入节点。
-
 
 
 1. **`insertBefore` 方法**
@@ -240,7 +238,6 @@ DOM 树中的任意节点都不是孤立存在的，它们要么是父子关系�
 
 - **`children`**：只获取元素类型节点。
 
-  
 
   ##### childNodes
 
@@ -252,9 +249,6 @@ DOM 树中的任意节点都不是孤立存在的，它们要么是父子关系�
   - 功能：仅获取所有元素节点
   - 特点：**返回伪数组**，可像数组一样通过索引访问元素，语法为`父元素.children` ，便于精准操作标签元素子节点
 
-
-
-  
 
   **`parentNode`**
 

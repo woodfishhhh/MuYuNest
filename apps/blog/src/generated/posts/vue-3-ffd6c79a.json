@@ -1,0 +1,233 @@
+{
+  "canonicalSlug": "vue-3-ffd6c79a",
+  "aliases": [
+    "Vue 3 核心原理与工程实践：响应式、组件通信、指令、路由与渲染机制"
+  ],
+  "title": "Vue 3 响应式到渲染：组件通信、路由与更新机制",
+  "publishedAt": "2026-04-22T21:45:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "组件逻辑拆散后很难复用，副作用没有清理会继续修改已离开的页面，provide / inject 和插槽又处理不同方向的数据传递。把这些现象放回响应式、组件边界和渲染时机中，才能判断 nextTick、路由守卫或自定义指令该用在什么位置。",
+  "type": "Notes",
+  "searchText": "Vue 3 响应式到渲染：组件通信、路由与更新机制 Notes 前端开发 前端八股 前端八股 Vue3 响应式 Vue Router 自定义指令 组件逻辑拆散后很难复用，副作用没有清理会继续修改已离开的页面， 和插槽又处理不同方向的数据传递。把这些现象放回响应式、组件边界和渲染时机中，才能判断 、路由守卫或自定义指令该用在什么位置。 一、为什么 Vue 3 更强调 Composition API Options API 容易把同一块业务逻辑拆散到 、 、 、 不同区域。Composition API 可以把同一功能放在一起，后续再封装成组合函数。 这背后有两个实际收益： 逻辑聚合，维护成本更低 复杂业务更容易抽成 组合函数 二、 、 、 、 怎么选 1. 基础类型通常先考虑下面两点： 更常用于基础类型 在 中需要通过 访问 2. 更适合对象、数组这类复杂结构 属性访问更自然 会做深层响应式代理 3. 用于基于已有响应式数据派生新值 默认带缓存 常见场景是表单展示状态、列表过滤结果、格式化视图数据 4. 用来“侦听变化后执行副作用” 适合请求、日志、持久化、联动逻辑 三、Vue 3 响应式到底是怎么工作的 响应式依赖关系可以用 、 、 、 四个概念拆开。 1. 流程 可以把 Vue 3 响应式理解成四步： 1. 用 拦截对象读写 2. 读取时收集依赖 3. 修改时触发依赖 4. 让副作用函数重新执行 2. 的职责是注册副作用函数。所谓副作用，简单理解就是“依赖响应式数据、并且在数据变化后需要重新执行的逻辑”。 3. 在 捕获器中，Vue 会记录： 当前访问了哪个对象 访问了哪个属性 当前活跃的副作用函数是谁 4. 在 捕获器中，Vue 会找到之前收集过的依赖，并重新调度这些副作用函数。 下面这张图适合用来理解依赖收集结构： 四、Vue 响应式的常见陷阱 问题通常出在引用关系变化后，代码仍按原来的响应式对象来理解。 1. 响应式对象解构后失去响应性 先看解构响应式对象的结果： 这里的 不再是响应式引用，它只是一个普通值的拷贝结果。 如果确实需要解构，应该使用： 或者： 2. 包对象时，直接改引用要小心 如果你把对象放进 里，再把 赋给另一个变量并修改内部属性，本质上操作的还是同一个对象引用。 因此，删除字段或修改内部属性时，原对象也会观察到同一次变更。 3. / 场景优先考虑 并不适合覆盖所有数据结构。当数据是 、 、 、 时，更适合直接使用 。 五、生命周期划分组件执行阶段 生命周期的本质，是把组件从“创建、挂载、更新、卸载”的关键阶段切出来，让你在合适时间做合适的事。 常见钩子对应不同的执行时机： ：DOM 已挂载，适合发请求、初始化第三方库 ：视图更新后执行 ：做销毁清理 组件在不同阶段能执行的操作不同，生命周期让请求、DOM 初始化和资源清理各自有明确位置。 六、副作用清理为什么重要 痛点通常是这些： 定时器没有清掉 订阅没有关闭 请求没有取消 页面切走后旧逻辑还在跑 1. 清理何时发生 在 Vue 中，副作用清理通常发生在两个时机： 1. 副作用函数下一次重新执行前 2. 组件卸载时 2. + 核心思想非常值得背下来： “创建副作用的逻辑，应该和清理副作用的逻辑放在一起。” 下面两张配图可以一起看： 七、组件通信怎么系统地理解 1. 当数据需要跨层级传递时， 是比层层 更轻的方案。 子组件接收： 如果只是简单跨层传递，它很好用；但如果已经是全局共享状态，往往还是推荐更清晰的状态管理方案。 2. 插槽 插槽可以理解成“父组件向子组件预留内容口子”。 常见三类： 默认插槽 具名插槽 作用域插槽 作用域插槽最关键的点是： “子组件把数据提供给插槽内容使用。” 这也是很多列表组件、表格组件高度灵活的基础。 八、Vue Router 的接入与守卫 1. 基础接入 通常是： 1. 创建路由配置 2. 在 挂载路由 3. 在 放 2. 路由跳转 声明式： 编程式： 3. 动态路由 通过 这类方式传递参数。 4. 路由守卫 路由守卫常用于登录校验、权限判断、页面埋点和离开确认。 九、自定义指令什么时候用 自定义指令适合封装直接操作 DOM 的通用逻辑。 常见场景有： 自动聚焦 点击防抖 权限控制 DOM 样式或行为增强 1. 局部指令 2. 全局指令 在 中通过 注册。 3. 指令生命周期 理解点在于：指令是围绕“绑定元素”工作的，不是围绕“组件实例”工作的。 十、模板编译、diff 和 的更新链路 1. 模板编译 模板编译可以拆成三段： 1. Parse：模板转 AST 2. Transform / Optimize：做静态分析和优化 3. Codegen：生成渲染函数 经过这三步，模板会变成可执行的渲染函数。 2. diff Vue 2 和 Vue 3 的 diff 重点不同： Vue 2：双端比较 Vue 3：编译期优化 + 运行时更高效的更新策略 这里要区分两件事： 1. diff 不是全量暴力比较，而是基于同层节点、相同类型节点进行高效更新 2. Vue 3 的优势不只是运行时 diff，更重要的是编译期已经减少了很多不必要工作 3. 的本质不是“延迟一会儿”，而是： “等本轮 DOM 更新完成后，再执行回调。” 典型场景： 更新数据后立即拿最新 DOM 列表渲染后做滚动定位 打开弹窗后聚焦输入框 十一、实现时容易混淆的边界 1. 响应式包含四个环节 、依赖收集、触发更新、副作用函数。 2. 和 的依赖来源不同 更明确地指定监听源 会自动收集内部使用到的响应式依赖 3. 副作用清理不只处理内存 它还要避免旧请求、旧定时器和旧订阅继续影响当前页面状态。 4. diff 之前还有编译阶段 模板先编译成渲染函数，再由响应式系统触发更新。diff 只负责运行时需要比较的部分。 从状态变更追到 DOM 更新 状态变化先触发依赖，再生成新的渲染结果，diff 计算最小更新，DOM 刷新完成后才轮到 回调。需要读取最新 DOM 时，要沿这条链路判断时机。",
+  "readingMinutes": 9,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "前端八股"
+  ],
+  "tags": [
+    "前端八股",
+    "Vue3",
+    "响应式",
+    "Vue Router",
+    "自定义指令"
+  ],
+  "html": "<p>组件逻辑拆散后很难复用，副作用没有清理会继续修改已离开的页面，<code>provide / inject</code> 和插槽又处理不同方向的数据传递。把这些现象放回响应式、组件边界和渲染时机中，才能判断 <code>nextTick</code>、路由守卫或自定义指令该用在什么位置。</p>\n<h2 id=\"一为什么-vue-3-更强调-composition-api\">一、为什么 Vue 3 更强调 Composition API</h2>\n<p>Options API 容易把同一块业务逻辑拆散到 <code>data</code>、<code>methods</code>、<code>computed</code>、<code>watch</code> 不同区域。Composition API 可以把同一功能放在一起，后续再封装成组合函数。</p>\n<p>这背后有两个实际收益：</p>\n<ul>\n<li>逻辑聚合，维护成本更低</li>\n<li>复杂业务更容易抽成 <code>useXxx</code> 组合函数</li>\n</ul>\n<h2 id=\"二refreactivecomputedwatch-怎么选\">二、<code>ref</code>、<code>reactive</code>、<code>computed</code>、<code>watch</code> 怎么选</h2>\n<h3 id=\"1-ref\">1. <code>ref</code></h3>\n<p>基础类型通常先考虑下面两点：</p>\n<ul>\n<li>更常用于基础类型</li>\n<li>在 <code>script</code> 中需要通过 <code>.value</code> 访问</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> count = <span class=\"hljs-title function_\">ref</span>(<span class=\"hljs-number\">0</span>);\ncount.<span class=\"hljs-property\">value</span>++;\n</code></pre>\n<h3 id=\"2-reactive\">2. <code>reactive</code></h3>\n<ul>\n<li>更适合对象、数组这类复杂结构</li>\n<li>属性访问更自然</li>\n<li>会做深层响应式代理</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> state = <span class=\"hljs-title function_\">reactive</span>({\n  <span class=\"hljs-attr\">user</span>: { <span class=\"hljs-attr\">name</span>: <span class=\"hljs-string\">\"woodfish\"</span> },\n});\n</code></pre>\n<h3 id=\"3-computed\">3. <code>computed</code></h3>\n<ul>\n<li>用于基于已有响应式数据派生新值</li>\n<li>默认带缓存</li>\n<li>常见场景是表单展示状态、列表过滤结果、格式化视图数据</li>\n</ul>\n<h3 id=\"4-watch\">4. <code>watch</code></h3>\n<ul>\n<li>用来“侦听变化后执行副作用”</li>\n<li>适合请求、日志、持久化、联动逻辑</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-title function_\">watch</span>(\n  count,\n  <span class=\"hljs-function\">(<span class=\"hljs-params\">newVal, oldVal</span>) =&gt;</span> {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">`changed from <span class=\"hljs-subst\">${oldVal}</span> to <span class=\"hljs-subst\">${newVal}</span>`</span>);\n  },\n  {\n    <span class=\"hljs-attr\">immediate</span>: <span class=\"hljs-literal\">true</span>,\n    <span class=\"hljs-attr\">deep</span>: <span class=\"hljs-literal\">true</span>,\n  }\n);\n</code></pre>\n<h2 id=\"三vue-3-响应式到底是怎么工作的\">三、Vue 3 响应式到底是怎么工作的</h2>\n<p>响应式依赖关系可以用 <code>bucket</code>、<code>effect</code>、<code>track</code>、<code>trigger</code> 四个概念拆开。</p>\n<h3 id=\"1-流程\">1. 流程</h3>\n<p>可以把 Vue 3 响应式理解成四步：</p>\n<ol>\n<li>用 <code>Proxy</code> 拦截对象读写</li>\n<li>读取时收集依赖</li>\n<li>修改时触发依赖</li>\n<li>让副作用函数重新执行</li>\n</ol>\n<h3 id=\"2-effect\">2. <code>effect</code></h3>\n<p><code>effect</code> 的职责是注册副作用函数。所谓副作用，简单理解就是“依赖响应式数据、并且在数据变化后需要重新执行的逻辑”。</p>\n<h3 id=\"3-track\">3. <code>track</code></h3>\n<p>在 <code>get</code> 捕获器中，Vue 会记录：</p>\n<ul>\n<li>当前访问了哪个对象</li>\n<li>访问了哪个属性</li>\n<li>当前活跃的副作用函数是谁</li>\n</ul>\n<h3 id=\"4-trigger\">4. <code>trigger</code></h3>\n<p>在 <code>set</code> 捕获器中，Vue 会找到之前收集过的依赖，并重新调度这些副作用函数。</p>\n<p>下面这张图适合用来理解依赖收集结构：</p>\n<p><img src=\"/content-assets/vue-3-ffd6c79a/images/image-20260402153356805.png\" alt=\"Vue 响应式依赖收集示意\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"四vue-响应式的常见陷阱\">四、Vue 响应式的常见陷阱</h2>\n<p>问题通常出在引用关系变化后，代码仍按原来的响应式对象来理解。</p>\n<h3 id=\"1-响应式对象解构后失去响应性\">1. 响应式对象解构后失去响应性</h3>\n<p>先看解构响应式对象的结果：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> bob = <span class=\"hljs-title function_\">reactive</span>({ <span class=\"hljs-attr\">name</span>: <span class=\"hljs-string\">\"Bob\"</span> });\n<span class=\"hljs-keyword\">const</span> { name } = bob;\n</code></pre>\n<p>这里的 <code>name</code> 不再是响应式引用，它只是一个普通值的拷贝结果。</p>\n<p>如果确实需要解构，应该使用：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> state = <span class=\"hljs-title function_\">reactive</span>({ <span class=\"hljs-attr\">count</span>: <span class=\"hljs-number\">0</span> });\n<span class=\"hljs-keyword\">const</span> count = <span class=\"hljs-title function_\">toRef</span>(state, <span class=\"hljs-string\">\"count\"</span>);\n</code></pre>\n<p>或者：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> refs = <span class=\"hljs-title function_\">toRefs</span>(state);\n</code></pre>\n<h3 id=\"2-ref-包对象时直接改引用要小心\">2. <code>ref</code> 包对象时，直接改引用要小心</h3>\n<p>如果你把对象放进 <code>ref</code> 里，再把 <code>form.value</code> 赋给另一个变量并修改内部属性，本质上操作的还是同一个对象引用。</p>\n<p>因此，删除字段或修改内部属性时，原对象也会观察到同一次变更。</p>\n<h3 id=\"3-map--set-场景优先考虑-reactive\">3. <code>Map</code> / <code>Set</code> 场景优先考虑 <code>reactive</code></h3>\n<p><code>ref</code> 并不适合覆盖所有数据结构。当数据是 <code>Map</code>、<code>Set</code>、<code>WeakMap</code>、<code>WeakSet</code> 时，更适合直接使用 <code>reactive</code>。</p>\n<h2 id=\"五生命周期划分组件执行阶段\">五、生命周期划分组件执行阶段</h2>\n<p>生命周期的本质，是把组件从“创建、挂载、更新、卸载”的关键阶段切出来，让你在合适时间做合适的事。</p>\n<p>常见钩子对应不同的执行时机：</p>\n<ul>\n<li><code>onMounted</code>：DOM 已挂载，适合发请求、初始化第三方库</li>\n<li><code>onUpdated</code>：视图更新后执行</li>\n<li><code>onUnmounted</code>：做销毁清理</li>\n</ul>\n<p>组件在不同阶段能执行的操作不同，生命周期让请求、DOM 初始化和资源清理各自有明确位置。</p>\n<h2 id=\"六副作用清理为什么重要\">六、副作用清理为什么重要</h2>\n<p>痛点通常是这些：</p>\n<ul>\n<li>定时器没有清掉</li>\n<li>订阅没有关闭</li>\n<li>请求没有取消</li>\n<li>页面切走后旧逻辑还在跑</li>\n</ul>\n<h3 id=\"1-清理何时发生\">1. 清理何时发生</h3>\n<p>在 Vue 中，副作用清理通常发生在两个时机：</p>\n<ol>\n<li>副作用函数下一次重新执行前</li>\n<li>组件卸载时</li>\n</ol>\n<h3 id=\"2-watcheffect-oninvalidate\">2. <code>watchEffect</code> + <code>onInvalidate</code></h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-title function_\">watchEffect</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">onInvalidate</span>) =&gt;</span> {\n  <span class=\"hljs-keyword\">const</span> id = <span class=\"hljs-built_in\">setInterval</span>(<span class=\"hljs-function\">() =&gt;</span> {\n    ticks.<span class=\"hljs-property\">value</span> += <span class=\"hljs-number\">1</span>;\n  }, intervalMs.<span class=\"hljs-property\">value</span>);\n\n  <span class=\"hljs-title function_\">onInvalidate</span>(<span class=\"hljs-function\">() =&gt;</span> {\n    <span class=\"hljs-built_in\">clearInterval</span>(id);\n  });\n});\n</code></pre>\n<p>核心思想非常值得背下来：</p>\n<p>“创建副作用的逻辑，应该和清理副作用的逻辑放在一起。”</p>\n<p>下面两张配图可以一起看：</p>\n<p><img src=\"/content-assets/vue-3-ffd6c79a/images/image-20260403162819647.png\" alt=\"Vue 副作用清理时机示意 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/vue-3-ffd6c79a/images/image-20260403162925858.png\" alt=\"Vue 副作用清理时机示意 2\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"七组件通信怎么系统地理解\">七、组件通信怎么系统地理解</h2>\n<h3 id=\"1-provide--inject\">1. <code>provide / inject</code></h3>\n<p>当数据需要跨层级传递时，<code>provide / inject</code> 是比层层 <code>props</code> 更轻的方案。</p>\n<pre><code class=\"hljs\">&lt;script setup&gt;\nimport { provide, ref } from \"vue\";\n\nconst msg = ref(\"我是祖先的数据\");\nconst updateMsg = () =&gt; {\n  msg.value = \"数据已更新\";\n};\n\nprovide(\"appData\", { msg, updateMsg });\n&lt;/script&gt;\n</code></pre>\n<p>子组件接收：</p>\n<pre><code class=\"hljs\">&lt;script setup&gt;\nimport { inject } from \"vue\";\n\nconst { msg, updateMsg } = inject(\"appData\");\n&lt;/script&gt;\n</code></pre>\n<p>如果只是简单跨层传递，它很好用；但如果已经是全局共享状态，往往还是推荐更清晰的状态管理方案。</p>\n<h3 id=\"2-插槽\">2. 插槽</h3>\n<p>插槽可以理解成“父组件向子组件预留内容口子”。</p>\n<p>常见三类：</p>\n<ul>\n<li>默认插槽</li>\n<li>具名插槽</li>\n<li>作用域插槽</li>\n</ul>\n<p>作用域插槽最关键的点是：</p>\n<p>“子组件把数据提供给插槽内容使用。”</p>\n<p>这也是很多列表组件、表格组件高度灵活的基础。</p>\n<h2 id=\"八vue-router-的接入与守卫\">八、Vue Router 的接入与守卫</h2>\n<h3 id=\"1-基础接入\">1. 基础接入</h3>\n<p>通常是：</p>\n<ol>\n<li>创建路由配置</li>\n<li>在 <code>main.js</code> 挂载路由</li>\n<li>在 <code>App.vue</code> 放 <code>router-view</code></li>\n</ol>\n<h3 id=\"2-路由跳转\">2. 路由跳转</h3>\n<ul>\n<li>声明式：<code>&lt;router-link&gt;</code></li>\n<li>编程式：<code>router.push()</code></li>\n</ul>\n<h3 id=\"3-动态路由\">3. 动态路由</h3>\n<p>通过 <code>/user/:id</code> 这类方式传递参数。</p>\n<h3 id=\"4-路由守卫\">4. 路由守卫</h3>\n<p>路由守卫常用于登录校验、权限判断、页面埋点和离开确认。</p>\n<h2 id=\"九自定义指令什么时候用\">九、自定义指令什么时候用</h2>\n<p>自定义指令适合封装直接操作 DOM 的通用逻辑。</p>\n<p>常见场景有：</p>\n<ul>\n<li>自动聚焦</li>\n<li>点击防抖</li>\n<li>权限控制</li>\n<li>DOM 样式或行为增强</li>\n</ul>\n<h3 id=\"1-局部指令\">1. 局部指令</h3>\n<pre><code class=\"hljs\">&lt;script setup&gt;\nconst vFocus = {\n  mounted(el) {\n    el.focus();\n  },\n};\n&lt;/script&gt;\n</code></pre>\n<h3 id=\"2-全局指令\">2. 全局指令</h3>\n<p>在 <code>main.js</code> 中通过 <code>app.directive()</code> 注册。</p>\n<h3 id=\"3-指令生命周期\">3. 指令生命周期</h3>\n<p>理解点在于：指令是围绕“绑定元素”工作的，不是围绕“组件实例”工作的。</p>\n<h2 id=\"十模板编译diff-和-nexttick-的更新链路\">十、模板编译、diff 和 <code>nextTick</code> 的更新链路</h2>\n<h3 id=\"1-模板编译\">1. 模板编译</h3>\n<p>模板编译可以拆成三段：</p>\n<ol>\n<li>Parse：模板转 AST</li>\n<li>Transform / Optimize：做静态分析和优化</li>\n<li>Codegen：生成渲染函数</li>\n</ol>\n<p>经过这三步，模板会变成可执行的渲染函数。</p>\n<h3 id=\"2-diff\">2. diff</h3>\n<p>Vue 2 和 Vue 3 的 diff 重点不同：</p>\n<ul>\n<li>Vue 2：双端比较</li>\n<li>Vue 3：编译期优化 + 运行时更高效的更新策略</li>\n</ul>\n<p>这里要区分两件事：</p>\n<ol>\n<li>diff 不是全量暴力比较，而是基于同层节点、相同类型节点进行高效更新</li>\n<li>Vue 3 的优势不只是运行时 diff，更重要的是编译期已经减少了很多不必要工作</li>\n</ol>\n<h3 id=\"3-nexttick\">3. <code>nextTick</code></h3>\n<p><code>nextTick</code> 的本质不是“延迟一会儿”，而是：</p>\n<p>“等本轮 DOM 更新完成后，再执行回调。”</p>\n<p>典型场景：</p>\n<ul>\n<li>更新数据后立即拿最新 DOM</li>\n<li>列表渲染后做滚动定位</li>\n<li>打开弹窗后聚焦输入框</li>\n</ul>\n<h2 id=\"十一实现时容易混淆的边界\">十一、实现时容易混淆的边界</h2>\n<h3 id=\"1-响应式包含四个环节\">1. 响应式包含四个环节</h3>\n<p><code>Proxy</code>、依赖收集、触发更新、副作用函数。</p>\n<h3 id=\"2-watch-和-watcheffect-的依赖来源不同\">2. <code>watch</code> 和 <code>watchEffect</code> 的依赖来源不同</h3>\n<ul>\n<li><code>watch</code> 更明确地指定监听源</li>\n<li><code>watchEffect</code> 会自动收集内部使用到的响应式依赖</li>\n</ul>\n<h3 id=\"3-副作用清理不只处理内存\">3. 副作用清理不只处理内存</h3>\n<p>它还要避免旧请求、旧定时器和旧订阅继续影响当前页面状态。</p>\n<h3 id=\"4-diff-之前还有编译阶段\">4. diff 之前还有编译阶段</h3>\n<p>模板先编译成渲染函数，再由响应式系统触发更新。diff 只负责运行时需要比较的部分。</p>\n<h3 id=\"从状态变更追到-dom-更新\">从状态变更追到 DOM 更新</h3>\n<p>状态变化先触发依赖，再生成新的渲染结果，diff 计算最小更新，DOM 刷新完成后才轮到 <code>nextTick</code> 回调。需要读取最新 DOM 时，要沿这条链路判断时机。</p>\n",
+  "toc": [
+    {
+      "id": "一为什么-vue-3-更强调-composition-api",
+      "level": 2,
+      "text": "一、为什么 Vue 3 更强调 Composition API"
+    },
+    {
+      "id": "二refreactivecomputedwatch-怎么选",
+      "level": 2,
+      "text": "二、ref、reactive、computed、watch 怎么选"
+    },
+    {
+      "id": "1-ref",
+      "level": 3,
+      "text": "1. ref"
+    },
+    {
+      "id": "2-reactive",
+      "level": 3,
+      "text": "2. reactive"
+    },
+    {
+      "id": "3-computed",
+      "level": 3,
+      "text": "3. computed"
+    },
+    {
+      "id": "4-watch",
+      "level": 3,
+      "text": "4. watch"
+    },
+    {
+      "id": "三vue-3-响应式到底是怎么工作的",
+      "level": 2,
+      "text": "三、Vue 3 响应式到底是怎么工作的"
+    },
+    {
+      "id": "1-流程",
+      "level": 3,
+      "text": "1. 流程"
+    },
+    {
+      "id": "2-effect",
+      "level": 3,
+      "text": "2. effect"
+    },
+    {
+      "id": "3-track",
+      "level": 3,
+      "text": "3. track"
+    },
+    {
+      "id": "4-trigger",
+      "level": 3,
+      "text": "4. trigger"
+    },
+    {
+      "id": "四vue-响应式的常见陷阱",
+      "level": 2,
+      "text": "四、Vue 响应式的常见陷阱"
+    },
+    {
+      "id": "1-响应式对象解构后失去响应性",
+      "level": 3,
+      "text": "1. 响应式对象解构后失去响应性"
+    },
+    {
+      "id": "2-ref-包对象时直接改引用要小心",
+      "level": 3,
+      "text": "2. ref 包对象时，直接改引用要小心"
+    },
+    {
+      "id": "3-map--set-场景优先考虑-reactive",
+      "level": 3,
+      "text": "3. Map / Set 场景优先考虑 reactive"
+    },
+    {
+      "id": "五生命周期划分组件执行阶段",
+      "level": 2,
+      "text": "五、生命周期划分组件执行阶段"
+    },
+    {
+      "id": "六副作用清理为什么重要",
+      "level": 2,
+      "text": "六、副作用清理为什么重要"
+    },
+    {
+      "id": "1-清理何时发生",
+      "level": 3,
+      "text": "1. 清理何时发生"
+    },
+    {
+      "id": "2-watcheffect-oninvalidate",
+      "level": 3,
+      "text": "2. watchEffect + onInvalidate"
+    },
+    {
+      "id": "七组件通信怎么系统地理解",
+      "level": 2,
+      "text": "七、组件通信怎么系统地理解"
+    },
+    {
+      "id": "1-provide--inject",
+      "level": 3,
+      "text": "1. provide / inject"
+    },
+    {
+      "id": "2-插槽",
+      "level": 3,
+      "text": "2. 插槽"
+    },
+    {
+      "id": "八vue-router-的接入与守卫",
+      "level": 2,
+      "text": "八、Vue Router 的接入与守卫"
+    },
+    {
+      "id": "1-基础接入",
+      "level": 3,
+      "text": "1. 基础接入"
+    },
+    {
+      "id": "2-路由跳转",
+      "level": 3,
+      "text": "2. 路由跳转"
+    },
+    {
+      "id": "3-动态路由",
+      "level": 3,
+      "text": "3. 动态路由"
+    },
+    {
+      "id": "4-路由守卫",
+      "level": 3,
+      "text": "4. 路由守卫"
+    },
+    {
+      "id": "九自定义指令什么时候用",
+      "level": 2,
+      "text": "九、自定义指令什么时候用"
+    },
+    {
+      "id": "1-局部指令",
+      "level": 3,
+      "text": "1. 局部指令"
+    },
+    {
+      "id": "2-全局指令",
+      "level": 3,
+      "text": "2. 全局指令"
+    },
+    {
+      "id": "3-指令生命周期",
+      "level": 3,
+      "text": "3. 指令生命周期"
+    },
+    {
+      "id": "十模板编译diff-和-nexttick-的更新链路",
+      "level": 2,
+      "text": "十、模板编译、diff 和 nextTick 的更新链路"
+    },
+    {
+      "id": "1-模板编译",
+      "level": 3,
+      "text": "1. 模板编译"
+    },
+    {
+      "id": "2-diff",
+      "level": 3,
+      "text": "2. diff"
+    },
+    {
+      "id": "3-nexttick",
+      "level": 3,
+      "text": "3. nextTick"
+    },
+    {
+      "id": "十一实现时容易混淆的边界",
+      "level": 2,
+      "text": "十一、实现时容易混淆的边界"
+    },
+    {
+      "id": "1-响应式包含四个环节",
+      "level": 3,
+      "text": "1. 响应式包含四个环节"
+    },
+    {
+      "id": "2-watch-和-watcheffect-的依赖来源不同",
+      "level": 3,
+      "text": "2. watch 和 watchEffect 的依赖来源不同"
+    },
+    {
+      "id": "3-副作用清理不只处理内存",
+      "level": 3,
+      "text": "3. 副作用清理不只处理内存"
+    },
+    {
+      "id": "4-diff-之前还有编译阶段",
+      "level": 3,
+      "text": "4. diff 之前还有编译阶段"
+    },
+    {
+      "id": "从状态变更追到-dom-更新",
+      "level": 3,
+      "text": "从状态变更追到 DOM 更新"
+    }
+  ]
+}

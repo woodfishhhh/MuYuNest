@@ -1,0 +1,328 @@
+{
+  "canonicalSlug": "javascript-d0f8f9aa",
+  "aliases": [
+    "JavaScript 核心机制（上）：变量、类型转换、作用域、闭包与函数式基础"
+  ],
+  "title": "JavaScript 变量、类型转换、作用域与闭包",
+  "publishedAt": "2026-04-22T21:20:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "var / let / const 的提升规则不同，隐式转换会改变运算结果，this 又取决于调用方式。call / apply / bind、闭包和防抖节流看似分散，实际都依赖变量如何绑定、函数如何创建和执行。",
+  "type": "Notes",
+  "searchText": "JavaScript 变量、类型转换、作用域与闭包 Notes 前端开发 前端八股 前端八股 JavaScript 作用域 闭包 this 的提升规则不同，隐式转换会改变运算结果， 又取决于调用方式。 、闭包和防抖节流看似分散，实际都依赖变量如何绑定、函数如何创建和执行。 一、 、 、 到底区别在哪 1. 的特点 判断变量声明行为时，先看下面几个维度： 函数作用域 变量提升 可以重复声明 可以重新赋值 它最大的问题有两个： 变量提升 的声明会提升到作用域顶部，初始化值是 ，所以不会立刻报错，但非常容易制造认知偏差。 缺乏块级作用域 、 这种块不会隔离 ，变量会“泄露”出来，这也是很多老代码 bug 的来源。 2. 的核心优势是： 块级作用域 不允许同一作用域重复声明 存在暂时性死区 可以重新赋值 3. 和 一样拥有块级作用域和暂时性死区，不同点在于它声明后不能重新赋值。 但要特别注意： 不能改“绑定关系” 不等于内部数据完全不可变 4. 什么是暂时性死区（TDZ） 从作用域开始到变量声明完成之前，这段区域就叫暂时性死区。 TDZ 让声明前访问直接抛错，避免 在提升后先得到 undefined 所造成的隐蔽问题。 5. 和全局对象的关系 全局作用域还要区分变量是否成为全局对象的属性： 用 在全局作用域声明的变量，通常会挂到全局对象上 和 不会以同样方式挂到全局对象 二、数据类型和 的常见陷阱 1. JavaScript 的类型划分 JavaScript 的类型可以先分成： 7 种原始类型 1 种对象类型 常见原始类型包括： 除此之外，剩下的大部分复杂结构都属于对象。 2. 能做什么 适合做基础类型快速判断，例如： 3. 的两个经典坑 坑一： 这是语言历史遗留问题，不能拿来判断 。 坑二：数组、对象、日期、正则都会得到 因此，精确判断对象类型时不能只用 。 更稳妥的方式是： 三、隐式类型转换为什么总是容易错 1. 本质：JavaScript 会自动做类型转换 尤其在运算和比较时，JavaScript 会尝试把不同类型转成某个可比较的形式。 核心入口通常是 。 2. 的规则 只要一边是字符串，就更容易走字符串拼接 否则更多是数字加法 3. 的规则为什么危险 允许隐式转换，所以容易出现看起来“违反直觉”的结果。 比如： 最经典的经验是： 业务代码优先用 还要知道 为什么会产生这些结果 4. Truthy 和 Falsy Truthy 和 Falsy 也属于隐式转换的一部分。 常见 Falsy 值： 除这些之外，大多数值都是真值。 四、数组方法先区分是否修改原数组 1. 核心：转换 返回：新数组 不改原数组 2. 核心：筛选 返回：新数组 不改原数组 3. 核心：汇总、累加、折叠 返回：一个最终结果 不改原数组 4. 核心：原地增删改 会修改原数组 是典型的 mutating 方法 5. 核心：切片 返回新数组 不改原数组 6. 和 区别 两者都能遍历，但用途不同。 用于“基于原数组生成新数组” 更适合“只是做副作用操作” 7. 和 这是对象和可迭代协议的分界线。 遍历键名，适合对象属性枚举 遍历值，适合数组、字符串、Map、Set 等可迭代对象 普通对象不能直接 ，除非你自己实现 。 五、执行上下文和作用域链是理解闭包的前提 1. 什么是执行上下文 JavaScript 代码运行时会进入不同的执行上下文，例如： 全局执行上下文 函数执行上下文 它们会被组织在调用栈中。 2. 什么是作用域链 函数在定义时就决定了它能访问哪些外层变量，这就是词法作用域。多个词法环境串起来，就是作用域链。 这句话非常关键： “函数能访问什么变量，不取决于它在哪里调用，而取决于它在哪里定义。” 六、 指向必须按规则判断 不是写函数时就固定的，它通常取决于调用方式。 最常见的几条规则： 1. 默认绑定 普通函数直接调用， 在非严格模式下通常指向全局对象。 2. 隐式绑定 对象方法调用时， 指向调用它的对象。 3. 显式绑定 、 、 可以显式指定 。 4. 绑定 使用 调用函数时， 会绑定到新创建的实例对象上。 七、 、 、 怎么区分 1. 立即执行，参数逐个传。 2. 立即执行，参数以数组形式传。 3. 不立即执行，返回一个新函数，并永久绑定 。 4. 和 的关系 即使事先 了某个对象，后面用 调用绑定函数时， 的优先级仍然更高， 会指向新实例。 八、IIFE 为什么曾经特别重要 IIFE 就是立即执行函数表达式。 它的作用有两个： 隔离作用域，避免污染全局 在 时代解决循环异步捕获问题 例如： 在 出现之前，IIFE 常用来为每次循环创建独立作用域。 九、闭包到底是什么 闭包不是一个“特殊语法”，而是一种现象： 一个函数可以访问并持续持有其外层作用域中的变量，即使外层函数已经执行结束。 1. 典型例子 这里返回的内部函数就形成了闭包。 2. 闭包的价值 封装私有状态 延长变量生命周期 实现函数工厂 实现防抖、节流、once 等工具函数 3. 闭包的注意事项 使用闭包时要注意四个边界： 闭包会带来额外内存开销 捕获的是“变量引用”，不是快照值 它建立在词法作用域之上 在异步回调里尤其常见 十、高阶函数与柯里化 1. 什么是高阶函数 满足任一条件就可以称为高阶函数： 接收函数作为参数 返回函数作为结果 比如 、 、 都是高阶函数。 2. 什么是柯里化 柯里化是把“接收多个参数的函数”拆成“多次接收单个参数的函数”。 它的常见价值包括： 参数复用 延迟执行 配置化封装 十一、防抖与节流 1. 节流（throttle） 节流强调“固定频率执行”，保证一段时间内最多执行一次。 典型场景： 2. 防抖（debounce） 防抖强调“停止触发后再执行”，保证连续触发期间只执行最后一次。 典型场景： 搜索框输入联想 按钮重复点击 表单校验 3. 核心区别 节流：控制频率，定期执行 防抖：等到安静下来，只执行最后一次 十二、纯函数和副作用 1. 纯函数 纯函数满足两点： 相同输入一定得到相同输出 不依赖外部可变状态，也不修改外部状态 2. 副作用 副作用指函数执行时，除了返回值之外，还对外部世界产生了影响，例如： 修改全局变量 改 DOM 发请求 写日志 写本地存储 在工程实践里，纯函数更容易测试和推理，而副作用通常需要被集中管理和隔离。 十三、几个容易混淆的边界 1. 不只差在能否重新赋值 还要同时检查作用域、变量提升、TDZ 和全局对象关系。 2. 闭包同时影响封装和内存 闭包让函数持有定义时词法环境中的变量引用，可用于封装私有状态，也会延长相关变量的生命周期。 3. 都在改变调用关系 理解绑定过程后，再看手写实现会更清楚：把函数临时放到对象上执行，然后删除临时属性。 4. 防抖和节流取决于触发策略 节流保证一段时间内最多执行一次，防抖则等待连续触发停止后再执行。选哪一种，要看业务是需要持续反馈还是只关心最终结果。",
+  "readingMinutes": 11,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "前端八股"
+  ],
+  "tags": [
+    "前端八股",
+    "JavaScript",
+    "作用域",
+    "闭包",
+    "this"
+  ],
+  "html": "<p><code>var / let / const</code> 的提升规则不同，隐式转换会改变运算结果，<code>this</code> 又取决于调用方式。<code>call / apply / bind</code>、闭包和防抖节流看似分散，实际都依赖变量如何绑定、函数如何创建和执行。</p>\n<h2 id=\"一varletconst-到底区别在哪\">一、<code>var</code>、<code>let</code>、<code>const</code> 到底区别在哪</h2>\n<h3 id=\"1-var-的特点\">1. <code>var</code> 的特点</h3>\n<p>判断变量声明行为时，先看下面几个维度：</p>\n<ul>\n<li>函数作用域</li>\n<li>变量提升</li>\n<li>可以重复声明</li>\n<li>可以重新赋值</li>\n</ul>\n<p>它最大的问题有两个：</p>\n<h4 id=\"变量提升\">变量提升</h4>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">varExample</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(a); <span class=\"hljs-comment\">// undefined</span>\n  <span class=\"hljs-keyword\">var</span> a = <span class=\"hljs-number\">10</span>;\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(a); <span class=\"hljs-comment\">// 10</span>\n}\n</code></pre>\n<p><code>var</code> 的声明会提升到作用域顶部，初始化值是 <code>undefined</code>，所以不会立刻报错，但非常容易制造认知偏差。</p>\n<h4 id=\"缺乏块级作用域\">缺乏块级作用域</h4>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">varExample</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">var</span> a = <span class=\"hljs-number\">10</span>;\n\n  <span class=\"hljs-keyword\">if</span> (<span class=\"hljs-literal\">true</span>) {\n    <span class=\"hljs-keyword\">var</span> a = <span class=\"hljs-number\">20</span>;\n  }\n\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(a); <span class=\"hljs-comment\">// 20</span>\n}\n</code></pre>\n<p><code>if</code>、<code>for</code> 这种块不会隔离 <code>var</code>，变量会“泄露”出来，这也是很多老代码 bug 的来源。</p>\n<h3 id=\"2-let\">2. <code>let</code></h3>\n<p><code>let</code> 的核心优势是：</p>\n<ul>\n<li>块级作用域</li>\n<li>不允许同一作用域重复声明</li>\n<li>存在暂时性死区</li>\n<li>可以重新赋值</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">let</span> b = <span class=\"hljs-number\">10</span>;\n\n<span class=\"hljs-keyword\">if</span> (<span class=\"hljs-literal\">true</span>) {\n  <span class=\"hljs-keyword\">let</span> b = <span class=\"hljs-number\">20</span>;\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(b); <span class=\"hljs-comment\">// 20</span>\n}\n\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(b); <span class=\"hljs-comment\">// 10</span>\n</code></pre>\n<h3 id=\"3-const\">3. <code>const</code></h3>\n<p><code>const</code> 和 <code>let</code> 一样拥有块级作用域和暂时性死区，不同点在于它声明后不能重新赋值。</p>\n<p>但要特别注意：</p>\n<ul>\n<li><code>const</code> 不能改“绑定关系”</li>\n<li>不等于内部数据完全不可变</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> obj = { <span class=\"hljs-attr\">count</span>: <span class=\"hljs-number\">1</span> };\nobj.<span class=\"hljs-property\">count</span> = <span class=\"hljs-number\">2</span>; <span class=\"hljs-comment\">// 可以</span>\n\n<span class=\"hljs-comment\">// obj = {} // 报错</span>\n</code></pre>\n<h3 id=\"4-什么是暂时性死区tdz\">4. 什么是暂时性死区（TDZ）</h3>\n<p>从作用域开始到变量声明完成之前，这段区域就叫暂时性死区。</p>\n<pre><code class=\"hljs language-js\">{\n  <span class=\"hljs-comment\">// console.log(x); // ReferenceError</span>\n  <span class=\"hljs-keyword\">let</span> x = <span class=\"hljs-number\">1</span>;\n}\n</code></pre>\n<p>TDZ 让声明前访问直接抛错，避免 <code>var</code> 在提升后先得到 undefined 所造成的隐蔽问题。</p>\n<h3 id=\"5-和全局对象的关系\">5. 和全局对象的关系</h3>\n<p>全局作用域还要区分变量是否成为全局对象的属性：</p>\n<ul>\n<li>用 <code>var</code> 在全局作用域声明的变量，通常会挂到全局对象上</li>\n<li><code>let</code> 和 <code>const</code> 不会以同样方式挂到全局对象</li>\n</ul>\n<h2 id=\"二数据类型和-typeof-的常见陷阱\">二、数据类型和 <code>typeof</code> 的常见陷阱</h2>\n<h3 id=\"1-javascript-的类型划分\">1. JavaScript 的类型划分</h3>\n<p>JavaScript 的类型可以先分成：</p>\n<ul>\n<li>7 种原始类型</li>\n<li>1 种对象类型</li>\n</ul>\n<p>常见原始类型包括：</p>\n<ul>\n<li><code>string</code></li>\n<li><code>number</code></li>\n<li><code>boolean</code></li>\n<li><code>undefined</code></li>\n<li><code>null</code></li>\n<li><code>symbol</code></li>\n<li><code>bigint</code></li>\n</ul>\n<p>除此之外，剩下的大部分复杂结构都属于对象。</p>\n<h3 id=\"2-typeof-能做什么\">2. <code>typeof</code> 能做什么</h3>\n<p><code>typeof</code> 适合做基础类型快速判断，例如：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-number\">123</span>; <span class=\"hljs-comment\">// \"number\"</span>\n<span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-string\">\"abc\"</span>; <span class=\"hljs-comment\">// \"string\"</span>\n<span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-literal\">true</span>; <span class=\"hljs-comment\">// \"boolean\"</span>\n<span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-literal\">undefined</span>; <span class=\"hljs-comment\">// \"undefined\"</span>\n<span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-title class_\">Symbol</span>(); <span class=\"hljs-comment\">// \"symbol\"</span>\n<span class=\"hljs-keyword\">typeof</span> <span class=\"hljs-number\">10n</span>; <span class=\"hljs-comment\">// \"bigint\"</span>\n</code></pre>\n<h3 id=\"3-typeof-的两个经典坑\">3. <code>typeof</code> 的两个经典坑</h3>\n<h4 id=\"坑一typeof-null--object\">坑一：<code>typeof null === \"object\"</code></h4>\n<p>这是语言历史遗留问题，不能拿来判断 <code>null</code>。</p>\n<h4 id=\"坑二数组对象日期正则都会得到-object\">坑二：数组、对象、日期、正则都会得到 <code>\"object\"</code></h4>\n<p>因此，精确判断对象类型时不能只用 <code>typeof</code>。</p>\n<p>更稳妥的方式是：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-title class_\">Object</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">toString</span>.<span class=\"hljs-title function_\">call</span>([]);\n<span class=\"hljs-comment\">// \"[object Array]\"</span>\n</code></pre>\n<h2 id=\"三隐式类型转换为什么总是容易错\">三、隐式类型转换为什么总是容易错</h2>\n<h3 id=\"1-本质javascript-会自动做类型转换\">1. 本质：JavaScript 会自动做类型转换</h3>\n<p>尤其在运算和比较时，JavaScript 会尝试把不同类型转成某个可比较的形式。</p>\n<p>核心入口通常是 <code>ToPrimitive</code>。</p>\n<h3 id=\"2-的规则\">2. <code>+</code> 的规则</h3>\n<ul>\n<li>只要一边是字符串，就更容易走字符串拼接</li>\n<li>否则更多是数字加法</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-number\">1</span> + <span class=\"hljs-string\">\"2\"</span>); <span class=\"hljs-comment\">// \"12\"</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-literal\">true</span> + <span class=\"hljs-literal\">true</span>); <span class=\"hljs-comment\">// 2</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-number\">1</span> + <span class=\"hljs-literal\">null</span>); <span class=\"hljs-comment\">// 1</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-number\">1</span> + <span class=\"hljs-literal\">undefined</span>); <span class=\"hljs-comment\">// NaN</span>\n</code></pre>\n<h3 id=\"3--的规则为什么危险\">3. <code>==</code> 的规则为什么危险</h3>\n<p><code>==</code> 允许隐式转换，所以容易出现看起来“违反直觉”的结果。</p>\n<p>比如：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-literal\">null</span> == <span class=\"hljs-literal\">undefined</span>); <span class=\"hljs-comment\">// true</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">\"123\"</span> == <span class=\"hljs-number\">123</span>); <span class=\"hljs-comment\">// true</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-literal\">true</span> == <span class=\"hljs-number\">1</span>); <span class=\"hljs-comment\">// true</span>\n</code></pre>\n<p>最经典的经验是：</p>\n<ul>\n<li>业务代码优先用 <code>===</code></li>\n<li>还要知道 <code>==</code> 为什么会产生这些结果</li>\n</ul>\n<h3 id=\"4-truthy-和-falsy\">4. Truthy 和 Falsy</h3>\n<p>Truthy 和 Falsy 也属于隐式转换的一部分。</p>\n<p>常见 Falsy 值：</p>\n<ul>\n<li><code>false</code></li>\n<li><code>0</code></li>\n<li><code>\"\"</code></li>\n<li><code>null</code></li>\n<li><code>undefined</code></li>\n<li><code>NaN</code></li>\n</ul>\n<p>除这些之外，大多数值都是真值。</p>\n<h2 id=\"四数组方法先区分是否修改原数组\">四、数组方法先区分是否修改原数组</h2>\n<h3 id=\"1-map\">1. <code>map</code></h3>\n<ul>\n<li>核心：转换</li>\n<li>返回：新数组</li>\n<li>不改原数组</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> numbers = [<span class=\"hljs-number\">1</span>, <span class=\"hljs-number\">4</span>, <span class=\"hljs-number\">9</span>];\n<span class=\"hljs-keyword\">const</span> doubles = numbers.<span class=\"hljs-title function_\">map</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">num</span>) =&gt;</span> num * <span class=\"hljs-number\">2</span>);\n</code></pre>\n<h3 id=\"2-filter\">2. <code>filter</code></h3>\n<ul>\n<li>核心：筛选</li>\n<li>返回：新数组</li>\n<li>不改原数组</li>\n</ul>\n<h3 id=\"3-reduce\">3. <code>reduce</code></h3>\n<ul>\n<li>核心：汇总、累加、折叠</li>\n<li>返回：一个最终结果</li>\n<li>不改原数组</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> nums = [<span class=\"hljs-number\">1</span>, <span class=\"hljs-number\">2</span>, <span class=\"hljs-number\">3</span>, <span class=\"hljs-number\">4</span>];\n<span class=\"hljs-keyword\">const</span> total = nums.<span class=\"hljs-title function_\">reduce</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">acc, cur</span>) =&gt;</span> acc + cur, <span class=\"hljs-number\">0</span>);\n</code></pre>\n<h3 id=\"4-splice\">4. <code>splice</code></h3>\n<ul>\n<li>核心：原地增删改</li>\n<li>会修改原数组</li>\n<li>是典型的 mutating 方法</li>\n</ul>\n<h3 id=\"5-slice\">5. <code>slice</code></h3>\n<ul>\n<li>核心：切片</li>\n<li>返回新数组</li>\n<li>不改原数组</li>\n</ul>\n<h3 id=\"6-map-和-foreach-区别\">6. <code>map</code> 和 <code>forEach</code> 区别</h3>\n<p>两者都能遍历，但用途不同。</p>\n<ul>\n<li><code>map</code> 用于“基于原数组生成新数组”</li>\n<li><code>forEach</code> 更适合“只是做副作用操作”</li>\n</ul>\n<h3 id=\"7-forin-和-forof\">7. <code>for...in</code> 和 <code>for...of</code></h3>\n<p>这是对象和可迭代协议的分界线。</p>\n<ul>\n<li><code>for...in</code> 遍历键名，适合对象属性枚举</li>\n<li><code>for...of</code> 遍历值，适合数组、字符串、Map、Set 等可迭代对象</li>\n</ul>\n<p>普通对象不能直接 <code>for...of</code>，除非你自己实现 <code>Symbol.iterator</code>。</p>\n<h2 id=\"五执行上下文和作用域链是理解闭包的前提\">五、执行上下文和作用域链是理解闭包的前提</h2>\n<h3 id=\"1-什么是执行上下文\">1. 什么是执行上下文</h3>\n<p>JavaScript 代码运行时会进入不同的执行上下文，例如：</p>\n<ul>\n<li>全局执行上下文</li>\n<li>函数执行上下文</li>\n</ul>\n<p>它们会被组织在调用栈中。</p>\n<h3 id=\"2-什么是作用域链\">2. 什么是作用域链</h3>\n<p>函数在定义时就决定了它能访问哪些外层变量，这就是词法作用域。多个词法环境串起来，就是作用域链。</p>\n<p>这句话非常关键：</p>\n<p>“函数能访问什么变量，不取决于它在哪里调用，而取决于它在哪里定义。”</p>\n<h2 id=\"六this-指向必须按规则判断\">六、<code>this</code> 指向必须按规则判断</h2>\n<p><code>this</code> 不是写函数时就固定的，它通常取决于调用方式。</p>\n<p>最常见的几条规则：</p>\n<h3 id=\"1-默认绑定\">1. 默认绑定</h3>\n<p>普通函数直接调用，<code>this</code> 在非严格模式下通常指向全局对象。</p>\n<h3 id=\"2-隐式绑定\">2. 隐式绑定</h3>\n<p>对象方法调用时，<code>this</code> 指向调用它的对象。</p>\n<h3 id=\"3-显式绑定\">3. 显式绑定</h3>\n<p><code>call</code>、<code>apply</code>、<code>bind</code> 可以显式指定 <code>this</code>。</p>\n<h3 id=\"4-new-绑定\">4. <code>new</code> 绑定</h3>\n<p>使用 <code>new</code> 调用函数时，<code>this</code> 会绑定到新创建的实例对象上。</p>\n<h2 id=\"七callapplybind-怎么区分\">七、<code>call</code>、<code>apply</code>、<code>bind</code> 怎么区分</h2>\n<h3 id=\"1-call\">1. <code>call</code></h3>\n<p>立即执行，参数逐个传。</p>\n<pre><code class=\"hljs language-js\">fn.<span class=\"hljs-title function_\">call</span>(obj, arg1, arg2);\n</code></pre>\n<h3 id=\"2-apply\">2. <code>apply</code></h3>\n<p>立即执行，参数以数组形式传。</p>\n<pre><code class=\"hljs language-js\">fn.<span class=\"hljs-title function_\">apply</span>(obj, [arg1, arg2]);\n</code></pre>\n<h3 id=\"3-bind\">3. <code>bind</code></h3>\n<p>不立即执行，返回一个新函数，并永久绑定 <code>this</code>。</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> newFn = fn.<span class=\"hljs-title function_\">bind</span>(obj);\n<span class=\"hljs-title function_\">newFn</span>();\n</code></pre>\n<h3 id=\"4-bind-和-new-的关系\">4. <code>bind</code> 和 <code>new</code> 的关系</h3>\n<p>即使事先 <code>bind</code> 了某个对象，后面用 <code>new</code> 调用绑定函数时，<code>new</code> 的优先级仍然更高，<code>this</code> 会指向新实例。</p>\n<h2 id=\"八iife-为什么曾经特别重要\">八、IIFE 为什么曾经特别重要</h2>\n<p>IIFE 就是立即执行函数表达式。</p>\n<pre><code class=\"hljs language-js\">(<span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">var</span> privateVariable = <span class=\"hljs-string\">\"我是私有的\"</span>;\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(privateVariable);\n})();\n</code></pre>\n<p>它的作用有两个：</p>\n<ul>\n<li>隔离作用域，避免污染全局</li>\n<li>在 <code>var</code> 时代解决循环异步捕获问题</li>\n</ul>\n<p>例如：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">for</span> (<span class=\"hljs-keyword\">var</span> i = <span class=\"hljs-number\">0</span>; i &lt; <span class=\"hljs-number\">5</span>; i++) {\n  (<span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\">j</span>) {\n    <span class=\"hljs-built_in\">setTimeout</span>(<span class=\"hljs-function\">() =&gt;</span> <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(j), <span class=\"hljs-number\">0</span>);\n  })(i);\n}\n</code></pre>\n<p>在 <code>let</code> 出现之前，IIFE 常用来为每次循环创建独立作用域。</p>\n<h2 id=\"九闭包到底是什么\">九、闭包到底是什么</h2>\n<p>闭包不是一个“特殊语法”，而是一种现象：</p>\n<p>一个函数可以访问并持续持有其外层作用域中的变量，即使外层函数已经执行结束。</p>\n<h3 id=\"1-典型例子\">1. 典型例子</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">createCounter</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">let</span> count = <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\"></span>) {\n    count++;\n    <span class=\"hljs-keyword\">return</span> count;\n  };\n}\n\n<span class=\"hljs-keyword\">const</span> counter = <span class=\"hljs-title function_\">createCounter</span>();\n<span class=\"hljs-title function_\">counter</span>(); <span class=\"hljs-comment\">// 1</span>\n<span class=\"hljs-title function_\">counter</span>(); <span class=\"hljs-comment\">// 2</span>\n</code></pre>\n<p>这里返回的内部函数就形成了闭包。</p>\n<h3 id=\"2-闭包的价值\">2. 闭包的价值</h3>\n<ul>\n<li>封装私有状态</li>\n<li>延长变量生命周期</li>\n<li>实现函数工厂</li>\n<li>实现防抖、节流、once 等工具函数</li>\n</ul>\n<h3 id=\"3-闭包的注意事项\">3. 闭包的注意事项</h3>\n<p>使用闭包时要注意四个边界：</p>\n<ul>\n<li>闭包会带来额外内存开销</li>\n<li>捕获的是“变量引用”，不是快照值</li>\n<li>它建立在词法作用域之上</li>\n<li>在异步回调里尤其常见</li>\n</ul>\n<h2 id=\"十高阶函数与柯里化\">十、高阶函数与柯里化</h2>\n<h3 id=\"1-什么是高阶函数\">1. 什么是高阶函数</h3>\n<p>满足任一条件就可以称为高阶函数：</p>\n<ul>\n<li>接收函数作为参数</li>\n<li>返回函数作为结果</li>\n</ul>\n<p>比如 <code>map</code>、<code>filter</code>、<code>reduce</code> 都是高阶函数。</p>\n<h3 id=\"2-什么是柯里化\">2. 什么是柯里化</h3>\n<p>柯里化是把“接收多个参数的函数”拆成“多次接收单个参数的函数”。</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">add</span>(<span class=\"hljs-params\">a</span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\">b</span>) {\n    <span class=\"hljs-keyword\">return</span> a + b;\n  };\n}\n</code></pre>\n<p>它的常见价值包括：</p>\n<ul>\n<li>参数复用</li>\n<li>延迟执行</li>\n<li>配置化封装</li>\n</ul>\n<h2 id=\"十一防抖与节流\">十一、防抖与节流</h2>\n<h3 id=\"1-节流throttle\">1. 节流（throttle）</h3>\n<p>节流强调“固定频率执行”，保证一段时间内最多执行一次。</p>\n<p>典型场景：</p>\n<ul>\n<li><code>scroll</code></li>\n<li><code>resize</code></li>\n<li><code>mousemove</code></li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">throttle</span>(<span class=\"hljs-params\">fn, delay</span>) {\n  <span class=\"hljs-keyword\">let</span> lastTime = <span class=\"hljs-number\">0</span>;\n\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\">...args</span>) {\n    <span class=\"hljs-keyword\">const</span> now = <span class=\"hljs-title class_\">Date</span>.<span class=\"hljs-title function_\">now</span>();\n    <span class=\"hljs-keyword\">if</span> (now - lastTime &gt;= delay) {\n      lastTime = now;\n      fn.<span class=\"hljs-title function_\">apply</span>(<span class=\"hljs-variable language_\">this</span>, args);\n    }\n  };\n}\n</code></pre>\n<h3 id=\"2-防抖debounce\">2. 防抖（debounce）</h3>\n<p>防抖强调“停止触发后再执行”，保证连续触发期间只执行最后一次。</p>\n<p>典型场景：</p>\n<ul>\n<li>搜索框输入联想</li>\n<li>按钮重复点击</li>\n<li>表单校验</li>\n</ul>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">debounce</span>(<span class=\"hljs-params\">fn, delay</span>) {\n  <span class=\"hljs-keyword\">let</span> timer = <span class=\"hljs-literal\">null</span>;\n\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-keyword\">function</span> (<span class=\"hljs-params\">...args</span>) {\n    <span class=\"hljs-built_in\">clearTimeout</span>(timer);\n    timer = <span class=\"hljs-built_in\">setTimeout</span>(<span class=\"hljs-function\">() =&gt;</span> {\n      fn.<span class=\"hljs-title function_\">apply</span>(<span class=\"hljs-variable language_\">this</span>, args);\n    }, delay);\n  };\n}\n</code></pre>\n<h3 id=\"3-核心区别\">3. 核心区别</h3>\n<ul>\n<li>节流：控制频率，定期执行</li>\n<li>防抖：等到安静下来，只执行最后一次</li>\n</ul>\n<h2 id=\"十二纯函数和副作用\">十二、纯函数和副作用</h2>\n<h3 id=\"1-纯函数\">1. 纯函数</h3>\n<p>纯函数满足两点：</p>\n<ul>\n<li>相同输入一定得到相同输出</li>\n<li>不依赖外部可变状态，也不修改外部状态</li>\n</ul>\n<h3 id=\"2-副作用\">2. 副作用</h3>\n<p>副作用指函数执行时，除了返回值之外，还对外部世界产生了影响，例如：</p>\n<ul>\n<li>修改全局变量</li>\n<li>改 DOM</li>\n<li>发请求</li>\n<li>写日志</li>\n<li>写本地存储</li>\n</ul>\n<p>在工程实践里，纯函数更容易测试和推理，而副作用通常需要被集中管理和隔离。</p>\n<h2 id=\"十三几个容易混淆的边界\">十三、几个容易混淆的边界</h2>\n<h3 id=\"1-var--let--const-不只差在能否重新赋值\">1. <code>var / let / const</code> 不只差在能否重新赋值</h3>\n<p>还要同时检查作用域、变量提升、TDZ 和全局对象关系。</p>\n<h3 id=\"2-闭包同时影响封装和内存\">2. 闭包同时影响封装和内存</h3>\n<p>闭包让函数持有定义时词法环境中的变量引用，可用于封装私有状态，也会延长相关变量的生命周期。</p>\n<h3 id=\"3-call--apply--bind-都在改变调用关系\">3. <code>call / apply / bind</code> 都在改变调用关系</h3>\n<p>理解绑定过程后，再看手写实现会更清楚：把函数临时放到对象上执行，然后删除临时属性。</p>\n<h3 id=\"4-防抖和节流取决于触发策略\">4. 防抖和节流取决于触发策略</h3>\n<p>节流保证一段时间内最多执行一次，防抖则等待连续触发停止后再执行。选哪一种，要看业务是需要持续反馈还是只关心最终结果。</p>\n",
+  "toc": [
+    {
+      "id": "一varletconst-到底区别在哪",
+      "level": 2,
+      "text": "一、var、let、const 到底区别在哪"
+    },
+    {
+      "id": "1-var-的特点",
+      "level": 3,
+      "text": "1. var 的特点"
+    },
+    {
+      "id": "变量提升",
+      "level": 4,
+      "text": "变量提升"
+    },
+    {
+      "id": "缺乏块级作用域",
+      "level": 4,
+      "text": "缺乏块级作用域"
+    },
+    {
+      "id": "2-let",
+      "level": 3,
+      "text": "2. let"
+    },
+    {
+      "id": "3-const",
+      "level": 3,
+      "text": "3. const"
+    },
+    {
+      "id": "4-什么是暂时性死区tdz",
+      "level": 3,
+      "text": "4. 什么是暂时性死区（TDZ）"
+    },
+    {
+      "id": "5-和全局对象的关系",
+      "level": 3,
+      "text": "5. 和全局对象的关系"
+    },
+    {
+      "id": "二数据类型和-typeof-的常见陷阱",
+      "level": 2,
+      "text": "二、数据类型和 typeof 的常见陷阱"
+    },
+    {
+      "id": "1-javascript-的类型划分",
+      "level": 3,
+      "text": "1. JavaScript 的类型划分"
+    },
+    {
+      "id": "2-typeof-能做什么",
+      "level": 3,
+      "text": "2. typeof 能做什么"
+    },
+    {
+      "id": "3-typeof-的两个经典坑",
+      "level": 3,
+      "text": "3. typeof 的两个经典坑"
+    },
+    {
+      "id": "坑一typeof-null--object",
+      "level": 4,
+      "text": "坑一：typeof null === \"object\""
+    },
+    {
+      "id": "坑二数组对象日期正则都会得到-object",
+      "level": 4,
+      "text": "坑二：数组、对象、日期、正则都会得到 \"object\""
+    },
+    {
+      "id": "三隐式类型转换为什么总是容易错",
+      "level": 2,
+      "text": "三、隐式类型转换为什么总是容易错"
+    },
+    {
+      "id": "1-本质javascript-会自动做类型转换",
+      "level": 3,
+      "text": "1. 本质：JavaScript 会自动做类型转换"
+    },
+    {
+      "id": "2-的规则",
+      "level": 3,
+      "text": "2. + 的规则"
+    },
+    {
+      "id": "3--的规则为什么危险",
+      "level": 3,
+      "text": "3. == 的规则为什么危险"
+    },
+    {
+      "id": "4-truthy-和-falsy",
+      "level": 3,
+      "text": "4. Truthy 和 Falsy"
+    },
+    {
+      "id": "四数组方法先区分是否修改原数组",
+      "level": 2,
+      "text": "四、数组方法先区分是否修改原数组"
+    },
+    {
+      "id": "1-map",
+      "level": 3,
+      "text": "1. map"
+    },
+    {
+      "id": "2-filter",
+      "level": 3,
+      "text": "2. filter"
+    },
+    {
+      "id": "3-reduce",
+      "level": 3,
+      "text": "3. reduce"
+    },
+    {
+      "id": "4-splice",
+      "level": 3,
+      "text": "4. splice"
+    },
+    {
+      "id": "5-slice",
+      "level": 3,
+      "text": "5. slice"
+    },
+    {
+      "id": "6-map-和-foreach-区别",
+      "level": 3,
+      "text": "6. map 和 forEach 区别"
+    },
+    {
+      "id": "7-forin-和-forof",
+      "level": 3,
+      "text": "7. for...in 和 for...of"
+    },
+    {
+      "id": "五执行上下文和作用域链是理解闭包的前提",
+      "level": 2,
+      "text": "五、执行上下文和作用域链是理解闭包的前提"
+    },
+    {
+      "id": "1-什么是执行上下文",
+      "level": 3,
+      "text": "1. 什么是执行上下文"
+    },
+    {
+      "id": "2-什么是作用域链",
+      "level": 3,
+      "text": "2. 什么是作用域链"
+    },
+    {
+      "id": "六this-指向必须按规则判断",
+      "level": 2,
+      "text": "六、this 指向必须按规则判断"
+    },
+    {
+      "id": "1-默认绑定",
+      "level": 3,
+      "text": "1. 默认绑定"
+    },
+    {
+      "id": "2-隐式绑定",
+      "level": 3,
+      "text": "2. 隐式绑定"
+    },
+    {
+      "id": "3-显式绑定",
+      "level": 3,
+      "text": "3. 显式绑定"
+    },
+    {
+      "id": "4-new-绑定",
+      "level": 3,
+      "text": "4. new 绑定"
+    },
+    {
+      "id": "七callapplybind-怎么区分",
+      "level": 2,
+      "text": "七、call、apply、bind 怎么区分"
+    },
+    {
+      "id": "1-call",
+      "level": 3,
+      "text": "1. call"
+    },
+    {
+      "id": "2-apply",
+      "level": 3,
+      "text": "2. apply"
+    },
+    {
+      "id": "3-bind",
+      "level": 3,
+      "text": "3. bind"
+    },
+    {
+      "id": "4-bind-和-new-的关系",
+      "level": 3,
+      "text": "4. bind 和 new 的关系"
+    },
+    {
+      "id": "八iife-为什么曾经特别重要",
+      "level": 2,
+      "text": "八、IIFE 为什么曾经特别重要"
+    },
+    {
+      "id": "九闭包到底是什么",
+      "level": 2,
+      "text": "九、闭包到底是什么"
+    },
+    {
+      "id": "1-典型例子",
+      "level": 3,
+      "text": "1. 典型例子"
+    },
+    {
+      "id": "2-闭包的价值",
+      "level": 3,
+      "text": "2. 闭包的价值"
+    },
+    {
+      "id": "3-闭包的注意事项",
+      "level": 3,
+      "text": "3. 闭包的注意事项"
+    },
+    {
+      "id": "十高阶函数与柯里化",
+      "level": 2,
+      "text": "十、高阶函数与柯里化"
+    },
+    {
+      "id": "1-什么是高阶函数",
+      "level": 3,
+      "text": "1. 什么是高阶函数"
+    },
+    {
+      "id": "2-什么是柯里化",
+      "level": 3,
+      "text": "2. 什么是柯里化"
+    },
+    {
+      "id": "十一防抖与节流",
+      "level": 2,
+      "text": "十一、防抖与节流"
+    },
+    {
+      "id": "1-节流throttle",
+      "level": 3,
+      "text": "1. 节流（throttle）"
+    },
+    {
+      "id": "2-防抖debounce",
+      "level": 3,
+      "text": "2. 防抖（debounce）"
+    },
+    {
+      "id": "3-核心区别",
+      "level": 3,
+      "text": "3. 核心区别"
+    },
+    {
+      "id": "十二纯函数和副作用",
+      "level": 2,
+      "text": "十二、纯函数和副作用"
+    },
+    {
+      "id": "1-纯函数",
+      "level": 3,
+      "text": "1. 纯函数"
+    },
+    {
+      "id": "2-副作用",
+      "level": 3,
+      "text": "2. 副作用"
+    },
+    {
+      "id": "十三几个容易混淆的边界",
+      "level": 2,
+      "text": "十三、几个容易混淆的边界"
+    },
+    {
+      "id": "1-var--let--const-不只差在能否重新赋值",
+      "level": 3,
+      "text": "1. var / let / const 不只差在能否重新赋值"
+    },
+    {
+      "id": "2-闭包同时影响封装和内存",
+      "level": 3,
+      "text": "2. 闭包同时影响封装和内存"
+    },
+    {
+      "id": "3-call--apply--bind-都在改变调用关系",
+      "level": 3,
+      "text": "3. call / apply / bind 都在改变调用关系"
+    },
+    {
+      "id": "4-防抖和节流取决于触发策略",
+      "level": 3,
+      "text": "4. 防抖和节流取决于触发策略"
+    }
+  ]
+}

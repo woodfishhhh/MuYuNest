@@ -1,0 +1,142 @@
+{
+  "canonicalSlug": "1-849fada0",
+  "aliases": [
+    "1"
+  ],
+  "title": "React 入门：项目创建、目录结构与挂载流程",
+  "publishedAt": "2026-04-23T22:39:48.000Z",
+  "publishedLabel": "Apr 23, 2026",
+  "excerpt": "默认读者已经掌握 Vue 基础，MVVM 等概念不再重复，后面会一直对照 Vue ↔ React 来解释差异。",
+  "type": "Notes",
+  "searchText": "React 入门：项目创建、目录结构与挂载流程 Notes 前端开发 React React JSX Create React App Vue 对比 一、这套笔记怎么读 1. 默认读者已经掌握 Vue 基础，MVVM 等概念不再重复，后面会一直对照 Vue ↔ React 来解释差异。 2. 内容从基础语法起步，再进入项目开发，也会讲到实战优化和生态使用。 3. 课程共18节：基础语法 → 高阶技巧 → 路由/状态管理/权限 → 组件库生态。 二、React 项目创建 1. 两种创建方式 （1）先用官方脚手架 它只搭好基础 React 环境，不会预装路由、状态管理等功能。 底层构建工具是 Webpack。 命令执行后会直接生成最简项目，没有交互式配置。 （2）再看第三方集成脚手架 Umi 等脚手架会预先集成路由、Mock、请求封装等功能，在企业项目里比较常见。不同公司的选型并不一致，学习阶段先不依赖这套集成。 2. 项目启动命令 三、项目目录结构 1. 先看两个目录 public（静态资源目录） 这里存放 HTML 模板、静态图片、 favicon 等内容。 入口模板是 。 里面有挂载节点： 。 它对应 Vue 中的 节点。 src（业务代码目录） 这里没有预设的业务子目录，代码结构需要自己组织。 2. src 里的入口文件 | 文件 | 作用 | 对应 Vue | | | | | | | 根组件 | | | | 项目入口，执行挂载 | | | | 根组件样式 | | | | 全局样式 | | 3. 暂时用不到的文件 用于组件单元测试。 保存测试启动配置。 用于项目性能监控。 四、React 和 react dom 怎么分工 1. 两个依赖各管一件事 （1）react 提供组件、虚拟 DOM、生命周期、Hooks 等能力。 它负责 组件逻辑定义 ，不直接操作真实 DOM。 （2）react dom 负责 组件 ↔ 真实 DOM 之间的挂载、卸载和渲染。 这部分对应 Vue 中的 。 2. 挂载与卸载原理 标准挂载代码 卸载示例 2秒后页面会被清空，这个结果可以直接看到 对真实 DOM 的渲染和销毁。 五、组件体系与 Vue 对比 1. 根组件机制 React 只有根组件 ，没有 Vue 式根实例。 其他页面和组件都挂在 下面。 2. 文件结构差异 Vue：单文件组件 （template + script + style） React： 结构 + 逻辑： / 样式：放在独立 文件中，再手动引入。 六、把项目调用链串起来 1. 库的分工 React 负责组件逻辑，ReactDOM 负责连接 DOM，Vue 中两者合一。 2. 挂载顺序 获取 DOM → 创建 root 对象 → 渲染根组件。 3. 最简目录链路 public/index.html → src/index.js → src/App.js。 4. 后面会遇到的渲染问题 父组件更新 → 子组件默认全部重新渲染。 可以用 / / 优化，后续课程会展开。 5. 组件写法 企业项目主流是 React + TypeScript（TSX）。 学习顺序是先类组件 → 后函数组件 + Hooks。",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "JSX",
+    "Create React App",
+    "Vue 对比"
+  ],
+  "html": "<h2 id=\"一这套笔记怎么读\">一、这套笔记怎么读</h2>\n<ol>\n<li>默认读者已经掌握 Vue 基础，MVVM 等概念不再重复，后面会一直对照 Vue ↔ React 来解释差异。</li>\n<li>内容从基础语法起步，再进入项目开发，也会讲到实战优化和生态使用。</li>\n<li>课程共18节：基础语法 → 高阶技巧 → 路由/状态管理/权限 → 组件库生态。</li>\n</ol>\n<hr>\n<h2 id=\"二react-项目创建\">二、React 项目创建</h2>\n<h3 id=\"1-两种创建方式\">1. 两种创建方式</h3>\n<h4 id=\"1先用官方脚手架\">（1）先用官方脚手架</h4>\n<pre><code class=\"hljs language-bash\">npx create-react-app 项目名\n</code></pre>\n<ul>\n<li>它只搭好基础 React 环境，不会预装路由、状态管理等功能。</li>\n<li>底层构建工具是 Webpack。</li>\n<li>命令执行后会直接生成最简项目，没有交互式配置。</li>\n</ul>\n<h4 id=\"2再看第三方集成脚手架\">（2）再看第三方集成脚手架</h4>\n<p>Umi 等脚手架会预先集成路由、Mock、请求封装等功能，在企业项目里比较常见。不同公司的选型并不一致，学习阶段先不依赖这套集成。</p>\n<h3 id=\"2-项目启动命令\">2. 项目启动命令</h3>\n<pre><code class=\"hljs language-bash\">npm start\n<span class=\"hljs-comment\"># 或</span>\nnpm run start\n</code></pre>\n<hr>\n<h2 id=\"三项目目录结构\">三、项目目录结构</h2>\n<h3 id=\"1-先看两个目录\">1. 先看两个目录</h3>\n<h4 id=\"public静态资源目录\">public（静态资源目录）</h4>\n<ul>\n<li>这里存放 HTML 模板、静态图片、 favicon 等内容。</li>\n<li>入口模板是 <code>index.html</code>。\n<ul>\n<li>里面有挂载节点：<code>&lt;div id=\"root\"&gt;&lt;/div&gt;</code>。</li>\n<li>它对应 Vue 中的 <code>#app</code> 节点。</li>\n</ul>\n</li>\n</ul>\n<h4 id=\"src业务代码目录\">src（业务代码目录）</h4>\n<p>这里没有预设的业务子目录，代码结构需要自己组织。</p>\n<h3 id=\"2-src-里的入口文件\">2. src 里的入口文件</h3>\n<table>\n<thead>\n<tr>\n<th>文件</th>\n<th>作用</th>\n<th>对应 Vue</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>App.js</code></td>\n<td>根组件</td>\n<td><code>App.vue</code></td>\n</tr>\n<tr>\n<td><code>index.js</code></td>\n<td>项目入口，执行挂载</td>\n<td><code>main.js</code></td>\n</tr>\n<tr>\n<td><code>App.css</code></td>\n<td>根组件样式</td>\n<td>-</td>\n</tr>\n<tr>\n<td><code>index.css</code></td>\n<td>全局样式</td>\n<td>-</td>\n</tr>\n</tbody>\n</table>\n<h3 id=\"3-暂时用不到的文件\">3. 暂时用不到的文件</h3>\n<ul>\n<li><code>App.test.js</code> 用于组件单元测试。</li>\n<li><code>setupTests.js</code> 保存测试启动配置。</li>\n<li><code>reportWebVitals.js</code> 用于项目性能监控。</li>\n</ul>\n<hr>\n<h2 id=\"四react-和-react-dom-怎么分工\">四、React 和 react-dom 怎么分工</h2>\n<h3 id=\"1-两个依赖各管一件事\">1. 两个依赖各管一件事</h3>\n<h4 id=\"1react\">（1）react</h4>\n<ul>\n<li>提供组件、虚拟 DOM、生命周期、Hooks 等能力。</li>\n<li>它负责<strong>组件逻辑定义</strong>，不直接操作真实 DOM。</li>\n</ul>\n<h4 id=\"2react-dom\">（2）react-dom</h4>\n<ul>\n<li>负责<strong>组件 ↔ 真实 DOM</strong> 之间的挂载、卸载和渲染。</li>\n<li>这部分对应 Vue 中的 <code>createApp(App).mount('#app')</code>。</li>\n</ul>\n<h3 id=\"2-挂载与卸载原理\">2. 挂载与卸载原理</h3>\n<h4 id=\"标准挂载代码\">标准挂载代码</h4>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">React</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react'</span>\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">ReactDOM</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-dom/client'</span>\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">App</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'./App'</span>\n\n<span class=\"hljs-keyword\">const</span> root = <span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">createRoot</span>(<span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">getElementById</span>(<span class=\"hljs-string\">'root'</span>))\nroot.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">App</span> /&gt;</span></span>)\n</code></pre>\n<h4 id=\"卸载示例\">卸载示例</h4>\n<pre><code class=\"hljs language-jsx\"><span class=\"hljs-built_in\">setTimeout</span>(<span class=\"hljs-function\">() =&gt;</span> {\n  root.<span class=\"hljs-title function_\">unmount</span>()\n}, <span class=\"hljs-number\">2000</span>)\n</code></pre>\n<p>2秒后页面会被清空，这个结果可以直接看到 <code>react-dom</code> 对真实 DOM 的渲染和销毁。</p>\n<hr>\n<h2 id=\"五组件体系与-vue-对比\">五、组件体系与 Vue 对比</h2>\n<h3 id=\"1-根组件机制\">1. 根组件机制</h3>\n<ul>\n<li>React <strong>只有根组件 <code>App.js</code></strong>，没有 Vue 式根实例。</li>\n<li>其他页面和组件都挂在 <code>App</code> 下面。</li>\n</ul>\n<h3 id=\"2-文件结构差异\">2. 文件结构差异</h3>\n<ul>\n<li>Vue：单文件组件 <code>.vue</code>（template + script + style）</li>\n<li>React：\n<ul>\n<li>结构 + 逻辑：<code>.js</code> / <code>.jsx</code></li>\n<li>样式：放在独立 <code>.css</code> 文件中，再手动引入。</li>\n</ul>\n</li>\n</ul>\n<hr>\n<h2 id=\"六把项目调用链串起来\">六、把项目调用链串起来</h2>\n<ol>\n<li>\n<p><strong>库的分工</strong>\nReact 负责组件逻辑，ReactDOM 负责连接 DOM，Vue 中两者合一。</p>\n</li>\n<li>\n<p><strong>挂载顺序</strong>\n获取 <code>#root</code> DOM → 创建 root 对象 → 渲染根组件。</p>\n</li>\n<li>\n<p><strong>最简目录链路</strong>\npublic/index.html → src/index.js → src/App.js。</p>\n</li>\n<li>\n<p><strong>后面会遇到的渲染问题</strong></p>\n</li>\n</ol>\n<ul>\n<li>父组件更新 → 子组件默认全部重新渲染。</li>\n<li>可以用 <code>React.memo</code> / <code>useMemo</code> / <code>useCallback</code> 优化，后续课程会展开。</li>\n</ul>\n<ol>\n<li><strong>组件写法</strong></li>\n</ol>\n<ul>\n<li>企业项目主流是 React + TypeScript（TSX）。</li>\n<li>学习顺序是先类组件 → 后函数组件 + Hooks。</li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "一这套笔记怎么读",
+      "level": 2,
+      "text": "一、这套笔记怎么读"
+    },
+    {
+      "id": "二react-项目创建",
+      "level": 2,
+      "text": "二、React 项目创建"
+    },
+    {
+      "id": "1-两种创建方式",
+      "level": 3,
+      "text": "1. 两种创建方式"
+    },
+    {
+      "id": "1先用官方脚手架",
+      "level": 4,
+      "text": "（1）先用官方脚手架"
+    },
+    {
+      "id": "2再看第三方集成脚手架",
+      "level": 4,
+      "text": "（2）再看第三方集成脚手架"
+    },
+    {
+      "id": "2-项目启动命令",
+      "level": 3,
+      "text": "2. 项目启动命令"
+    },
+    {
+      "id": "三项目目录结构",
+      "level": 2,
+      "text": "三、项目目录结构"
+    },
+    {
+      "id": "1-先看两个目录",
+      "level": 3,
+      "text": "1. 先看两个目录"
+    },
+    {
+      "id": "public静态资源目录",
+      "level": 4,
+      "text": "public（静态资源目录）"
+    },
+    {
+      "id": "src业务代码目录",
+      "level": 4,
+      "text": "src（业务代码目录）"
+    },
+    {
+      "id": "2-src-里的入口文件",
+      "level": 3,
+      "text": "2. src 里的入口文件"
+    },
+    {
+      "id": "3-暂时用不到的文件",
+      "level": 3,
+      "text": "3. 暂时用不到的文件"
+    },
+    {
+      "id": "四react-和-react-dom-怎么分工",
+      "level": 2,
+      "text": "四、React 和 react-dom 怎么分工"
+    },
+    {
+      "id": "1-两个依赖各管一件事",
+      "level": 3,
+      "text": "1. 两个依赖各管一件事"
+    },
+    {
+      "id": "1react",
+      "level": 4,
+      "text": "（1）react"
+    },
+    {
+      "id": "2react-dom",
+      "level": 4,
+      "text": "（2）react-dom"
+    },
+    {
+      "id": "2-挂载与卸载原理",
+      "level": 3,
+      "text": "2. 挂载与卸载原理"
+    },
+    {
+      "id": "标准挂载代码",
+      "level": 4,
+      "text": "标准挂载代码"
+    },
+    {
+      "id": "卸载示例",
+      "level": 4,
+      "text": "卸载示例"
+    },
+    {
+      "id": "五组件体系与-vue-对比",
+      "level": 2,
+      "text": "五、组件体系与 Vue 对比"
+    },
+    {
+      "id": "1-根组件机制",
+      "level": 3,
+      "text": "1. 根组件机制"
+    },
+    {
+      "id": "2-文件结构差异",
+      "level": 3,
+      "text": "2. 文件结构差异"
+    },
+    {
+      "id": "六把项目调用链串起来",
+      "level": 2,
+      "text": "六、把项目调用链串起来"
+    }
+  ]
+}

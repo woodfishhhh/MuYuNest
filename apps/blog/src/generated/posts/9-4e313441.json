@@ -1,0 +1,96 @@
+{
+  "canonicalSlug": "9-4e313441",
+  "aliases": [
+    "9"
+  ],
+  "title": "React 类组件生命周期：每个阶段该做什么",
+  "publishedAt": "2026-04-25T15:58:17.000Z",
+  "publishedLabel": "Apr 25, 2026",
+  "excerpt": "React 类组件会依次经历挂载 → 更新 → 卸载三阶段，没有单独的 create 阶段。 $$ \\text{生命周期流程} = \\text{挂载} \\rightarrow \\text{更新} \\rightleftharpoons \\text{更新} \\rightarrow \\text{卸载} $...",
+  "type": "Notes",
+  "searchText": "React 类组件生命周期：每个阶段该做什么 Notes 前端开发 React React 生命周期 Class 组件 一、先看执行阶段 React 类组件会依次经历 挂载 → 更新 → 卸载 三阶段，没有单独的 create 阶段。 $$ \\text{生命周期流程} = \\text{挂载} \\rightarrow \\text{更新} \\rightleftharpoons \\text{更新} \\rightarrow \\text{卸载} $$ 二、挂载阶段（首次渲染） 执行顺序 $$ \\text{constructor} \\rightarrow \\text{getDerivedStateFromProps} \\rightarrow \\text{render} \\rightarrow \\text{componentDidMount} $$ 1. constructor 负责类组件初始化、绑定 this 和初始化 state 严格来说它不是生命周期钩子，但初始化类组件时必须执行 2. static getDerivedStateFromProps(props, state) 这是一个静态方法，挂载和更新时都会触发 必须 return 新 state 或 null 实际使用很少 3. render 它决定组件最终渲染什么内容 不要在这里修改 state、发异步请求或操作 DOM 挂载和更新时都会执行 4. componentDidMount 组件挂载到 DOM 后触发 请求、DOM 操作和 ECharts 初始化可以放在这里 在 Vue 中对应 mounted 三、更新阶段（state/props 变化） 执行顺序 $$ \\text{getDerivedStateFromProps} \\rightarrow \\text{shouldComponentUpdate} \\rightarrow \\text{render} \\rightarrow \\text{getSnapshotBeforeUpdate} \\rightarrow \\text{componentDidUpdate} $$ 1. shouldComponentUpdate(nextProps, nextState) 这个钩子决定组件是否继续更新 返回 false 会终止后续更新生命周期 返回 true 则继续更新 2. getSnapshotBeforeUpdate 在更新前获取 DOM 快照 实际使用很少 3. componentDidUpdate(prevProps, prevState, snapshot) 更新完成后触发 适合处理更新后的 DOM 操作和请求 在 Vue 中对应 updated 四、卸载阶段 这个阶段只有一个钩子 $$ \\text{componentWillUnmount} $$ 组件即将销毁时触发 定时器、事件和订阅都要在这里清理 在 Vue 中对应 destroyed 五、严格模式（StrictMode） 它只在开发环境生效，生产环境会自动移除 主要用来检测废弃 API 和副作用 开启后，生命周期和 render 会执行 两次 要关闭它，去掉 index.js 中 六、减少没有必要的更新 1. 用 shouldComponentUpdate 判断是否更新 2. PureComponent 它会浅对比 props/state，没有变化就不更新 不要和 shouldComponentUpdate 同时使用 两者的关系可以写成： $$ \\text{PureComponent} = \\text{Component} + \\text{默认浅对比优化} $$ 3. 父组件更新也会带动子组件 React 没有依赖收集，父组件更新 → 子组件无条件更新 子组件可以用 PureComponent / React.memo 减少这类更新 七、把逻辑放到合适的钩子里 1. render ：只负责渲染，不写业务逻辑 2. componentDidMount ：处理初始化请求和 DOM 3. componentDidUpdate ：处理更新后的操作 4. componentWillUnmount ：组件卸载前必须清理资源 5. 禁止 ：不要在 render 中 setState，否则会进入死循环 八、Vue ↔ React 生命周期对照 | Vue | React | | | | | beforeCreate | constructor | | mounted | componentDidMount | | beforeUpdate | getSnapshotBeforeUpdate | | updated | componentDidUpdate | | destroyed | componentWillUnmount |",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "生命周期",
+    "Class 组件"
+  ],
+  "html": "<h2 id=\"一先看执行阶段\">一、先看执行阶段</h2>\n<p>React 类组件会依次经历<strong>挂载 → 更新 → 卸载</strong>三阶段，没有单独的 create 阶段。\n$$\n\\text{生命周期流程} = \\text{挂载} \\rightarrow \\text{更新} \\rightleftharpoons \\text{更新} \\rightarrow \\text{卸载}\n$$</p>\n<hr>\n<h2 id=\"二挂载阶段首次渲染\">二、挂载阶段（首次渲染）</h2>\n<h3 id=\"执行顺序\">执行顺序</h3>\n<p>$$\n\\text{constructor} \\rightarrow \\text{getDerivedStateFromProps} \\rightarrow \\text{render} \\rightarrow \\text{componentDidMount}\n$$</p>\n<ol>\n<li><strong>constructor</strong></li>\n</ol>\n<ul>\n<li>负责类组件初始化、绑定 this 和初始化 state</li>\n<li>严格来说它不是生命周期钩子，但初始化类组件时必须执行</li>\n</ul>\n<ol>\n<li><strong>static getDerivedStateFromProps(props, state)</strong></li>\n</ol>\n<ul>\n<li>这是一个静态方法，挂载和更新时都会触发</li>\n<li>必须 return 新 state 或 null</li>\n<li>实际使用很少</li>\n</ul>\n<ol>\n<li><strong>render</strong></li>\n</ol>\n<ul>\n<li>它决定组件最终渲染什么内容</li>\n<li>不要在这里修改 state、发异步请求或操作 DOM</li>\n<li>挂载和更新时都会执行</li>\n</ul>\n<ol>\n<li><strong>componentDidMount</strong></li>\n</ol>\n<ul>\n<li>组件挂载到 DOM 后触发</li>\n<li>请求、DOM 操作和 ECharts 初始化可以放在这里</li>\n<li>在 Vue 中对应 mounted</li>\n</ul>\n<hr>\n<h2 id=\"三更新阶段stateprops-变化\">三、更新阶段（state/props 变化）</h2>\n<h3 id=\"执行顺序-1\">执行顺序</h3>\n<p>$$\n\\text{getDerivedStateFromProps} \\rightarrow \\text{shouldComponentUpdate} \\rightarrow \\text{render} \\rightarrow \\text{getSnapshotBeforeUpdate} \\rightarrow \\text{componentDidUpdate}\n$$</p>\n<ol>\n<li><strong>shouldComponentUpdate(nextProps, nextState)</strong></li>\n</ol>\n<ul>\n<li>这个钩子决定组件是否继续更新</li>\n<li>返回 false 会终止后续更新生命周期</li>\n<li>返回 true 则继续更新</li>\n</ul>\n<ol>\n<li><strong>getSnapshotBeforeUpdate</strong></li>\n</ol>\n<ul>\n<li>在更新前获取 DOM 快照</li>\n<li>实际使用很少</li>\n</ul>\n<ol>\n<li><strong>componentDidUpdate(prevProps, prevState, snapshot)</strong></li>\n</ol>\n<ul>\n<li>更新完成后触发</li>\n<li>适合处理更新后的 DOM 操作和请求</li>\n<li>在 Vue 中对应 updated</li>\n</ul>\n<hr>\n<h2 id=\"四卸载阶段\">四、卸载阶段</h2>\n<h3 id=\"这个阶段只有一个钩子\">这个阶段只有一个钩子</h3>\n<p>$$\n\\text{componentWillUnmount}\n$$</p>\n<ul>\n<li>组件即将销毁时触发</li>\n<li>定时器、事件和订阅都要在这里清理</li>\n<li>在 Vue 中对应 destroyed</li>\n</ul>\n<hr>\n<h2 id=\"五严格模式strictmode\">五、严格模式（StrictMode）</h2>\n<ul>\n<li>它只在开发环境生效，生产环境会自动移除</li>\n<li>主要用来检测废弃 API 和副作用</li>\n<li>开启后，生命周期和 render 会执行<strong>两次</strong></li>\n<li>要关闭它，去掉 index.js 中 &lt;React.StrictMode&gt;</li>\n</ul>\n<hr>\n<h2 id=\"六减少没有必要的更新\">六、减少没有必要的更新</h2>\n<h3 id=\"1-用-shouldcomponentupdate-判断是否更新\">1. 用 shouldComponentUpdate 判断是否更新</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-title function_\">shouldComponentUpdate</span>(<span class=\"hljs-params\">nextProps, nextState</span>) {\n  <span class=\"hljs-comment\">// 对比新旧 state/props</span>\n  <span class=\"hljs-keyword\">if</span> (<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">msg</span> === nextState.<span class=\"hljs-property\">msg</span>) {\n    <span class=\"hljs-keyword\">return</span> <span class=\"hljs-literal\">false</span>; <span class=\"hljs-comment\">// 不更新</span>\n  }\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-literal\">true</span>;\n}\n</code></pre>\n<h3 id=\"2-purecomponent\">2. PureComponent</h3>\n<ul>\n<li>它会浅对比 props/state，没有变化就不更新</li>\n<li>不要和 shouldComponentUpdate 同时使用</li>\n<li>两者的关系可以写成：\n$$\n\\text{PureComponent} = \\text{Component} + \\text{默认浅对比优化}\n$$</li>\n</ul>\n<h3 id=\"3-父组件更新也会带动子组件\">3. 父组件更新也会带动子组件</h3>\n<ul>\n<li>React 没有依赖收集，父组件更新 → 子组件无条件更新</li>\n<li>子组件可以用 PureComponent / React.memo 减少这类更新</li>\n</ul>\n<hr>\n<h2 id=\"七把逻辑放到合适的钩子里\">七、把逻辑放到合适的钩子里</h2>\n<ol>\n<li><strong>render</strong>：只负责渲染，不写业务逻辑</li>\n<li><strong>componentDidMount</strong>：处理初始化请求和 DOM</li>\n<li><strong>componentDidUpdate</strong>：处理更新后的操作</li>\n<li><strong>componentWillUnmount</strong>：组件卸载前必须清理资源</li>\n<li><strong>禁止</strong>：不要在 render 中 setState，否则会进入死循环</li>\n</ol>\n<hr>\n<h2 id=\"八vue--react-生命周期对照\">八、Vue ↔ React 生命周期对照</h2>\n<table>\n<thead>\n<tr>\n<th>Vue</th>\n<th>React</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>beforeCreate</td>\n<td>constructor</td>\n</tr>\n<tr>\n<td>mounted</td>\n<td>componentDidMount</td>\n</tr>\n<tr>\n<td>beforeUpdate</td>\n<td>getSnapshotBeforeUpdate</td>\n</tr>\n<tr>\n<td>updated</td>\n<td>componentDidUpdate</td>\n</tr>\n<tr>\n<td>destroyed</td>\n<td>componentWillUnmount</td>\n</tr>\n</tbody>\n</table>\n",
+  "toc": [
+    {
+      "id": "一先看执行阶段",
+      "level": 2,
+      "text": "一、先看执行阶段"
+    },
+    {
+      "id": "二挂载阶段首次渲染",
+      "level": 2,
+      "text": "二、挂载阶段（首次渲染）"
+    },
+    {
+      "id": "执行顺序",
+      "level": 3,
+      "text": "执行顺序"
+    },
+    {
+      "id": "三更新阶段stateprops-变化",
+      "level": 2,
+      "text": "三、更新阶段（state/props 变化）"
+    },
+    {
+      "id": "执行顺序-1",
+      "level": 3,
+      "text": "执行顺序"
+    },
+    {
+      "id": "四卸载阶段",
+      "level": 2,
+      "text": "四、卸载阶段"
+    },
+    {
+      "id": "这个阶段只有一个钩子",
+      "level": 3,
+      "text": "这个阶段只有一个钩子"
+    },
+    {
+      "id": "五严格模式strictmode",
+      "level": 2,
+      "text": "五、严格模式（StrictMode）"
+    },
+    {
+      "id": "六减少没有必要的更新",
+      "level": 2,
+      "text": "六、减少没有必要的更新"
+    },
+    {
+      "id": "1-用-shouldcomponentupdate-判断是否更新",
+      "level": 3,
+      "text": "1. 用 shouldComponentUpdate 判断是否更新"
+    },
+    {
+      "id": "2-purecomponent",
+      "level": 3,
+      "text": "2. PureComponent"
+    },
+    {
+      "id": "3-父组件更新也会带动子组件",
+      "level": 3,
+      "text": "3. 父组件更新也会带动子组件"
+    },
+    {
+      "id": "七把逻辑放到合适的钩子里",
+      "level": 2,
+      "text": "七、把逻辑放到合适的钩子里"
+    },
+    {
+      "id": "八vue--react-生命周期对照",
+      "level": 2,
+      "text": "八、Vue ↔ React 生命周期对照"
+    }
+  ]
+}

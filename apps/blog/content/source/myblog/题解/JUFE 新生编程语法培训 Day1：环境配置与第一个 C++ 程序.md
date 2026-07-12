@@ -12,7 +12,6 @@ categories:
   - "编程入门"
 ---
 
-# JUFE国庆新生编程语法培训第一天
 
 by woodfish
 
@@ -44,8 +43,8 @@ by woodfish
 
 #### 3. 常见问题处理：
 
-- ❌ 问题：安装后提示“no compiler found”
-  - ✅ 解决：重新安装 **带 MinGW 的版本**；或手动配置：`Settings → Compiler → Toolchain executables`，设置 MinGW 路径
+- 问题：安装后提示“no compiler found”
+  - 解决：重新安装 **带 MinGW 的版本**；或手动配置：`Settings → Compiler → Toolchain executables`，设置 MinGW 路径
 
 ## 配置Vscode
 
@@ -77,7 +76,7 @@ int main()              // ← 主函数，程序从这里开始执行
 }
 ```
 
-#### 3. 逐行讲解核心概念：
+#### 3. 逐行讲解概念：
 
 - `#include <iostream>`：**预处理指令**，告诉编译器“我要用输入输出功能”，类似“借书卡”，把标准库“借”进来。
 - `main()`：**主函数**，每个C/C++程序必须有且仅有一个，是程序的入口。

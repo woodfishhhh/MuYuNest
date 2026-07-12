@@ -12,7 +12,6 @@ categories:
   - "JavaScript"
 ---
 
-# JavaScript 易错点：prototype、__proto__ 与原型链
 
 ## 理清 `prototype` 和 `__proto__` 的关系
 
@@ -79,16 +78,11 @@ console.log(xiaohong.__proto__ === Person.prototype); // true（小红的图纸�
 - `__proto__` 是**实例的属性**，指向它对应的「图纸」（即构造函数的 `prototype`）。
 
 
-
 它们的关系：`实例.__proto__ === 构造函数.prototype`（这是 JS 自动建立的联系）。
-
 
 
 再举个极端例子：
 如果有一天你改了图纸（`Person.prototype.legs = 3`），那么所有已经造出来的人（`xiaoming`、`xiaohong`）的 `legs` 都会变成 3—— 因为它们都通过 `__proto__` 指向这张图纸！
-
-
-
 
 
 ## DOM（Document Object Model）级别

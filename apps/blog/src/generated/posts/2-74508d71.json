@@ -1,0 +1,77 @@
+{
+  "canonicalSlug": "2-74508d71",
+  "aliases": [
+    "2"
+  ],
+  "title": "React 组件与 JSX：从写法到渲染规则",
+  "publishedAt": "2026-04-23T22:40:20.000Z",
+  "publishedLabel": "Apr 23, 2026",
+  "excerpt": "组件首先要描述 UI 结构，也就是 HTML 模板。数据负责保存组件状态或配置，方法负责交互和数据处理；没有数据和方法也能写出基础组件，但实际项目通常少不了它们。",
+  "type": "Notes",
+  "searchText": "React 组件与 JSX：从写法到渲染规则 Notes 前端开发 React React JSX 函数组件 Class 组件 一、先看组件里有什么 1. 组件首先要描述 UI 结构，也就是 HTML 模板。数据负责保存组件状态或配置，方法负责交互和数据处理；没有数据和方法也能写出基础组件，但实际项目通常少不了它们。 2. React/Vue 都会把页面拆成独立、可复用的功能单元。组件边界清楚后，修改和复用都更省事。 二、React 组件有两种写法 （一）函数组件（新版本推荐，对应 Vue3 组合式 API） 1. 函数组件就是一个 JavaScript 函数，返回值用来描述组件的 HTML 结构。 2. 写的时候注意两条规则： 组件名首字母必须大写。小写名称会被 React 当成原生 DOM 标签，最终导致报错。 通过 返回用 JSX 写的 HTML 模板。 3. 先看一个最小例子： （二）Class 类组件（老版本写法，对应 Vue2 选项式 API） 1. Class 组件是一个 JavaScript 类，需要先继承 React 提供的基础类。 2. 它的规则比函数组件多一些： 继承 （或 ）后，组件才能使用生命周期、接收 props 等能力。 在构造函数 中调用 ，继承父类属性并接收 props。 实现 方法，由它返回 HTML 模板。 组件名同样要以大写字母开头。 3. 对应的代码如下： 三、JSX 最后会变成什么 （一）JSX 的作用 1. JSX 是 JavaScript XML 的缩写，它让我们可以直接在 JavaScript 中写出接近 HTML 的结构，也是 React 推荐的模板写法。 2. JSX 需要经过 webpack 等构建工具编译，直接写进未编译的 JS 文件会报错。 3. JSX 是创建 React 元素（虚拟 DOM）的语法糖 。它不会直接进入页面，而是先被编译成 调用。 4. React 和 JSX 并不绑定：React 可以绕过 JSX，用 创建元素；JSX 也能交给其他框架（如 Vue）编译，生成对应框架的组件对象。 （二）对照 React.createElement 看编译结果 1. JSX 编译后就是 调用，两种写法都会得到 类型的虚拟 DOM 对象。 2. 把两种写法放在一起更直观： 3. 生成的虚拟 DOM 可以简化成下面这个结构： 四、JSX 中 的渲染规则 用来在 JSX 中嵌入 JavaScript 表达式，作用接近 Vue 的 ，但不同类型的值会得到不同结果： | 渲染内容类型 | 渲染结果 | 示例代码 | | | | | | 字符串/数字 | 直接渲染对应值 | → 渲染为 \"Hello\"； → 渲染为 \"123\" | | 数组 | 遍历数组，渲染每一项（自动拼接，无分隔符） | → 12Hello 函数组件 | | 表达式（算术/三元）| 执行表达式，渲染结果 | → 2； → Hello 函数组件 | | React Element 对象 | 正常渲染为对应的 DOM 结构 | → 渲染 FnHello 组件内容 | | 普通对象 | 报错（React 不支持直接渲染普通对象） | → 控制台报错 | | 函数 | 报错（无法直接渲染函数本身，需调用后返回 React 元素） | → 报错； → 正常渲染 | | 布尔值/null/undefined | 不渲染任何内容（静默处理，无报错） | 、 、 → 页面无显示 | 使用时容易漏掉的细节 1. JSX 没有 Vue 中的 指令，条件渲染通常直接写三元表达式。 2. 数组很适合拿来渲染列表，不过列表项要添加 属性，后面的列表循环章节会再展开。 3. 嵌入函数时要真正调用它（ ），并保证返回 React 元素或其他可渲染值。 五、组件怎么调用 1. 组件名首字母必须大写，React 靠这一点区分组件和原生 DOM 标签。 2. 调用时有两种形式： 加尖括号 ：React 会把它解析为 React Element 对象，可以直接渲染，也是推荐写法。 不加尖括号直接调用：它会像普通函数一样执行并返回 React Element 对象，也能渲染，但可读性差，不推荐这样写： 3. 无论函数组件还是类组件，最后都要返回 React Element 对象，React 再根据这个对象渲染真实 DOM。",
+  "readingMinutes": 6,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "JSX",
+    "函数组件",
+    "Class 组件"
+  ],
+  "html": "<h2 id=\"一先看组件里有什么\">一、先看组件里有什么</h2>\n<ol>\n<li>组件首先要描述 UI 结构，也就是 HTML 模板。数据负责保存组件状态或配置，方法负责交互和数据处理；没有数据和方法也能写出基础组件，但实际项目通常少不了它们。</li>\n<li>React/Vue 都会把页面拆成独立、可复用的功能单元。组件边界清楚后，修改和复用都更省事。</li>\n</ol>\n<h2 id=\"二react-组件有两种写法\">二、React 组件有两种写法</h2>\n<h3 id=\"一函数组件新版本推荐对应-vue3-组合式-api\">（一）函数组件（新版本推荐，对应 Vue3 组合式 API）</h3>\n<ol>\n<li>函数组件就是一个 JavaScript 函数，返回值用来描述组件的 HTML 结构。</li>\n<li>写的时候注意两条规则：\n<ul>\n<li>组件名首字母必须大写。小写名称会被 React 当成原生 DOM 标签，最终导致报错。</li>\n<li>通过 <code>return</code> 返回用 JSX 写的 HTML 模板。</li>\n</ul>\n</li>\n<li>先看一个最小例子：<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 函数组件：首字母大写</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">FnHello</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>Hello 函数组件<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>;\n}\n<span class=\"hljs-comment\">// 使用组件：尖括号包裹</span>\n<span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">FnHello</span> /&gt;</span></span>, <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">getElementById</span>(<span class=\"hljs-string\">'root'</span>));\n</code></pre>\n</li>\n</ol>\n<h3 id=\"二class-类组件老版本写法对应-vue2-选项式-api\">（二）Class 类组件（老版本写法，对应 Vue2 选项式 API）</h3>\n<ol>\n<li>Class 组件是一个 JavaScript 类，需要先继承 React 提供的基础类。</li>\n<li>它的规则比函数组件多一些：\n<ul>\n<li>继承 <code>React.Component</code>（或 <code>React.PureComponent</code>）后，组件才能使用生命周期、接收 props 等能力。</li>\n<li>在构造函数 <code>constructor</code> 中调用 <code>super(props)</code>，继承父类属性并接收 props。</li>\n<li>实现 <code>render()</code> 方法，由它返回 HTML 模板。</li>\n<li>组件名同样要以大写字母开头。</li>\n</ul>\n</li>\n<li>对应的代码如下：<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 引入 React（类组件依赖）</span>\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">React</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react'</span>;\n<span class=\"hljs-comment\">// Class 组件：继承 React.Component</span>\n<span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">ClassHello</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-title function_\">constructor</span>(<span class=\"hljs-params\">props</span>) {\n    <span class=\"hljs-variable language_\">super</span>(props); <span class=\"hljs-comment\">// 继承父类，接收 props</span>\n  }\n  <span class=\"hljs-comment\">// 必须实现 render 方法返回模板</span>\n  <span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>Hello Class 组件<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>;\n  }\n}\n<span class=\"hljs-comment\">// 使用组件</span>\n<span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">ClassHello</span> /&gt;</span></span>, <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">getElementById</span>(<span class=\"hljs-string\">'root'</span>));\n</code></pre>\n</li>\n</ol>\n<h2 id=\"三jsx-最后会变成什么\">三、JSX 最后会变成什么</h2>\n<h3 id=\"一jsx-的作用\">（一）JSX 的作用</h3>\n<ol>\n<li>JSX 是 JavaScript XML 的缩写，它让我们可以直接在 JavaScript 中写出接近 HTML 的结构，也是 React 推荐的模板写法。</li>\n<li>JSX 需要经过 webpack 等构建工具编译，直接写进未编译的 JS 文件会报错。</li>\n<li><strong>JSX 是创建 React 元素（虚拟 DOM）的语法糖</strong>。它不会直接进入页面，而是先被编译成 <code>React.createElement()</code> 调用。</li>\n<li>React 和 JSX 并不绑定：React 可以绕过 JSX，用 <code>React.createElement()</code> 创建元素；JSX 也能交给其他框架（如 Vue）编译，生成对应框架的组件对象。</li>\n</ol>\n<h3 id=\"二对照-reactcreateelement-看编译结果\">（二）对照 React.createElement 看编译结果</h3>\n<ol>\n<li>JSX 编译后就是 <code>React.createElement()</code> 调用，两种写法都会得到 <code>React.Element</code> 类型的虚拟 DOM 对象。</li>\n<li>把两种写法放在一起更直观：<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 1. JSX 写法（简洁直观）</span>\n<span class=\"hljs-keyword\">const</span> jsxElement = <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"hello\"</span>&gt;</span>Hello JSX<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>;\n\n<span class=\"hljs-comment\">// 2. React.createElement 写法（JSX 编译后的底层实现）</span>\n<span class=\"hljs-keyword\">const</span> createElementElement = <span class=\"hljs-title class_\">React</span>.<span class=\"hljs-title function_\">createElement</span>(\n  <span class=\"hljs-string\">'div'</span>, <span class=\"hljs-comment\">// 元素类型（标签名/组件）</span>\n  { <span class=\"hljs-attr\">className</span>: <span class=\"hljs-string\">'hello'</span> }, <span class=\"hljs-comment\">// 元素属性</span>\n  <span class=\"hljs-string\">'Hello JSX'</span> <span class=\"hljs-comment\">// 子节点（文本/元素）</span>\n);\n\n<span class=\"hljs-comment\">// 打印结果：二者完全相同的 React.Element 对象</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(jsxElement === createElementElement); <span class=\"hljs-comment\">// false（引用不同），但结构、属性完全一致</span>\n</code></pre>\n</li>\n<li>生成的虚拟 DOM 可以简化成下面这个结构：<pre><code class=\"hljs language-javascript\">{\n  <span class=\"hljs-attr\">type</span>: <span class=\"hljs-string\">'div'</span>, <span class=\"hljs-comment\">// 元素类型</span>\n  <span class=\"hljs-attr\">props</span>: { <span class=\"hljs-attr\">className</span>: <span class=\"hljs-string\">'hello'</span>, <span class=\"hljs-attr\">children</span>: <span class=\"hljs-string\">'Hello JSX'</span> }, <span class=\"hljs-comment\">// 属性与子节点</span>\n  <span class=\"hljs-attr\">$$typeof</span>: <span class=\"hljs-title class_\">Symbol</span>.<span class=\"hljs-title function_\">for</span>(<span class=\"hljs-string\">'react.element'</span>) <span class=\"hljs-comment\">// React 元素标识</span>\n}\n</code></pre>\n</li>\n</ol>\n<h2 id=\"四jsx-中--的渲染规则\">四、JSX 中 <code>{}</code> 的渲染规则</h2>\n<p><code>{}</code> 用来在 JSX 中嵌入 JavaScript 表达式，作用接近 Vue 的 <code>{{}}</code>，但不同类型的值会得到不同结果：</p>\n<table>\n<thead>\n<tr>\n<th>渲染内容类型</th>\n<th>渲染结果</th>\n<th>示例代码</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>字符串/数字</td>\n<td>直接渲染对应值</td>\n<td><code>{ 'Hello' }</code> → 渲染为 \"Hello\"；<code>{ 123 }</code> → 渲染为 \"123\"</td>\n</tr>\n<tr>\n<td>数组</td>\n<td>遍历数组，渲染每一项（自动拼接，无分隔符）</td>\n<td><code>{ [1, 2, &lt;FnHello /&gt;] }</code> → 12Hello 函数组件</td>\n</tr>\n<tr>\n<td>表达式（算术/三元）</td>\n<td>执行表达式，渲染结果</td>\n<td><code>{ 1 + 1 }</code> → 2；<code>{ true ? &lt;FnHello /&gt; : 123 }</code> → Hello 函数组件</td>\n</tr>\n<tr>\n<td>React Element 对象</td>\n<td>正常渲染为对应的 DOM 结构</td>\n<td><code>{ &lt;FnHello /&gt; }</code> → 渲染 FnHello 组件内容</td>\n</tr>\n<tr>\n<td>普通对象</td>\n<td>报错（React 不支持直接渲染普通对象）</td>\n<td><code>{ { name: 'React' } }</code> → 控制台报错</td>\n</tr>\n<tr>\n<td>函数</td>\n<td>报错（无法直接渲染函数本身，需调用后返回 React 元素）</td>\n<td><code>{ FnHello }</code> → 报错；<code>{ FnHello() }</code> → 正常渲染</td>\n</tr>\n<tr>\n<td>布尔值/null/undefined</td>\n<td>不渲染任何内容（静默处理，无报错）</td>\n<td><code>{ true }</code>、<code>{ null }</code>、<code>{ undefined }</code> → 页面无显示</td>\n</tr>\n</tbody>\n</table>\n<h3 id=\"使用时容易漏掉的细节\">使用时容易漏掉的细节</h3>\n<ol>\n<li>JSX 没有 Vue 中的 <code>v-if</code> 指令，条件渲染通常直接写三元表达式。</li>\n<li>数组很适合拿来渲染列表，不过列表项要添加 <code>key</code> 属性，后面的列表循环章节会再展开。</li>\n<li>嵌入函数时要真正调用它（<code>{ 函数名() }</code>），并保证返回 React 元素或其他可渲染值。</li>\n</ol>\n<h2 id=\"五组件怎么调用\">五、组件怎么调用</h2>\n<ol>\n<li>组件名首字母必须大写，React 靠这一点区分组件和原生 DOM 标签。</li>\n<li>调用时有两种形式：\n<ul>\n<li>加尖括号 <code>&lt;组件名 /&gt;</code>：React 会把它解析为 React Element 对象，可以直接渲染，也是推荐写法。</li>\n<li>不加尖括号直接调用：它会像普通函数一样执行并返回 React Element 对象，也能渲染，但可读性差，不推荐这样写：<pre><code class=\"hljs language-jsx\"><span class=\"hljs-comment\">// 两种方式均可渲染，效果一致</span>\n<span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">FnHello</span> /&gt;</span></span>, root); <span class=\"hljs-comment\">// 推荐</span>\n<span class=\"hljs-title class_\">ReactDOM</span>.<span class=\"hljs-title function_\">render</span>(<span class=\"hljs-title class_\">FnHello</span>(), root); <span class=\"hljs-comment\">// 不推荐</span>\n</code></pre>\n</li>\n</ul>\n</li>\n<li>无论函数组件还是类组件，最后都要返回 React Element 对象，React 再根据这个对象渲染真实 DOM。</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "一先看组件里有什么",
+      "level": 2,
+      "text": "一、先看组件里有什么"
+    },
+    {
+      "id": "二react-组件有两种写法",
+      "level": 2,
+      "text": "二、React 组件有两种写法"
+    },
+    {
+      "id": "一函数组件新版本推荐对应-vue3-组合式-api",
+      "level": 3,
+      "text": "（一）函数组件（新版本推荐，对应 Vue3 组合式 API）"
+    },
+    {
+      "id": "二class-类组件老版本写法对应-vue2-选项式-api",
+      "level": 3,
+      "text": "（二）Class 类组件（老版本写法，对应 Vue2 选项式 API）"
+    },
+    {
+      "id": "三jsx-最后会变成什么",
+      "level": 2,
+      "text": "三、JSX 最后会变成什么"
+    },
+    {
+      "id": "一jsx-的作用",
+      "level": 3,
+      "text": "（一）JSX 的作用"
+    },
+    {
+      "id": "二对照-reactcreateelement-看编译结果",
+      "level": 3,
+      "text": "（二）对照 React.createElement 看编译结果"
+    },
+    {
+      "id": "四jsx-中--的渲染规则",
+      "level": 2,
+      "text": "四、JSX 中 {} 的渲染规则"
+    },
+    {
+      "id": "使用时容易漏掉的细节",
+      "level": 3,
+      "text": "使用时容易漏掉的细节"
+    },
+    {
+      "id": "五组件怎么调用",
+      "level": 2,
+      "text": "五、组件怎么调用"
+    }
+  ]
+}

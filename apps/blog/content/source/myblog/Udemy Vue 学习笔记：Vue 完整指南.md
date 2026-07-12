@@ -11,7 +11,6 @@ categories:
   - "Vue"
 ---
 
-# Udemy - Vue: The Complete Guide
 
 This course was created by **[Maximilian Schwarzmüller](https://www.udemy.com/user/maximilian-schwarzmuller/)**
 
@@ -24,11 +23,11 @@ Vue.js is an awesome JavaScript Framework for building Frontend Applications! Vu
 - Leverage Vue.js in both Multi- and Single-Page-Applications (MPAs and SPAs)
 - Learn the latest version of Vue (Vue 3), including the brand-new Composition API
 
-# Core features
+## Core features
 
 ## Create a Vue app
 
-- Vue.createApp() → Global
+- Vue.createApp → Global
 - Has an object to configure Vue:
   - data → It is a function, everything returned by the data function can be used in the HTML controlled by Vue. Vue takes all the data in this object and merges it into a global instance Vue object, to access this global instance we need to use the keyword `this`.
   - methods → Allow you to define functions, it takes an object that holds as many functions as you may need.
@@ -391,7 +390,7 @@ You can have more than one app but they will not communicate between themselves.
 
 Components are reusable pieces of `HTML` with connected data and logic like an app inside an app, components are render elements directly from Vue. The `v-for` directive is used to output simple data not complex `HTML` elements with particular features.
 
-# Notes
+## Notes
 
 - Vue uses a declarative approach instead of regular JavaScript which normally uses an imperative approach (step-by-step). We decide the end results, not how to get them.
 - It is a good practice not to put too much logic on your HTML code, the HTML code should be about outputting stuff.

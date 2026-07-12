@@ -1,0 +1,112 @@
+{
+  "canonicalSlug": "4-3de2916d",
+  "aliases": [
+    "4"
+  ],
+  "title": "React 类组件响应式数据：state、setState 与 PureComponent",
+  "publishedAt": "2026-04-24T15:40:38.000Z",
+  "publishedLabel": "Apr 24, 2026",
+  "excerpt": "类组件把响应式数据放进 state 对象。state 必须是对象类型，里面的属性都会作为响应式数据使用。",
+  "type": "Notes",
+  "searchText": "React 类组件响应式数据：state、setState 与 PureComponent Notes 前端开发 React React Class 组件 state setState 一、state 怎么定义 1. 类组件把响应式数据放进 对象。 必须是对象类型，里面的属性都会作为响应式数据使用。 2. 写法有两种： 传统写法会保留 ： ES7 简写会跳过 ，更推荐这样写： 3. 直接挂在 上的属性（如 ）也能使用，但它不是响应式数据，值变了不会触发页面更新。 二、在模板里读取 state 类组件必须通过 访问数据，不能像 Vue 那样直接读取 里的属性： 三、修改数据要走 setState 1. 为什么不能直接赋值 React 没有 Vue 那样的 数据劫持， 直接修改 state 不触发更新 。数据值虽然变了，页面不会跟着刷新： 修改时必须调用 。它会做两件事：① 修改 数据；② 触发组件重新渲染，把变化更新到页面。 2. setState 的三种参数写法 （1）参数1传对象（常用） （2）参数1传函数（少见，用旧 state 计算新值时使用） （3）参数2传回调函数（读取异步更新后的最新 state） 3. setState 的几个行为 （1）只做浅合并 传入的更新对象会和原 浅合并 ，也就是只处理第一层，嵌套对象不会递归合并。这个过程等价于 ： 原数据是 。 执行 后得到 ，只更新第一层 ， 保持不变。 修改嵌套对象时，如果没有保留原属性，其他字段会丢失。可以展开原对象，或者把属性完整写出来： （2）更新是异步的 是异步操作，紧跟在后面的同步代码读不到最新 ，需要在第二个回调参数里获取： （3）连续更新会批量合并 连续多次调用 会合并为一次更新，减少重复渲染： （4）用空对象强制更新（不规范，仅作原理说明） 传入空对象 不会修改数据，但仍会触发组件更新，因为调用了 。 四、用 PureComponent 跳过重复渲染 1. 它解决什么问题 继承 替代 ，可以跳过 相同值重复更新 ： 组件中，即使 传入的值和原 相同，也会触发 。 会浅比较新旧 和 ，值相同时不触发 。 2. 引用类型要换地址 对 引用类型（对象、数组） 只比较内存地址，不会深入比较内容： 直接修改原引用类型数据，比如用 改数组或直接改对象属性，内存地址不会变， 会认为数据没变，因此不触发更新： 更新前先浅拷贝出新引用，让内存地址发生变化： 五、三个容易踩的坑 1. 不要在 render 中调用 setState ： 触发更新 → 再次触发更新，最后进入死循环，页面会卡死。 下面是错误写法： 2. 嵌套对象或数组更新后丢属性 ： 没有展开原对象或数组时，浅合并会覆盖原有嵌套属性。例如修改 时没保留 ，最终会让 丢失。 3. 在同步代码里读取最新 state ： 把 当成同步操作，随后立刻读取 ，拿到的还是旧值。",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "React"
+  ],
+  "tags": [
+    "React",
+    "Class 组件",
+    "state",
+    "setState"
+  ],
+  "html": "<h2 id=\"一state-怎么定义\">一、state 怎么定义</h2>\n<ol>\n<li>类组件把响应式数据放进 <code>state</code> 对象。<code>state</code> 必须是对象类型，里面的属性都会作为响应式数据使用。</li>\n<li>写法有两种：\n<ul>\n<li>传统写法会保留 <code>constructor</code>：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">Component</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  <span class=\"hljs-title function_\">constructor</span>(<span class=\"hljs-params\">props</span>) {\n    <span class=\"hljs-variable language_\">super</span>(props); <span class=\"hljs-comment\">// 必传props并调用super</span>\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span> = { \n      <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">0</span>, <span class=\"hljs-comment\">// 响应式数据a</span>\n      <span class=\"hljs-attr\">b</span>: { <span class=\"hljs-attr\">c1</span>: <span class=\"hljs-number\">123</span>, <span class=\"hljs-attr\">c2</span>: <span class=\"hljs-number\">999</span> }, <span class=\"hljs-comment\">// 嵌套对象类型响应式数据</span>\n      <span class=\"hljs-attr\">arr</span>: [<span class=\"hljs-number\">1</span>, <span class=\"hljs-number\">2</span>, <span class=\"hljs-number\">3</span>] <span class=\"hljs-comment\">// 数组类型响应式数据</span>\n    };\n  }\n}\n</code></pre>\n</li>\n<li>ES7 简写会跳过 <code>constructor</code>，更推荐这样写：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">class</span> <span class=\"hljs-title class_\">Component</span> <span class=\"hljs-keyword\">extends</span> <span class=\"hljs-title class_ inherited__\">React.Component</span> {\n  state = { \n    <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">0</span>, \n    <span class=\"hljs-attr\">b</span>: { <span class=\"hljs-attr\">c1</span>: <span class=\"hljs-number\">123</span>, <span class=\"hljs-attr\">c2</span>: <span class=\"hljs-number\">999</span> }, \n    <span class=\"hljs-attr\">arr</span>: [<span class=\"hljs-number\">1</span>, <span class=\"hljs-number\">2</span>, <span class=\"hljs-number\">3</span>] \n  };\n}\n</code></pre>\n</li>\n</ul>\n</li>\n<li>直接挂在 <code>this</code> 上的属性（如 <code>this.b = 123</code>）也能使用，但它不是响应式数据，值变了不会触发页面更新。</li>\n</ol>\n<h2 id=\"二在模板里读取-state\">二、在模板里读取 state</h2>\n<ul>\n<li>类组件必须通过 <code>this.state.属性名</code> 访问数据，不能像 Vue 那样直接读取 <code>data</code> 里的属性：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 正确使用</span>\n<span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>{this.state.a}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>; \n}\n</code></pre>\n</li>\n</ul>\n<h2 id=\"三修改数据要走-setstate\">三、修改数据要走 setState</h2>\n<h3 id=\"1-为什么不能直接赋值\">1. 为什么不能直接赋值</h3>\n<ul>\n<li>React 没有 Vue 那样的 <code>get/set</code> 数据劫持，<strong>直接修改 state 不触发更新</strong>。数据值虽然变了，页面不会跟着刷新：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span> = <span class=\"hljs-number\">1</span>; <span class=\"hljs-comment\">// 错误：数据改变但页面不更新</span>\n</code></pre>\n</li>\n<li>修改时必须调用 <code>this.setState()</code>。它会做两件事：① 修改 <code>state</code> 数据；② 触发组件重新渲染，把变化更新到页面。</li>\n</ul>\n<h3 id=\"2-setstate-的三种参数写法\">2. setState 的三种参数写法</h3>\n<h4 id=\"1参数1传对象常用\">（1）参数1传对象（常用）</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ \n  <span class=\"hljs-attr\">a</span>: <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span> + <span class=\"hljs-number\">1</span>, <span class=\"hljs-comment\">// 直接赋值新值</span>\n  <span class=\"hljs-string\">\"b.c1\"</span>: <span class=\"hljs-number\">9</span> <span class=\"hljs-comment\">// 不推荐直接修改嵌套属性</span>\n});\n</code></pre>\n<h4 id=\"2参数1传函数少见用旧-state-计算新值时使用\">（2）参数1传函数（少见，用旧 state 计算新值时使用）</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>(<span class=\"hljs-function\"><span class=\"hljs-params\">prevState</span> =&gt;</span> {\n  <span class=\"hljs-keyword\">return</span> { <span class=\"hljs-attr\">a</span>: prevState.<span class=\"hljs-property\">a</span> + <span class=\"hljs-number\">1</span> }; <span class=\"hljs-comment\">// prevState 为更新前的 state</span>\n});\n</code></pre>\n<h4 id=\"3参数2传回调函数读取异步更新后的最新-state\">（3）参数2传回调函数（读取异步更新后的最新 state）</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">1</span> }, <span class=\"hljs-function\">() =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span>); <span class=\"hljs-comment\">// 正确：输出 1（更新后的值）</span>\n});\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span>); <span class=\"hljs-comment\">// 错误：输出旧值（setState 是异步操作）</span>\n</code></pre>\n<h3 id=\"3-setstate-的几个行为\">3. setState 的几个行为</h3>\n<h4 id=\"1只做浅合并\">（1）只做浅合并</h4>\n<ul>\n<li>传入的更新对象会和原 <code>state</code> <strong>浅合并</strong>，也就是只处理第一层，嵌套对象不会递归合并。这个过程等价于 <code>Object.assign(原state, 更新对象)</code>：\n<ul>\n<li>原数据是 <code>state = {a:0, b:{c1:123, c2:999}}</code>。</li>\n<li>执行 <code>this.setState({a:1})</code> 后得到 <code>{a:1, b:{c1:123, c2:999}}</code>，只更新第一层 <code>a</code>，<code>b</code> 保持不变。</li>\n<li>修改嵌套对象时，如果没有保留原属性，其他字段会丢失。可以展开原对象，或者把属性完整写出来：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 错误：c2 会丢失</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">b</span>: { <span class=\"hljs-attr\">c1</span>: <span class=\"hljs-number\">9</span> } }); \n<span class=\"hljs-comment\">// 正确：展开原对象保留所有属性</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">b</span>: { ...<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">b</span>, <span class=\"hljs-attr\">c1</span>: <span class=\"hljs-number\">9</span> } }); \n</code></pre>\n</li>\n</ul>\n</li>\n</ul>\n<h4 id=\"2更新是异步的\">（2）更新是异步的</h4>\n<ul>\n<li>\n<p><code>setState</code> 是异步操作，紧跟在后面的同步代码读不到最新 <code>state</code>，需要在第二个回调参数里获取：</p>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">1</span> });\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span>); <span class=\"hljs-comment\">// 输出旧值（如 0），因更新未完成</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">1</span> }, <span class=\"hljs-function\">() =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">a</span>); <span class=\"hljs-comment\">// 输出 1（更新完成后执行）</span>\n});\n</code></pre>\n</li>\n</ul>\n<h4 id=\"3连续更新会批量合并\">（3）连续更新会批量合并</h4>\n<ul>\n<li>连续多次调用 <code>setState</code> 会合并为一次更新，减少重复渲染：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 等价于 this.setState({a:1, b:2})</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">1</span> });\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">b</span>: <span class=\"hljs-number\">2</span> });\n</code></pre>\n</li>\n</ul>\n<h4 id=\"4用空对象强制更新不规范仅作原理说明\">（4）用空对象强制更新（不规范，仅作原理说明）</h4>\n<ul>\n<li>传入空对象 <code>this.setState({})</code> 不会修改数据，但仍会触发组件更新，因为调用了 <code>setState</code>。</li>\n</ul>\n<h2 id=\"四用-purecomponent-跳过重复渲染\">四、用 PureComponent 跳过重复渲染</h2>\n<h3 id=\"1-它解决什么问题\">1. 它解决什么问题</h3>\n<ul>\n<li>继承 <code>React.PureComponent</code> 替代 <code>React.Component</code>，可以跳过 <strong>相同值重复更新</strong>：\n<ul>\n<li><code>Component</code> 组件中，即使 <code>setState</code> 传入的值和原 <code>state</code> 相同，也会触发 <code>render</code>。</li>\n<li><code>PureComponent</code> 会浅比较新旧 <code>state</code> 和 <code>props</code>，值相同时不触发 <code>render</code>。</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"2-引用类型要换地址\">2. 引用类型要换地址</h3>\n<ul>\n<li><code>PureComponent</code> 对 <strong>引用类型（对象、数组）</strong> 只比较内存地址，不会深入比较内容：\n<ul>\n<li>直接修改原引用类型数据，比如用 <code>push</code> 改数组或直接改对象属性，内存地址不会变，<code>PureComponent</code> 会认为数据没变，因此不触发更新：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 错误：数组内存地址不变，PureComponent 不更新</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">arr</span>.<span class=\"hljs-title function_\">push</span>(<span class=\"hljs-number\">4</span>);\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">arr</span>: <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">arr</span> });\n</code></pre>\n</li>\n<li>更新前先浅拷贝出新引用，让内存地址发生变化：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 数组：展开运算符创建新数组</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">arr</span>: [...<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">arr</span>, <span class=\"hljs-number\">4</span>] });\n<span class=\"hljs-comment\">// 对象：展开运算符创建新对象</span>\n<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">b</span>: { ...<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">state</span>.<span class=\"hljs-property\">b</span>, <span class=\"hljs-attr\">c1</span>: <span class=\"hljs-number\">9</span> } });\n</code></pre>\n</li>\n</ul>\n</li>\n</ul>\n<h2 id=\"五三个容易踩的坑\">五、三个容易踩的坑</h2>\n<ol>\n<li>\n<p><strong>不要在 render 中调用 setState</strong>：</p>\n<ul>\n<li><code>render</code> 触发更新 → <code>setState</code> 再次触发更新，最后进入死循环，页面会卡死。</li>\n<li>下面是错误写法：<pre><code class=\"hljs language-javascript\"><span class=\"hljs-title function_\">render</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-title function_\">setState</span>({ <span class=\"hljs-attr\">a</span>: <span class=\"hljs-number\">1</span> }); <span class=\"hljs-comment\">// 绝对禁止</span>\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span>&gt;</span>{this.state.a}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>;\n}\n</code></pre>\n</li>\n</ul>\n</li>\n<li>\n<p><strong>嵌套对象或数组更新后丢属性</strong>：</p>\n<ul>\n<li>没有展开原对象或数组时，浅合并会覆盖原有嵌套属性。例如修改 <code>b.c1</code> 时没保留 <code>b.c2</code>，最终会让 <code>b.c2</code> 丢失。</li>\n</ul>\n</li>\n<li>\n<p><strong>在同步代码里读取最新 state</strong>：</p>\n<ul>\n<li>把 <code>setState</code> 当成同步操作，随后立刻读取 <code>state</code>，拿到的还是旧值。</li>\n</ul>\n</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "一state-怎么定义",
+      "level": 2,
+      "text": "一、state 怎么定义"
+    },
+    {
+      "id": "二在模板里读取-state",
+      "level": 2,
+      "text": "二、在模板里读取 state"
+    },
+    {
+      "id": "三修改数据要走-setstate",
+      "level": 2,
+      "text": "三、修改数据要走 setState"
+    },
+    {
+      "id": "1-为什么不能直接赋值",
+      "level": 3,
+      "text": "1. 为什么不能直接赋值"
+    },
+    {
+      "id": "2-setstate-的三种参数写法",
+      "level": 3,
+      "text": "2. setState 的三种参数写法"
+    },
+    {
+      "id": "1参数1传对象常用",
+      "level": 4,
+      "text": "（1）参数1传对象（常用）"
+    },
+    {
+      "id": "2参数1传函数少见用旧-state-计算新值时使用",
+      "level": 4,
+      "text": "（2）参数1传函数（少见，用旧 state 计算新值时使用）"
+    },
+    {
+      "id": "3参数2传回调函数读取异步更新后的最新-state",
+      "level": 4,
+      "text": "（3）参数2传回调函数（读取异步更新后的最新 state）"
+    },
+    {
+      "id": "3-setstate-的几个行为",
+      "level": 3,
+      "text": "3. setState 的几个行为"
+    },
+    {
+      "id": "1只做浅合并",
+      "level": 4,
+      "text": "（1）只做浅合并"
+    },
+    {
+      "id": "2更新是异步的",
+      "level": 4,
+      "text": "（2）更新是异步的"
+    },
+    {
+      "id": "3连续更新会批量合并",
+      "level": 4,
+      "text": "（3）连续更新会批量合并"
+    },
+    {
+      "id": "4用空对象强制更新不规范仅作原理说明",
+      "level": 4,
+      "text": "（4）用空对象强制更新（不规范，仅作原理说明）"
+    },
+    {
+      "id": "四用-purecomponent-跳过重复渲染",
+      "level": 2,
+      "text": "四、用 PureComponent 跳过重复渲染"
+    },
+    {
+      "id": "1-它解决什么问题",
+      "level": 3,
+      "text": "1. 它解决什么问题"
+    },
+    {
+      "id": "2-引用类型要换地址",
+      "level": 3,
+      "text": "2. 引用类型要换地址"
+    },
+    {
+      "id": "五三个容易踩的坑",
+      "level": 2,
+      "text": "五、三个容易踩的坑"
+    }
+  ]
+}

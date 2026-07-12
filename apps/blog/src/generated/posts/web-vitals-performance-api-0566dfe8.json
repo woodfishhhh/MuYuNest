@@ -1,0 +1,283 @@
+{
+  "canonicalSlug": "web-vitals-performance-api-0566dfe8",
+  "aliases": [
+    "前端性能监控与优化：Web Vitals、Performance API 与实战排查"
+  ],
+  "title": "前端性能怎么查：Web Vitals、Performance API 与排查顺序",
+  "publishedAt": "2026-04-22T22:15:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "页面“慢”只是现象。首屏迟迟不出来、按钮点下去没反应、内容加载时乱跳，背后的瓶颈完全不同，优化手段也不能混着用。",
+  "type": "Notes",
+  "searchText": "前端性能怎么查：Web Vitals、Performance API 与排查顺序 Notes 前端开发 前端八股 前端八股 前端性能 Web Vitals Performance API Lighthouse 页面“慢”只是现象。首屏迟迟不出来、按钮点下去没反应、内容加载时乱跳，背后的瓶颈完全不同，优化手段也不能混着用。 排查时先回答三个问题：用户慢在哪里，数据从哪里拿，哪段链路最值得先改。Core Web Vitals 用来描述用户感受，Performance API 和 PerformanceObserver 负责采集，Network 瀑布图与性能面板负责把问题定位到请求、渲染或主线程。 一、先判断是哪一种慢 Web 性能至少包含加载、渲染和交互三个阶段。首屏很快，不代表后续交互流畅；接口很快返回，也不代表页面不会发生布局偏移。 具体到业务，性能会影响等待体验、留存与转化，也会影响搜索引擎对页面体验的判断。但分析时不要停在“性能很重要”，要把它落到一个能观测的现象上。 二、先看瀑布图，再看评分 Network 瀑布图能直接回答： DNS、TCP、SSL 各自花了多久 请求排队是否严重 资源是否阻塞 关键资源是不是来得太晚 下面两张图展示的就是这条请求链： Lighthouse 分数适合做入口，但它只告诉你结果。瀑布图展示的是实际发生了什么：资源何时发现、在哪排队、被什么阻塞。两者要一起看。 三、为什么不能只看 DOMContentLoaded 和 load 以前大家会看： 这些时间点仍然有用，但对 SPA 来说，它们不能完整反映用户看到和操作页面的时间。 比如： 页面框架加载完了，但核心内容还没出来 资源都到了，但页面一直抖动 首屏看似完成了，但点按钮仍然卡 因此还要补上内容何时出现、布局是否稳定、交互多久得到反馈这些指标。 四、用 Core Web Vitals 对应用户感受 先看三项直接对应用户体验的指标： ：Largest Contentful Paint ：Cumulative Layout Shift ：Interaction to Next Paint 再结合下面几项判断请求和首次绘制： 这些指标不是分数清单。每一项都应该对应到一次可复现的加载或交互过程。 五、LCP：最大内容绘制 1. 衡量主要内容何时出现 LCP 衡量的是：页面主要内容什么时候真正出现在用户眼前。 这比 更贴近“用户觉得页面有用了没有”。 2. 哪些元素会被计入 LCP 通常包括： 大图 背景图 大块文本 视频封面等主要内容区域 下面这些配图可以配合看： 3. 评分标准 常见标准是： 优秀： 需要改进： 较差： 4. LCP 为什么会差 高频原因包括： 服务器首字节慢 关键资源发现太晚 首屏大图没有预加载 CSS / JS 阻塞渲染 主线程太忙导致内容虽已到达但迟迟不能绘制 六、CLS：累计布局偏移 1. 衡量页面是否稳定 CLS 衡量的是页面稳定性，也就是页面元素在加载过程中有没有“乱跳”。 2. 计算思路 CLS 由受影响的面积和偏移距离共同决定： 也就是： 有多少内容被影响到了 这些内容偏移了多远 3. 常见成因 图片、广告、异步模块没有预留尺寸 字体切换引发布局变化 在已有内容上方插入新元素 动画或脚本直接改布局属性 相关配图如下： 4. 评分标准 常见经验值： 优秀： 需要改进： 较差： 七、INP、FCP、TTFB 也不能忽略 1. INP 衡量用户交互之后，到下一次可见绘制的延迟。它比旧时代的 FID 更能反映真实交互体验。 2. FCP 首次内容绘制，强调“用户第一次看到页面内容”的时间点。 3. TTFB 首字节时间，强调从发请求到收到响应第一个字节所花的时间。 这些指标之间并不是替代关系，而是互补关系。 相关图示： 八、怎么在浏览器里拿到这些性能数据 页面内的自定义耗时、资源请求和导航记录，可以从 Performance API 开始采集。 九、Performance API 基础 1. 它是什么 Performance API 是浏览器提供的一组高精度性能接口，允许我们获取： 页面加载时间 资源加载信息 自定义打点耗时 与 Web Vitals 相关的性能数据 2. 这是性能计时的起点，理解它有助于看懂瀑布图、事件时序和 的相对时间。 3. 它返回相对 的高精度时间，适合做函数耗时统计。 start 和 end 使用同一个相对时间起点，两者相减就是 doSomething 的执行时间。 4. 与 这组 API 非常适合做业务打点： 两个 mark 确定起止点，measure 生成名为 list render 的测量记录，后续可以和其他性能条目一起读取。 5. 系列 可以拿到性能条目，例如资源请求、导航记录、测量结果等。 十、Performance API 的局限 只靠主动读取 Performance API 有几个限制： 某些关键指标不是直接就能从传统接口里稳定拿到 有些性能数据如果错过了时机，后面就不好补采 单纯轮询 不够优雅 需要连续采集时， 更合适。 十一、PerformanceObserver 如何连续采集 1. 为什么用观察器 观察式获取数据 不需要不停主动扫描 更适合实时监控 可以拿到更多关键性能条目 2. 最基本的写法 回调每次收到一批条目，示例逐条输出名称、开始时间和持续时间。这里只订阅了 LCP 类型。 3. 的意义 观察器可能在页面启动后才注册。开启 buffered 后，它会同时读取已经产生的相关条目，减少早期数据遗漏。 相关配图如下： 十二、性能测试数据要分清 Lab Data 和 Field Data 一次可重复的实验不能代表所有真实用户，而真实用户数据又不适合单独用来复现问题。两类数据要配合使用。 1. Lab Data 实验室数据，来自可控环境，例如： Lighthouse DevTools Performance WebPageTest 优点是可重复、可对比，适合排查问题。 2. Field Data 真实用户数据，来自真实设备、真实网络、真实地域和真实交互。 典型来源包括： CrUX RUM 平台 自建埋点监控 一般的搭配方式是： 用 Lab Data 定位问题 用 Field Data 判断真实影响 十三、常见性能工具怎么搭配 1. Lighthouse 适合快速做整体健康检查，但不要把分数当唯一目标。 2. Chrome DevTools Performance 适合看： 长任务 主线程忙在哪 Layout / Paint / Script 时间 FPS 波动 3. WebPageTest 更适合网络链路、地域和设备差异对比。 4. Web Vitals 扩展、CrUX、RUM 更适合补充真实用户视角。 相关配图： 十四、性能差了以后，具体怎么优化 优化动作要和异常指标一一对应。否则改了很多配置，也很难证明是哪一项真正生效。 1. 优化 TTFB 提升服务端响应速度 启用 Gzip / Brotli 压缩 优化协议和接入层 让用户离服务更近，例如 CDN 2. 优化 FCP 减少关键渲染路径依赖链 预加载关键资源 避免首屏被大块 JS/CSS 阻塞 3. 优化 LCP 首屏大图做预加载 使用更合适图片格式 做缓存和缓存头控制 避免主线程被重任务占满 4. 优化 CLS 给图片、广告、懒加载容器预留尺寸 避免在已有内容上方插入异步内容 字体加载策略更稳妥 5. 优化 INP 减少长任务 拆分重计算 释放主线程 降低事件回调内部复杂度 十五、虚拟列表只解决一类问题 列表滚动卡顿时，可以按下面的顺序排查： 1. 看 DOM 数量是不是过多 2. 看单个 item 是否过重 3. 看是否频繁触发回流重绘 4. 看主线程是否被 JS、Layout、Paint 占满 5. 做开关对比验证虚拟列表是否真的击中瓶颈 虚拟列表只解决“同时渲染的 DOM 太多”这一类问题。开关前后没有明显变化，就应该继续检查组件渲染、布局计算和主线程长任务。 十六、说明性能结果时别漏掉这些信息 1. 指标要带上含义和现场 只报缩写和分数没有定位价值。至少要说明它衡量什么、在哪个页面和设备上采集、异常通常由什么造成。 2. 观察器启动时间可能漏数据 页面早期已经产生的记录，需要结合 读取，不能只观察注册之后的新记录。 的注册时机也应记入采集方案。 3. Lighthouse 分数不是全部 需要结合 Performance 面板、真实用户监控和优化前后对比，才能判断分数变化是否真的改善了用户体验。 4. 每条建议都要能回到指标 比如： LCP 差就说预加载首屏大图、优化关键链路 CLS 差就说预留空间 INP 差就说释放主线程和拆长任务 一条可执行的排查顺序 先复现用户感知到的慢，再选对应指标；用 Network 或 Performance 面板定位请求、渲染和主线程瓶颈；最后只改最可疑的一段，并对比修改前后的 Lab Data 与 Field Data。这样才能说明问题在哪里，也能说明这次优化到底有没有用。",
+  "readingMinutes": 13,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "前端八股"
+  ],
+  "tags": [
+    "前端八股",
+    "前端性能",
+    "Web Vitals",
+    "Performance API",
+    "Lighthouse"
+  ],
+  "html": "<p>页面“慢”只是现象。首屏迟迟不出来、按钮点下去没反应、内容加载时乱跳，背后的瓶颈完全不同，优化手段也不能混着用。</p>\n<p>排查时先回答三个问题：用户慢在哪里，数据从哪里拿，哪段链路最值得先改。Core Web Vitals 用来描述用户感受，Performance API 和 PerformanceObserver 负责采集，Network 瀑布图与性能面板负责把问题定位到请求、渲染或主线程。</p>\n<h2 id=\"一先判断是哪一种慢\">一、先判断是哪一种慢</h2>\n<p>Web 性能至少包含加载、渲染和交互三个阶段。首屏很快，不代表后续交互流畅；接口很快返回，也不代表页面不会发生布局偏移。</p>\n<p>具体到业务，性能会影响等待体验、留存与转化，也会影响搜索引擎对页面体验的判断。但分析时不要停在“性能很重要”，要把它落到一个能观测的现象上。</p>\n<h2 id=\"二先看瀑布图再看评分\">二、先看瀑布图，再看评分</h2>\n<p>Network 瀑布图能直接回答：</p>\n<ul>\n<li>DNS、TCP、SSL 各自花了多久</li>\n<li>请求排队是否严重</li>\n<li>资源是否阻塞</li>\n<li>关键资源是不是来得太晚</li>\n</ul>\n<p>下面两张图展示的就是这条请求链：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413142213768.png\" alt=\"性能基础配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413142058608.png\" alt=\"性能基础配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p>Lighthouse 分数适合做入口，但它只告诉你结果。瀑布图展示的是实际发生了什么：资源何时发现、在哪排队、被什么阻塞。两者要一起看。</p>\n<h2 id=\"三为什么不能只看-domcontentloaded-和-load\">三、为什么不能只看 DOMContentLoaded 和 load</h2>\n<p>以前大家会看：</p>\n<ul>\n<li><code>DOMContentLoaded</code></li>\n<li><code>load</code></li>\n</ul>\n<p>这些时间点仍然有用，但对 SPA 来说，它们不能完整反映用户看到和操作页面的时间。</p>\n<p>比如：</p>\n<ul>\n<li>页面框架加载完了，但核心内容还没出来</li>\n<li>资源都到了，但页面一直抖动</li>\n<li>首屏看似完成了，但点按钮仍然卡</li>\n</ul>\n<p>因此还要补上内容何时出现、布局是否稳定、交互多久得到反馈这些指标。</p>\n<h2 id=\"四用-core-web-vitals-对应用户感受\">四、用 Core Web Vitals 对应用户感受</h2>\n<p>先看三项直接对应用户体验的指标：</p>\n<ul>\n<li><code>LCP</code>：Largest Contentful Paint</li>\n<li><code>CLS</code>：Cumulative Layout Shift</li>\n<li><code>INP</code>：Interaction to Next Paint</li>\n</ul>\n<p>再结合下面几项判断请求和首次绘制：</p>\n<ul>\n<li><code>TTFB</code></li>\n<li><code>FCP</code></li>\n<li><code>FID</code></li>\n</ul>\n<p>这些指标不是分数清单。每一项都应该对应到一次可复现的加载或交互过程。</p>\n<h2 id=\"五lcp最大内容绘制\">五、LCP：最大内容绘制</h2>\n<h3 id=\"1-衡量主要内容何时出现\">1. 衡量主要内容何时出现</h3>\n<p>LCP 衡量的是：页面主要内容什么时候真正出现在用户眼前。</p>\n<p>这比 <code>DOMContentLoaded</code> 更贴近“用户觉得页面有用了没有”。</p>\n<h3 id=\"2-哪些元素会被计入-lcp\">2. 哪些元素会被计入 LCP</h3>\n<p>通常包括：</p>\n<ul>\n<li>大图</li>\n<li>背景图</li>\n<li>大块文本</li>\n<li>视频封面等主要内容区域</li>\n</ul>\n<p>下面这些配图可以配合看：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413142341782.png\" alt=\"LCP 配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413142624922.png\" alt=\"LCP 配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413142800003.png\" alt=\"LCP 配图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"3-评分标准\">3. 评分标准</h3>\n<p>常见标准是：</p>\n<ul>\n<li>优秀：<code>&lt;= 2.5s</code></li>\n<li>需要改进：<code>2.5s ~ 4s</code></li>\n<li>较差：<code>&gt; 4s</code></li>\n</ul>\n<h3 id=\"4-lcp-为什么会差\">4. LCP 为什么会差</h3>\n<p>高频原因包括：</p>\n<ul>\n<li>服务器首字节慢</li>\n<li>关键资源发现太晚</li>\n<li>首屏大图没有预加载</li>\n<li>CSS / JS 阻塞渲染</li>\n<li>主线程太忙导致内容虽已到达但迟迟不能绘制</li>\n</ul>\n<h2 id=\"六cls累计布局偏移\">六、CLS：累计布局偏移</h2>\n<h3 id=\"1-衡量页面是否稳定\">1. 衡量页面是否稳定</h3>\n<p>CLS 衡量的是页面稳定性，也就是页面元素在加载过程中有没有“乱跳”。</p>\n<h3 id=\"2-计算思路\">2. 计算思路</h3>\n<p>CLS 由受影响的面积和偏移距离共同决定：</p>\n<p><code>CLS = Impact Fraction × Distance Fraction</code></p>\n<p>也就是：</p>\n<ul>\n<li>有多少内容被影响到了</li>\n<li>这些内容偏移了多远</li>\n</ul>\n<h3 id=\"3-常见成因\">3. 常见成因</h3>\n<ul>\n<li>图片、广告、异步模块没有预留尺寸</li>\n<li>字体切换引发布局变化</li>\n<li>在已有内容上方插入新元素</li>\n<li>动画或脚本直接改布局属性</li>\n</ul>\n<p>相关配图如下：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413144931686.png\" alt=\"CLS 配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413150047167.png\" alt=\"CLS 配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413150604942.png\" alt=\"CLS 配图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"4-评分标准\">4. 评分标准</h3>\n<p>常见经验值：</p>\n<ul>\n<li>优秀：<code>&lt;= 0.1</code></li>\n<li>需要改进：<code>0.1 ~ 0.25</code></li>\n<li>较差：<code>&gt; 0.25</code></li>\n</ul>\n<h2 id=\"七inpfcpttfb-也不能忽略\">七、INP、FCP、TTFB 也不能忽略</h2>\n<h3 id=\"1-inp\">1. INP</h3>\n<p>衡量用户交互之后，到下一次可见绘制的延迟。它比旧时代的 FID 更能反映真实交互体验。</p>\n<h3 id=\"2-fcp\">2. FCP</h3>\n<p>首次内容绘制，强调“用户第一次看到页面内容”的时间点。</p>\n<h3 id=\"3-ttfb\">3. TTFB</h3>\n<p>首字节时间，强调从发请求到收到响应第一个字节所花的时间。</p>\n<p>这些指标之间并不是替代关系，而是互补关系。</p>\n<p>相关图示：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413151323571.png\" alt=\"性能指标配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413153631693.png\" alt=\"性能指标配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413154033874.png\" alt=\"性能指标配图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"八怎么在浏览器里拿到这些性能数据\">八、怎么在浏览器里拿到这些性能数据</h2>\n<p>页面内的自定义耗时、资源请求和导航记录，可以从 Performance API 开始采集。</p>\n<h2 id=\"九performance-api-基础\">九、Performance API 基础</h2>\n<h3 id=\"1-它是什么\">1. 它是什么</h3>\n<p>Performance API 是浏览器提供的一组高精度性能接口，允许我们获取：</p>\n<ul>\n<li>页面加载时间</li>\n<li>资源加载信息</li>\n<li>自定义打点耗时</li>\n<li>与 Web Vitals 相关的性能数据</li>\n</ul>\n<h3 id=\"2-timeorigin\">2. <code>timeOrigin</code></h3>\n<p>这是性能计时的起点，理解它有助于看懂瀑布图、事件时序和 <code>performance.now()</code> 的相对时间。</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413170235898.png\" alt=\"Performance API 配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260413170508632.png\" alt=\"Performance API 配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"3-performancenow\">3. <code>performance.now()</code></h3>\n<p>它返回相对 <code>timeOrigin</code> 的高精度时间，适合做函数耗时统计。</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> start = performance.<span class=\"hljs-title function_\">now</span>();\n<span class=\"hljs-title function_\">doSomething</span>();\n<span class=\"hljs-keyword\">const</span> end = performance.<span class=\"hljs-title function_\">now</span>();\n\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">`耗时：<span class=\"hljs-subst\">${end - start}</span>ms`</span>);\n</code></pre>\n<p>start 和 end 使用同一个相对时间起点，两者相减就是 doSomething 的执行时间。</p>\n<h3 id=\"4-mark-与-measure\">4. <code>mark()</code> 与 <code>measure()</code></h3>\n<p>这组 API 非常适合做业务打点：</p>\n<pre><code class=\"hljs language-js\">performance.<span class=\"hljs-title function_\">mark</span>(<span class=\"hljs-string\">\"list-start\"</span>);\n<span class=\"hljs-title function_\">renderList</span>();\nperformance.<span class=\"hljs-title function_\">mark</span>(<span class=\"hljs-string\">\"list-end\"</span>);\nperformance.<span class=\"hljs-title function_\">measure</span>(<span class=\"hljs-string\">\"list-render\"</span>, <span class=\"hljs-string\">\"list-start\"</span>, <span class=\"hljs-string\">\"list-end\"</span>);\n</code></pre>\n<p>两个 mark 确定起止点，measure 生成名为 list-render 的测量记录，后续可以和其他性能条目一起读取。</p>\n<h3 id=\"5-getentries-系列\">5. <code>getEntries()</code> 系列</h3>\n<p>可以拿到性能条目，例如资源请求、导航记录、测量结果等。</p>\n<h2 id=\"十performance-api-的局限\">十、Performance API 的局限</h2>\n<p>只靠主动读取 Performance API 有几个限制：</p>\n<ul>\n<li>某些关键指标不是直接就能从传统接口里稳定拿到</li>\n<li>有些性能数据如果错过了时机，后面就不好补采</li>\n<li>单纯轮询 <code>getEntries()</code> 不够优雅</li>\n</ul>\n<p>需要连续采集时，<code>PerformanceObserver</code> 更合适。</p>\n<h2 id=\"十一performanceobserver-如何连续采集\">十一、PerformanceObserver 如何连续采集</h2>\n<h3 id=\"1-为什么用观察器\">1. 为什么用观察器</h3>\n<ul>\n<li>观察式获取数据</li>\n<li>不需要不停主动扫描</li>\n<li>更适合实时监控</li>\n<li>可以拿到更多关键性能条目</li>\n</ul>\n<h3 id=\"2-最基本的写法\">2. 最基本的写法</h3>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> observer = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">PerformanceObserver</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">list</span>) =&gt;</span> {\n  <span class=\"hljs-keyword\">for</span> (<span class=\"hljs-keyword\">const</span> entry <span class=\"hljs-keyword\">of</span> list.<span class=\"hljs-title function_\">getEntries</span>()) {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(entry.<span class=\"hljs-property\">name</span>, entry.<span class=\"hljs-property\">startTime</span>, entry.<span class=\"hljs-property\">duration</span>);\n  }\n});\n\nobserver.<span class=\"hljs-title function_\">observe</span>({\n  <span class=\"hljs-attr\">type</span>: <span class=\"hljs-string\">\"largest-contentful-paint\"</span>,\n  <span class=\"hljs-attr\">buffered</span>: <span class=\"hljs-literal\">true</span>,\n});\n</code></pre>\n<p>回调每次收到一批条目，示例逐条输出名称、开始时间和持续时间。这里只订阅了 LCP 类型。</p>\n<h3 id=\"3-buffered-true-的意义\">3. <code>buffered: true</code> 的意义</h3>\n<p>观察器可能在页面启动后才注册。开启 buffered 后，它会同时读取已经产生的相关条目，减少早期数据遗漏。</p>\n<p>相关配图如下：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260414215527734.png\" alt=\"PerformanceObserver 配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260414215536146.png\" alt=\"PerformanceObserver 配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260414215546990.png\" alt=\"PerformanceObserver 配图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260414221206073.png\" alt=\"PerformanceObserver 配图 4\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"十二性能测试数据要分清-lab-data-和-field-data\">十二、性能测试数据要分清 Lab Data 和 Field Data</h2>\n<p>一次可重复的实验不能代表所有真实用户，而真实用户数据又不适合单独用来复现问题。两类数据要配合使用。</p>\n<h3 id=\"1-lab-data\">1. Lab Data</h3>\n<p>实验室数据，来自可控环境，例如：</p>\n<ul>\n<li>Lighthouse</li>\n<li>DevTools Performance</li>\n<li>WebPageTest</li>\n</ul>\n<p>优点是可重复、可对比，适合排查问题。</p>\n<h3 id=\"2-field-data\">2. Field Data</h3>\n<p>真实用户数据，来自真实设备、真实网络、真实地域和真实交互。</p>\n<p>典型来源包括：</p>\n<ul>\n<li>CrUX</li>\n<li>RUM 平台</li>\n<li>自建埋点监控</li>\n</ul>\n<p>一般的搭配方式是：</p>\n<ul>\n<li>用 Lab Data 定位问题</li>\n<li>用 Field Data 判断真实影响</li>\n</ul>\n<h2 id=\"十三常见性能工具怎么搭配\">十三、常见性能工具怎么搭配</h2>\n<h3 id=\"1-lighthouse\">1. Lighthouse</h3>\n<p>适合快速做整体健康检查，但不要把分数当唯一目标。</p>\n<h3 id=\"2-chrome-devtools-performance\">2. Chrome DevTools Performance</h3>\n<p>适合看：</p>\n<ul>\n<li>长任务</li>\n<li>主线程忙在哪</li>\n<li>Layout / Paint / Script 时间</li>\n<li>FPS 波动</li>\n</ul>\n<h3 id=\"3-webpagetest\">3. WebPageTest</h3>\n<p>更适合网络链路、地域和设备差异对比。</p>\n<h3 id=\"4-web-vitals-扩展cruxrum\">4. Web Vitals 扩展、CrUX、RUM</h3>\n<p>更适合补充真实用户视角。</p>\n<p>相关配图：</p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260415120101335.png\" alt=\"性能工具配图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260415120143601.png\" alt=\"性能工具配图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/web-vitals-performance-api-0566dfe8/images/image-20260415120527631.png\" alt=\"性能工具配图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"十四性能差了以后具体怎么优化\">十四、性能差了以后，具体怎么优化</h2>\n<p>优化动作要和异常指标一一对应。否则改了很多配置，也很难证明是哪一项真正生效。</p>\n<h3 id=\"1-优化-ttfb\">1. 优化 TTFB</h3>\n<ul>\n<li>提升服务端响应速度</li>\n<li>启用 Gzip / Brotli 压缩</li>\n<li>优化协议和接入层</li>\n<li>让用户离服务更近，例如 CDN</li>\n</ul>\n<h3 id=\"2-优化-fcp\">2. 优化 FCP</h3>\n<ul>\n<li>减少关键渲染路径依赖链</li>\n<li>预加载关键资源</li>\n<li>避免首屏被大块 JS/CSS 阻塞</li>\n</ul>\n<h3 id=\"3-优化-lcp\">3. 优化 LCP</h3>\n<ul>\n<li>首屏大图做预加载</li>\n<li>使用更合适图片格式</li>\n<li>做缓存和缓存头控制</li>\n<li>避免主线程被重任务占满</li>\n</ul>\n<h3 id=\"4-优化-cls\">4. 优化 CLS</h3>\n<ul>\n<li>给图片、广告、懒加载容器预留尺寸</li>\n<li>避免在已有内容上方插入异步内容</li>\n<li>字体加载策略更稳妥</li>\n</ul>\n<h3 id=\"5-优化-inp\">5. 优化 INP</h3>\n<ul>\n<li>减少长任务</li>\n<li>拆分重计算</li>\n<li>释放主线程</li>\n<li>降低事件回调内部复杂度</li>\n</ul>\n<h2 id=\"十五虚拟列表只解决一类问题\">十五、虚拟列表只解决一类问题</h2>\n<p>列表滚动卡顿时，可以按下面的顺序排查：</p>\n<ol>\n<li>看 DOM 数量是不是过多</li>\n<li>看单个 item 是否过重</li>\n<li>看是否频繁触发回流重绘</li>\n<li>看主线程是否被 JS、Layout、Paint 占满</li>\n<li>做开关对比验证虚拟列表是否真的击中瓶颈</li>\n</ol>\n<p>虚拟列表只解决“同时渲染的 DOM 太多”这一类问题。开关前后没有明显变化，就应该继续检查组件渲染、布局计算和主线程长任务。</p>\n<h2 id=\"十六说明性能结果时别漏掉这些信息\">十六、说明性能结果时别漏掉这些信息</h2>\n<h3 id=\"1-指标要带上含义和现场\">1. 指标要带上含义和现场</h3>\n<p>只报缩写和分数没有定位价值。至少要说明它衡量什么、在哪个页面和设备上采集、异常通常由什么造成。</p>\n<h3 id=\"2-观察器启动时间可能漏数据\">2. 观察器启动时间可能漏数据</h3>\n<p>页面早期已经产生的记录，需要结合 <code>buffered: true</code> 读取，不能只观察注册之后的新记录。<code>PerformanceObserver</code> 的注册时机也应记入采集方案。</p>\n<h3 id=\"3-lighthouse-分数不是全部\">3. Lighthouse 分数不是全部</h3>\n<p>需要结合 Performance 面板、真实用户监控和优化前后对比，才能判断分数变化是否真的改善了用户体验。</p>\n<h3 id=\"4-每条建议都要能回到指标\">4. 每条建议都要能回到指标</h3>\n<p>比如：</p>\n<ul>\n<li>LCP 差就说预加载首屏大图、优化关键链路</li>\n<li>CLS 差就说预留空间</li>\n<li>INP 差就说释放主线程和拆长任务</li>\n</ul>\n<h2 id=\"一条可执行的排查顺序\">一条可执行的排查顺序</h2>\n<p>先复现用户感知到的慢，再选对应指标；用 Network 或 Performance 面板定位请求、渲染和主线程瓶颈；最后只改最可疑的一段，并对比修改前后的 Lab Data 与 Field Data。这样才能说明问题在哪里，也能说明这次优化到底有没有用。</p>\n",
+  "toc": [
+    {
+      "id": "一先判断是哪一种慢",
+      "level": 2,
+      "text": "一、先判断是哪一种慢"
+    },
+    {
+      "id": "二先看瀑布图再看评分",
+      "level": 2,
+      "text": "二、先看瀑布图，再看评分"
+    },
+    {
+      "id": "三为什么不能只看-domcontentloaded-和-load",
+      "level": 2,
+      "text": "三、为什么不能只看 DOMContentLoaded 和 load"
+    },
+    {
+      "id": "四用-core-web-vitals-对应用户感受",
+      "level": 2,
+      "text": "四、用 Core Web Vitals 对应用户感受"
+    },
+    {
+      "id": "五lcp最大内容绘制",
+      "level": 2,
+      "text": "五、LCP：最大内容绘制"
+    },
+    {
+      "id": "1-衡量主要内容何时出现",
+      "level": 3,
+      "text": "1. 衡量主要内容何时出现"
+    },
+    {
+      "id": "2-哪些元素会被计入-lcp",
+      "level": 3,
+      "text": "2. 哪些元素会被计入 LCP"
+    },
+    {
+      "id": "3-评分标准",
+      "level": 3,
+      "text": "3. 评分标准"
+    },
+    {
+      "id": "4-lcp-为什么会差",
+      "level": 3,
+      "text": "4. LCP 为什么会差"
+    },
+    {
+      "id": "六cls累计布局偏移",
+      "level": 2,
+      "text": "六、CLS：累计布局偏移"
+    },
+    {
+      "id": "1-衡量页面是否稳定",
+      "level": 3,
+      "text": "1. 衡量页面是否稳定"
+    },
+    {
+      "id": "2-计算思路",
+      "level": 3,
+      "text": "2. 计算思路"
+    },
+    {
+      "id": "3-常见成因",
+      "level": 3,
+      "text": "3. 常见成因"
+    },
+    {
+      "id": "4-评分标准",
+      "level": 3,
+      "text": "4. 评分标准"
+    },
+    {
+      "id": "七inpfcpttfb-也不能忽略",
+      "level": 2,
+      "text": "七、INP、FCP、TTFB 也不能忽略"
+    },
+    {
+      "id": "1-inp",
+      "level": 3,
+      "text": "1. INP"
+    },
+    {
+      "id": "2-fcp",
+      "level": 3,
+      "text": "2. FCP"
+    },
+    {
+      "id": "3-ttfb",
+      "level": 3,
+      "text": "3. TTFB"
+    },
+    {
+      "id": "八怎么在浏览器里拿到这些性能数据",
+      "level": 2,
+      "text": "八、怎么在浏览器里拿到这些性能数据"
+    },
+    {
+      "id": "九performance-api-基础",
+      "level": 2,
+      "text": "九、Performance API 基础"
+    },
+    {
+      "id": "1-它是什么",
+      "level": 3,
+      "text": "1. 它是什么"
+    },
+    {
+      "id": "2-timeorigin",
+      "level": 3,
+      "text": "2. timeOrigin"
+    },
+    {
+      "id": "3-performancenow",
+      "level": 3,
+      "text": "3. performance.now()"
+    },
+    {
+      "id": "4-mark-与-measure",
+      "level": 3,
+      "text": "4. mark() 与 measure()"
+    },
+    {
+      "id": "5-getentries-系列",
+      "level": 3,
+      "text": "5. getEntries() 系列"
+    },
+    {
+      "id": "十performance-api-的局限",
+      "level": 2,
+      "text": "十、Performance API 的局限"
+    },
+    {
+      "id": "十一performanceobserver-如何连续采集",
+      "level": 2,
+      "text": "十一、PerformanceObserver 如何连续采集"
+    },
+    {
+      "id": "1-为什么用观察器",
+      "level": 3,
+      "text": "1. 为什么用观察器"
+    },
+    {
+      "id": "2-最基本的写法",
+      "level": 3,
+      "text": "2. 最基本的写法"
+    },
+    {
+      "id": "3-buffered-true-的意义",
+      "level": 3,
+      "text": "3. buffered: true 的意义"
+    },
+    {
+      "id": "十二性能测试数据要分清-lab-data-和-field-data",
+      "level": 2,
+      "text": "十二、性能测试数据要分清 Lab Data 和 Field Data"
+    },
+    {
+      "id": "1-lab-data",
+      "level": 3,
+      "text": "1. Lab Data"
+    },
+    {
+      "id": "2-field-data",
+      "level": 3,
+      "text": "2. Field Data"
+    },
+    {
+      "id": "十三常见性能工具怎么搭配",
+      "level": 2,
+      "text": "十三、常见性能工具怎么搭配"
+    },
+    {
+      "id": "1-lighthouse",
+      "level": 3,
+      "text": "1. Lighthouse"
+    },
+    {
+      "id": "2-chrome-devtools-performance",
+      "level": 3,
+      "text": "2. Chrome DevTools Performance"
+    },
+    {
+      "id": "3-webpagetest",
+      "level": 3,
+      "text": "3. WebPageTest"
+    },
+    {
+      "id": "4-web-vitals-扩展cruxrum",
+      "level": 3,
+      "text": "4. Web Vitals 扩展、CrUX、RUM"
+    },
+    {
+      "id": "十四性能差了以后具体怎么优化",
+      "level": 2,
+      "text": "十四、性能差了以后，具体怎么优化"
+    },
+    {
+      "id": "1-优化-ttfb",
+      "level": 3,
+      "text": "1. 优化 TTFB"
+    },
+    {
+      "id": "2-优化-fcp",
+      "level": 3,
+      "text": "2. 优化 FCP"
+    },
+    {
+      "id": "3-优化-lcp",
+      "level": 3,
+      "text": "3. 优化 LCP"
+    },
+    {
+      "id": "4-优化-cls",
+      "level": 3,
+      "text": "4. 优化 CLS"
+    },
+    {
+      "id": "5-优化-inp",
+      "level": 3,
+      "text": "5. 优化 INP"
+    },
+    {
+      "id": "十五虚拟列表只解决一类问题",
+      "level": 2,
+      "text": "十五、虚拟列表只解决一类问题"
+    },
+    {
+      "id": "十六说明性能结果时别漏掉这些信息",
+      "level": 2,
+      "text": "十六、说明性能结果时别漏掉这些信息"
+    },
+    {
+      "id": "1-指标要带上含义和现场",
+      "level": 3,
+      "text": "1. 指标要带上含义和现场"
+    },
+    {
+      "id": "2-观察器启动时间可能漏数据",
+      "level": 3,
+      "text": "2. 观察器启动时间可能漏数据"
+    },
+    {
+      "id": "3-lighthouse-分数不是全部",
+      "level": 3,
+      "text": "3. Lighthouse 分数不是全部"
+    },
+    {
+      "id": "4-每条建议都要能回到指标",
+      "level": 3,
+      "text": "4. 每条建议都要能回到指标"
+    },
+    {
+      "id": "一条可执行的排查顺序",
+      "level": 2,
+      "text": "一条可执行的排查顺序"
+    }
+  ]
+}

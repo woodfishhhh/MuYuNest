@@ -42,7 +42,7 @@ categories:
 
 ## 4-7-2 高速缓冲存储器cache—cache的读、写流程
 
-### 一、Cache读流程（核心目标：快速获取数据，减少CPU等待）
+### 一、Cache读流程（目标：快速获取数据，减少CPU等待）
 
 <img src="C:\Users\woodfish\Desktop\MyBlog\计算机组成原理\Cache缓存.assets\image-20251203134747749.png" alt="image-20251203134747749" style="zoom: 50%;" />
 
@@ -156,7 +156,7 @@ $$\text{cache总容量} = N \times \left[1 + S + (2^W \times 8)\right]\ \text{�
 
 ## 4-7-4 高速缓冲存储器cache — 替换算法
 
-当Cache缺失且Cache（或组相联的组）已满时，需淘汰旧块以存入新块，替换算法决定“淘汰哪个旧块”，核心目标是“尽可能淘汰未来不访问/晚访问的块”，提升后续命中率。
+当Cache缺失且Cache（或组相联的组）已满时，需淘汰旧块以存入新块，替换算法决定“淘汰哪个旧块”，目标是“尽可能淘汰未来不访问/晚访问的块”，提升后续命中率。
 
 ### 一、随机替换算法（Random Replacement, RR）
 
@@ -209,7 +209,7 @@ $$\text{cache总容量} = N \times \left[1 + S + (2^W \times 8)\right]\ \text{�
 - LRU：最近最少使用的块为B（最后访问顺序：A→D→C→B），淘汰块B。
 - LFU：访问次数均为1（A被访问2
 
-# 例题
+## 例题
 
 <img src="C:\Users\woodfish\Desktop\MyBlog\计算机组成原理\Cache缓存.assets\image-20251203151446589.png" alt="image-20251203151446589" style="zoom:50%;" />
 

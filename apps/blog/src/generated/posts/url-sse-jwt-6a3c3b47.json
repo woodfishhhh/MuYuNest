@@ -1,0 +1,253 @@
+{
+  "canonicalSlug": "url-sse-jwt-6a3c3b47",
+  "aliases": [
+    "浏览器网络全链路：从输入 URL 到缓存、跨域、SSE 与 JWT 鉴权"
+  ],
+  "title": "一次页面请求经过什么：DNS、HTTP、缓存、跨域与鉴权",
+  "publishedAt": "2026-04-22T22:00:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "在地址栏输入 URL 后，浏览器要先找到服务器，再建立连接、发送请求并处理响应。缓存会决定是否需要重新下载，同源策略会决定前端能否读取跨站响应，鉴权信息则让服务器识别请求者。",
+  "type": "Notes",
+  "searchText": "一次页面请求经过什么：DNS、HTTP、缓存、跨域与鉴权 Notes 前端开发 前端八股 前端八股 计算机网络 HTTP 跨域 JWT 在地址栏输入 URL 后，浏览器要先找到服务器，再建立连接、发送请求并处理响应。缓存会决定是否需要重新下载，同源策略会决定前端能否读取跨站响应，鉴权信息则让服务器识别请求者。 一、从浏览器输入 URL 开始，到底发生了什么 整条链路可以分成 URL 解析、DNS 查询、TCP 或 QUIC 建连、HTTP 交互、缓存判断和页面渲染。后面的跨域、SSE 和 JWT，分别对应读取边界、持续推送和身份校验。 二、URL 结构先要说清楚 一个 URL 常见组成包括： 协议： 、 域名 端口 路径 查询参数 hash 协议、域名和端口共同决定请求发往哪里，路径、查询参数和 hash 则定位具体资源或页面状态。 三、DNS 域名解析是怎么做的 DNS 解析先尝试复用本地结果，未命中时再向 DNS 服务器查询。 1. 本地查找顺序 浏览器通常会先看本地有没有结果，例如： 浏览器缓存 系统缓存 hosts 文件 2. 远程递归解析 如果本地没有，就会去问本地 DNS 服务器，再逐步查找更高层级的权威服务器，最终拿到目标 IP。 四、TCP 三次握手为什么存在 在 HTTP/1.1 和 HTTP/2 语境里，TCP 仍然是建立可靠连接的基础。 建立连接时，两端要确认： 能不能发 能不能收 初始序列号是否同步 三次握手的报文顺序 1. 客户端发 ，想建立连接 2. 服务端回 3. 客户端再回 分析抓包时会看到下面这些字段： 其中 seq 和 ack 跟踪字节序号与确认位置，SYN 用于建立连接，FIN 用于结束发送方向。 五、TCP 四次挥手为什么比三次握手多一次 断开连接时，双方的数据发送和接收关闭通常不是同一时刻完成，所以需要更细地拆成四步。 可以简化理解为： 1. 我不发了 2. 我知道你不发了 3. 我这边也发完了 4. 我知道你这边也发完了 六、HTTP 请求如何选方法和请求头 1. 请求方法 常见方法包括： 2. 预检什么时候触发 当请求不是“简单请求”时，浏览器会先发 预检请求，确认服务器是否允许跨域、允许哪些方法、是否允许自定义头等。 常见触发条件包括： 使用了非常规方法 带了自定义请求头 不属于简单请求范围 七、浏览器缓存机制一定要和状态码一起记 1. 强缓存 强缓存命中时，浏览器直接使用本地副本，不向服务器发请求。 常见控制字段： 命中时你通常会在 DevTools 里看到： 2. 协商缓存 当强缓存过期后，请求才会继续走协商缓存。 两组常见头信息： / / 其中 往往精度更高。 3. 完整流程 1. 先查强缓存 2. 强缓存失效后，发请求走协商缓存 3. 资源未变返回 4. 资源已变返回 八、HTTP 状态码怎么分组记忆 HTTP 状态码按类别表达请求处理到了哪一步，排查时先看首位数字。 1xx：信息类 2xx：成功类 3xx：重定向类 重定向和缓存中要特别区分： 和 的区别 / 为什么强调保留请求方法 为什么是缓存优化中的关键状态码 4xx：客户端错误 常见如 、 、 、 。 5xx：服务端错误 常见如 、 、 、 。 九、跨域为什么会发生，怎么解决 1. 什么是跨域 协议、域名、端口任意一个不同，就不是同源。 2. 为什么会有跨域限制 因为浏览器同源策略要保护用户安全，防止页面随意读取其他站点敏感资源。 3. 常见解决方案 JSONP JSONP 只支持 ，它依赖 标签可以跨域加载资源的特性，新项目通常不再使用。 开发环境代理 Vite 和 Webpack Dev Server 都可以让前端请求先到本地代理，再由代理访问目标服务。 CORS 后端通过 CORS 响应头声明允许的源、方法和请求头，浏览器校验通过后才把响应交给页面。 Nginx 反向代理 Nginx 可以把多个后端服务挂到同一域名入口下，前端只请求这个统一入口。 CORS 放行和缓存命中是两层机制。即使服务器返回 ，跨域页面能否读取响应仍由 CORS 响应头决定。 十、SSE 和 WebSocket 到底怎么区分 实时数据不一定需要双向通信。日志流、通知和 AI 流式输出只需要服务器持续向页面发消息，SSE 正好对应这种模型。 1. SSE 是什么 SSE（Server Sent Events）是服务器向客户端单向持续推送消息的能力。 2. 前端 API 创建 EventSource 后，浏览器会保持连接，服务器发来的默认消息会进入 onmessage 回调： 消息内容放在 event.data 中。连接断开后，EventSource 还会按协议行为尝试重连。 3. 服务端必须返回哪些头 典型响应头包括： Content Type 声明这是事件流，禁用缓存可避免中间层囤积消息，keep alive 用来保持长连接。 4. SSE 和 WebSocket 的差异 SSE：服务端到客户端单向推送 WebSocket：双向实时通信 SSE 基于 HTTP，更轻 WebSocket 更适合强交互场景 如果是 AI 打字机、日志流、通知流，SSE 很合适；如果要聊天室、协同编辑、游戏对战，往往更偏向 WebSocket。 十一、HTTP 版本在解决什么 1. HTTP/1.0 连接复用能力弱，很多请求开销大。 2. HTTP/1.1 支持长连接，仍然是最广泛使用的版本之一。 3. HTTP/2 它用二进制分帧组织消息，通过多路复用减少并发请求的连接成本，并用头部压缩减少重复字段。 4. HTTP/3 基于 QUIC，不再依赖 TCP，重点是进一步优化弱网、丢包和连接建立成本。 5. HTTPS 本质是 HTTP + TLS。 它通过加密、完整性校验和证书验证，分别处理窃听、篡改和冒充问题。 十二、JWT 鉴权怎么理解 JWT 把声明和签名放进 token，服务器验证签名后就能确认内容是否被篡改。 1. JWT 结构 JWT 由三部分组成： Header Payload Signature 2. 它的优点 无状态，服务端不一定要存会话 前后端分离项目很常见 移动端和多端接入都比较自然 3. 它的缺点 一旦签发，天然不容易主动失效 如果放在不安全位置，存在泄漏风险 Payload 只是 Base64URL 编码，不是加密 4. 前端常见使用流程 1. 用户登录成功后拿到 token 2. 前端保存 token 3. 后续请求在请求头里带上 4. 服务端校验合法性和有效期 实际使用时还要明确 token 存放位置、过期处理、刷新策略，以及 XSS 和 CSRF 防护，不能只停在签发和校验两步。",
+  "readingMinutes": 9,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "前端八股"
+  ],
+  "tags": [
+    "前端八股",
+    "计算机网络",
+    "HTTP",
+    "跨域",
+    "JWT"
+  ],
+  "html": "<p>在地址栏输入 URL 后，浏览器要先找到服务器，再建立连接、发送请求并处理响应。缓存会决定是否需要重新下载，同源策略会决定前端能否读取跨站响应，鉴权信息则让服务器识别请求者。</p>\n<h2 id=\"一从浏览器输入-url-开始到底发生了什么\">一、从浏览器输入 URL 开始，到底发生了什么</h2>\n<p>整条链路可以分成 URL 解析、DNS 查询、TCP 或 QUIC 建连、HTTP 交互、缓存判断和页面渲染。后面的跨域、SSE 和 JWT，分别对应读取边界、持续推送和身份校验。</p>\n<h2 id=\"二url-结构先要说清楚\">二、URL 结构先要说清楚</h2>\n<p>一个 URL 常见组成包括：</p>\n<ul>\n<li>协议：<code>http</code>、<code>https</code></li>\n<li>域名</li>\n<li>端口</li>\n<li>路径</li>\n<li>查询参数</li>\n<li>hash</li>\n</ul>\n<p>协议、域名和端口共同决定请求发往哪里，路径、查询参数和 hash 则定位具体资源或页面状态。</p>\n<h2 id=\"三dns-域名解析是怎么做的\">三、DNS 域名解析是怎么做的</h2>\n<p>DNS 解析先尝试复用本地结果，未命中时再向 DNS 服务器查询。</p>\n<h3 id=\"1-本地查找顺序\">1. 本地查找顺序</h3>\n<p>浏览器通常会先看本地有没有结果，例如：</p>\n<ul>\n<li>浏览器缓存</li>\n<li>系统缓存</li>\n<li>hosts 文件</li>\n</ul>\n<h3 id=\"2-远程递归解析\">2. 远程递归解析</h3>\n<p>如果本地没有，就会去问本地 DNS 服务器，再逐步查找更高层级的权威服务器，最终拿到目标 IP。</p>\n<h2 id=\"四tcp-三次握手为什么存在\">四、TCP 三次握手为什么存在</h2>\n<p>在 HTTP/1.1 和 HTTP/2 语境里，TCP 仍然是建立可靠连接的基础。</p>\n<p><img src=\"/content-assets/url-sse-jwt-6a3c3b47/images/139d05aa1ae1a11f454303d685779f90.png\" alt=\"网络流程示意图 1\" loading=\"lazy\" decoding=\"async\"></p>\n<p>建立连接时，两端要确认：</p>\n<ul>\n<li>能不能发</li>\n<li>能不能收</li>\n<li>初始序列号是否同步</li>\n</ul>\n<h3 id=\"三次握手的报文顺序\">三次握手的报文顺序</h3>\n<ol>\n<li>客户端发 <code>SYN</code>，想建立连接</li>\n<li>服务端回 <code>SYN + ACK</code></li>\n<li>客户端再回 <code>ACK</code></li>\n</ol>\n<p>分析抓包时会看到下面这些字段：</p>\n<ul>\n<li><code>seq</code></li>\n<li><code>ack</code></li>\n<li><code>SYN</code></li>\n<li><code>ACK</code></li>\n<li><code>FIN</code></li>\n</ul>\n<p>其中 seq 和 ack 跟踪字节序号与确认位置，SYN 用于建立连接，FIN 用于结束发送方向。</p>\n<p><img src=\"/content-assets/url-sse-jwt-6a3c3b47/images/595b70cd9add41ba98e4e707346efccd.png\" alt=\"网络流程示意图 2\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"五tcp-四次挥手为什么比三次握手多一次\">五、TCP 四次挥手为什么比三次握手多一次</h2>\n<p>断开连接时，双方的数据发送和接收关闭通常不是同一时刻完成，所以需要更细地拆成四步。</p>\n<p><img src=\"/content-assets/url-sse-jwt-6a3c3b47/images/7cdee479a4722e0820bf307ca54df35a.png\" alt=\"网络流程示意图 3\" loading=\"lazy\" decoding=\"async\"></p>\n<p>可以简化理解为：</p>\n<ol>\n<li>我不发了</li>\n<li>我知道你不发了</li>\n<li>我这边也发完了</li>\n<li>我知道你这边也发完了</li>\n</ol>\n<p><img src=\"/content-assets/url-sse-jwt-6a3c3b47/images/3d07da38be218e62281b8bc872eaee26.png\" alt=\"网络流程示意图 4\" loading=\"lazy\" decoding=\"async\"></p>\n<h2 id=\"六http-请求如何选方法和请求头\">六、HTTP 请求如何选方法和请求头</h2>\n<h3 id=\"1-请求方法\">1. 请求方法</h3>\n<p>常见方法包括：</p>\n<ul>\n<li><code>GET</code></li>\n<li><code>POST</code></li>\n<li><code>PUT</code></li>\n<li><code>PATCH</code></li>\n<li><code>DELETE</code></li>\n<li><code>OPTIONS</code></li>\n</ul>\n<h3 id=\"2-options-预检什么时候触发\">2. <code>OPTIONS</code> 预检什么时候触发</h3>\n<p>当请求不是“简单请求”时，浏览器会先发 <code>OPTIONS</code> 预检请求，确认服务器是否允许跨域、允许哪些方法、是否允许自定义头等。</p>\n<p>常见触发条件包括：</p>\n<ul>\n<li>使用了非常规方法</li>\n<li>带了自定义请求头</li>\n<li><code>Content-Type</code> 不属于简单请求范围</li>\n</ul>\n<h2 id=\"七浏览器缓存机制一定要和状态码一起记\">七、浏览器缓存机制一定要和状态码一起记</h2>\n<h3 id=\"1-强缓存\">1. 强缓存</h3>\n<p>强缓存命中时，浏览器直接使用本地副本，不向服务器发请求。</p>\n<p>常见控制字段：</p>\n<ul>\n<li><code>Cache-Control: max-age=...</code></li>\n<li><code>Expires</code></li>\n</ul>\n<p>命中时你通常会在 DevTools 里看到：</p>\n<ul>\n<li><code>from memory cache</code></li>\n<li><code>from disk cache</code></li>\n</ul>\n<h3 id=\"2-协商缓存\">2. 协商缓存</h3>\n<p>当强缓存过期后，请求才会继续走协商缓存。</p>\n<p>两组常见头信息：</p>\n<ul>\n<li><code>Last-Modified</code> / <code>If-Modified-Since</code></li>\n<li><code>ETag</code> / <code>If-None-Match</code></li>\n</ul>\n<p>其中 <code>ETag</code> 往往精度更高。</p>\n<h3 id=\"3-完整流程\">3. 完整流程</h3>\n<ol>\n<li>先查强缓存</li>\n<li>强缓存失效后，发请求走协商缓存</li>\n<li>资源未变返回 <code>304</code></li>\n<li>资源已变返回 <code>200 + 新内容</code></li>\n</ol>\n<h2 id=\"八http-状态码怎么分组记忆\">八、HTTP 状态码怎么分组记忆</h2>\n<p>HTTP 状态码按类别表达请求处理到了哪一步，排查时先看首位数字。</p>\n<h3 id=\"1xx信息类\">1xx：信息类</h3>\n<ul>\n<li><code>100 Continue</code></li>\n<li><code>101 Switching Protocols</code></li>\n</ul>\n<h3 id=\"2xx成功类\">2xx：成功类</h3>\n<ul>\n<li><code>200 OK</code></li>\n<li><code>201 Created</code></li>\n<li><code>202 Accepted</code></li>\n<li><code>204 No Content</code></li>\n<li><code>206 Partial Content</code></li>\n</ul>\n<h3 id=\"3xx重定向类\">3xx：重定向类</h3>\n<ul>\n<li><code>301 Moved Permanently</code></li>\n<li><code>302 Found</code></li>\n<li><code>304 Not Modified</code></li>\n<li><code>307 Temporary Redirect</code></li>\n<li><code>308 Permanent Redirect</code></li>\n</ul>\n<p>重定向和缓存中要特别区分：</p>\n<ul>\n<li><code>301</code> 和 <code>302</code> 的区别</li>\n<li><code>307</code> / <code>308</code> 为什么强调保留请求方法</li>\n<li><code>304</code> 为什么是缓存优化中的关键状态码</li>\n</ul>\n<h3 id=\"4xx客户端错误\">4xx：客户端错误</h3>\n<p>常见如 <code>400</code>、<code>401</code>、<code>403</code>、<code>404</code>。</p>\n<h3 id=\"5xx服务端错误\">5xx：服务端错误</h3>\n<p>常见如 <code>500</code>、<code>502</code>、<code>503</code>、<code>504</code>。</p>\n<h2 id=\"九跨域为什么会发生怎么解决\">九、跨域为什么会发生，怎么解决</h2>\n<h3 id=\"1-什么是跨域\">1. 什么是跨域</h3>\n<p>协议、域名、端口任意一个不同，就不是同源。</p>\n<h3 id=\"2-为什么会有跨域限制\">2. 为什么会有跨域限制</h3>\n<p>因为浏览器同源策略要保护用户安全，防止页面随意读取其他站点敏感资源。</p>\n<h3 id=\"3-常见解决方案\">3. 常见解决方案</h3>\n<h4 id=\"jsonp\">JSONP</h4>\n<p>JSONP 只支持 <code>GET</code>，它依赖 <code>script</code> 标签可以跨域加载资源的特性，新项目通常不再使用。</p>\n<h4 id=\"开发环境代理\">开发环境代理</h4>\n<p>Vite 和 Webpack Dev Server 都可以让前端请求先到本地代理，再由代理访问目标服务。</p>\n<h4 id=\"cors\">CORS</h4>\n<p>后端通过 CORS 响应头声明允许的源、方法和请求头，浏览器校验通过后才把响应交给页面。</p>\n<h4 id=\"nginx-反向代理\">Nginx 反向代理</h4>\n<p>Nginx 可以把多个后端服务挂到同一域名入口下，前端只请求这个统一入口。</p>\n<p>CORS 放行和缓存命中是两层机制。即使服务器返回 <code>304</code>，跨域页面能否读取响应仍由 CORS 响应头决定。</p>\n<h2 id=\"十sse-和-websocket-到底怎么区分\">十、SSE 和 WebSocket 到底怎么区分</h2>\n<p>实时数据不一定需要双向通信。日志流、通知和 AI 流式输出只需要服务器持续向页面发消息，SSE 正好对应这种模型。</p>\n<h3 id=\"1-sse-是什么\">1. SSE 是什么</h3>\n<p>SSE（Server-Sent Events）是服务器向客户端单向持续推送消息的能力。</p>\n<h3 id=\"2-前端-api\">2. 前端 API</h3>\n<p>创建 EventSource 后，浏览器会保持连接，服务器发来的默认消息会进入 onmessage 回调：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-keyword\">const</span> source = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">EventSource</span>(<span class=\"hljs-string\">\"/sse\"</span>);\n\nsource.<span class=\"hljs-property\">onmessage</span> = <span class=\"hljs-function\">(<span class=\"hljs-params\">event</span>) =&gt;</span> {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(event.<span class=\"hljs-property\">data</span>);\n};\n</code></pre>\n<p>消息内容放在 event.data 中。连接断开后，EventSource 还会按协议行为尝试重连。</p>\n<h3 id=\"3-服务端必须返回哪些头\">3. 服务端必须返回哪些头</h3>\n<p>典型响应头包括：</p>\n<pre><code class=\"hljs language-http\"><span class=\"hljs-attribute\">Content-Type</span><span class=\"hljs-punctuation\">: </span>text/event-stream\n<span class=\"hljs-attribute\">Cache-Control</span><span class=\"hljs-punctuation\">: </span>no-cache\n<span class=\"hljs-attribute\">Connection</span><span class=\"hljs-punctuation\">: </span>keep-alive\n</code></pre>\n<p>Content-Type 声明这是事件流，禁用缓存可避免中间层囤积消息，keep-alive 用来保持长连接。</p>\n<h3 id=\"4-sse-和-websocket-的差异\">4. SSE 和 WebSocket 的差异</h3>\n<ul>\n<li>SSE：服务端到客户端单向推送</li>\n<li>WebSocket：双向实时通信</li>\n<li>SSE 基于 HTTP，更轻</li>\n<li>WebSocket 更适合强交互场景</li>\n</ul>\n<p>如果是 AI 打字机、日志流、通知流，SSE 很合适；如果要聊天室、协同编辑、游戏对战，往往更偏向 WebSocket。</p>\n<h2 id=\"十一http-版本在解决什么\">十一、HTTP 版本在解决什么</h2>\n<h3 id=\"1-http10\">1. HTTP/1.0</h3>\n<p>连接复用能力弱，很多请求开销大。</p>\n<h3 id=\"2-http11\">2. HTTP/1.1</h3>\n<p>支持长连接，仍然是最广泛使用的版本之一。</p>\n<h3 id=\"3-http2\">3. HTTP/2</h3>\n<p>它用二进制分帧组织消息，通过多路复用减少并发请求的连接成本，并用头部压缩减少重复字段。</p>\n<h3 id=\"4-http3\">4. HTTP/3</h3>\n<p>基于 QUIC，不再依赖 TCP，重点是进一步优化弱网、丢包和连接建立成本。</p>\n<h3 id=\"5-https\">5. HTTPS</h3>\n<p>本质是 HTTP + TLS。</p>\n<p>它通过加密、完整性校验和证书验证，分别处理窃听、篡改和冒充问题。</p>\n<h2 id=\"十二jwt-鉴权怎么理解\">十二、JWT 鉴权怎么理解</h2>\n<p>JWT 把声明和签名放进 token，服务器验证签名后就能确认内容是否被篡改。</p>\n<h3 id=\"1-jwt-结构\">1. JWT 结构</h3>\n<p>JWT 由三部分组成：</p>\n<ul>\n<li>Header</li>\n<li>Payload</li>\n<li>Signature</li>\n</ul>\n<h3 id=\"2-它的优点\">2. 它的优点</h3>\n<ul>\n<li>无状态，服务端不一定要存会话</li>\n<li>前后端分离项目很常见</li>\n<li>移动端和多端接入都比较自然</li>\n</ul>\n<h3 id=\"3-它的缺点\">3. 它的缺点</h3>\n<ul>\n<li>一旦签发，天然不容易主动失效</li>\n<li>如果放在不安全位置，存在泄漏风险</li>\n<li>Payload 只是 Base64URL 编码，不是加密</li>\n</ul>\n<h3 id=\"4-前端常见使用流程\">4. 前端常见使用流程</h3>\n<ol>\n<li>用户登录成功后拿到 token</li>\n<li>前端保存 token</li>\n<li>后续请求在请求头里带上</li>\n<li>服务端校验合法性和有效期</li>\n</ol>\n<p>实际使用时还要明确 token 存放位置、过期处理、刷新策略，以及 XSS 和 CSRF 防护，不能只停在签发和校验两步。</p>\n",
+  "toc": [
+    {
+      "id": "一从浏览器输入-url-开始到底发生了什么",
+      "level": 2,
+      "text": "一、从浏览器输入 URL 开始，到底发生了什么"
+    },
+    {
+      "id": "二url-结构先要说清楚",
+      "level": 2,
+      "text": "二、URL 结构先要说清楚"
+    },
+    {
+      "id": "三dns-域名解析是怎么做的",
+      "level": 2,
+      "text": "三、DNS 域名解析是怎么做的"
+    },
+    {
+      "id": "1-本地查找顺序",
+      "level": 3,
+      "text": "1. 本地查找顺序"
+    },
+    {
+      "id": "2-远程递归解析",
+      "level": 3,
+      "text": "2. 远程递归解析"
+    },
+    {
+      "id": "四tcp-三次握手为什么存在",
+      "level": 2,
+      "text": "四、TCP 三次握手为什么存在"
+    },
+    {
+      "id": "三次握手的报文顺序",
+      "level": 3,
+      "text": "三次握手的报文顺序"
+    },
+    {
+      "id": "五tcp-四次挥手为什么比三次握手多一次",
+      "level": 2,
+      "text": "五、TCP 四次挥手为什么比三次握手多一次"
+    },
+    {
+      "id": "六http-请求如何选方法和请求头",
+      "level": 2,
+      "text": "六、HTTP 请求如何选方法和请求头"
+    },
+    {
+      "id": "1-请求方法",
+      "level": 3,
+      "text": "1. 请求方法"
+    },
+    {
+      "id": "2-options-预检什么时候触发",
+      "level": 3,
+      "text": "2. OPTIONS 预检什么时候触发"
+    },
+    {
+      "id": "七浏览器缓存机制一定要和状态码一起记",
+      "level": 2,
+      "text": "七、浏览器缓存机制一定要和状态码一起记"
+    },
+    {
+      "id": "1-强缓存",
+      "level": 3,
+      "text": "1. 强缓存"
+    },
+    {
+      "id": "2-协商缓存",
+      "level": 3,
+      "text": "2. 协商缓存"
+    },
+    {
+      "id": "3-完整流程",
+      "level": 3,
+      "text": "3. 完整流程"
+    },
+    {
+      "id": "八http-状态码怎么分组记忆",
+      "level": 2,
+      "text": "八、HTTP 状态码怎么分组记忆"
+    },
+    {
+      "id": "1xx信息类",
+      "level": 3,
+      "text": "1xx：信息类"
+    },
+    {
+      "id": "2xx成功类",
+      "level": 3,
+      "text": "2xx：成功类"
+    },
+    {
+      "id": "3xx重定向类",
+      "level": 3,
+      "text": "3xx：重定向类"
+    },
+    {
+      "id": "4xx客户端错误",
+      "level": 3,
+      "text": "4xx：客户端错误"
+    },
+    {
+      "id": "5xx服务端错误",
+      "level": 3,
+      "text": "5xx：服务端错误"
+    },
+    {
+      "id": "九跨域为什么会发生怎么解决",
+      "level": 2,
+      "text": "九、跨域为什么会发生，怎么解决"
+    },
+    {
+      "id": "1-什么是跨域",
+      "level": 3,
+      "text": "1. 什么是跨域"
+    },
+    {
+      "id": "2-为什么会有跨域限制",
+      "level": 3,
+      "text": "2. 为什么会有跨域限制"
+    },
+    {
+      "id": "3-常见解决方案",
+      "level": 3,
+      "text": "3. 常见解决方案"
+    },
+    {
+      "id": "jsonp",
+      "level": 4,
+      "text": "JSONP"
+    },
+    {
+      "id": "开发环境代理",
+      "level": 4,
+      "text": "开发环境代理"
+    },
+    {
+      "id": "cors",
+      "level": 4,
+      "text": "CORS"
+    },
+    {
+      "id": "nginx-反向代理",
+      "level": 4,
+      "text": "Nginx 反向代理"
+    },
+    {
+      "id": "十sse-和-websocket-到底怎么区分",
+      "level": 2,
+      "text": "十、SSE 和 WebSocket 到底怎么区分"
+    },
+    {
+      "id": "1-sse-是什么",
+      "level": 3,
+      "text": "1. SSE 是什么"
+    },
+    {
+      "id": "2-前端-api",
+      "level": 3,
+      "text": "2. 前端 API"
+    },
+    {
+      "id": "3-服务端必须返回哪些头",
+      "level": 3,
+      "text": "3. 服务端必须返回哪些头"
+    },
+    {
+      "id": "4-sse-和-websocket-的差异",
+      "level": 3,
+      "text": "4. SSE 和 WebSocket 的差异"
+    },
+    {
+      "id": "十一http-版本在解决什么",
+      "level": 2,
+      "text": "十一、HTTP 版本在解决什么"
+    },
+    {
+      "id": "1-http10",
+      "level": 3,
+      "text": "1. HTTP/1.0"
+    },
+    {
+      "id": "2-http11",
+      "level": 3,
+      "text": "2. HTTP/1.1"
+    },
+    {
+      "id": "3-http2",
+      "level": 3,
+      "text": "3. HTTP/2"
+    },
+    {
+      "id": "4-http3",
+      "level": 3,
+      "text": "4. HTTP/3"
+    },
+    {
+      "id": "5-https",
+      "level": 3,
+      "text": "5. HTTPS"
+    },
+    {
+      "id": "十二jwt-鉴权怎么理解",
+      "level": 2,
+      "text": "十二、JWT 鉴权怎么理解"
+    },
+    {
+      "id": "1-jwt-结构",
+      "level": 3,
+      "text": "1. JWT 结构"
+    },
+    {
+      "id": "2-它的优点",
+      "level": 3,
+      "text": "2. 它的优点"
+    },
+    {
+      "id": "3-它的缺点",
+      "level": 3,
+      "text": "3. 它的缺点"
+    },
+    {
+      "id": "4-前端常见使用流程",
+      "level": 3,
+      "text": "4. 前端常见使用流程"
+    }
+  ]
+}

@@ -11,13 +11,12 @@ categories:
   - "前端工程化"
 ---
 
-# 268-280
 
 ## 268 Section Intro（章节介绍）
 
-### 核心目标
+### 目标
 
-本章节聚焦“现代JavaScript开发实践”，衔接前文的异步编程（Promise、Async/Await）与ES6模块，后续将系统讲解**模块规范**、**工程化工具**（如NPM、Parcel）、**代码优化**及**开发最佳实践**，最终帮助学习者从“基础语法掌握”过渡到“企业级项目开发能力”。
+本章节聚焦“现代JavaScript开发实践”，衔接前文的异步编程（Promise、Async/Await）与ES6模块，后续将系统讲解**模块规范**、**工程化工具**（如NPM、Parcel）、**代码优化**及**开发最佳实践**，最终帮助学习者从“基础语法掌握”过渡到“项目开发能力”。
 
 ## 270 An Overview of Modern JavaScript Development（现代JavaScript开发概述）
 
@@ -50,7 +49,7 @@ categories:
 
 ## 271 An Overview of Modules in JavaScript（JavaScript模块概述）
 
-### 271.1 模块的核心概念
+### 271.1 模块的概念
 
 模块是**独立的代码单元**，具有以下特性：
 
@@ -513,7 +512,7 @@ console.log(mod2.getCount()); // 1（mod1和mod2指向同一模块实例）
 
 ## 277 Introduction to NPM（NPM简介）
 
-### 277.1 NPM的核心概念
+### 277.1 NPM的概念
 
 NPM（Node Package Manager）是**Node.js的包管理工具**，主要功能：
 
@@ -708,7 +707,7 @@ Parcel会生成`dist`目录，包含：
 - 自动处理资源路径（如图片URL）；
 - 移除未使用的代码（Tree Shaking）。
 
-### 278.4 Parcel的核心特性示例
+### 278.4 Parcel的特点示例
 
 #### 1. 热更新（Hot Reload）
 

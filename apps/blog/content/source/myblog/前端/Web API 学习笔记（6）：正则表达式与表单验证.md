@@ -12,7 +12,6 @@ categories:
   - "Web API"
 ---
 
-# Web API 学习笔记（6）：正则表达式与表单验证
 
 ## 一、正则表达式
 
