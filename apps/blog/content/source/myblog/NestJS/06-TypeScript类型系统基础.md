@@ -21,13 +21,9 @@ draft: false
 
 # TypeScript 类型系统基础：从注解到接口与类
 
-这组视频从 P54 开始已经不是 NestJS 项目的后续章节，而是一套独立的 TypeScript 入门课。它被拼在 part2 后半段，内容正好补上理解 NestJS 所需的语言基础：类型注解、类型推断、函数、对象、数组、元组、接口和类。
+## TypeScript 编译与运行时
 
-本文依据 Bilibili 自动翻译中文字幕整理，按“先建立类型系统的心智模型，再把它接回 NestJS”的顺序展开。示例是根据课程内容重新编写的教学版代码，不是视频代码的逐字还原。
-
-## 1. TypeScript 到底多做了什么
-
-TypeScript 没有发明一套新的运行时。我们写的仍然是 JavaScript，只是在源码里加入了类型信息，让编译器能在开发阶段检查错误。
+TypeScript 在 JavaScript 源码中加入静态类型检查，编译后仍由 Node.js 或浏览器执行 JavaScript。
 
 ```text
 TypeScript 源码
@@ -37,12 +33,7 @@ JavaScript 源码
 Node.js / 浏览器执行
 ```
 
-这条链路有两个直接结论：
-
-1. 类型错误通常在编辑器或构建阶段暴露，不必等代码跑起来才发现。
-2. `interface`、类型别名和大部分类型注解会在编译后消失，它们不会替你做运行时校验。
-
-比如下面这段代码可以阻止一次明显的错误调用：
+`interface`、类型别名和大部分类型注解会在编译后消失。它们能提前发现类型错误，不能代替运行时校验。
 
 ```ts
 function formatPrice(price: number): string {
@@ -53,7 +44,7 @@ formatPrice(19.9);
 // formatPrice("19.9"); // 编译阶段报错
 ```
 
-但类型系统只能检查“值的形状是否符合约定”，不能判断业务逻辑是否正确。把加法写成减法，返回值依旧是 `number`，编译器不会知道公式写反了。
+类型系统检查值的形状，不判断业务逻辑。这个函数类型正确，公式仍然写错了：
 
 ```ts
 function add(a: number, b: number): number {
@@ -61,18 +52,16 @@ function add(a: number, b: number): number {
 }
 ```
 
-类型检查不能代替单元测试，这也是课程后面反复写测试的原因。
+类型检查不能代替单元测试。
 
-## 2. 本地开发环境
+## 本地工具链
 
-课程演示使用全局安装。实际项目里更稳妥的做法是把工具锁在项目依赖中，团队成员和 CI 会使用同一版本。
+把 TypeScript 工具安装到项目依赖中，团队成员和 CI 会使用同一版本：
 
 ```bash
 npm install --save-dev typescript ts-node @types/node
 npx tsc --init
 ```
-
-常用命令：
 
 ```bash
 npx tsc --noEmit              # 只检查类型，不输出 JavaScript
@@ -80,11 +69,11 @@ npx tsc                       # 编译项目
 npx ts-node src/index.ts      # 学习阶段直接执行单个 TypeScript 文件
 ```
 
-`ts-node` 适合练习和开发工具脚本。正式构建仍应让 `tsc` 或项目选定的构建器统一处理，不要把“能直接跑 `.ts`”误解成 Node.js 原生支持 TypeScript 的全部语法和项目配置。
+`ts-node` 适合练习和工具脚本。正式构建交给 `tsc` 或项目构建器；能执行 `.ts` 不等于 Node.js 原生支持所有 TypeScript 语法和项目配置。
 
-## 3. 类型注解和类型推断怎么分工
+## 类型注解与类型推断
 
-类型注解是我们明确写出的类型，类型推断是编译器根据赋值和上下文算出的类型。
+类型注解由开发者写出，类型推断由编译器根据赋值和上下文计算。
 
 ```ts
 const projectName = "nest-notes"; // 推断为字符串字面量类型 "nest-notes"
@@ -92,13 +81,7 @@ let environment = "development"; // 字面量类型拓宽为 string
 let retryCount: number = 3;       // 显式注解
 ```
 
-`const` 变量不能重新赋值，因此这里保留了更精确的字面量类型；`let` 变量可能被改成其他字符串，初始字面量通常会拓宽为 `string`。局部变量能被准确推断时，重复写注解只会增加噪声。下面这句里的 `: number` 通常没提供新信息：
-
-```ts
-let port: number = 3000;
-```
-
-显式注解更适合放在边界上：函数参数、公开返回值、延迟初始化的变量，以及推断结果过宽或不安全的位置。
+`const` 不能重新赋值，通常保留更精确的字面量类型；`let` 的初始字面量一般会拓宽。局部变量能准确推断时不用重复注解。函数参数、公开返回值、延迟初始化变量和推断过宽的位置应显式标注。
 
 ### 基础类型
 
@@ -112,9 +95,7 @@ const tags: string[] = ["nestjs", "typescript"];
 
 JavaScript 的整数和小数在 TypeScript 中都使用 `number`。基础类型应写成小写的 `string`、`number`、`boolean`，不要使用包装对象类型 `String`、`Number`、`Boolean`。
 
-### 推断失效或不够安全的地方
-
-#### 1. 延迟初始化
+### 延迟初始化与联合类型
 
 ```ts
 let currentUserId: number;
@@ -122,9 +103,7 @@ let currentUserId: number;
 currentUserId = 42;
 ```
 
-变量声明时没有初始值，编译器缺少推断依据，需要我们明确类型。
-
-#### 2. 一个值可能有多种类型
+变量声明时没有初始值，需要明确类型。一个值可能有多种类型时使用联合类型：
 
 ```ts
 const values = ["12", "pending", "30"];
@@ -134,18 +113,14 @@ const parsed: Array<number | boolean> = values.map((value) => {
 });
 ```
 
-这里的元素既可能是 `number`，也可能是 `boolean`，联合类型比随手写 `any[]` 更能保住后续检查。
-
-#### 3. `JSON.parse` 带来的 `any`
-
-课程用 `JSON.parse` 说明了 `any` 的危险：一旦某个值变成 `any`，后面的属性访问和函数调用几乎都会被放行。
+联合类型保留每个分支的检查。`JSON.parse` 默认返回 `any`，后续属性访问和函数调用都会被放行：
 
 ```ts
 const unsafeResult = JSON.parse('{"name":"Ada"}');
 unsafeResult.notExists().stillNotExists(); // 类型检查帮不上忙
 ```
 
-在真实项目里，可以先把外部数据视为 `unknown`，再做校验或类型收窄。
+外部数据先视为 `unknown`，校验后再收窄：
 
 ```ts
 function isUser(value: unknown): value is { name: string } {
@@ -164,11 +139,11 @@ if (isUser(result)) {
 }
 ```
 
-TypeScript 只负责静态检查，网络请求、配置文件和用户输入仍要做运行时验证。
+网络请求、配置文件和用户输入都要做运行时验证。
 
-## 4. 函数：参数必须说明，返回值值得说明
+## 函数类型
 
-函数参数通常无法凭空推断，因此要写清类型。返回值往往能被推断出来，但在服务层、公共方法和业务函数上显式写出返回类型，能防止实现悄悄偏离约定。
+函数参数通常需要显式类型。服务层、公共方法和业务函数也应写出返回类型，避免实现偏离接口约定。
 
 ```ts
 function add(a: number, b: number): number {
@@ -178,9 +153,9 @@ function add(a: number, b: number): number {
 const subtract = (a: number, b: number): number => a - b;
 ```
 
-### `void` 和 `never`
+### `void` 与 `never`
 
-`void` 不代表函数一定会正常结束。函数声明标注 `: void` 时，表示它不向调用方提供可用的返回值；而在 `() => void` 这类回调类型中，实现即使返回了值，调用方也会忽略它。
+`: void` 表示函数不向调用方提供可用的返回值；在 `() => void` 回调类型中，实现即使返回值，调用方也会忽略。
 
 ```ts
 function logRequest(path: string): void {
@@ -188,7 +163,7 @@ function logRequest(path: string): void {
 }
 ```
 
-`never` 表示函数没有可到达的正常出口，常见情况是始终抛出异常或陷入死循环。
+`never` 表示函数没有正常出口，例如始终抛出异常或进入死循环。
 
 ```ts
 function fail(message: string): never {
@@ -196,9 +171,9 @@ function fail(message: string): never {
 }
 ```
 
-两者的区别在于：`void` 不暴露可用的返回值，但函数仍可能抛错或不结束；`never` 则明确表示控制权不会通过正常返回交还给调用方。
+`void` 不暴露返回值；`never` 不会正常返回。
 
-### 解构参数的类型写在解构表达式后
+### 解构参数
 
 ```ts
 interface Weather {
@@ -211,9 +186,9 @@ function printWeather({ date, weather }: Weather): void {
 }
 ```
 
-把属性名和类型混在解构左侧很容易写乱。先写解构结构，再给整个参数标注一个命名类型，可读性更好。
+先写解构结构，再给整个参数标注命名类型。
 
-## 5. 对象类型和结构化类型系统
+## 对象类型与 interface
 
 可以直接在参数位置描述对象形状：
 
@@ -227,7 +202,7 @@ function printVehicle(vehicle: {
 }
 ```
 
-但对象一复杂，内联注解会快速膨胀，而且多个函数会重复同一段结构。这时应给它一个名字。
+对象结构复杂或被多处使用时，用 `interface` 或类型别名命名：
 
 ```ts
 interface Vehicle {
@@ -242,7 +217,7 @@ function printVehicle(vehicle: Vehicle): void {
 }
 ```
 
-TypeScript 采用结构化类型：一个对象不必显式声明“实现了 `Vehicle`”，只要它具有要求的成员，就可以传给需要 `Vehicle` 的函数。
+TypeScript 使用结构化类型。对象不必显式声明实现了 `Vehicle`，只要包含所需成员即可传入：
 
 ```ts
 const civic = {
@@ -257,13 +232,11 @@ const civic = {
 printVehicle(civic);
 ```
 
-这让函数面向能力编程，而不是绑定某个具体类。接口写得越小、越聚焦，复用空间通常越大。
+小接口更容易复用。`interface` 编译后会消失，不能提供运行时元数据，也不能验证外部 JSON。
 
-需要记住：`interface` 编译后会消失。它能约束源码，却不能在运行时读取元数据，也不能验证一段外部 JSON。
+## 数组与元组
 
-## 6. 数组和元组
-
-数组适合保存一组同类值。类型明确后，编辑器既能限制写入，也能推断遍历元素的类型。
+数组保存同类值，类型同时约束写入和遍历元素：
 
 ```ts
 const technologies: string[] = ["NestJS", "TypeScript"];
@@ -274,13 +247,13 @@ technologies.push("TypeORM");
 technologies.map((technology) => technology.toUpperCase());
 ```
 
-需要混合元素时应明确写联合类型：
+混合元素使用联合类型：
 
 ```ts
 const requestTrace: Array<string | number> = ["GET", 200, "/users"];
 ```
 
-元组对元素数量和每个位置的类型都有约束：
+元组约束元素数量和每个位置的类型：
 
 ```ts
 type HttpResult = [statusCode: number, message: string];
@@ -288,7 +261,7 @@ type HttpResult = [statusCode: number, message: string];
 const result: HttpResult = [200, "ok"];
 ```
 
-元组适合短小、位置语义稳定的数据。字段一多，调用方会开始记“第 0 位和第 2 位分别是什么”，这时对象更清楚。
+元组只适合短小且位置语义稳定的数据。字段较多时改用对象：
 
 ```ts
 interface HttpResultObject {
@@ -297,9 +270,9 @@ interface HttpResultObject {
 }
 ```
 
-## 7. 类、继承和访问修饰符
+## 类与访问修饰符
 
-TypeScript 的类建立在 JavaScript `class` 之上，额外提供字段类型和 `public`、`protected`、`private` 等静态约束。
+TypeScript 在 JavaScript `class` 上增加字段类型和访问修饰符：
 
 ```ts
 class VehicleService {
@@ -325,11 +298,11 @@ class CarService extends VehicleService {
 - `protected`：类内和子类可访问，外部不能直接使用。
 - `private`：只允许当前类内部访问。
 
-这些修饰符主要提供编译期约束。继承适合表达稳定的“是一个”关系，不应为了复用几行代码就堆出很深的类层级。NestJS 中更常见的复用手段是依赖注入和组合。
+访问修饰符主要提供编译期约束。继承用于稳定的“是一个”关系；NestJS 更常用依赖注入和组合复用逻辑。
 
-## 8. 接回 NestJS：为什么 DTO 常用 class
+## NestJS DTO 为什么使用 class
 
-前面说过，接口会在编译后消失。NestJS 的 Pipe、装饰器和反射能力需要运行时能拿到类型实体，所以请求 DTO 通常写成 class，而不是 interface。
+`interface` 编译后会消失。NestJS 的 Pipe、装饰器和反射需要运行时类型，因此请求 DTO 使用 class：
 
 ```ts
 import { IsEmail, IsString, MinLength } from "class-validator";
@@ -364,32 +337,4 @@ async function bootstrap(): Promise<void> {
 void bootstrap();
 ```
 
-这里有三层不同的责任：
-
-1. TypeScript 检查项目源码中的类型使用。
-2. DTO class 在编译后仍然存在，为 NestJS 提供运行时元数据。
-3. `class-validator` 和 `ValidationPipe` 检查真正进入应用的外部数据。
-
-只写 `interface CreateUserDto` 能让控制器源码看起来有类型，但挡不住客户端发来错误字段。反过来，只做运行时校验而不给服务层稳定的类型，也会让项目内部越来越难维护。
-
-## 9. 一套够用的判断顺序
-
-写 TypeScript 时，可以按下面的顺序决定是否需要补类型：
-
-1. 先让编译器推断局部变量，别把每个 `const` 都写成教材式注解。
-2. 函数参数、模块出口和业务返回值写清类型。
-3. 遇到外部数据先当作 `unknown`，完成验证后再使用。
-4. 重复出现的对象结构用 `interface` 或类型别名命名。
-5. 需要运行时元数据、装饰器或实例行为时使用 class。
-6. 类型检查只能保证结构，业务正确性仍交给测试。
-
-把这几条带回 NestJS，Controller、DTO、Service、Entity 和测试之间的分工会清楚很多：类型系统负责开发阶段的约束，框架和验证库负责运行时边界，测试负责业务行为。
-
-## 延伸阅读
-
-- [TypeScript Handbook: Everyday Types](https://www.typescriptlang.org/docs/handbook/2/everyday-types.html)
-- [TypeScript Handbook: More on Functions](https://www.typescriptlang.org/docs/handbook/2/functions.html)
-- [TypeScript Handbook: Object Types](https://www.typescriptlang.org/docs/handbook/2/objects.html)
-- [TypeScript Handbook: Classes](https://www.typescriptlang.org/docs/handbook/2/classes.html)
-- [NestJS Controllers: DTO 为什么推荐使用 class](https://docs.nestjs.com/controllers)
-- [NestJS Validation](https://docs.nestjs.com/techniques/validation)
+TypeScript 检查源码类型；DTO class 为 NestJS 提供运行时元数据；`class-validator` 与 `ValidationPipe` 校验客户端输入。只写 interface 挡不住错误字段，只做运行时校验也无法约束服务层代码。
