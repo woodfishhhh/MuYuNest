@@ -1,29 +1,5 @@
 [
   {
-    "canonicalSlug": "nestjs-complete-guide",
-    "aliases": [
-      "00-NestJS完全开发指南总览"
-    ],
-    "title": "NestJS 完全开发指南",
-    "publishedAt": "2026-07-12T00:00:00.000Z",
-    "publishedLabel": "Jul 12, 2026",
-    "excerpt": "NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。",
-    "type": "Notes",
-    "searchText": "NestJS 完全开发指南 Notes 后端开发 NestJS NestJS TypeScript TypeORM 后端开发 NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。 原始链接 Udemy NestJS The Complete Developer's Guide part1 Udemy NestJS The Complete Developer's Guide part2 目录 | 笔记 | 主要内容 | | | | | 01 NestJS 起步与请求链路 | 项目启动、Controller、路由装饰器、DTO、Pipe 和请求校验 | | 02 Service、模块与依赖注入 | Repository、Service、IoC、DI、Module 和跨模块依赖 | | 03 TypeORM 与用户 CRUD | Entity、Repository、数据库操作、异常、序列化和 Interceptor | | 04 认证授权与自动化测试 | 密码哈希、Session、装饰器、Guard、单元测试和 E2E 测试 | | 05 配置、关联查询与生产部署 | Config、环境隔离、关联关系、授权、QueryBuilder、Migration 和部署 | | 06 TypeScript 类型系统基础 | 类型注解、推断、函数、对象、数组、元组、接口、类和继承 |",
-    "readingMinutes": 2,
-    "coverImage": null,
-    "categories": [
-      "后端开发",
-      "NestJS"
-    ],
-    "tags": [
-      "NestJS",
-      "TypeScript",
-      "TypeORM",
-      "后端开发"
-    ]
-  },
-  {
     "canonicalSlug": "nestjs-request-lifecycle",
     "aliases": [
       "01-NestJS起步与请求链路"
@@ -46,31 +22,6 @@
       "Controller",
       "ValidationPipe",
       "DTO"
-    ]
-  },
-  {
-    "canonicalSlug": "nestjs-services-modules-di",
-    "aliases": [
-      "02-Service模块与依赖注入"
-    ],
-    "title": "Service、模块边界与依赖注入",
-    "publishedAt": "2026-07-12T00:00:00.000Z",
-    "publishedLabel": "Jul 12, 2026",
-    "excerpt": "消息 API 分成三层：",
-    "type": "Notes",
-    "searchText": "Service、模块边界与依赖注入 Notes 后端开发 NestJS NestJS Service Repository Dependency Injection Module 1. Controller、Service 与 Repository 消息 API 分成三层： Controller Controller 读取 HTTP 参数并返回状态码，不处理 JSON 文件。 Service Service 提供创建消息、组合数据源、检查业务约束等用例。即使 、 、 暂时只转调 Repository，Controller 也无需感知后续加入的权限、事务或存储变化。 Repository Repository 封装持久化细节。示例使用 JSON 文件；真实项目通常由 TypeORM、Prisma、Mongoose 等工具提供存储抽象。 Service 和 Repository 可以有同名方法，但职责不同。 2. JSON 文件 Repository 示例使用 保存数据，通过 Node.js Promise 文件 API 读写；文件不存在时初始化为空对象。 这段代码不能直接用于生产环境。两个并发请求可能同时读到旧文件，再分别覆盖写入，导致数据丢失；文件变大后，全量解析和写回也会越来越慢。 3. MessagesService Service 目前只转调 Repository。增加权限、去重、事务或多个数据源时，Controller 仍然只依赖这组业务接口。 Controller 只调用 Service： Nest 会把 转成 404 响应。其他内置 HTTP 异常包括 、 和 。错误对象不应继续返回 200。 HTTP 异常可以直接在 Controller 中抛出。业务复杂后，也可以让 Service 抛出领域异常，再由异常过滤器映射到 HTTP。 4. 控制反转 让类在内部创建依赖会把具体实现锁死： 这会导致： 永远只能使用这个文件 Repository。 测试 Service 时会真的访问磁盘，很难换成内存实现。 Repository 再增加依赖时，创建链会散落到各个上层类。 生命周期不受框架管理，多个地方可能重复创建实例。 控制反转（Inversion of Control）把依赖的创建移到类外部： 这已经把“使用依赖”和“创建依赖”分开了。但如果完全手动组装，创建 Controller 仍然要写： 依赖层级越深，手动组装代码越多。Nest 的依赖注入系统负责完成这部分组装。 5. Nest DI 容器 依赖注入（Dependency Injection）建立在控制反转之上。启动时，Nest 收集 Provider，分析构造函数并建立依赖图。 Nest 先创建 Repository，再用它创建 Service，最后把 Service 传给 。调用者只声明依赖，不负责 。 对这个消息模块，注册代码是： 构造函数注入需要： 1. 可被注入的类使用 。 2. 类被登记到某个模块的 中，或由该模块导入的其他模块提供。 3. 消费方通过构造函数声明依赖。 登记模块能够提供的对象。Controller 放在 中，无需重复放入 。 6. 类 Token 与自定义 Token Service 也可以依赖接口： TypeScript interface 编译后会消失，DI 容器无法把它直接作为 Provider token。最短的写法是使用类 token： 需要按接口替换实现时，可以显式定义 token： 测试时可把 token 绑定到内存仓库，生产环境再绑定到数据库仓库。类注入更短，显式 token 更容易替换。 7. Provider 作用域 默认作用域下，同一应用上下文中的 Provider 通常只创建一次，后续注入会复用该实例。 默认单例 Service 不应在实例字段中保存请求状态，否则并发请求会互相污染。请求数据应放在方法参数、请求作用域 Provider 或外部存储中。 Nest 也支持 request scope 和 transient scope，但它们会改变实例数量和性能成本。没有明确需求时，先使用默认作用域。 8. Module 可见性 Provider 默认只在声明它的模块中可见。TypeScript 能 某个 Service，不代表 Nest 的 DI 上下文能解析它。 下面用 Power、CPU、Disk 和 Computer 表示模块关系： 8.1 导出 Provider 表示在本模块中创建和管理 ， 表示允许导入本模块的其他模块使用它。 8.2 导入模块 Disk 模块采用同样结构：导入 ，在 构造函数中注入 ，再把 导出。 8.3 组合模块 跨模块共享可以记成三个动作：源模块 Provider，目标模块 源模块，消费类在构造函数中注入。缺一项都可能触发 。 不需要再次导入 。CPU 和 Disk 已经在各自模块内部解决电源依赖，顶层只消费它们导出的能力。 9. 按资源拆分模块 二手车估价 API 包含这些端点： | 方法与路径 | 作用 | | | | | | 注册用户 | | | 用户登录 | | | 按车型、年份、里程和位置估价 | | | 上报真实成交数据 | | | 管理员审核报告 | 认证和用户数据放入 ，估价和成交记录放入 。CLI 可以生成重复结构： Repository 往往与具体存储技术相关，可以等数据库方案明确后手动建立。 模块按业务能力划分，不必固定为 Controller、Service、Repository 三件套。认证可以独立成 ，一个 Service 也可以依赖多个 Repository。 10. 常见问题 10.1 错误消息通常会给出无法解析的类和构造函数参数索引。按依赖链向下查： 1. 目标类是否有 。 2. Provider 是否出现在某个模块的 中。 3. 如果 Provider 来自别的模块，源模块是否 它。 4. 当前模块是否在 中导入了源模块。 5. 构造函数的 token 是否真的是运行时可用的类、字符串或 Symbol。 不要只补一个 TypeScript 语句。那只解决源码引用，不解决 DI 可见性。 10.2 把 Service 直接放进 接收模块，普通 Service 应放在 。跨模块使用 Service 时，导入的是提供它的模块。 10.3 为了消除报错，到处重复注册同一个 Provider 在多个模块中重复注册 可能创建独立实例。应由一个模块提供并导出，其他模块导入该模块。 10.4 interface 无法自动注入 interface 编译后不存在。若构造函数参数只写接口类型，Nest 没有运行时 token 可查。使用类作为 token，或配合 和显式 token。 10.5 JSON Repository 偶发报错 先确认文件路径基于哪个工作目录、文件是否为合法 JSON、编码是否为 UTF 8。若错误只在并发写入时出现，就不是 本身的问题，而是读改写缺少并发控制，应该换数据库或增加可靠的锁与原子写策略。 10.6 Service 中保存请求状态 默认 Provider 会被复用。把 、临时请求参数等写进实例字段，下一次请求可能覆盖上一次请求的数据。优先把这些值作为方法参数传递。 10.7 找不到数据却返回 200 Repository 返回 只是存储层结果，HTTP 层还需要把它映射成合适的错误。使用 ，或者建立统一的领域异常到 HTTP 异常映射。 11. 模块边界检查 1. 中没有 。 2. 中没有 。 3. 能独立提供消息功能。 4. 只由 提供，CPU 和 Disk 通过导入模块获得它。 5. 不需要知道 Power 的实现细节。 6. 请求不存在的消息时返回 404，而不是 200 和空值。",
-    "readingMinutes": 9,
-    "coverImage": null,
-    "categories": [
-      "后端开发",
-      "NestJS"
-    ],
-    "tags": [
-      "NestJS",
-      "Service",
-      "Repository",
-      "Dependency Injection",
-      "Module"
     ]
   },
   {
