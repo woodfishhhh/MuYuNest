@@ -213,6 +213,40 @@ describe("PostView", () => {
     expect(css).toMatch(/\.article-page\s*{[^}]*overflow-x:\s*hidden;/s);
   });
 
+  it("reuses the friend page low-opacity background without an opaque article override", () => {
+    mocks.loadPostArticle.mockResolvedValue(article);
+
+    const wrapper = mount(PostView, {
+      global: {
+        stubs: {
+          ArticleContent: ArticleContentStub,
+          RouterLink: RouterLinkStub,
+        },
+      },
+    });
+    const page = wrapper.get("[data-post-page]");
+    const css = readFileSync("src/assets/main.css", "utf8");
+    const articlePageRule = css.match(/\.article-page\s*{([^}]*)}/s)?.[1] ?? "";
+
+    expect(page.classes()).toEqual(
+      expect.arrayContaining(["stage-panel-gradient", "stage-panel-gradient--friend"]),
+    );
+    expect(articlePageRule).not.toMatch(/\bbackground(?:-color|-image)?\s*:/);
+    expect(css).not.toMatch(/:root\[data-theme="day"\]\s+\.article-page\s*{/);
+  });
+
+  it("keeps the article shell translucent enough for the Three.js geometry to remain visible", () => {
+    const css = readFileSync("src/assets/main.css", "utf8");
+    const nightShellRule = css.match(/\.article-view\s*{([^}]*)}/s)?.[1] ?? "";
+    const dayShellRule =
+      css.match(/:root\[data-theme="day"\]\s+\.article-view\s*{([^}]*)}/s)?.[1] ?? "";
+
+    expect(nightShellRule).toContain("rgba(12, 16, 32, 0.58)");
+    expect(nightShellRule).toContain("rgba(8, 12, 24, 0.42)");
+    expect(dayShellRule).toContain("rgba(255, 251, 241, 0.72)");
+    expect(dayShellRule).toContain("rgba(255, 255, 255, 0.48)");
+  });
+
   it("preserves the originating blog query in the back link", async () => {
     mocks.routeState.query = {
       q: "ajax",

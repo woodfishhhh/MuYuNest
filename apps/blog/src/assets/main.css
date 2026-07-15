@@ -355,10 +355,6 @@ img {
   overflow-y: auto;
   pointer-events: auto;
   padding: clamp(5.5rem, 7vw, 7.1rem) 1rem 4rem;
-  background:
-    radial-gradient(circle at top left, rgba(104, 144, 255, 0.16), transparent 30%),
-    radial-gradient(circle at 88% 12%, rgba(255, 209, 102, 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(5, 5, 16, 0.18) 0%, rgba(5, 5, 16, 0.92) 100%);
 }
 
 .article-page__ambient {
@@ -482,13 +478,6 @@ img {
   color: var(--article-muted);
 }
 
-:root[data-theme="day"] .article-page {
-  background:
-    radial-gradient(circle at top left, rgba(102, 136, 214, 0.12), transparent 30%),
-    radial-gradient(circle at 88% 12%, rgba(178, 132, 66, 0.12), transparent 28%),
-    linear-gradient(180deg, rgba(250, 248, 241, 0.84) 0%, rgba(244, 240, 231, 0.96) 100%);
-}
-
 :root[data-theme="day"] .article-page__nav-link,
 :root[data-theme="day"] .article-page__nav-meta {
   border-color: rgba(32, 36, 47, 0.16);
@@ -588,8 +577,8 @@ img {
   border-radius: 34px;
   padding: var(--article-shell-padding);
   background:
-    linear-gradient(180deg, rgba(15, 22, 42, 0.46) 0%, transparent 24%),
-    linear-gradient(180deg, var(--article-surface) 0%, rgba(8, 10, 18, 0.96) 100%);
+    linear-gradient(135deg, rgba(12, 16, 32, 0.58), rgba(8, 12, 24, 0.42)),
+    var(--surface-soft);
   box-shadow: var(--article-shadow);
   backdrop-filter: saturate(145%) blur(18px);
   -webkit-backdrop-filter: saturate(145%) blur(18px);
@@ -1076,8 +1065,8 @@ img {
 
 :root[data-theme="day"] .article-view {
   background:
-    radial-gradient(circle at 0% 0%, rgba(53, 88, 204, 0.09), transparent 30%),
-    linear-gradient(180deg, rgba(255, 252, 244, 0.96) 0%, rgba(246, 240, 226, 0.96) 100%);
+    linear-gradient(135deg, rgba(255, 251, 241, 0.72), rgba(255, 255, 255, 0.48)),
+    var(--surface-soft);
 }
 
 :root[data-theme="day"] .article-view--overlay {

@@ -92,7 +92,11 @@ function handleToggleTheme(payload: { x: number; y: number }) {
 </script>
 
 <template>
-  <main ref="pageRoot" data-post-page class="article-page">
+  <main
+    ref="pageRoot"
+    data-post-page
+    class="article-page stage-panel-gradient stage-panel-gradient--friend"
+  >
     <div class="article-page__ambient article-page__ambient--left" />
     <div class="article-page__ambient article-page__ambient--right" />
 

@@ -14,6 +14,7 @@ interface Snapshot {
 }
 
 const HOME_ROUTE_NAMES = new Set(["home", "blog", "author", "friend", "works"]);
+const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "post"]);
 
 const route = useRoute();
 const siteStore = useSiteStore();
@@ -74,10 +75,10 @@ watch(
   <div data-route-shell class="route-transition-shell">
     <div data-transition-scrim class="route-transition-scrim" />
     <div data-transition-blade class="route-transition-blade" />
-    <!-- 3D 场景层：持久存在于路由切换之上，仅 home 家族路由可见 -->
+    <!-- 3D 场景层：在首页家族与文章页持续存在，作为透明页面后的背景 -->
     <!-- z-[1]: stage(z-[2]) 之下的背景层，透明 canvas 接受空白区域的鼠标事件 -->
     <div
-      v-if="HOME_ROUTE_NAMES.has(typeof route.name === 'string' ? route.name : '')"
+      v-if="SCENE_ROUTE_NAMES.has(typeof route.name === 'string' ? route.name : '')"
       class="fixed inset-0 z-[1] h-full w-full"
       data-scene-layer
     >
