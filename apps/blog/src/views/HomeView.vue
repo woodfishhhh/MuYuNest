@@ -5,6 +5,7 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
+  reactive,
   useTemplateRef,
   watch,
 } from "vue";
@@ -16,7 +17,7 @@ import SiteNav from "@/components/layout/SiteNav.vue";
 import { useHomePanels } from "@/composables/useHomePanels";
 import { useTheme } from "@/composables/useTheme";
 import { useVisitorCount } from "@/composables/useVisitorCount";
-import { useSiteStore } from "@/stores/site";
+import { useSiteStore, type SiteMode } from "@/stores/site";
 
 const AuthorPanel = defineAsyncComponent(() => import("@/components/home/AuthorPanel.vue"));
 const FriendPanel = defineAsyncComponent(() => import("@/components/home/FriendPanel.vue"));
@@ -26,6 +27,8 @@ const WorksPanel = defineAsyncComponent(() => import("@/components/home/WorksPan
 const siteStore = useSiteStore();
 const { theme } = useTheme();
 const currentMode = computed(() => siteStore.mode);
+type CachedPanelMode = Exclude<SiteMode, "home" | "reading">;
+const cachedPanelModes = reactive(new Set<CachedPanelMode>());
 const blogScrollContainerRef = useTemplateRef<HTMLElement>("blogScrollContainer");
 const { posts, author, friendLinks, works, isPostsLoading, isAuthorLoading, isFriendLinksLoading } =
   useHomePanels(currentMode);
@@ -44,6 +47,16 @@ const MAX_BLOG_SCROLL_RESTORE_FRAMES = 120;
 let pendingBlogScrollTop: number | null = null;
 let blogScrollRestoreFrame: number | null = null;
 let blogScrollRestoreFrameCount = 0;
+
+function cachePanelMode(mode: SiteMode) {
+  if (mode !== "home" && mode !== "reading") {
+    cachedPanelModes.add(mode);
+  }
+}
+
+function isPanelCached(mode: CachedPanelMode) {
+  return cachedPanelModes.has(mode);
+}
 
 function clearPendingBlogScrollRestore() {
   if (blogScrollRestoreFrame !== null) {
@@ -138,6 +151,14 @@ function handleBlogScroll(event: Event) {
 
 watch(
   currentMode,
+  (mode) => {
+    cachePanelMode(mode);
+  },
+  { immediate: true },
+);
+
+watch(
+  currentMode,
   async (nextMode, previousMode) => {
     if (previousMode === "blog") {
       saveBlogScrollPosition();
@@ -215,13 +236,14 @@ onBeforeUnmount(() => {
         />
 
         <div
-          v-if="siteStore.mode === 'blog'"
+          v-if="isPanelCached('blog')"
           ref="blogScrollContainer"
           data-blog-scroll-container
           data-panel-layer="blog"
-          data-panel-active="true"
+          :data-panel-active="siteStore.mode === 'blog' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'blog' ? undefined : 'true'"
           data-testid="blog-panel-overlay"
-          class="stage-panel-gradient stage-panel-gradient--blog pointer-events-auto absolute inset-0 h-full w-full overflow-y-auto overscroll-contain p-4 pt-20 sm:p-6 sm:pt-24 md:p-8 md:pt-24 md:pl-16 lg:p-10 lg:pt-24 lg:pl-20"
+          class="home-panel-cache stage-panel-gradient stage-panel-gradient--blog pointer-events-auto absolute inset-0 h-full w-full overflow-y-auto overscroll-contain p-4 pt-20 sm:p-6 sm:pt-24 md:p-8 md:pt-24 md:pl-16 lg:p-10 lg:pt-24 lg:pl-20"
           @pointerdown.capture="cancelPendingBlogScrollRestore"
           @scroll.passive="handleBlogScroll"
           @touchstart.capture.passive="cancelPendingBlogScrollRestore"
@@ -248,10 +270,11 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="siteStore.mode === 'author'"
+          v-if="isPanelCached('author')"
           data-panel-layer="author"
-          data-panel-active="true"
-          class="pointer-events-auto absolute inset-0"
+          :data-panel-active="siteStore.mode === 'author' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'author' ? undefined : 'true'"
+          class="home-panel-cache pointer-events-auto absolute inset-0"
         >
           <div class="flex h-full w-full items-center justify-center">
             <AuthorPanel v-if="author" :author="author" />
@@ -274,10 +297,11 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="siteStore.mode === 'friend'"
+          v-if="isPanelCached('friend')"
           data-panel-layer="friend"
-          data-panel-active="true"
-          class="stage-panel-gradient stage-panel-gradient--friend pointer-events-auto absolute inset-0 overflow-hidden"
+          :data-panel-active="siteStore.mode === 'friend' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'friend' ? undefined : 'true'"
+          class="home-panel-cache stage-panel-gradient stage-panel-gradient--friend pointer-events-auto absolute inset-0 overflow-hidden"
         >
           <FriendPanel v-if="friendLinks.length > 0" :links="friendLinks" />
           <div
@@ -298,10 +322,11 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="siteStore.mode === 'works'"
+          v-if="isPanelCached('works')"
           data-panel-layer="works"
-          data-panel-active="true"
-          class="stage-panel-gradient--works pointer-events-none absolute inset-0"
+          :data-panel-active="siteStore.mode === 'works' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'works' ? undefined : 'true'"
+          class="home-panel-cache stage-panel-gradient--works pointer-events-none absolute inset-0"
         >
           <WorksPanel :works="works" />
         </div>
@@ -311,3 +336,11 @@ onBeforeUnmount(() => {
     </SlideController>
   </main>
 </template>
+
+<style scoped>
+.home-panel-cache[data-panel-active="false"] {
+  content-visibility: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+</style>

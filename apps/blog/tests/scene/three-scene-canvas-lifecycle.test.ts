@@ -177,6 +177,7 @@ function installSceneMocks(
     useStarField: () => ({
       dispose: vi.fn(),
       group: createTransformGroup(),
+      setColor: vi.fn(),
       setOpacity: vi.fn(),
       setWarpIntensity: vi.fn(),
       update: vi.fn(),
@@ -204,6 +205,7 @@ function installSceneMocks(
   }));
   vi.doMock("@/components/scene/geometry-transform", () => ({
     getGeometryTransformTarget: () => ({ baseScale: 1, x: 0, y: 0, z: 0 }),
+    hasEquivalentGeometryTransformMode: () => false,
   }));
   vi.doMock("@/components/scene/hypercube-rotation", () => ({
     normalizeRotationForTween: (_current: unknown, target: unknown) => target,
@@ -212,7 +214,9 @@ function installSceneMocks(
   vi.doMock("@/components/scene/scene-interaction", () => ({
     isDesktopWorksOrbitMode: () => false,
     resolveScenePointerDownAction: () => "none",
+    shouldRunSceneHoverRaycast: () => false,
     shouldRaycastSceneGeometry: () => false,
+    supportsWorksOrbitViewport: () => true,
   }));
   vi.doMock("@/content/works", () => ({ getWorkProjects: () => [] }));
   vi.doMock("@/utils/site-mode", () => ({ getRouteLocationForSiteMode: () => ({}) }));

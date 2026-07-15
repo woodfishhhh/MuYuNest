@@ -153,7 +153,7 @@ describe("HomeView", () => {
     expect(wrapper.find("[data-testid='visitor-count-badge']").exists()).toBe(false);
   });
 
-  it("restores Blog scrollTop after switching to another panel and back", async () => {
+  it("keeps the Blog panel mounted and restores scrollTop after switching away and back", async () => {
     const siteStore = useSiteStore();
     siteStore.goBlog();
 
@@ -161,17 +161,23 @@ describe("HomeView", () => {
     await flushPromises();
 
     const blogPanel = wrapper.get<HTMLElement>("[data-blog-scroll-container]");
+    const blogPanelElement = blogPanel.element;
     blogPanel.element.scrollTop = 640;
     await blogPanel.trigger("scroll");
 
     siteStore.goAuthor();
     await nextTick();
-    expect(wrapper.find("[data-blog-scroll-container]").exists()).toBe(false);
+    expect(wrapper.find("[data-blog-scroll-container]").exists()).toBe(true);
+    expect(wrapper.get<HTMLElement>("[data-blog-scroll-container]").element.style.display).not.toBe(
+      "none",
+    );
+    expect(wrapper.get("[data-blog-scroll-container]").attributes("aria-hidden")).toBe("true");
 
     siteStore.goBlog();
     await nextTick();
     await flushPromises();
 
+    expect(wrapper.get<HTMLElement>("[data-blog-scroll-container]").element).toBe(blogPanelElement);
     expect(wrapper.get<HTMLElement>("[data-blog-scroll-container]").element.scrollTop).toBe(640);
   });
 

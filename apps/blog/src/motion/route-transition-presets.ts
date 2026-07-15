@@ -1,6 +1,6 @@
 import gsap from "gsap";
 
-export type PresetName = "focusPush" | "softReturn";
+export type PresetName = "focusPush" | "panelShift" | "softReturn";
 
 export interface PresetVars {
   duration: number;
@@ -13,12 +13,13 @@ export interface PresetVars {
 
 export function getPresetVars(preset: PresetName, options: { reducedMotion: boolean }): PresetVars {
   if (options.reducedMotion) {
+    const isPanelShift = preset === "panelShift";
     return {
-      duration: preset === "softReturn" ? 0.22 : 0.3,
+      duration: preset === "softReturn" ? 0.22 : isPanelShift ? 0.16 : 0.3,
       blur: 0,
       scaleFrom: 1,
-      yFrom: 6,
-      opacityFrom: 0,
+      yFrom: isPanelShift ? 0 : 6,
+      opacityFrom: isPanelShift ? 0.65 : 0,
       ease: "power1.out",
     };
   }
@@ -30,6 +31,17 @@ export function getPresetVars(preset: PresetName, options: { reducedMotion: bool
       scaleFrom: 0.985,
       yFrom: 14,
       opacityFrom: 0.06,
+      ease: "power2.out",
+    };
+  }
+
+  if (preset === "panelShift") {
+    return {
+      duration: 0.28,
+      blur: 0,
+      scaleFrom: 1,
+      yFrom: 0,
+      opacityFrom: 0.55,
       ease: "power2.out",
     };
   }
@@ -53,22 +65,30 @@ export function playFocusPush(
   });
 
   gsap.killTweensOf(element);
+  const hasTransform = vars.yFrom !== 0 || vars.scaleFrom !== 1;
+  const filterFrom = vars.blur > 0 ? { filter: `blur(${vars.blur}px)` } : {};
+  const filterTo = vars.blur > 0 ? { filter: "blur(0px)" } : {};
+  const transformFrom = hasTransform ? { y: vars.yFrom, scale: vars.scaleFrom } : {};
+  const transformTo = hasTransform ? { y: 0, scale: 1 } : {};
+  const clearProps = [
+    "opacity",
+    ...(vars.blur > 0 ? ["filter"] : []),
+    ...(hasTransform ? ["transform"] : []),
+  ];
   return gsap.fromTo(
     element,
     {
       opacity: vars.opacityFrom,
-      y: vars.yFrom,
-      scale: vars.scaleFrom,
-      filter: vars.blur > 0 ? `blur(${vars.blur}px)` : "none",
+      ...transformFrom,
+      ...filterFrom,
     },
     {
       opacity: 1,
-      y: 0,
-      scale: 1,
-      filter: "blur(0px)",
+      ...transformTo,
+      ...filterTo,
       duration: vars.duration,
       ease: vars.ease,
-      clearProps: "transform,filter,opacity",
+      clearProps: clearProps.join(","),
     },
   );
 }

@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, shallowRef } from "vue";
 
 import WorksCaseView from "@/components/home/works/WorksCaseView.vue";
 import WorksViewToggle from "@/components/home/works/WorksViewToggle.vue";
+import { WORKS_ORBIT_MIN_WIDTH } from "@/components/scene/scene-interaction";
 import { useSiteStore } from "@/stores/site";
 import type { WorkProjectData } from "@/types/content";
 
@@ -10,7 +11,7 @@ defineProps<{
   works: WorkProjectData[];
 }>();
 
-const largeViewportQuery = "(min-width: 1024px)";
+const largeViewportQuery = `(min-width: ${WORKS_ORBIT_MIN_WIDTH}px)`;
 const isLargeViewport = shallowRef(resolveIsLargeViewport());
 const store = useSiteStore();
 

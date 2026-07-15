@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { getGeometryTransformTarget } from "@/components/scene/geometry-transform";
+import {
+  getGeometryTransformTarget,
+  hasEquivalentGeometryTransformMode,
+} from "@/components/scene/geometry-transform";
 
 describe("getGeometryTransformTarget", () => {
   it("keeps friend page geometry centered instead of lifting it", () => {
@@ -33,5 +36,12 @@ describe("getGeometryTransformTarget", () => {
       y: 0,
       z: 0,
     });
+  });
+
+  it("recognizes centered panel routes that do not need a new geometry tween", () => {
+    expect(hasEquivalentGeometryTransformMode("home", "blog")).toBe(true);
+    expect(hasEquivalentGeometryTransformMode("blog", "friend")).toBe(true);
+    expect(hasEquivalentGeometryTransformMode("friend", "author")).toBe(false);
+    expect(hasEquivalentGeometryTransformMode("friend", "works")).toBe(false);
   });
 });

@@ -1,9 +1,14 @@
 import { nextTick } from "vue";
 import gsap from "gsap";
 
-import { playBladeAccent, playFocusPush, playScrim } from "@/motion/route-transition-presets";
+import {
+  playBladeAccent,
+  playFocusPush,
+  playScrim,
+  type PresetName,
+} from "@/motion/route-transition-presets";
 
-type TransitionKind =
+export type TransitionKind =
   | "panelTransition"
   | "pageToPost"
   | "postToPage"
@@ -45,6 +50,12 @@ function getPrimaryTarget(kind: TransitionKind) {
 
 let activeTimeline: gsap.core.Timeline | null = null;
 let transitioning = false;
+
+export function getTransitionPresetName(kind: TransitionKind): PresetName {
+  if (kind === "panelTransition") return "panelShift";
+  if (kind === "postToPage") return "softReturn";
+  return "focusPush";
+}
 
 function killActiveTimeline() {
   if (!activeTimeline) return;
@@ -106,7 +117,7 @@ export async function playRouteTransition(options: {
   activeTimeline.add(
     playFocusPush(target, {
       reducedMotion,
-      preset: useSoftReturn ? "softReturn" : "focusPush",
+      preset: getTransitionPresetName(options.kind),
     }),
     options.kind === "pageToPost" && !options.directEntry ? 0.08 : 0,
   );

@@ -5,7 +5,10 @@ import gsap from "gsap";
 import * as THREE from "three";
 
 import { createCircleTexture } from "@/components/scene/circle-texture";
-import { getGeometryTransformTarget } from "@/components/scene/geometry-transform";
+import {
+  getGeometryTransformTarget,
+  hasEquivalentGeometryTransformMode,
+} from "@/components/scene/geometry-transform";
 // import {
 //   createHomeBackdropGlyph,
 //   loadHomeBackdropTexture,
@@ -18,8 +21,11 @@ import {
 import {
   isDesktopWorksOrbitMode,
   resolveScenePointerDownAction,
+  shouldRunSceneHoverRaycast,
   shouldRaycastSceneGeometry,
+  supportsWorksOrbitViewport,
 } from "@/components/scene/scene-interaction";
+import { getSceneThemeActivity } from "@/components/scene/scene-theme-activity";
 import {
   createWorksOrbitCards,
   getWorksCenterMagnetStrength,
@@ -54,6 +60,7 @@ const cardHovered = ref(false);
 const cardGrabActive = ref(false);
 const geometryHovered = ref(false);
 const isMobile = ref(false);
+const supportsWorksOrbit = ref(false);
 const hasCardHoverOnly = computed(() => cardHovered.value && !cardGrabActive.value);
 
 const onPointerDown = () => {
@@ -82,6 +89,10 @@ const CAMERA_INTRO_START_POSITION = new THREE.Vector3(0, 1.5, 92);
 const CAMERA_INTRO_START_LOOK = new THREE.Vector3(0, 0, 0);
 const NIGHT_CLEAR_COLOR = new THREE.Color("#050510");
 const DAY_CLEAR_COLOR = new THREE.Color("#FAFAF7");
+const DAY_GEOMETRY_IDLE_COLOR = new THREE.Color("#151922");
+const DAY_GEOMETRY_HOVER_COLOR = new THREE.Color("#3558cc");
+const NIGHT_GEOMETRY_IDLE_COLOR = new THREE.Color("#ffffff");
+const NIGHT_GEOMETRY_HOVER_COLOR = new THREE.Color("#7ea8ff");
 const CLEAR_ALPHA = 0;
 const HYPERCUBE_SCENE_SCALE = 1;
 const MOBIUS_SCENE_SCALE = 1.7;
@@ -115,9 +126,14 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 const smoothedPointer = new THREE.Vector2();
 const geometryWorldCenter = new THREE.Vector3();
+const cameraTargetPosition = new THREE.Vector3();
+const cameraTargetLook = new THREE.Vector3();
+const cameraLookDirection = new THREE.Vector3();
+const worksViewport = { height: 0, width: 0 };
 
 let introStartTime: number | null = null;
 let introCompleted = false;
+let lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
 
 let rotationTweenNight: gsap.core.Tween | null = null;
 let rotationTweenDay: gsap.core.Tween | null = null;
@@ -177,6 +193,7 @@ function applyGroupTransform(
     z: options.position.z,
     duration: 0.8,
     ease: "power2.out",
+    overwrite: "auto",
   });
 
   if (shouldTweenRotation(normalizedRotation, options.rotation)) {
@@ -203,15 +220,23 @@ function applyGroupTransform(
     z: options.scale,
     ease: "power2.out",
     duration: 0.8,
+    overwrite: "auto",
   });
 }
 
 function applyThemeImmediate(nextTheme: ThemeMode) {
   if (!threeScene || !hypercube || !mobius || !starField) return;
   const isDay = nextTheme === "day";
+  const activity = getSceneThemeActivity(nextTheme);
   hypercube.setOpacity(isDay ? 0 : 1);
   mobius.setOpacity(isDay ? 1 : 0);
-  starField.setOpacity(isDay ? 0 : 1);
+  starField.setColor(
+    isDay ? 0x111111 : 0xfcfcfc,
+    isDay ? THREE.NormalBlending : THREE.AdditiveBlending,
+  );
+  starField.setOpacity(1);
+  hypercube.group.visible = activity.hypercube;
+  mobius.group.visible = activity.mobius;
   hypercube.group.scale.setScalar(isDay ? INACTIVE_SCALE : HYPERCUBE_SCENE_SCALE);
   mobius.group.scale.setScalar(isDay ? MOBIUS_SCENE_SCALE : INACTIVE_SCALE);
   threeScene.scene.background = null;
@@ -295,6 +320,7 @@ function handleResize() {
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
   isMobile.value = width < 768;
+  supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
 
   threeScene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   threeScene.resize(width, height);
@@ -311,11 +337,16 @@ function handleReducedMotionChange(event: MediaQueryListEvent) {
 
 function updateWorksOrbitCards(elapsed = 0, delta = 0) {
   if (!container.value || !threeScene || !worksOrbitCards) return;
-  const width = container.value.clientWidth;
-  const height = container.value.clientHeight;
   const activeGeometry = getActiveGeometry();
   const visible =
-    isDesktopWorksOrbitMode(store.mode, store.worksViewMode, isMobile.value) && !store.isFocusing && !!activeGeometry;
+    isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value) &&
+    !store.isFocusing &&
+    !!activeGeometry;
+
+  if (!visible && !worksOrbitCards.group.visible) return;
+
+  worksViewport.width = container.value.clientWidth;
+  worksViewport.height = container.value.clientHeight;
 
   if (activeGeometry) {
     activeGeometry.group.getWorldPosition(geometryWorldCenter);
@@ -329,10 +360,7 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     delta,
     elapsed,
     reducedMotion: prefersReducedMotion,
-    viewport: {
-      height,
-      width,
-    },
+    viewport: worksViewport,
     visible,
   });
 
@@ -347,7 +375,7 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     visible && worksOrbitCards.isInteracting() ? getWorksCenterMagnetStrength(pointer, prefersReducedMotion) : 0;
   hypercube?.setInteractionIntensity(theme.value === "night" ? ritualIntensity : 0);
   mobius?.setInteractionIntensity(theme.value === "day" ? ritualIntensity : 0);
-  starField?.setWarpIntensity(theme.value === "night" ? ritualIntensity : 0);
+  starField?.setWarpIntensity(ritualIntensity);
 }
 
 function renderSceneFrame() {
@@ -418,13 +446,15 @@ function handleCanvasPointerDown(event: PointerEvent) {
   updatePointerFromEvent(event);
   raycaster.setFromCamera(pointer, threeScene.camera);
 
-  if (isDesktopWorksOrbitMode(store.mode, store.worksViewMode, isMobile.value)) {
+  if (
+    isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value)
+  ) {
     const worksHit = worksOrbitCards?.pick(raycaster, pointer);
     const action = resolveScenePointerDownAction({
       mode: store.mode,
       worksViewMode: store.worksViewMode,
       isFocusing: store.isFocusing,
-      isMobile: isMobile.value,
+      isMobile: !supportsWorksOrbit.value,
       hasWorksHit: !!worksHit,
       hasGeometryHit: false,
     });
@@ -478,6 +508,7 @@ onMounted(async () => {
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
   isMobile.value = width < 768;
+  supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
 
   threeScene = useThreeScene({
     canvas: canvasRef.value,
@@ -575,10 +606,9 @@ onMounted(async () => {
     const elapsed = sceneTimer.getElapsed();
 
     starField.update(delta);
-    hypercube.update(delta);
-    mobius.update(delta);
-
     const activeGeometry = getActiveGeometry();
+    activeGeometry?.update(delta);
+
     if (
       activeGeometry &&
       !store.isFocusing &&
@@ -597,13 +627,13 @@ onMounted(async () => {
         introStartTime = elapsed;
       }
 
-      const targetPos = new THREE.Vector3(0, 0, 10);
-      const targetLook = new THREE.Vector3(0, 0, 0);
+      cameraTargetPosition.set(0, 0, 10);
+      cameraTargetLook.set(0, 0, 0);
 
       if (store.mode === "blog" || store.mode === "author" || store.mode === "friend" || store.mode === "works") {
-        targetPos.set(0, 0, 12);
+        cameraTargetPosition.set(0, 0, 12);
       } else if (store.mode === "reading") {
-        targetPos.set(0, 0, 15);
+        cameraTargetPosition.set(0, 0, 15);
       }
 
       if (!introCompleted && introStartTime !== null) {
@@ -611,23 +641,22 @@ onMounted(async () => {
         const normalizedProgress = Math.min(Math.max(introProgress, 0), 1);
         const easedProgress = 1 - Math.pow(1 - normalizedProgress, 4);
 
-        threeScene.camera.position.lerpVectors(CAMERA_INTRO_START_POSITION, targetPos, easedProgress);
-        threeScene.camera.lookAt(targetLook);
+        threeScene.camera.position.lerpVectors(CAMERA_INTRO_START_POSITION, cameraTargetPosition, easedProgress);
+        threeScene.camera.lookAt(cameraTargetLook);
 
         if (normalizedProgress >= 1) introCompleted = true;
       } else {
         smoothedPointer.lerp(pointer, 2.2 * delta);
-        targetPos.x += smoothedPointer.x * 0.45;
-        targetPos.y += smoothedPointer.y * 0.25;
-        targetLook.x += smoothedPointer.x * 0.65;
-        targetLook.y += smoothedPointer.y * 0.35;
+        cameraTargetPosition.x += smoothedPointer.x * 0.45;
+        cameraTargetPosition.y += smoothedPointer.y * 0.25;
+        cameraTargetLook.x += smoothedPointer.x * 0.65;
+        cameraTargetLook.y += smoothedPointer.y * 0.35;
 
-        const lookAtVec = new THREE.Vector3();
-        threeScene.camera.getWorldDirection(lookAtVec);
-        lookAtVec.add(threeScene.camera.position);
-        lookAtVec.lerp(targetLook, 2 * delta);
-        threeScene.camera.lookAt(lookAtVec);
-        threeScene.camera.position.lerp(targetPos, 2 * delta);
+        threeScene.camera.getWorldDirection(cameraLookDirection);
+        cameraLookDirection.add(threeScene.camera.position);
+        cameraLookDirection.lerp(cameraTargetLook, 2 * delta);
+        threeScene.camera.lookAt(cameraLookDirection);
+        threeScene.camera.position.lerp(cameraTargetPosition, 2 * delta);
       }
     }
 
@@ -637,9 +666,7 @@ onMounted(async () => {
     let worksHit: ReturnType<WorksOrbitCards["pick"]> = null;
     if (
       !store.isFocusing &&
-      store.mode === "works" &&
-      store.worksViewMode === "orbit" &&
-      !isMobile.value &&
+      isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value) &&
       worksOrbitCards
     ) {
       raycaster.setFromCamera(pointer, threeScene.camera);
@@ -653,14 +680,18 @@ onMounted(async () => {
       cardGrabActive.value = false;
     }
 
-    if (
+    const canRaycastSceneGeometry =
       activeRaycastGeometry &&
-      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value)
+      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value);
+    if (
+      canRaycastSceneGeometry &&
+      shouldRunSceneHoverRaycast(elapsed, lastGeometryHoverRaycastAt)
     ) {
+      lastGeometryHoverRaycastAt = elapsed;
       raycaster.setFromCamera(pointer, threeScene.camera);
       const intersects = raycaster.intersectObject(activeRaycastGeometry.hitMesh);
       geometryHovered.value = intersects.length > 0;
-    } else if (geometryHovered.value) {
+    } else if (!canRaycastSceneGeometry && geometryHovered.value) {
       geometryHovered.value = false;
     }
 
@@ -668,8 +699,12 @@ onMounted(async () => {
     if (activeColorGeometry) {
       const targetColor =
         theme.value === "day"
-          ? new THREE.Color(geometryHovered.value ? "#3558cc" : "#151922")
-          : new THREE.Color(geometryHovered.value ? "#7ea8ff" : "#ffffff");
+          ? geometryHovered.value
+            ? DAY_GEOMETRY_HOVER_COLOR
+            : DAY_GEOMETRY_IDLE_COLOR
+          : geometryHovered.value
+            ? NIGHT_GEOMETRY_HOVER_COLOR
+            : NIGHT_GEOMETRY_IDLE_COLOR;
       activeColorGeometry.lerpColor(targetColor, 0.1);
     }
 
@@ -682,9 +717,12 @@ onMounted(async () => {
 
 watch(
   () => store.mode,
-  () => {
+  (mode, previousMode) => {
     geometryHovered.value = false;
-    updateGeometryTransform();
+    lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
+    if (!hasEquivalentGeometryTransformMode(mode, previousMode)) {
+      updateGeometryTransform();
+    }
     updateWorksOrbitCards();
   },
 );
@@ -702,6 +740,7 @@ watch(
   () => store.isFocusing,
   (focusing) => {
     if (controls) controls.enabled = focusing;
+    lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
     updateGeometryTransform();
     updateWorksOrbitCards();
   },
@@ -716,6 +755,7 @@ watch(theme, (nextTheme) => {
   cardHovered.value = false;
   cardGrabActive.value = false;
   geometryHovered.value = false;
+  lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
   applyThemeImmediate(nextTheme);
   worksOrbitCards?.setTheme(nextTheme);
   updateGeometryTransform(true);

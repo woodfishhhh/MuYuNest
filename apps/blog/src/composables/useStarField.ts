@@ -1,7 +1,23 @@
 import * as THREE from "three";
 
+export const STAR_FIELD_BACK_Z = -40;
+export const STAR_FIELD_FRONT_Z = 8;
+const STAR_FIELD_DEPTH = STAR_FIELD_FRONT_Z - STAR_FIELD_BACK_Z;
+
+function wrapStarZ(value: number) {
+  if (value >= STAR_FIELD_BACK_Z && value <= STAR_FIELD_FRONT_Z) {
+    return value;
+  }
+
+  return (
+    STAR_FIELD_BACK_Z +
+    THREE.MathUtils.euclideanModulo(value - STAR_FIELD_BACK_Z, STAR_FIELD_DEPTH)
+  );
+}
+
 export interface StarField {
   group: THREE.Group;
+  setColor: (color: THREE.ColorRepresentation, blending?: THREE.Blending) => void;
   setOpacity: (alpha: number) => void;
   setWarpIntensity: (value: number) => void;
   update: (delta: number) => void;
@@ -19,7 +35,7 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000): 
     const phi = Math.acos(2 * Math.random() - 1);
     positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
     positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = r * Math.cos(phi);
+    positions[i * 3 + 2] = wrapStarZ(r * Math.cos(phi));
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -42,6 +58,15 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000): 
 
   let warpIntensity = 0;
 
+  function setColor(
+    color: THREE.ColorRepresentation,
+    blending: THREE.Blending = THREE.NormalBlending,
+  ) {
+    material.color.set(color);
+    material.blending = blending;
+    material.needsUpdate = true;
+  }
+
   function setOpacity(alpha: number) {
     material.opacity = THREE.MathUtils.clamp(alpha, 0, 1);
   }
@@ -52,15 +77,14 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000): 
 
   function update(delta: number) {
     const intensity = THREE.MathUtils.clamp(warpIntensity, 0, 1);
-    group.rotation.x -= delta * (1 / 50 + intensity / 18);
-    group.rotation.y -= delta * (1 / 60 + intensity / 24);
+    group.rotation.z -= delta * (1 / 55 + intensity / 20);
 
     if (intensity > 0) {
       const array = geometry.attributes.position.array as Float32Array;
       const speed = 34 * intensity * delta;
       for (let i = 2; i < array.length; i += 3) {
         array[i] += speed;
-        if (array[i] > 40) array[i] = -40 + (array[i] - 40);
+        if (array[i] > STAR_FIELD_FRONT_Z) array[i] = wrapStarZ(array[i]);
       }
       geometry.attributes.position.needsUpdate = true;
       material.size = 0.05 + intensity * 0.025;
@@ -74,5 +98,5 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000): 
     material.dispose();
   }
 
-  return { group, setOpacity, setWarpIntensity, update, dispose };
+  return { group, setColor, setOpacity, setWarpIntensity, update, dispose };
 }

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, watch } from "vue";
+import { computed, defineAsyncComponent, onMounted, watch } from "vue";
 
 import { playRouteTransition } from "@/composables/useRouteTransitionOrchestrator";
 import { resolveTransitionIntent } from "@/motion/route-transition-intent";
 import { useSiteStore, type SiteMode } from "@/stores/site";
 
 const ThreeSceneCanvas = defineAsyncComponent(() => import("@/components/scene/ThreeSceneCanvas.vue"));
+const HomeView = defineAsyncComponent(() => import("@/views/HomeView.vue"));
 
 interface Snapshot {
   routeName: string | null;
@@ -18,6 +19,9 @@ const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "post"]);
 
 const route = useRoute();
 const siteStore = useSiteStore();
+const isHomeRoute = computed(
+  () => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name),
+);
 
 let initialized = false;
 let previousSnapshot: Snapshot = {
@@ -33,14 +37,6 @@ onMounted(() => {
     activePostSlug: siteStore.activePostSlug,
   };
 });
-
-function getRouteViewKey(routeView: { name: unknown; fullPath: string }) {
-  if (typeof routeView.name === "string" && HOME_ROUTE_NAMES.has(routeView.name)) {
-    return "home-family";
-  }
-
-  return routeView.fullPath;
-}
 
 watch(
   () => [typeof route.name === "string" ? route.name : null, siteStore.mode, siteStore.activePostSlug] as const,
@@ -87,8 +83,14 @@ watch(
       </div>
     </div>
     <div data-route-stage class="route-transition-stage">
+      <HomeView v-if="isHomeRoute" key="home-family" data-route-view />
       <NuxtPage v-slot="{ Component, route: routeView }">
-        <component :is="Component" :key="getRouteViewKey(routeView)" data-route-view />
+        <component
+          v-if="!isHomeRoute"
+          :is="Component"
+          :key="routeView.fullPath"
+          data-route-view
+        />
       </NuxtPage>
     </div>
   </div>

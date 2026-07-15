@@ -47,6 +47,17 @@ describe("mobius strip", () => {
     strip.dispose();
   });
 
+  it("uses a lightweight torus for pointer hit testing", () => {
+    const strip = useMobiusStrip();
+    const geometry = strip.hitMesh.geometry as THREE.TorusGeometry;
+
+    expect(geometry.parameters.radialSegments).toBe(8);
+    expect(geometry.parameters.tubularSegments).toBe(32);
+    expect(geometry.index?.count).toBeLessThanOrEqual(8 * 32 * 6);
+
+    strip.dispose();
+  });
+
   it("setOpacity updates line material opacity", () => {
     const strip = useMobiusStrip();
     strip.setOpacity(0.2);

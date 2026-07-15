@@ -126,7 +126,7 @@ export function useMobiusStrip(): MobiusStrip {
   occluderGeometry.setAttribute("position", new THREE.BufferAttribute(positions.slice(), 3));
   occluderGeometry.setIndex(triangles);
 
-  const hitMeshGeometry = new THREE.TorusGeometry(2.3, 0.72, 20, 120);
+  const hitMeshGeometry = new THREE.TorusGeometry(2.3, 0.72, 8, 32);
   const hitMeshMaterial = new THREE.MeshBasicMaterial({ visible: false });
   const hitMesh = new THREE.Mesh(hitMeshGeometry, hitMeshMaterial);
   group.add(hitMesh);

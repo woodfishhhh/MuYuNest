@@ -27,7 +27,8 @@ function prefetchArticle() {
     data-testid="blog-result-card"
     :to="{ name: 'post', params: { slug: props.post.canonicalSlug }, query: props.blogQuery }"
     class="blog-result-row group relative grid gap-3 border-b border-[var(--border-subtle)] py-5 transition-colors last:border-b-0 hover:bg-[var(--surface-soft)] md:grid-cols-[8.5rem_minmax(0,1fr)] md:gap-6 md:px-3"
-    :style="{ animationDelay: `${Math.min(props.index, 8) * 28}ms` }"
+    :class="{ 'blog-result-row--enter': props.index < 10 }"
+    :style="props.index < 10 ? { animationDelay: `${props.index * 28}ms` } : undefined"
     @mouseenter="prefetchArticle"
   >
     <span
@@ -81,6 +82,11 @@ function prefetchArticle() {
 
 <style scoped>
 .blog-result-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 190px;
+}
+
+.blog-result-row--enter {
   animation: blog-row-enter 360ms cubic-bezier(0.33, 1, 0.68, 1) both;
 }
 
@@ -103,7 +109,7 @@ function prefetchArticle() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .blog-result-row {
+  .blog-result-row--enter {
     animation: none;
     transition: none;
   }

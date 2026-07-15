@@ -1,6 +1,7 @@
 import type { SiteMode } from "@/stores/site";
 
 const WORKS_MODE_BASE_SCALE = 1.2;
+const CENTERED_PANEL_MODES = new Set<SiteMode>(["home", "blog", "friend"]);
 
 export interface GeometryTransformTargetOptions {
   mode: SiteMode;
@@ -14,6 +15,12 @@ export interface GeometryTransformTarget {
   y: number;
   z: number;
   baseScale: number;
+}
+
+export function hasEquivalentGeometryTransformMode(left: SiteMode, right: SiteMode) {
+  return (
+    left === right || (CENTERED_PANEL_MODES.has(left) && CENTERED_PANEL_MODES.has(right))
+  );
 }
 
 export function getGeometryTransformTarget({

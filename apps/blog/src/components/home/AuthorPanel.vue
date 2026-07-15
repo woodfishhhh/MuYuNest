@@ -129,8 +129,6 @@ const screens = [
   padding: clamp(2.5rem, 5vh, 4.5rem) clamp(2rem, 5vw, 4rem);
   background: var(--author-panel-surface);
   box-shadow: var(--author-panel-shadow);
-  backdrop-filter: saturate(140%) blur(16px);
-  -webkit-backdrop-filter: saturate(140%) blur(16px);
 }
 
 :deep(.author-screen__panel--poster) {
