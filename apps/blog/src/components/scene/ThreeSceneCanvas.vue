@@ -94,6 +94,8 @@ const DAY_GEOMETRY_HOVER_COLOR = new THREE.Color("#3558cc");
 const NIGHT_GEOMETRY_IDLE_COLOR = new THREE.Color("#ffffff");
 const NIGHT_GEOMETRY_HOVER_COLOR = new THREE.Color("#7ea8ff");
 const CLEAR_ALPHA = 0;
+const WORKS_CASE_GEOMETRY_OPACITY = 0.32;
+const WORKS_CASE_MOBILE_GEOMETRY_OPACITY = 0.14;
 const HYPERCUBE_SCENE_SCALE = 1;
 const MOBIUS_SCENE_SCALE = 1.7;
 const INACTIVE_SCALE = 0.001;
@@ -148,6 +150,26 @@ function getGeometryByTheme(nextTheme: ThemeMode): ActiveGeometry | null {
     return mobius;
   }
   return hypercube;
+}
+
+function applyThemeGeometryState(nextTheme: ThemeMode) {
+  if (!hypercube || !mobius) return;
+
+  const activity = getSceneThemeActivity(nextTheme);
+  const isDay = nextTheme === "day";
+  const usesCaseLayout =
+    store.mode === "works" && (store.worksViewMode === "case" || !supportsWorksOrbit.value);
+  const activeOpacity =
+    usesCaseLayout && !store.isFocusing
+      ? isMobile.value
+        ? WORKS_CASE_MOBILE_GEOMETRY_OPACITY
+        : WORKS_CASE_GEOMETRY_OPACITY
+      : 1;
+
+  hypercube.setOpacity(isDay ? 0 : activeOpacity);
+  mobius.setOpacity(isDay ? activeOpacity : 0);
+  hypercube.group.visible = activity.hypercube;
+  mobius.group.visible = activity.mobius;
 }
 
 function applyGroupTransform(
@@ -227,16 +249,12 @@ function applyGroupTransform(
 function applyThemeImmediate(nextTheme: ThemeMode) {
   if (!threeScene || !hypercube || !mobius || !starField) return;
   const isDay = nextTheme === "day";
-  const activity = getSceneThemeActivity(nextTheme);
-  hypercube.setOpacity(isDay ? 0 : 1);
-  mobius.setOpacity(isDay ? 1 : 0);
+  applyThemeGeometryState(nextTheme);
   starField.setColor(
     isDay ? 0x111111 : 0xfcfcfc,
     isDay ? THREE.NormalBlending : THREE.AdditiveBlending,
   );
   starField.setOpacity(1);
-  hypercube.group.visible = activity.hypercube;
-  mobius.group.visible = activity.mobius;
   hypercube.group.scale.setScalar(isDay ? INACTIVE_SCALE : HYPERCUBE_SCENE_SCALE);
   mobius.group.scale.setScalar(isDay ? MOBIUS_SCENE_SCALE : INACTIVE_SCALE);
   threeScene.scene.background = null;
@@ -321,6 +339,7 @@ function handleResize() {
   const height = container.value.clientHeight;
   isMobile.value = width < 768;
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
+  applyThemeGeometryState(theme.value);
 
   threeScene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   threeScene.resize(width, height);
@@ -359,6 +378,7 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     center: geometryWorldCenter,
     delta,
     elapsed,
+    pointerNdc: pointer,
     reducedMotion: prefersReducedMotion,
     viewport: worksViewport,
     visible,
@@ -396,6 +416,7 @@ function renderSceneFrame() {
     renderer.clear(true, true, true);
     camera.layers.set(0);
     renderer.render(scene, camera);
+    worksOrbitCards.captureBackdrop(renderer);
     camera.layers.set(WORKS_ORBIT_CARD_RENDER_LAYER);
     scene.background = null;
     renderer.render(scene, camera);
@@ -723,6 +744,7 @@ watch(
     if (!hasEquivalentGeometryTransformMode(mode, previousMode)) {
       updateGeometryTransform();
     }
+    applyThemeGeometryState(theme.value);
     updateWorksOrbitCards();
   },
 );
@@ -733,6 +755,7 @@ watch(
     cardGrabActive.value = false;
     worksOrbitCards?.clearInteraction();
     worksOrbitCards?.setHovered(null);
+    applyThemeGeometryState(theme.value);
     updateWorksOrbitCards();
   },
 );
@@ -741,6 +764,7 @@ watch(
   (focusing) => {
     if (controls) controls.enabled = focusing;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
+    applyThemeGeometryState(theme.value);
     updateGeometryTransform();
     updateWorksOrbitCards();
   },

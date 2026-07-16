@@ -8,6 +8,7 @@ import {
   getWorksOrbitRadii,
   isWorksLaunchZone,
   WORKS_ORBIT_CARD_RENDER_LAYER,
+  WORKS_ORBIT_CARD_SIZE,
 } from "@/components/scene/works-orbit-cards";
 
 const originalGetContextDescriptor = Object.getOwnPropertyDescriptor(
@@ -35,11 +36,17 @@ const works = [
 ];
 
 function mockCanvasContext() {
+  const gradient = {
+    addColorStop: vi.fn(),
+  };
   const context = {
     beginPath: vi.fn(),
+    clip: vi.fn(),
     clearRect: vi.fn(),
     closePath: vi.fn(),
+    createLinearGradient: vi.fn(() => gradient),
     fill: vi.fn(),
+    fillRect: vi.fn(),
     fillText: vi.fn(),
     lineTo: vi.fn(),
     measureText: vi.fn((text: string) => ({ width: text.length * 12 })),
@@ -54,6 +61,8 @@ function mockCanvasContext() {
     configurable: true,
     value: vi.fn(() => context),
   });
+
+  return context;
 }
 
 function createCamera() {
@@ -154,19 +163,19 @@ describe("createWorksOrbitCardFrame", () => {
   it("uses the expanded desktop orbit radii", () => {
     expect(getWorksOrbitRadii(800)).toEqual({
       radiusX: 6.2,
-      radiusY: 2.6,
+      radiusY: 2.1,
       radiusZ: 6.2,
     });
 
     const wide = getWorksOrbitRadii(1440);
     expect(wide.radiusX).toBeCloseTo(1440 / 160);
-    expect(wide.radiusY).toBeCloseTo(1440 / 450);
+    expect(wide.radiusY).toBeCloseTo(1440 / 600);
     expect(wide.radiusZ).toBeCloseTo(1440 / 190);
-    expect(wide.radiusX / wide.radiusY).toBeGreaterThan(2.6);
+    expect(wide.radiusX / wide.radiusY).toBeGreaterThan(3.5);
     expect(wide.radiusZ).toBeGreaterThan(wide.radiusY);
   });
 
-  it("keeps front and back orbit cards outside the central geometry clearance", () => {
+  it("keeps front and back orbit cards inside a compact vertical corridor", () => {
     const radii = getWorksOrbitRadii(1440);
     const frontElapsed = (Math.PI / 2 + Math.PI * 0.12) / 0.24;
     const backElapsed = (Math.PI * 1.5 + Math.PI * 0.12) / 0.24;
@@ -187,8 +196,60 @@ describe("createWorksOrbitCardFrame", () => {
       radiusZ: radii.radiusZ,
     });
 
-    expect(Math.hypot(front.position.x, front.position.y)).toBeGreaterThan(3);
-    expect(Math.hypot(back.position.x, back.position.y)).toBeGreaterThan(3);
+    expect(front.position.y).toBeLessThanOrEqual(2.1);
+    expect(back.position.y).toBeGreaterThanOrEqual(-2.8);
+  });
+
+  it("keeps the projected orbit inside desktop navigation and viewport safe areas", () => {
+    const width = 1920;
+    const height = 1080;
+    const camera = createCamera();
+    camera.aspect = width / height;
+    camera.fov = 75;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld(true);
+    const cards = createWorksOrbitCards({ theme: "night", works });
+
+    for (const elapsed of [0, 3, 6, 9, 12]) {
+      cards.update({
+        camera,
+        center: new THREE.Vector3(),
+        delta: 0.016,
+        elapsed,
+        reducedMotion: false,
+        viewport: { height, width },
+        visible: true,
+      });
+
+      for (const cardGroup of cards.group.children as THREE.Group[]) {
+        const projected = cardGroup.position.clone().project(camera);
+        const viewDepth = Math.abs(
+          cardGroup.position.clone().applyMatrix4(camera.matrixWorldInverse).z,
+        );
+        const viewHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * viewDepth;
+        const viewWidth = viewHeight * camera.aspect;
+        const rotationZ = cardGroup.rotation.z;
+        const rotatedWidth =
+          WORKS_ORBIT_CARD_SIZE.width * Math.abs(Math.cos(rotationZ)) +
+          WORKS_ORBIT_CARD_SIZE.height * Math.abs(Math.sin(rotationZ));
+        const rotatedHeight =
+          WORKS_ORBIT_CARD_SIZE.height * Math.abs(Math.cos(rotationZ)) +
+          WORKS_ORBIT_CARD_SIZE.width * Math.abs(Math.sin(rotationZ));
+        const halfWidthNdc = (rotatedWidth * cardGroup.scale.x) / viewWidth;
+        const halfHeightNdc = (rotatedHeight * cardGroup.scale.y) / viewHeight;
+        const left = ((projected.x - halfWidthNdc + 1) * width) / 2;
+        const right = ((projected.x + halfWidthNdc + 1) * width) / 2;
+        const top = ((1 - projected.y - halfHeightNdc) * height) / 2;
+        const bottom = ((1 - projected.y + halfHeightNdc) * height) / 2;
+
+        expect(left).toBeGreaterThanOrEqual(23.9);
+        expect(right).toBeLessThanOrEqual(width - 23.9);
+        expect(top).toBeGreaterThanOrEqual(103.9);
+        expect(bottom).toBeLessThanOrEqual(height - 31.9);
+      }
+    }
+
+    cards.dispose();
   });
 
   it("launches the live URL only when a dragged card is released in the center zone", () => {
@@ -270,35 +331,164 @@ describe("createWorksOrbitCardFrame", () => {
     cards.dispose();
   });
 
-  it("renders visual cards on a separate depth-tested layer", () => {
+  it("renders a refractive glass layer behind sharp card content", () => {
     const cards = createWorksOrbitCards({ theme: "night", works });
     const cardGroup = cards.group.children[0] as THREE.Group;
-    const cardMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-")) as
+    const cardMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-content-")) as
       | THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+      | undefined;
+    const glassMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-glass-")) as
+      | THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
       | undefined;
 
     expect(cardMesh).toBeDefined();
+    expect(glassMesh).toBeDefined();
     expect(cardMesh?.layers.mask).toBe(1 << WORKS_ORBIT_CARD_RENDER_LAYER);
+    expect(glassMesh?.layers.mask).toBe(1 << WORKS_ORBIT_CARD_RENDER_LAYER);
     expect(cardMesh?.material.depthTest).toBe(true);
-    expect(cardMesh?.material.depthWrite).toBe(true);
+    expect(cardMesh?.material.depthWrite).toBe(false);
     expect(cardMesh?.material.alphaTest).toBeGreaterThan(0);
     expect(cardMesh?.material.transparent).toBe(true);
     expect(cardMesh?.material.opacity).toBe(1);
+    expect((cardMesh?.material.map as THREE.CanvasTexture).premultiplyAlpha).toBe(false);
+    expect(
+      ((cardMesh?.material.map as THREE.CanvasTexture).image as HTMLCanvasElement).width /
+        ((cardMesh?.material.map as THREE.CanvasTexture).image as HTMLCanvasElement).height,
+    ).toBeCloseTo(352 / 236);
+    expect(glassMesh?.material.depthTest).toBe(true);
+    expect(glassMesh?.material.depthWrite).toBe(true);
+    expect(glassMesh?.material.fragmentShader).toContain("roundedBoxSdf");
+    expect(glassMesh?.material.fragmentShader).toContain("uBackdrop");
+    expect(glassMesh?.material.fragmentShader).toContain("screenBlend");
+    expect(glassMesh?.material.fragmentShader).toContain("overlayBlend");
+    expect(glassMesh?.material.uniforms.uBlurPx.value).toBe(20);
+    expect(glassMesh?.material.uniforms.uSaturation.value).toBe(1.4);
+    expect(glassMesh?.material.uniforms.uDisplacementScale.value).toBe(100);
+    expect(glassMesh?.material.uniforms.uAberrationIntensity.value).toBe(2);
+    expect(glassMesh?.material.uniforms.uAberrationBlur.value).toBe(0.3);
+    expect(glassMesh?.material.uniforms.uRimWidthPx.value).toBe(1.5);
+    expect(glassMesh?.material.uniforms.uDayBorderWidthPx.value).toBe(1);
+    expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
 
     cards.dispose();
+  });
+
+  it("enables the one-pixel dark edge only for day cards", () => {
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const cardGroup = cards.group.children[0] as THREE.Group;
+    const glassMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-glass-")) as
+      | THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
+      | undefined;
+
+    expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
+    cards.setTheme("day");
+    expect(glassMesh?.material.uniforms.uDayMode.value).toBe(1);
+    cards.setTheme("night");
+    expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
+
+    cards.dispose();
+  });
+
+  it("draws the same content hierarchy as the Case cards", () => {
+    const context = mockCanvasContext();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const labels = context.fillText.mock.calls.map(([label]) => label);
+
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        "WoodFishNest",
+        "01",
+        "BLOG",
+        "Website:",
+        "进入项目",
+        "Source:",
+        "GitHub",
+      ]),
+    );
+    expect(labels).not.toContain("DRAG TO OPEN");
+    expect(labels).not.toContain("woodfish.site");
+
+    cards.dispose();
+  });
+
+  it("captures the base framebuffer at the active drawing-buffer resolution", () => {
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const glassMeshes = (cards.group.children as THREE.Group[]).map(
+      (cardGroup) =>
+        cardGroup.children.find((child) => child.name.startsWith("work-card-glass-")) as THREE.Mesh<
+          THREE.PlaneGeometry,
+          THREE.ShaderMaterial
+        >,
+    );
+    const glassMesh = glassMeshes[0];
+    const copyFramebufferToTexture = vi.fn();
+    const initialBackdrop = glassMesh?.material.uniforms.uBackdrop.value as THREE.FramebufferTexture;
+    const disposeInitialBackdrop = vi.spyOn(initialBackdrop, "dispose");
+    const drawingBufferSize = new THREE.Vector2(2880, 1800);
+    const renderer = {
+      copyFramebufferToTexture,
+      getDrawingBufferSize: (target: THREE.Vector2) => target.copy(drawingBufferSize),
+    } as unknown as THREE.WebGLRenderer;
+
+    cards.captureBackdrop(renderer);
+
+    expect(copyFramebufferToTexture).toHaveBeenCalledTimes(1);
+    expect(disposeInitialBackdrop).toHaveBeenCalledTimes(1);
+    const fullSizeBackdrop = glassMesh?.material.uniforms.uBackdrop.value as THREE.FramebufferTexture;
+    expect(fullSizeBackdrop).not.toBe(initialBackdrop);
+    expect(
+      glassMeshes.every((mesh) => mesh.material.uniforms.uBackdrop.value === fullSizeBackdrop),
+    ).toBe(true);
+    expect(fullSizeBackdrop).toEqual(
+      expect.objectContaining({
+        image: expect.objectContaining({ height: 1800, width: 2880 }),
+      }),
+    );
+    expect(glassMesh?.material.uniforms.uResolution.value).toEqual(
+      expect.objectContaining({ x: 2880, y: 1800 }),
+    );
+
+    cards.captureBackdrop(renderer);
+    expect(glassMesh?.material.uniforms.uBackdrop.value).toBe(fullSizeBackdrop);
+
+    const disposeFullSizeBackdrop = vi.spyOn(fullSizeBackdrop, "dispose");
+    drawingBufferSize.set(1920, 1080);
+    cards.captureBackdrop(renderer);
+
+    expect(disposeFullSizeBackdrop).toHaveBeenCalledTimes(1);
+    const resizedBackdrop = glassMesh?.material.uniforms.uBackdrop.value as THREE.FramebufferTexture;
+    expect(resizedBackdrop).toEqual(
+      expect.objectContaining({
+        image: expect.objectContaining({ height: 1080, width: 1920 }),
+      }),
+    );
+    expect(glassMeshes.every((mesh) => mesh.material.uniforms.uBackdrop.value === resizedBackdrop)).toBe(
+      true,
+    );
+    expect(copyFramebufferToTexture).toHaveBeenCalledTimes(3);
+
+    const disposeResizedBackdrop = vi.spyOn(resizedBackdrop, "dispose");
+    cards.dispose();
+    expect(disposeResizedBackdrop).toHaveBeenCalledTimes(1);
   });
 
   it("keeps card material opacity at full strength during orbit updates", () => {
     const camera = createCamera();
     const cards = createWorksOrbitCards({ theme: "night", works });
     const cardGroup = cards.group.children[0] as THREE.Group;
-    const cardMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-")) as
+    const cardMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-content-")) as
       | THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+      | undefined;
+    const glassMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-glass-")) as
+      | THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
       | undefined;
 
     updateOrbitCards(cards, camera, 0.2, 0.016);
 
     expect(cardMesh?.material.opacity).toBe(1);
+    expect(glassMesh?.material.uniforms.uPointer.value).toEqual(
+      expect.objectContaining({ x: 0.5, y: 0.5 }),
+    );
 
     cards.dispose();
   });

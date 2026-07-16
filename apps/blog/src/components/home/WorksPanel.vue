@@ -79,10 +79,10 @@ onUnmounted(() => {
 
     <ul v-if="isDesktopOrbit" class="works-panel__a11y-links" aria-label="作品链接">
       <li v-for="work in works" :key="work.slug">
-        <a :href="work.liveUrl" rel="noreferrer noopener" tabindex="-1" target="_blank">
+        <a :href="work.liveUrl" rel="noreferrer noopener" target="_blank">
           {{ work.name }}
         </a>
-        <a :href="work.githubUrl" rel="noreferrer noopener" tabindex="-1" target="_blank">
+        <a :href="work.githubUrl" rel="noreferrer noopener" target="_blank">
           {{ work.name }} GitHub
         </a>
       </li>
@@ -145,6 +145,44 @@ onUnmounted(() => {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.works-panel__a11y-links:focus-within {
+  top: 6.6rem;
+  left: clamp(1.5rem, 4vw, 4rem);
+  z-index: 30;
+  display: flex;
+  width: min(calc(100% - 3rem), 54rem);
+  height: auto;
+  margin: 0;
+  gap: 0.5rem;
+  overflow-x: auto;
+  clip: auto;
+  clip-path: none;
+  padding: 0.6rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--stage-bg) 86%, transparent);
+  backdrop-filter: blur(14px);
+  list-style: none;
+  pointer-events: auto;
+}
+
+.works-panel__a11y-links:focus-within li {
+  display: contents;
+}
+
+.works-panel__a11y-links:focus-within a {
+  flex: none;
+  padding: 0.6rem 0.75rem;
+  color: var(--stage-fg);
+  font-size: 0.76rem;
+  text-decoration: none;
+}
+
+.works-panel__a11y-links:focus-within a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (max-width: 1023px) {

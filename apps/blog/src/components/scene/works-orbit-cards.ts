@@ -1,5 +1,9 @@
 import * as THREE from "three";
 
+import {
+  createWorksCardPresentation,
+  WORKS_CARD_PRESET,
+} from "@/components/home/works/works-card-preset";
 import type { ThemeMode } from "@/composables/useTheme";
 import type { WorkProjectData } from "@/types/content";
 
@@ -54,6 +58,7 @@ interface WorksOrbitCardsUpdateOptions {
   center: THREE.Vector3;
   delta: number;
   elapsed: number;
+  pointerNdc?: THREE.Vector2;
   reducedMotion: boolean;
   viewport: {
     width: number;
@@ -65,6 +70,7 @@ interface WorksOrbitCardsUpdateOptions {
 export interface WorksOrbitCards {
   group: THREE.Group;
   beginDrag: (hit: WorksOrbitCardHit, pointerNdc: THREE.Vector2) => void;
+  captureBackdrop: (renderer: THREE.WebGLRenderer) => void;
   clearInteraction: () => void;
   dispose: () => void;
   drag: (pointerNdc: THREE.Vector2) => void;
@@ -78,10 +84,15 @@ export interface WorksOrbitCards {
 
 const TAU = Math.PI * 2;
 const ORBIT_SPEED = 0.24;
-const CARD_WIDTH = 4.25;
-const CARD_HEIGHT = 2.4;
-const TEXTURE_WIDTH = 1024;
-const TEXTURE_HEIGHT = 580;
+export const WORKS_ORBIT_CARD_SIZE = {
+  height: 2.36,
+  width: 3.52,
+} as const;
+const CARD_WIDTH = WORKS_ORBIT_CARD_SIZE.width;
+const CARD_HEIGHT = WORKS_ORBIT_CARD_SIZE.height;
+const TEXTURE_SCALE = 2;
+const TEXTURE_WIDTH = WORKS_CARD_PRESET.width * TEXTURE_SCALE;
+const TEXTURE_HEIGHT = WORKS_CARD_PRESET.height * TEXTURE_SCALE;
 const DRAG_DISTANCE_FROM_CAMERA = 5.2;
 const DRAG_LERP_SPEED = 18;
 const DRAG_MAX_VIEWPORT_FRACTION = 0.46;
@@ -92,6 +103,135 @@ const INTERACTION_RENDER_ORDER = 1_000;
 const RETURN_ANIMATION_DURATION = 0.38;
 const RETURN_ANIMATION_DURATION_REDUCED = 0.18;
 export const WORKS_ORBIT_CARD_RENDER_LAYER = 1;
+const CARD_ASPECT = CARD_WIDTH / CARD_HEIGHT;
+const ORBIT_CENTER_Y_OFFSET = -0.32;
+const ORBIT_SAFE_AREA_PX = {
+  bottom: 32,
+  side: 24,
+  top: 104,
+} as const;
+
+const LIQUID_GLASS_VERTEX_SHADER = /* glsl */ `
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const LIQUID_GLASS_FRAGMENT_SHADER = /* glsl */ `
+  uniform sampler2D uBackdrop;
+  uniform vec2 uResolution;
+  uniform vec2 uPointer;
+  uniform vec2 uCardSize;
+  uniform vec3 uBaseColor;
+  uniform vec3 uGlassTint;
+  uniform float uAberrationBlur;
+  uniform float uAberrationIntensity;
+  uniform float uBlurPx;
+  uniform float uDayBorderWidthPx;
+  uniform float uDayMode;
+  uniform float uDisplacementScale;
+  uniform float uHover;
+  uniform float uRimWidthPx;
+  uniform float uSaturation;
+
+  varying vec2 vUv;
+
+  float roundedBoxSdf(vec2 point, vec2 halfSize, float radius) {
+    vec2 distanceToEdge = abs(point) - halfSize + radius;
+    return min(max(distanceToEdge.x, distanceToEdge.y), 0.0)
+      + length(max(distanceToEdge, 0.0)) - radius;
+  }
+
+  vec3 readBackdrop(vec2 uv) {
+    vec4 sampled = texture2D(uBackdrop, clamp(uv, vec2(0.001), vec2(0.999)));
+    vec3 restored = sampled.rgb / max(sampled.a, 0.001);
+    return mix(uBaseColor, restored, smoothstep(0.0, 0.92, sampled.a));
+  }
+
+  vec3 saturateColor(vec3 color, float saturation) {
+    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    return mix(vec3(luminance), color, saturation);
+  }
+
+  vec3 readBlurredBackdrop(vec2 uv, vec2 radius) {
+    vec3 color = readBackdrop(uv) * 0.24;
+    color += readBackdrop(uv + vec2(radius.x, 0.0)) * 0.12;
+    color += readBackdrop(uv - vec2(radius.x, 0.0)) * 0.12;
+    color += readBackdrop(uv + vec2(0.0, radius.y)) * 0.12;
+    color += readBackdrop(uv - vec2(0.0, radius.y)) * 0.12;
+    color += readBackdrop(uv + radius) * 0.07;
+    color += readBackdrop(uv - radius) * 0.07;
+    color += readBackdrop(uv + vec2(radius.x, -radius.y)) * 0.07;
+    color += readBackdrop(uv + vec2(-radius.x, radius.y)) * 0.07;
+    return saturateColor(color, uSaturation);
+  }
+
+  vec3 screenBlend(vec3 base, vec3 blend) {
+    return 1.0 - (1.0 - base) * (1.0 - blend);
+  }
+
+  vec3 overlayBlend(vec3 base, vec3 blend) {
+    vec3 low = 2.0 * base * blend;
+    vec3 high = 1.0 - 2.0 * (1.0 - base) * (1.0 - blend);
+    return mix(low, high, step(vec3(0.5), base));
+  }
+
+  void main() {
+    vec2 localPoint = (vUv - 0.5) * vec2(${CARD_ASPECT.toFixed(6)}, 1.0);
+    vec2 halfSize = vec2(${(CARD_ASPECT * 0.5 - 0.012).toFixed(6)}, 0.488);
+    float radius = ${(WORKS_CARD_PRESET.cornerRadius / WORKS_CARD_PRESET.height).toFixed(6)};
+    float distance = roundedBoxSdf(localPoint, halfSize, radius);
+
+    if (distance > 0.0) discard;
+
+    float epsilon = 0.003;
+    vec2 normal = normalize(vec2(
+      roundedBoxSdf(localPoint + vec2(epsilon, 0.0), halfSize, radius)
+        - roundedBoxSdf(localPoint - vec2(epsilon, 0.0), halfSize, radius),
+      roundedBoxSdf(localPoint + vec2(0.0, epsilon), halfSize, radius)
+        - roundedBoxSdf(localPoint - vec2(0.0, epsilon), halfSize, radius)
+    ) + vec2(0.0001));
+
+    float insideDistance = -distance;
+    float edgeDisplacement = 1.0 - smoothstep(0.0, 0.065, insideDistance);
+    edgeDisplacement = edgeDisplacement * edgeDisplacement * edgeDisplacement;
+
+    vec2 screenUv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
+    vec2 pixel = 1.0 / max(uResolution, vec2(1.0));
+    vec2 displacement = normal * edgeDisplacement * uDisplacementScale * pixel;
+    float greenScale = 1.0 + uAberrationIntensity * 0.05;
+    float blueScale = 1.0 + uAberrationIntensity * 0.1;
+    vec2 blurRadius = pixel * uBlurPx * (1.0 + uAberrationBlur * 0.05);
+
+    vec3 refracted;
+    refracted.r = readBlurredBackdrop(screenUv - displacement, blurRadius).r;
+    refracted.g = readBlurredBackdrop(screenUv - displacement * greenScale, blurRadius).g;
+    refracted.b = readBlurredBackdrop(screenUv - displacement * blueScale, blurRadius).b;
+
+    vec2 pointerVector = (uPointer - screenUv) * vec2(uResolution.x / max(uResolution.y, 1.0), 1.0);
+    pointerVector = normalize(pointerVector + vec2(0.0001));
+    float pointerLight = max(dot(normal, pointerVector), 0.0);
+    float ambientLight = max(dot(normal, normalize(vec2(-0.72, 0.68))), 0.0);
+    float rimWidth = uRimWidthPx / max(uCardSize.y, 1.0);
+    float screenRim = 1.0 - smoothstep(0.0, rimWidth * 1.8, insideDistance);
+    float overlayRim = smoothstep(rimWidth * 1.5, rimWidth * 3.0, insideDistance)
+      * (1.0 - smoothstep(rimWidth * 3.0, rimWidth * 7.0, insideDistance));
+    float dayBorderWidth = uDayBorderWidthPx / max(uCardSize.y, 1.0);
+    float dayBorder = 1.0 - smoothstep(0.0, dayBorderWidth * 1.15, insideDistance);
+
+    vec3 color = mix(refracted, uGlassTint, 0.035 + edgeDisplacement * 0.045);
+    float screenStrength = screenRim * (0.16 + pointerLight * 0.26 + ambientLight * 0.16);
+    float overlayStrength = overlayRim * (0.22 + uHover * 0.08);
+    color = mix(color, vec3(0.0), dayBorder * uDayMode * 0.62);
+    color = mix(color, screenBlend(color, vec3(1.0)), clamp(screenStrength, 0.0, 0.72));
+    color = mix(color, overlayBlend(color, mix(uGlassTint, vec3(1.0), 0.7)), overlayStrength);
+
+    gl_FragColor = vec4(color, clamp(0.88 + screenRim * 0.08, 0.0, 0.96));
+  }
+`;
 
 interface CardInteractionState {
   hit: WorksOrbitCardHit;
@@ -118,7 +258,9 @@ const orbitPosition = new THREE.Vector3();
 const dragRaycaster = new THREE.Raycaster();
 const dragPosition = new THREE.Vector3();
 const lastCenter = new THREE.Vector3();
+const framebufferSize = new THREE.Vector2();
 const screenPosition = new THREE.Vector3();
+const cameraSpacePosition = new THREE.Vector3();
 let lastRadii = getWorksOrbitRadii(1440);
 
 function clamp(value: number, min: number, max: number) {
@@ -154,17 +296,17 @@ export function createWorksOrbitCardFrame({
     opacity: 1,
     position: {
       x: round(center.x + Math.cos(angle) * radiusX),
-      y: round(center.y + depth * radiusY),
+      y: round(center.y + ORBIT_CENTER_Y_OFFSET + depth * radiusY),
       z: round(center.z + depth * radiusZ),
     },
-    scale: round(0.9 - frontness * 0.3),
+    scale: round(0.86 - frontness * 0.16),
   };
 }
 
 export function getWorksOrbitRadii(width: number) {
   return {
     radiusX: clamp(width / 160, 6.2, 9.2),
-    radiusY: clamp(width / 450, 2.6, 3.4),
+    radiusY: clamp(width / 600, 2.1, 2.6),
     radiusZ: clamp(width / 190, 6.2, 8.2),
   };
 }
@@ -211,8 +353,11 @@ function getCardScreenHit(
 ): CardScreenHit {
   screenPosition.copy(cardPosition).project(camera);
   const fov = THREE.MathUtils.degToRad(camera.fov);
-  const distance = Math.max(camera.position.distanceTo(cardPosition), 0.001);
-  const viewHeight = 2 * Math.tan(fov / 2) * distance;
+  const viewDepth = Math.max(
+    Math.abs(cameraSpacePosition.copy(cardPosition).applyMatrix4(camera.matrixWorldInverse).z),
+    0.001,
+  );
+  const viewHeight = 2 * Math.tan(fov / 2) * viewDepth;
   const viewWidth = viewHeight * camera.aspect;
 
   return {
@@ -223,6 +368,53 @@ function getCardScreenHit(
     x: screenPosition.x,
     y: screenPosition.y,
   };
+}
+
+function clampProjectedCenter(value: number, min: number, max: number) {
+  return min > max ? (min + max) * 0.5 : clamp(value, min, max);
+}
+
+function constrainOrbitPositionToViewport(
+  camera: THREE.PerspectiveCamera,
+  position: THREE.Vector3,
+  scale: number,
+  rotationZ: number,
+  viewport: WorksOrbitCardsUpdateOptions["viewport"],
+) {
+  screenPosition.copy(position).project(camera);
+
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  const viewDepth = Math.max(
+    Math.abs(cameraSpacePosition.copy(position).applyMatrix4(camera.matrixWorldInverse).z),
+    0.001,
+  );
+  const viewHeight = 2 * Math.tan(fov / 2) * viewDepth;
+  const viewWidth = viewHeight * camera.aspect;
+  const cosine = Math.abs(Math.cos(rotationZ));
+  const sine = Math.abs(Math.sin(rotationZ));
+  const rotatedWidth = CARD_WIDTH * cosine + CARD_HEIGHT * sine;
+  const rotatedHeight = CARD_HEIGHT * cosine + CARD_WIDTH * sine;
+  const halfWidthNdc = (rotatedWidth * scale) / viewWidth;
+  const halfHeightNdc = (rotatedHeight * scale) / viewHeight;
+  const sideInsetNdc = (ORBIT_SAFE_AREA_PX.side * 2) / Math.max(viewport.width, 1);
+  const topInsetNdc = (ORBIT_SAFE_AREA_PX.top * 2) / Math.max(viewport.height, 1);
+  const bottomInsetNdc = (ORBIT_SAFE_AREA_PX.bottom * 2) / Math.max(viewport.height, 1);
+
+  const nextX = clampProjectedCenter(
+    screenPosition.x,
+    -1 + sideInsetNdc + halfWidthNdc,
+    1 - sideInsetNdc - halfWidthNdc,
+  );
+  const nextY = clampProjectedCenter(
+    screenPosition.y,
+    -1 + bottomInsetNdc + halfHeightNdc,
+    1 - topInsetNdc - halfHeightNdc,
+  );
+
+  if (nextX === screenPosition.x && nextY === screenPosition.y) return;
+
+  screenPosition.set(nextX, nextY, screenPosition.z).unproject(camera);
+  position.copy(screenPosition);
 }
 
 function getLerpAlpha(delta: number, speed: number) {
@@ -307,124 +499,126 @@ function wrapText(
   });
 }
 
-function getProjectDomain(url: string) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url.replace(/^https?:\/\//, "").split(/[/?#]/)[0] || url;
-  }
+interface WorksCardPalette {
+  badgeFill: string;
+  badgeStroke: string;
+  fg: string;
+  muted: string;
+  shadow: string;
 }
 
-function drawCardTexture(canvas: HTMLCanvasElement, work: WorkProjectData, theme: ThemeMode) {
+function getWorksCardPalette(isDay: boolean): WorksCardPalette {
+  if (isDay) {
+    return {
+      badgeFill: "rgba(255, 255, 255, 0.3)",
+      badgeStroke: "rgba(17, 24, 39, 0.12)",
+      fg: "rgba(17, 24, 39, 0.92)",
+      muted: "rgba(17, 24, 39, 0.72)",
+      shadow: "rgba(255, 255, 255, 0.28)",
+    };
+  }
+
+  return {
+    badgeFill: "rgba(0, 0, 0, 0.1)",
+    badgeStroke: "rgba(255, 255, 255, 0.12)",
+    fg: "rgba(248, 250, 255, 0.96)",
+    muted: "rgba(255, 255, 255, 0.92)",
+    shadow: "rgba(0, 0, 0, 0.4)",
+  };
+}
+
+function drawCardTexture(
+  canvas: HTMLCanvasElement,
+  work: WorkProjectData,
+  index: number,
+  theme: ThemeMode,
+) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
   const isDay = theme === "day";
   ctx.clearRect(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 
-  const bg = isDay ? "#fbf7ed" : "#10172b";
-  const bgSoft = isDay ? "#fffdf6" : "#182036";
-  const border = isDay ? "rgba(76, 61, 43, 0.12)" : "rgba(221, 232, 255, 0.10)";
-  const fg = isDay ? "#17191f" : "#f6f8ff";
-  const hint = isDay ? "rgba(23, 25, 31, 0.62)" : "rgba(233, 239, 255, 0.66)";
-  const subtle = isDay ? "rgba(37, 28, 16, 0.12)" : "rgba(255, 255, 255, 0.10)";
-  const avatarBg = isDay ? "#f1e6d3" : "#1a2440";
-  const accent = isDay ? "#3558cc" : "#8ab2ff";
-  const pin = isDay ? "rgba(155, 101, 24, 0.42)" : "rgba(138, 178, 255, 0.44)";
-  const domain = getProjectDomain(work.liveUrl);
-  const initials =
-    Array.from(work.name.replace(/[^a-z0-9]/gi, ""))
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || work.kind.slice(0, 2).toUpperCase();
+  const palette = getWorksCardPalette(isDay);
+  const presentation = createWorksCardPresentation(work, index);
 
   ctx.save();
-  ctx.shadowColor = isDay ? "rgba(37, 32, 22, 0.16)" : "rgba(0, 0, 0, 0.42)";
-  ctx.shadowBlur = 34;
-  ctx.shadowOffsetY = 18;
-  roundedRect(ctx, 38, 38, TEXTURE_WIDTH - 76, TEXTURE_HEIGHT - 76, 28);
-  ctx.fillStyle = bg;
-  ctx.fill();
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = palette.shadow;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = palette.fg;
+  ctx.font = '600 40px "Avenir Next", "Segoe UI", sans-serif';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  drawTextLine(ctx, presentation.title, 64, 84, 576);
   ctx.restore();
 
-  roundedRect(ctx, 38, 38, TEXTURE_WIDTH - 76, TEXTURE_HEIGHT - 76, 28);
-  ctx.fillStyle = bgSoft;
+  roundedRect(ctx, 64, 120, 96, 96, 48);
+  ctx.fillStyle = palette.badgeFill;
   ctx.fill();
-
-  ctx.save();
-  ctx.shadowColor = isDay ? "rgba(37, 28, 16, 0.24)" : "rgba(0, 0, 0, 0.26)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 2;
-  roundedRect(ctx, TEXTURE_WIDTH / 2 - 7, 62, 14, 14, 999);
-  ctx.fillStyle = pin;
-  ctx.fill();
-  ctx.restore();
-
-  roundedRect(ctx, 86, 102, 132, 132, 20);
-  ctx.fillStyle = avatarBg;
-  ctx.fill();
-  roundedRect(ctx, 86, 102, 132, 132, 20);
-  ctx.strokeStyle = border;
+  roundedRect(ctx, 64, 120, 96, 96, 48);
+  ctx.strokeStyle = palette.badgeStroke;
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.fillStyle = accent;
-  ctx.font = "700 42px Inter, system-ui, sans-serif";
+  ctx.fillStyle = palette.fg;
+  ctx.font = '600 27px "IBM Plex Mono", "Cascadia Code", monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(initials, 152, 168);
+  ctx.fillText(presentation.orderLabel, 112, 168);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
-  ctx.fillStyle = fg;
-  ctx.font = "600 54px Inter, system-ui, sans-serif";
-  drawTextLine(ctx, work.name, 252, 148, 610);
+  ctx.fillStyle = palette.fg;
+  ctx.font = '500 32px "Avenir Next", "Segoe UI", sans-serif';
+  drawTextLine(ctx, presentation.kind, 184, 154, 456);
 
-  ctx.fillStyle = hint;
-  ctx.font = "600 23px Inter, system-ui, sans-serif";
-  drawTextLine(ctx, domain, 254, 200, 520);
+  ctx.fillStyle = palette.muted;
+  ctx.font = '400 24px "Avenir Next", "Segoe UI", sans-serif';
+  wrapText(ctx, presentation.description, 184, 188, 456, 28, 2);
 
-  ctx.fillStyle = accent;
-  ctx.font = "600 22px Inter, system-ui, sans-serif";
-  ctx.textAlign = "right";
-  drawTextLine(ctx, work.kind.toUpperCase(), 920, 128, 160);
+  ctx.fillStyle = palette.muted;
+  ctx.font = '500 25px "Avenir Next", "Segoe UI", sans-serif';
   ctx.textAlign = "left";
+  ctx.fillText(presentation.actionLabels.website, 64, 344);
+  ctx.fillText(presentation.actionLabels.source, 64, 398);
 
-  ctx.strokeStyle = border;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(84, 286);
-  ctx.lineTo(940, 286);
-  ctx.stroke();
-
-  ctx.fillStyle = hint;
-  ctx.font = "400 31px Inter, system-ui, sans-serif";
-  wrapText(ctx, work.description, 88, 354, 840, 48, 3);
-
-  roundedRect(ctx, 86, 486, 272, 42, 14);
-  ctx.fillStyle = subtle;
-  ctx.fill();
-  ctx.fillStyle = hint;
-  ctx.font = "600 20px Inter, system-ui, sans-serif";
-  drawTextLine(ctx, work.githubUrl.replace(/^https?:\/\//, ""), 108, 514, 228);
+  ctx.fillStyle = palette.fg;
+  ctx.font = '600 25px "Avenir Next", "Segoe UI", sans-serif';
+  ctx.textAlign = "right";
+  ctx.fillText(presentation.actionLabels.live, 640, 344);
+  ctx.fillText(presentation.actionLabels.github, 640, 398);
+  ctx.textAlign = "left";
 }
 
-function createCard(work: WorkProjectData, theme: ThemeMode, geometry: THREE.PlaneGeometry) {
+function applyGlassMaterialTheme(material: THREE.ShaderMaterial, theme: ThemeMode) {
+  const isDay = theme === "day";
+  (material.uniforms.uBaseColor.value as THREE.Color).set(isDay ? "#fafaf7" : "#050510");
+  (material.uniforms.uGlassTint.value as THREE.Color).set(isDay ? "#ffffff" : "#afc7ff");
+  material.uniforms.uDayMode.value = isDay ? 1 : 0;
+}
+
+function createCard(
+  work: WorkProjectData,
+  index: number,
+  theme: ThemeMode,
+  geometry: THREE.PlaneGeometry,
+  backdropTexture: THREE.FramebufferTexture,
+) {
   const canvas = createCanvas();
-  drawCardTexture(canvas, work, theme);
+  drawCardTexture(canvas, work, index, theme);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   texture.generateMipmaps = false;
   texture.minFilter = THREE.LinearFilter;
-  texture.premultiplyAlpha = true;
 
   const cardMaterial = new THREE.MeshBasicMaterial({
     alphaTest: 0.02,
     color: 0xffffff,
     depthTest: true,
-    depthWrite: true,
+    depthWrite: false,
     map: texture,
     opacity: 1,
     side: THREE.DoubleSide,
@@ -432,17 +626,55 @@ function createCard(work: WorkProjectData, theme: ThemeMode, geometry: THREE.Pla
     transparent: true,
   });
   const cardMesh = new THREE.Mesh(geometry, cardMaterial);
-  cardMesh.name = `work-card-${work.slug}`;
-  cardMesh.renderOrder = 90;
+  cardMesh.name = `work-card-content-${work.slug}`;
+  cardMesh.position.z = 0.018;
+  cardMesh.renderOrder = 91;
   cardMesh.layers.set(WORKS_ORBIT_CARD_RENDER_LAYER);
+
+  const glassMaterial = new THREE.ShaderMaterial({
+    depthTest: true,
+    depthWrite: true,
+    fragmentShader: LIQUID_GLASS_FRAGMENT_SHADER,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+    transparent: true,
+    uniforms: {
+      uAberrationBlur: { value: WORKS_CARD_PRESET.aberrationBlur },
+      uAberrationIntensity: { value: WORKS_CARD_PRESET.aberrationIntensity },
+      uBackdrop: { value: backdropTexture },
+      uBaseColor: { value: new THREE.Color() },
+      uBlurPx: { value: WORKS_CARD_PRESET.blurPx },
+      uCardSize: {
+        value: new THREE.Vector2(WORKS_CARD_PRESET.width, WORKS_CARD_PRESET.height),
+      },
+      uDisplacementScale: { value: WORKS_CARD_PRESET.displacementScale },
+      uDayBorderWidthPx: { value: WORKS_CARD_PRESET.dayBorderWidth },
+      uDayMode: { value: 0 },
+      uGlassTint: { value: new THREE.Color() },
+      uHover: { value: 0 },
+      uPointer: { value: new THREE.Vector2(0.5, 0.5) },
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uRimWidthPx: { value: WORKS_CARD_PRESET.rimWidth },
+      uSaturation: { value: WORKS_CARD_PRESET.saturation },
+    },
+    vertexShader: LIQUID_GLASS_VERTEX_SHADER,
+  });
+  applyGlassMaterialTheme(glassMaterial, theme);
+
+  const glassMesh = new THREE.Mesh(geometry, glassMaterial);
+  glassMesh.name = `work-card-glass-${work.slug}`;
+  glassMesh.renderOrder = 90;
+  glassMesh.layers.set(WORKS_ORBIT_CARD_RENDER_LAYER);
 
   const group = new THREE.Group();
   group.name = `work-orbit-card-${work.slug}`;
-  group.add(cardMesh);
+  group.add(glassMesh, cardMesh);
 
   return {
     cardMaterial,
     cardMesh,
+    glassMaterial,
+    glassMesh,
     group,
     texture,
     work,
@@ -460,11 +692,19 @@ function createHitMesh(
   return mesh;
 }
 
+function createBackdropTexture(width: number, height: number) {
+  const texture = new THREE.FramebufferTexture(width, height);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
+}
+
 export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions): WorksOrbitCards {
   const group = new THREE.Group();
   group.name = "works-orbit-cards";
   group.visible = false;
 
+  let backdropTexture = createBackdropTexture(1, 1);
   const cardGeometry = new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT);
   const liveHitGeometry = new THREE.PlaneGeometry(CARD_WIDTH, CARD_HEIGHT);
   const hitMaterial = new THREE.MeshBasicMaterial({
@@ -476,14 +716,14 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
   });
 
   const hitMeshes: THREE.Mesh[] = [];
-  const cards = works.map((work) => {
-    const card = createCard(work, theme, cardGeometry);
+  const cards = works.map((work, index) => {
+    const card = createCard(work, index, theme, cardGeometry, backdropTexture);
     const liveHitMesh = createHitMesh(liveHitGeometry, hitMaterial, {
       action: "live",
       slug: work.slug,
       url: work.liveUrl,
     });
-    liveHitMesh.position.z = 0.01;
+    liveHitMesh.position.z = 0.03;
     card.group.add(liveHitMesh);
     hitMeshes.push(liveHitMesh);
 
@@ -514,6 +754,29 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       };
       hoveredSlug = card.work.slug;
     },
+    captureBackdrop(renderer) {
+      renderer.getDrawingBufferSize(framebufferSize);
+      const width = Math.max(1, Math.round(framebufferSize.x));
+      const height = Math.max(1, Math.round(framebufferSize.y));
+      const image = backdropTexture.image as { height: number; width: number };
+
+      if (image.width !== width || image.height !== height) {
+        const previousTexture = backdropTexture;
+        backdropTexture = createBackdropTexture(width, height);
+
+        for (const card of cards) {
+          card.glassMaterial.uniforms.uBackdrop.value = backdropTexture;
+        }
+
+        previousTexture.dispose();
+      }
+
+      for (const card of cards) {
+        (card.glassMaterial.uniforms.uResolution.value as THREE.Vector2).set(width, height);
+      }
+
+      renderer.copyFramebufferToTexture(backdropTexture);
+    },
     clearInteraction() {
       interaction = null;
     },
@@ -525,7 +788,9 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       for (const card of cards) {
         card.texture.dispose();
         card.cardMaterial.dispose();
+        card.glassMaterial.dispose();
       }
+      backdropTexture.dispose();
       cardGeometry.dispose();
       liveHitGeometry.dispose();
       hitMaterial.dispose();
@@ -597,12 +862,13 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       hoveredSlug = hit?.slug ?? null;
     },
     setTheme(nextTheme) {
-      for (const card of cards) {
-        drawCardTexture(card.texture.image as HTMLCanvasElement, card.work, nextTheme);
+      cards.forEach((card, index) => {
+        drawCardTexture(card.texture.image as HTMLCanvasElement, card.work, index, nextTheme);
         card.texture.needsUpdate = true;
-      }
+        applyGlassMaterialTheme(card.glassMaterial, nextTheme);
+      });
     },
-    update({ camera, center, delta, elapsed, reducedMotion, viewport, visible }) {
+    update({ camera, center, delta, elapsed, pointerNdc, reducedMotion, viewport, visible }) {
       group.visible = visible;
       if (!visible) {
         interaction = null;
@@ -611,6 +877,9 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       }
 
       const radii = getWorksOrbitRadii(viewport.width);
+      const activePointer = interaction?.pointerNdc ?? pointerNdc;
+      const pointerX = (activePointer?.x ?? 0) * 0.5 + 0.5;
+      const pointerY = (activePointer?.y ?? 0) * 0.5 + 0.5;
       lastCenter.copy(center);
       lastRadii = radii;
       cards.forEach((card, index) => {
@@ -628,9 +897,19 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
         const hovered = hoveredSlug === card.work.slug;
         const activeInteraction = interaction?.slug === card.work.slug ? interaction : null;
         const returnState = returnStates.get(card.work.slug);
+        const hoverTarget = hovered || activeInteraction ? 1 : 0;
+        const currentHover = card.glassMaterial.uniforms.uHover.value as number;
+        card.glassMaterial.uniforms.uHover.value = reducedMotion
+          ? hoverTarget
+          : THREE.MathUtils.lerp(currentHover, hoverTarget, getLerpAlpha(delta, 10));
+        (card.glassMaterial.uniforms.uPointer.value as THREE.Vector2).set(
+          reducedMotion ? 0.5 : pointerX,
+          reducedMotion ? 0.5 : pointerY,
+        );
 
+        const cardRotationZ = (index - 1) * 0.025;
         card.group.quaternion.copy(camera.quaternion);
-        card.group.rotateZ((index - 1) * 0.025);
+        card.group.rotateZ(cardRotationZ);
 
         if (activeInteraction) {
           const targetPosition = getPointerWorldPosition(activeInteraction.pointerNdc, camera);
@@ -643,6 +922,7 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
           card.group.scale.setScalar(getDragScale(camera, frame.scale, strength));
           card.group.renderOrder = INTERACTION_RENDER_ORDER;
           card.cardMesh.renderOrder = INTERACTION_RENDER_ORDER;
+          card.glassMesh.renderOrder = INTERACTION_RENDER_ORDER - 1;
           card.cardMaterial.opacity = 1;
           card.cardMaterial.color.set("#ffffff");
           screenHits.set(
@@ -660,6 +940,13 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
 
         orbitPosition.set(frame.position.x, frame.position.y, frame.position.z);
         const orbitScale = frame.scale * (hovered ? 1.08 : 1);
+        constrainOrbitPositionToViewport(
+          camera,
+          orbitPosition,
+          orbitScale,
+          cardRotationZ,
+          viewport,
+        );
         const cardRenderOrder = Math.round(90 + frame.frontness * 50);
         let resolvedRenderOrder = cardRenderOrder;
 
@@ -688,8 +975,9 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
 
         card.group.renderOrder = resolvedRenderOrder;
         card.cardMesh.renderOrder = resolvedRenderOrder;
+        card.glassMesh.renderOrder = resolvedRenderOrder - 1;
         card.cardMaterial.opacity = 1;
-        card.cardMaterial.color.set(hovered ? "#ffffff" : "#f4f7ff");
+        card.cardMaterial.color.set("#ffffff");
         screenHits.set(
           card.work.slug,
           getCardScreenHit(

@@ -17,6 +17,10 @@ function deferred<T>(): Deferred<T> {
 
 const sceneState = {
   controlDispose: vi.fn(),
+  hypercubeGroup: null as ReturnType<typeof createTransformGroup> | null,
+  hypercubeSetOpacity: null as ReturnType<typeof vi.fn> | null,
+  mobiusGroup: null as ReturnType<typeof createTransformGroup> | null,
+  mobiusSetOpacity: null as ReturnType<typeof vi.fn> | null,
   onControlConstruct: null as (() => void) | null,
   sceneDispose: vi.fn(),
 };
@@ -36,6 +40,7 @@ function createTransformGroup() {
     scale: {
       setScalar: vi.fn(),
     },
+    visible: true,
   };
 }
 
@@ -92,18 +97,30 @@ function installSceneMocks(
   class Euler extends Vector3 {}
 
   vi.doMock("three", () => ({
+    AdditiveBlending: 1,
     Color: class Color {
       constructor(readonly value: string) {}
     },
     Euler,
     MathUtils: { degToRad: (value: number) => value },
+    NormalBlending: 2,
     Raycaster: class Raycaster {
       intersectObject() {
         return [];
       }
       setFromCamera() {}
     },
-    Timer: class Timer {},
+    Timer: class Timer {
+      connect() {}
+      dispose() {}
+      getDelta() {
+        return 0;
+      }
+      getElapsed() {
+        return 0;
+      }
+      update() {}
+    },
     Vector2,
     Vector3,
   }));
@@ -127,9 +144,10 @@ function installSceneMocks(
     goHome: vi.fn(),
     triggerStep: vi.fn(),
   });
+  const theme = shallowRef<"day" | "night">("night");
   vi.doMock("@/stores/site", () => ({ useSiteStore: () => store }));
   vi.doMock("@/composables/useTheme", () => ({
-    useTheme: () => ({ theme: shallowRef("night") }),
+    useTheme: () => ({ theme }),
   }));
 
   const scene = {
@@ -162,17 +180,32 @@ function installSceneMocks(
     }),
   }));
 
-  const disposableGeometry = () => ({
-    dispose: vi.fn(),
-    group: createTransformGroup(),
-    hitMesh: {},
-    lerpColor: vi.fn(),
-    setInteractionIntensity: vi.fn(),
-    setOpacity: vi.fn(),
-    update: vi.fn(),
-  });
-  vi.doMock("@/composables/useHypercube", () => ({ useHypercube: disposableGeometry }));
-  vi.doMock("@/composables/useMobiusStrip", () => ({ useMobiusStrip: disposableGeometry }));
+  const disposableGeometry = (kind: "hypercube" | "mobius") => {
+    const setOpacity = vi.fn();
+    const geometry = {
+      dispose: vi.fn(),
+      group: createTransformGroup(),
+      hitMesh: {},
+      lerpColor: vi.fn(),
+      setInteractionIntensity: vi.fn(),
+      setOpacity,
+      update: vi.fn(),
+    };
+    if (kind === "hypercube") {
+      sceneState.hypercubeGroup = geometry.group;
+      sceneState.hypercubeSetOpacity = setOpacity;
+    } else {
+      sceneState.mobiusGroup = geometry.group;
+      sceneState.mobiusSetOpacity = setOpacity;
+    }
+    return geometry;
+  };
+  vi.doMock("@/composables/useHypercube", () => ({
+    useHypercube: () => disposableGeometry("hypercube"),
+  }));
+  vi.doMock("@/composables/useMobiusStrip", () => ({
+    useMobiusStrip: () => disposableGeometry("mobius"),
+  }));
   vi.doMock("@/composables/useStarField", () => ({
     useStarField: () => ({
       dispose: vi.fn(),
@@ -221,6 +254,8 @@ function installSceneMocks(
   vi.doMock("@/content/works", () => ({ getWorkProjects: () => [] }));
   vi.doMock("@/utils/site-mode", () => ({ getRouteLocationForSiteMode: () => ({}) }));
   vi.doMock("three/examples/jsm/controls/TrackballControls.js", () => controlsModule.promise);
+
+  return { store, theme };
 }
 
 class MockTrackballControls {
@@ -246,8 +281,39 @@ describe("ThreeSceneCanvas lifecycle", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    sceneState.hypercubeGroup = null;
+    sceneState.hypercubeSetOpacity = null;
+    sceneState.mobiusGroup = null;
+    sceneState.mobiusSetOpacity = null;
     sceneState.onControlConstruct = null;
   });
+
+  it("keeps the themed geometry visible behind the Works Case layout", async () => {
+    const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
+    const { store, theme } = installSceneMocks(controlsModule);
+    store.mode = "works";
+    store.worksViewMode = "case";
+    const ThreeSceneCanvas = (await import("@/components/scene/ThreeSceneCanvas.vue")).default;
+    const wrapper = mount(ThreeSceneCanvas);
+
+    controlsModule.resolve({ TrackballControls: MockTrackballControls });
+    await flushPromises();
+
+    expect(sceneState.hypercubeGroup?.visible).toBe(true);
+    expect(sceneState.mobiusGroup?.visible).toBe(false);
+    expect(sceneState.hypercubeSetOpacity).toHaveBeenLastCalledWith(0.14);
+    expect(sceneState.mobiusSetOpacity).toHaveBeenLastCalledWith(0);
+
+    theme.value = "day";
+    await nextTick();
+
+    expect(sceneState.hypercubeGroup?.visible).toBe(false);
+    expect(sceneState.mobiusGroup?.visible).toBe(true);
+    expect(sceneState.hypercubeSetOpacity).toHaveBeenLastCalledWith(0);
+    expect(sceneState.mobiusSetOpacity).toHaveBeenLastCalledWith(0.14);
+
+    wrapper.unmount();
+  }, 15_000);
 
   it("does not resume scene setup when unmounted while controls are loading", async () => {
     const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
