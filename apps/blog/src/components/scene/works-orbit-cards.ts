@@ -84,9 +84,10 @@ export interface WorksOrbitCards {
 
 const TAU = Math.PI * 2;
 const ORBIT_SPEED = 0.24;
+const WORKS_ORBIT_CARD_WORLD_SCALE = 0.875;
 export const WORKS_ORBIT_CARD_SIZE = {
-  height: 2.36,
-  width: 3.52,
+  height: (WORKS_CARD_PRESET.height / 100) * WORKS_ORBIT_CARD_WORLD_SCALE,
+  width: (WORKS_CARD_PRESET.width / 100) * WORKS_ORBIT_CARD_WORLD_SCALE,
 } as const;
 const CARD_WIDTH = WORKS_ORBIT_CARD_SIZE.width;
 const CARD_HEIGHT = WORKS_ORBIT_CARD_SIZE.height;
@@ -102,6 +103,8 @@ const REDUCED_MOTION_INTENSITY_CAP = 0.25;
 const INTERACTION_RENDER_ORDER = 1_000;
 const RETURN_ANIMATION_DURATION = 0.38;
 const RETURN_ANIMATION_DURATION_REDUCED = 0.18;
+const VIEW_TRANSITION_SPEED = 12;
+const VIEW_TRANSITION_EPSILON = 0.002;
 export const WORKS_ORBIT_CARD_RENDER_LAYER = 1;
 const CARD_ASPECT = CARD_WIDTH / CARD_HEIGHT;
 const ORBIT_CENTER_Y_OFFSET = -0.32;
@@ -136,6 +139,7 @@ const LIQUID_GLASS_FRAGMENT_SHADER = /* glsl */ `
   uniform float uHover;
   uniform float uRimWidthPx;
   uniform float uSaturation;
+  uniform float uViewAlpha;
 
   varying vec2 vUv;
 
@@ -229,7 +233,10 @@ const LIQUID_GLASS_FRAGMENT_SHADER = /* glsl */ `
     color = mix(color, screenBlend(color, vec3(1.0)), clamp(screenStrength, 0.0, 0.72));
     color = mix(color, overlayBlend(color, mix(uGlassTint, vec3(1.0), 0.7)), overlayStrength);
 
-    gl_FragColor = vec4(color, clamp(0.88 + screenRim * 0.08, 0.0, 0.96));
+    gl_FragColor = vec4(
+      color,
+      clamp(0.88 + screenRim * 0.08, 0.0, 0.96) * uViewAlpha
+    );
   }
 `;
 
@@ -656,6 +663,7 @@ function createCard(
       uResolution: { value: new THREE.Vector2(1, 1) },
       uRimWidthPx: { value: WORKS_CARD_PRESET.rimWidth },
       uSaturation: { value: WORKS_CARD_PRESET.saturation },
+      uViewAlpha: { value: 1 },
     },
     vertexShader: LIQUID_GLASS_VERTEX_SHADER,
   });
@@ -733,6 +741,9 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
 
   let hoveredSlug: string | null = null;
   let interaction: CardInteractionState | null = null;
+  let interactionEnabled = false;
+  let hasResolvedVisibility = false;
+  let viewAlpha = 0;
   const phaseOffsets = new Map<string, number>();
   const returnStates = new Map<string, CardReturnState>();
   const screenHits = new Map<string, CardScreenHit>();
@@ -800,7 +811,7 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       return interaction !== null;
     },
     pick(raycaster, pointerNdc) {
-      if (!group.visible) return null;
+      if (!group.visible || !interactionEnabled) return null;
 
       const intersections = raycaster.intersectObjects(hitMeshes, false);
       const hit = intersections[0]?.object.userData as Partial<WorksOrbitCardHit> | undefined;
@@ -859,7 +870,7 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       return { action: "resume" };
     },
     setHovered(hit) {
-      hoveredSlug = hit?.slug ?? null;
+      hoveredSlug = interactionEnabled ? (hit?.slug ?? null) : null;
     },
     setTheme(nextTheme) {
       cards.forEach((card, index) => {
@@ -869,10 +880,34 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       });
     },
     update({ camera, center, delta, elapsed, pointerNdc, reducedMotion, viewport, visible }) {
-      group.visible = visible;
+      const targetViewAlpha = visible ? 1 : 0;
+      if (!hasResolvedVisibility || reducedMotion) {
+        viewAlpha = targetViewAlpha;
+        hasResolvedVisibility = true;
+      } else {
+        viewAlpha = THREE.MathUtils.lerp(
+          viewAlpha,
+          targetViewAlpha,
+          getLerpAlpha(delta, VIEW_TRANSITION_SPEED),
+        );
+        if (Math.abs(viewAlpha - targetViewAlpha) <= VIEW_TRANSITION_EPSILON) {
+          viewAlpha = targetViewAlpha;
+        }
+      }
+
+      interactionEnabled = visible;
+      group.visible = visible || viewAlpha > 0;
+      cards.forEach((card) => {
+        card.cardMaterial.opacity = viewAlpha;
+        card.glassMaterial.uniforms.uViewAlpha.value = viewAlpha;
+      });
+
       if (!visible) {
         interaction = null;
+        hoveredSlug = null;
         screenHits.clear();
+      }
+      if (!group.visible) {
         return;
       }
 
@@ -923,23 +958,26 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
           card.group.renderOrder = INTERACTION_RENDER_ORDER;
           card.cardMesh.renderOrder = INTERACTION_RENDER_ORDER;
           card.glassMesh.renderOrder = INTERACTION_RENDER_ORDER - 1;
-          card.cardMaterial.opacity = 1;
+          card.cardMaterial.opacity = viewAlpha;
           card.cardMaterial.color.set("#ffffff");
-          screenHits.set(
-            card.work.slug,
-            getCardScreenHit(
-              camera,
-              card.group.position,
-              card.group.scale.x,
-              activeInteraction.hit,
-              1,
-            ),
-          );
+          if (interactionEnabled) {
+            screenHits.set(
+              card.work.slug,
+              getCardScreenHit(
+                camera,
+                card.group.position,
+                card.group.scale.x,
+                activeInteraction.hit,
+                1,
+              ),
+            );
+          }
           return;
         }
 
         orbitPosition.set(frame.position.x, frame.position.y, frame.position.z);
-        const orbitScale = frame.scale * (hovered ? 1.08 : 1);
+        const viewScale = 0.965 + viewAlpha * 0.035;
+        const orbitScale = frame.scale * (hovered ? 1.08 : 1) * viewScale;
         constrainOrbitPositionToViewport(
           camera,
           orbitPosition,
@@ -976,22 +1014,24 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
         card.group.renderOrder = resolvedRenderOrder;
         card.cardMesh.renderOrder = resolvedRenderOrder;
         card.glassMesh.renderOrder = resolvedRenderOrder - 1;
-        card.cardMaterial.opacity = 1;
+        card.cardMaterial.opacity = viewAlpha;
         card.cardMaterial.color.set("#ffffff");
-        screenHits.set(
-          card.work.slug,
-          getCardScreenHit(
-            camera,
-            card.group.position,
-            card.group.scale.x,
-            {
-              action: "live",
-              slug: card.work.slug,
-              url: card.work.liveUrl,
-            },
-            frame.frontness,
-          ),
-        );
+        if (interactionEnabled) {
+          screenHits.set(
+            card.work.slug,
+            getCardScreenHit(
+              camera,
+              card.group.position,
+              card.group.scale.x,
+              {
+                action: "live",
+                slug: card.work.slug,
+                url: card.work.liveUrl,
+              },
+              frame.frontness,
+            ),
+          );
+        }
       });
     },
   };

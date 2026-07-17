@@ -175,6 +175,12 @@ describe("createWorksOrbitCardFrame", () => {
     expect(wide.radiusZ).toBeGreaterThan(wide.radiusY);
   });
 
+  it("uses a smaller Orbit-only card plane while preserving the Case aspect ratio", () => {
+    expect(WORKS_ORBIT_CARD_SIZE.width).toBeCloseTo(3.08);
+    expect(WORKS_ORBIT_CARD_SIZE.height).toBeCloseTo(2.065);
+    expect(WORKS_ORBIT_CARD_SIZE.width / WORKS_ORBIT_CARD_SIZE.height).toBeCloseTo(352 / 236);
+  });
+
   it("keeps front and back orbit cards inside a compact vertical corridor", () => {
     const radii = getWorksOrbitRadii(1440);
     const frontElapsed = (Math.PI / 2 + Math.PI * 0.12) / 0.24;
@@ -489,6 +495,52 @@ describe("createWorksOrbitCardFrame", () => {
     expect(glassMesh?.material.uniforms.uPointer.value).toEqual(
       expect.objectContaining({ x: 0.5, y: 0.5 }),
     );
+
+    cards.dispose();
+  });
+
+  it("crossfades Orbit cards while disabling interaction as soon as Case is selected", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const cardGroup = cards.group.children[0] as THREE.Group;
+    const cardMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-content-")) as
+      | THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+      | undefined;
+    const glassMesh = cardGroup.children.find((child) => child.name.startsWith("work-card-glass-")) as
+      | THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>
+      | undefined;
+
+    updateOrbitCards(cards, camera, 0.2, 0.016);
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.016,
+      elapsed: 0.216,
+      pointerNdc: new THREE.Vector2(),
+      reducedMotion: false,
+      viewport: { height: 900, width: 1440 },
+      visible: false,
+    });
+
+    expect(cards.group.visible).toBe(true);
+    expect(cardMesh?.material.opacity).toBeGreaterThan(0);
+    expect(cardMesh?.material.opacity).toBeLessThan(1);
+    expect(glassMesh?.material.uniforms.uViewAlpha.value).toBe(cardMesh?.material.opacity);
+    expect(cards.pick(new THREE.Raycaster(), new THREE.Vector2())).toBeNull();
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 1,
+      elapsed: 1.216,
+      reducedMotion: false,
+      viewport: { height: 900, width: 1440 },
+      visible: false,
+    });
+
+    expect(cards.group.visible).toBe(false);
+    expect(cardMesh?.material.opacity).toBe(0);
+    expect(glassMesh?.material.uniforms.uViewAlpha.value).toBe(0);
 
     cards.dispose();
   });
