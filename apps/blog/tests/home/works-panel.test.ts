@@ -71,9 +71,12 @@ describe("WorksPanel", () => {
       "true",
     );
     expect(wrapper.find("[data-testid='works-view-orbit']").exists()).toBe(false);
-    expect(wrapper.find("[data-testid='works-view-case']").exists()).toBe(false);
-    expect(wrapper.findAll("[data-testid='works-item']")).toHaveLength(0);
-    expect(wrapper.findAll("a")).toHaveLength(6);
+    expect(wrapper.find("[data-testid='works-view-case']").exists()).toBe(true);
+    expect(wrapper.find(".works-panel__body").isVisible()).toBe(false);
+    expect(wrapper.find(".works-panel__body").attributes("aria-hidden")).toBe("true");
+    expect(wrapper.find(".works-panel__body").attributes()).toHaveProperty("inert");
+    expect(wrapper.findAll("[data-testid='works-item']")).toHaveLength(3);
+    expect(wrapper.findAll(".works-panel__a11y-links a")).toHaveLength(6);
     expect(wrapper.findAll(".works-panel__a11y-links a").every((link) => !link.attributes("tabindex"))).toBe(
       true,
     );
@@ -89,11 +92,16 @@ describe("WorksPanel", () => {
         works,
       },
     });
+    const mountedCaseElement = wrapper.find("[data-testid='works-view-case']").element;
 
     await wrapper.find("[data-testid='works-view-toggle-case']").trigger("click");
 
     expect(store.worksViewMode).toBe("case");
     expect(wrapper.find("[data-testid='works-view-case']").exists()).toBe(true);
+    expect(wrapper.find("[data-testid='works-view-case']").element).toBe(mountedCaseElement);
+    expect(wrapper.find(".works-panel__body").isVisible()).toBe(true);
+    expect(wrapper.find(".works-panel__body").attributes("aria-hidden")).toBeUndefined();
+    expect(wrapper.find(".works-panel__body").attributes("inert")).toBeUndefined();
     expect(wrapper.findAll("[data-testid='works-item']")).toHaveLength(3);
     expect(wrapper.find("[data-layout='card-example-grid']").exists()).toBe(true);
     expect(wrapper.findAll("[data-glass='liquid']")).toHaveLength(3);
@@ -130,6 +138,12 @@ describe("WorksPanel", () => {
     expect(firstCard.attributes("style")).toContain("scale(1)");
     expect(wrapper.findAll("a[data-kind='live']")).toHaveLength(3);
     expect(wrapper.findAll("a[data-kind='github']")).toHaveLength(3);
+
+    await wrapper.find("[data-testid='works-view-toggle-orbit']").trigger("click");
+
+    expect(wrapper.find("[data-testid='works-view-case']").element).toBe(mountedCaseElement);
+    expect(wrapper.find(".works-panel__body").attributes("aria-hidden")).toBe("true");
+    expect(wrapper.find(".works-panel__body").attributes()).toHaveProperty("inert");
   });
 
   it("uses case mode on mobile-sized screens", () => {

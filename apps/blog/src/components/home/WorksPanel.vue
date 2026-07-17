@@ -88,9 +88,16 @@ onUnmounted(() => {
       </li>
     </ul>
 
-    <div v-if="showCaseView" class="works-panel__body">
-      <WorksCaseView :works="works" />
-    </div>
+    <Transition name="works-case-view">
+      <div
+        v-show="showCaseView"
+        class="works-panel__body"
+        :aria-hidden="showCaseView ? undefined : 'true'"
+        :inert="showCaseView ? undefined : true"
+      >
+        <WorksCaseView :works="works" />
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -135,6 +142,24 @@ onUnmounted(() => {
   flex: 1;
   overflow: auto;
   pointer-events: auto;
+}
+
+.works-case-view-enter-active,
+.works-case-view-leave-active {
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.works-case-view-enter-from,
+.works-case-view-leave-to {
+  opacity: 0;
+  transform: translateY(0.5rem) scale(0.985);
+}
+
+.works-case-view-leave-active {
+  pointer-events: none;
 }
 
 .works-panel__a11y-links {
@@ -204,6 +229,13 @@ onUnmounted(() => {
   .works-panel__body {
     overflow-y: visible;
     padding: 1rem 1.25rem 4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .works-case-view-enter-active,
+  .works-case-view-leave-active {
+    transition: none;
   }
 }
 </style>
