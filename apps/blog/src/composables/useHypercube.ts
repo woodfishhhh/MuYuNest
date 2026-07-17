@@ -98,6 +98,7 @@ function createDepthOnlyMaterial() {
     depthTest: true,
     depthWrite: true,
     side: THREE.DoubleSide,
+    transparent: true,
   });
 }
 
