@@ -1,0 +1,22 @@
+{
+  "canonicalSlug": "readme-14c64a7a",
+  "aliases": [
+    "README"
+  ],
+  "title": "Node.js 后端实战手册",
+  "publishedAt": "2026-07-13T00:00:00.000Z",
+  "publishedLabel": "Jul 13, 2026",
+  "excerpt": "Node.js 项目真正难的不是起一个 HTTP 服务，而是把依赖、I/O、数据、鉴权、消息和部署连成一条可运维的链路。这组笔记可以按问题直接查，不必顺序阅读。",
+  "type": "Notes",
+  "searchText": "Node.js 后端实战手册 Notes Node.js 后端开发 分布式系统 Node.js 项目真正难的不是起一个 HTTP 服务，而是把依赖、I/O、数据、鉴权、消息和部署连成一条可运维的链路。这组笔记可以按问题直接查，不必顺序阅读。 | 技术问题 | 笔记 | | | | | 怎么管项目，npm 如何解析依赖，CommonJS 和 ESM 怎么选 | Node 起步与 npm 模块系统 | | 路径、进程、子进程、文件流、密码学和 CLI 怎么组合 | Node 运行时与核心工具 | | 原生 HTTP、反向代理、缓存、CORS、Express 中间件和 SSE 怎么接起来 | HTTP 与 Express 服务开发 | | SQL、mysql2、Knex、Prisma、MVC、IoC 和 JWT 各自负责什么 | MySQL 与后端架构 | | Redis 数据结构、持久化、主从、Lua 限流和定时任务怎么落地 | Redis 与自动化任务 | | TCP、Socket.IO、爬虫、C++ Addon、大文件、HTTP/2 和串口会在哪里炸 | 网络编程与系统能力 | | SSO、单设备和扫码登录如何建模，Fastify 网关和微服务怎么分边界 | 登录体系与 Fastify 微服务 | | RabbitMQ、Kafka、Nacos、Elasticsearch、Cluster 和 PM2 如何进入生产链路 | 消息队列与生产部署 |",
+  "readingMinutes": 2,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "Node.js",
+    "后端开发",
+    "分布式系统"
+  ],
+  "html": "<p>Node.js 项目真正难的不是起一个 HTTP 服务，而是把依赖、I/O、数据、鉴权、消息和部署连成一条可运维的链路。这组笔记可以按问题直接查，不必顺序阅读。</p>\n<table>\n<thead>\n<tr>\n<th>技术问题</th>\n<th>笔记</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>package.json</code> 怎么管项目，npm 如何解析依赖，CommonJS 和 ESM 怎么选</td>\n<td><a href=\"./01-Node%E8%B5%B7%E6%AD%A5%E4%B8%8Enpm%E6%A8%A1%E5%9D%97%E7%B3%BB%E7%BB%9F.md\">Node 起步与 npm 模块系统</a></td>\n</tr>\n<tr>\n<td>路径、进程、子进程、文件流、密码学和 CLI 怎么组合</td>\n<td><a href=\"./02-Node%E8%BF%90%E8%A1%8C%E6%97%B6%E4%B8%8E%E6%A0%B8%E5%BF%83%E5%B7%A5%E5%85%B7.md\">Node 运行时与核心工具</a></td>\n</tr>\n<tr>\n<td>原生 HTTP、反向代理、缓存、CORS、Express 中间件和 SSE 怎么接起来</td>\n<td><a href=\"./03-HTTP%E4%B8%8EExpress%E6%9C%8D%E5%8A%A1%E5%BC%80%E5%8F%91.md\">HTTP 与 Express 服务开发</a></td>\n</tr>\n<tr>\n<td>SQL、mysql2、Knex、Prisma、MVC、IoC 和 JWT 各自负责什么</td>\n<td><a href=\"./04-MySQL%E4%B8%8E%E5%90%8E%E7%AB%AF%E6%9E%B6%E6%9E%84.md\">MySQL 与后端架构</a></td>\n</tr>\n<tr>\n<td>Redis 数据结构、持久化、主从、Lua 限流和定时任务怎么落地</td>\n<td><a href=\"./05-Redis%E4%B8%8E%E8%87%AA%E5%8A%A8%E5%8C%96%E4%BB%BB%E5%8A%A1.md\">Redis 与自动化任务</a></td>\n</tr>\n<tr>\n<td>TCP、<a href=\"http://Socket.IO\">Socket.IO</a>、爬虫、C++ Addon、大文件、HTTP/2 和串口会在哪里炸</td>\n<td><a href=\"./06-%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B%E4%B8%8E%E7%B3%BB%E7%BB%9F%E8%83%BD%E5%8A%9B.md\">网络编程与系统能力</a></td>\n</tr>\n<tr>\n<td>SSO、单设备和扫码登录如何建模，Fastify 网关和微服务怎么分边界</td>\n<td><a href=\"./07-%E7%99%BB%E5%BD%95%E4%BD%93%E7%B3%BB%E4%B8%8EFastify%E5%BE%AE%E6%9C%8D%E5%8A%A1.md\">登录体系与 Fastify 微服务</a></td>\n</tr>\n<tr>\n<td>RabbitMQ、Kafka、Nacos、Elasticsearch、Cluster 和 PM2 如何进入生产链路</td>\n<td><a href=\"./08-%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E4%B8%8E%E7%94%9F%E4%BA%A7%E9%83%A8%E7%BD%B2.md\">消息队列与生产部署</a></td>\n</tr>\n</tbody>\n</table>\n",
+  "toc": []
+}

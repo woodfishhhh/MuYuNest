@@ -1,0 +1,113 @@
+{
+  "canonicalSlug": "javascript-prototype-proto-105cb7e0",
+  "aliases": [
+    "JavaScript 易错点：prototype、__proto__ 与原型链"
+  ],
+  "title": "JavaScript 易错点：prototype、__proto__ 与原型链",
+  "publishedAt": "2025-11-03T12:38:11.000Z",
+  "publishedLabel": "Nov 03, 2025",
+  "excerpt": "prototype（原型对象） = 工厂里的「图纸」 图纸上规定了所有产品共有的特性（比如手机图纸规定所有手机都有屏幕、按键）。",
+  "type": "Notes",
+  "searchText": "JavaScript 易错点：prototype、__proto__ 与原型链 Notes 前端开发 JavaScript JavaScript prototype __proto__ 原型链 易错点 理清 和 的关系 先看一个比喻：「图纸」和「产品」 （原型对象） = 工厂里的「图纸」 图纸上规定了所有产品共有的特性（比如手机图纸规定所有手机都有屏幕、按键）。 = 每个产品身上的「溯源码」 扫一下就能找到它是根据哪张图纸造出来的（通过这个码能找到对应的 ）。 具体到 JavaScript 中： 假设我们要造一批「人」（对象），步骤如下： 1. 先画图纸（定义构造函数 + prototype） 2. 用图纸造产品（创建实例） 3. 产品的「溯源码」（ proto ） 每个造出来的「人」（实例）都有一个 ，指向它的「图纸」（ ）： 4. 为什么需要这两个东西？ 是「公共仓库」 ： 把所有实例都需要的属性 / 方法（比如 、 ）放在这里，避免每个实例都复制一份（节省内存）。 是「查找路径」 ： 当你访问一个对象的属性时，JS 会先找对象自己有没有；如果没有，就通过 去「图纸」（ ）里找。 比如： 一句话总结 是 构造函数的属性 ，存放所有实例共享的东西（像图纸）。 是 实例的属性 ，指向它对应的「图纸」（即构造函数的 ）。 它们的关系： （这是 JS 自动建立的联系）。 再举个极端例子： 如果有一天你改了图纸（ ），那么所有已经造出来的人（ 、 ）的 都会变成 3—— 因为它们都通过 指向这张图纸！ DOM（Document Object Model）级别 DOM是由W3C制定的标准，用于表示和操作HTML和XML文档。DOM标准分为不同级别： DOM0级（DOM Level 0） 不是W3C标准 ，而是浏览器厂商早期实现的非标准集合 包括早期的事件处理和DOM操作方式 特点： 事件处理：直接通过元素属性赋值，如 事件会相互覆盖（同一事件只能绑定一个处理函数） 浏览器兼容性好 DOM1级（DOM Level 1） 1998年发布 主要定义了HTML和XML文档的底层结构 提供了基本的文档对象模型API DOM2级（DOM Level 2） 2000年发布 增加了事件处理、样式对象和API 引入了 方法 DOM3级（DOM Level 3） 2004年发布 进一步扩展了DOM API 增加了更多事件类型和方法 事件绑定方式对比 DOM0级事件绑定 DOM2级事件绑定 实际应用区别",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "JavaScript"
+  ],
+  "tags": [
+    "JavaScript",
+    "prototype",
+    "__proto__",
+    "原型链",
+    "易错点"
+  ],
+  "html": "<h2 id=\"理清-prototype-和-__proto__-的关系\">理清 <code>prototype</code> 和 <code>__proto__</code> 的关系</h2>\n<h3 id=\"先看一个比喻图纸和产品\">先看一个比喻：「图纸」和「产品」</h3>\n<ul>\n<li><strong><code>prototype</code>（原型对象）</strong> = 工厂里的「图纸」\n图纸上规定了所有产品共有的特性（比如手机图纸规定所有手机都有屏幕、按键）。</li>\n<li><strong><code>__proto__</code></strong> = 每个产品身上的「溯源码」\n扫一下就能找到它是根据哪张图纸造出来的（通过这个码能找到对应的 <code>prototype</code>）。</li>\n</ul>\n<h3 id=\"具体到-javascript-中\">具体到 JavaScript 中：</h3>\n<p>假设我们要造一批「人」（对象），步骤如下：</p>\n<h4 id=\"1-先画图纸定义构造函数-prototype\">1. 先画图纸（定义构造函数 + prototype）</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 构造函数 = 生产线（用来造对象的工具）</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\">name</span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = name; <span class=\"hljs-comment\">// 每个实例独有的属性（比如每个人名字不同）</span>\n}\n\n<span class=\"hljs-comment\">// 图纸（prototype）：所有实例共享的特性</span>\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">sayHi</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">`我叫<span class=\"hljs-subst\">${<span class=\"hljs-variable language_\">this</span>.name}</span>`</span>); <span class=\"hljs-comment\">// 所有人都会打招呼</span>\n};\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">legs</span> = <span class=\"hljs-number\">2</span>; <span class=\"hljs-comment\">// 所有人都有2条腿</span>\n</code></pre>\n<h4 id=\"2-用图纸造产品创建实例\">2. 用图纸造产品（创建实例）</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">const</span> xiaoming = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>(<span class=\"hljs-string\">\"小明\"</span>); <span class=\"hljs-comment\">// 造一个人</span>\n<span class=\"hljs-keyword\">const</span> xiaohong = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>(<span class=\"hljs-string\">\"小红\"</span>); <span class=\"hljs-comment\">// 再造一个人</span>\n</code></pre>\n<h4 id=\"3-产品的溯源码proto\">3. 产品的「溯源码」（<strong>proto</strong>）</h4>\n<p>每个造出来的「人」（实例）都有一个 <code>__proto__</code>，指向它的「图纸」（<code>Person.prototype</code>）：</p>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(xiaoming.<span class=\"hljs-property\">__proto__</span> === <span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>); <span class=\"hljs-comment\">// true（小明的图纸是Person的prototype）</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(xiaohong.<span class=\"hljs-property\">__proto__</span> === <span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>); <span class=\"hljs-comment\">// true（小红的图纸也是这张）</span>\n</code></pre>\n<h4 id=\"4-为什么需要这两个东西\">4. 为什么需要这两个东西？</h4>\n<ul>\n<li>\n<p><strong><code>prototype</code> 是「公共仓库」</strong>：\n把所有实例都需要的属性 / 方法（比如 <code>sayHi</code>、<code>legs</code>）放在这里，避免每个实例都复制一份（节省内存）。</p>\n</li>\n<li>\n<p><strong><code>__proto__</code> 是「查找路径」</strong>：\n当你访问一个对象的属性时，JS 会先找对象自己有没有；如果没有，就通过 <code>__proto__</code> 去「图纸」（<code>prototype</code>）里找。</p>\n<p>比如：</p>\n<pre><code class=\"hljs language-javascript\">xiaoming.<span class=\"hljs-title function_\">sayHi</span>(); <span class=\"hljs-comment\">// 小明自己没有sayHi，但__proto__指向的图纸里有，所以能调用</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(xiaohong.<span class=\"hljs-property\">legs</span>); <span class=\"hljs-comment\">// 小红自己没有legs，去图纸里找到2</span>\n</code></pre>\n</li>\n</ul>\n<h3 id=\"一句话总结\">一句话总结</h3>\n<ul>\n<li><code>prototype</code> 是<strong>构造函数的属性</strong>，存放所有实例共享的东西（像图纸）。</li>\n<li><code>__proto__</code> 是<strong>实例的属性</strong>，指向它对应的「图纸」（即构造函数的 <code>prototype</code>）。</li>\n</ul>\n<p>它们的关系：<code>实例.__proto__ === 构造函数.prototype</code>（这是 JS 自动建立的联系）。</p>\n<p>再举个极端例子：\n如果有一天你改了图纸（<code>Person.prototype.legs = 3</code>），那么所有已经造出来的人（<code>xiaoming</code>、<code>xiaohong</code>）的 <code>legs</code> 都会变成 3—— 因为它们都通过 <code>__proto__</code> 指向这张图纸！</p>\n<h2 id=\"domdocument-object-model级别\">DOM（Document Object Model）级别</h2>\n<p>DOM是由W3C制定的标准，用于表示和操作HTML和XML文档。DOM标准分为不同级别：</p>\n<h3 id=\"dom0级dom-level-0\">DOM0级（DOM Level 0）</h3>\n<ul>\n<li><strong>不是W3C标准</strong>，而是浏览器厂商早期实现的非标准集合</li>\n<li>包括早期的事件处理和DOM操作方式</li>\n<li>特点：\n<ul>\n<li>事件处理：直接通过元素属性赋值，如 <code>element.onclick = function(){}</code></li>\n<li>事件会相互覆盖（同一事件只能绑定一个处理函数）</li>\n<li>浏览器兼容性好</li>\n</ul>\n</li>\n</ul>\n<pre><code class=\"hljs\">javascript// DOM0级事件绑定示例\nelement.onclick = function() {\n    console.log(\"点击事件\");\n};\n\nelement.onchange = function() {\n    console.log(\"值改变事件\");\n};\n</code></pre>\n<h3 id=\"dom1级dom-level-1\">DOM1级（DOM Level 1）</h3>\n<ul>\n<li>1998年发布</li>\n<li>主要定义了HTML和XML文档的底层结构</li>\n<li>提供了基本的文档对象模型API</li>\n</ul>\n<h3 id=\"dom2级dom-level-2\">DOM2级（DOM Level 2）</h3>\n<ul>\n<li>2000年发布</li>\n<li>增加了事件处理、样式对象和API</li>\n<li>引入了 <code>addEventListener</code> 方法</li>\n</ul>\n<pre><code class=\"hljs\">javascript// DOM2级事件绑定示例\nelement.addEventListener('click', function() {\n    console.log(\"点击事件\");\n}, false);\n</code></pre>\n<h3 id=\"dom3级dom-level-3\">DOM3级（DOM Level 3）</h3>\n<ul>\n<li>2004年发布</li>\n<li>进一步扩展了DOM API</li>\n<li>增加了更多事件类型和方法</li>\n</ul>\n<pre><code class=\"hljs\">javascript// DOM3级继续使用addEventListener，但增加了更多事件类型\nelement.addEventListener('keyup', function(e) {\n    console.log(\"键盘事件\");\n}, false);\n</code></pre>\n<h3 id=\"事件绑定方式对比\">事件绑定方式对比</h3>\n<h3 id=\"dom0级事件绑定\">DOM0级事件绑定</h3>\n<pre><code class=\"hljs\">javascript// 方式1：直接赋值\nelement.onclick = function() { alert('Hello'); };\n\n// 方式2：通过HTML属性\n// &lt;button onclick=\"alert('Hello')\"&gt;点击&lt;/button&gt;\n</code></pre>\n<h3 id=\"dom2级事件绑定\">DOM2级事件绑定</h3>\n<pre><code class=\"hljs\">javascript// 可以绑定多个事件处理函数\nelement.addEventListener('click', function() { alert('Hello1'); });\nelement.addEventListener('click', function() { alert('Hello2'); });\n</code></pre>\n<h3 id=\"实际应用区别\">实际应用区别</h3>\n<pre><code class=\"hljs\">javascriptlet button = document.querySelector('#button');\n\n// DOM0级 - 后一个会覆盖前一个\nbutton.onclick = function() { console.log('first'); };\nbutton.onclick = function() { console.log('second'); }; \n// 只会输出 'second'\n\n// DOM2级 - 两个都会执行\nbutton.addEventListener('click', function() { console.log('first'); });\nbutton.addEventListener('click', function() { console.log('second'); });\n// 会依次输出 'first' 和 'second'\n</code></pre>\n",
+  "toc": [
+    {
+      "id": "理清-prototype-和-__proto__-的关系",
+      "level": 2,
+      "text": "理清 prototype 和 __proto__ 的关系"
+    },
+    {
+      "id": "先看一个比喻图纸和产品",
+      "level": 3,
+      "text": "先看一个比喻：「图纸」和「产品」"
+    },
+    {
+      "id": "具体到-javascript-中",
+      "level": 3,
+      "text": "具体到 JavaScript 中："
+    },
+    {
+      "id": "1-先画图纸定义构造函数-prototype",
+      "level": 4,
+      "text": "1. 先画图纸（定义构造函数 + prototype）"
+    },
+    {
+      "id": "2-用图纸造产品创建实例",
+      "level": 4,
+      "text": "2. 用图纸造产品（创建实例）"
+    },
+    {
+      "id": "3-产品的溯源码proto",
+      "level": 4,
+      "text": "3. 产品的「溯源码」（proto）"
+    },
+    {
+      "id": "4-为什么需要这两个东西",
+      "level": 4,
+      "text": "4. 为什么需要这两个东西？"
+    },
+    {
+      "id": "一句话总结",
+      "level": 3,
+      "text": "一句话总结"
+    },
+    {
+      "id": "domdocument-object-model级别",
+      "level": 2,
+      "text": "DOM（Document Object Model）级别"
+    },
+    {
+      "id": "dom0级dom-level-0",
+      "level": 3,
+      "text": "DOM0级（DOM Level 0）"
+    },
+    {
+      "id": "dom1级dom-level-1",
+      "level": 3,
+      "text": "DOM1级（DOM Level 1）"
+    },
+    {
+      "id": "dom2级dom-level-2",
+      "level": 3,
+      "text": "DOM2级（DOM Level 2）"
+    },
+    {
+      "id": "dom3级dom-level-3",
+      "level": 3,
+      "text": "DOM3级（DOM Level 3）"
+    },
+    {
+      "id": "事件绑定方式对比",
+      "level": 3,
+      "text": "事件绑定方式对比"
+    },
+    {
+      "id": "dom0级事件绑定",
+      "level": 3,
+      "text": "DOM0级事件绑定"
+    },
+    {
+      "id": "dom2级事件绑定",
+      "level": 3,
+      "text": "DOM2级事件绑定"
+    },
+    {
+      "id": "实际应用区别",
+      "level": 3,
+      "text": "实际应用区别"
+    }
+  ]
+}

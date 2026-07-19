@@ -1,0 +1,34 @@
+{
+  "canonicalSlug": "readme-c00948da",
+  "aliases": [
+    "README"
+  ],
+  "title": "NestJS 完全开发指南",
+  "publishedAt": "2026-07-12T00:00:00.000Z",
+  "publishedLabel": "Jul 12, 2026",
+  "excerpt": "NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。",
+  "type": "Notes",
+  "searchText": "NestJS 完全开发指南 Notes NestJS TypeScript TypeORM 后端开发 NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。 原始链接 Udemy NestJS The Complete Developer's Guide part1 Udemy NestJS The Complete Developer's Guide part2 目录 | 笔记 | 主要内容 | | | | | 01 NestJS 起步与请求链路 | 项目启动、Controller、路由装饰器、DTO、Pipe 和请求校验 | | 02 Service、模块与依赖注入 | Repository、Service、IoC、DI、Module 和跨模块依赖 | | 03 TypeORM 与用户 CRUD | Entity、Repository、数据库操作、异常、序列化和 Interceptor | | 04 认证授权与自动化测试 | 密码哈希、Session、装饰器、Guard、单元测试和 E2E 测试 | | 05 配置、关联查询与生产部署 | Config、环境隔离、关联关系、授权、QueryBuilder、Migration 和部署 | | 06 TypeScript 类型系统基础 | 类型注解、推断、函数、对象、数组、元组、接口、类和继承 |",
+  "readingMinutes": 2,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "NestJS",
+    "TypeScript",
+    "TypeORM",
+    "后端开发"
+  ],
+  "html": "<p>NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。</p>\n<h2 id=\"原始链接\">原始链接</h2>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV1D9MezXExs/\">Udemy - NestJS The Complete Developer's Guide part1</a></li>\n<li><a href=\"https://www.bilibili.com/video/BV139Mez9EnA/\">Udemy - NestJS The Complete Developer's Guide part2</a></li>\n</ul>\n<h2 id=\"目录\">目录</h2>\n<table>\n<thead>\n<tr>\n<th>笔记</th>\n<th>主要内容</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"./01-NestJS%E8%B5%B7%E6%AD%A5%E4%B8%8E%E8%AF%B7%E6%B1%82%E9%93%BE%E8%B7%AF.md\">01-NestJS 起步与请求链路</a></td>\n<td>项目启动、Controller、路由装饰器、DTO、Pipe 和请求校验</td>\n</tr>\n<tr>\n<td><a href=\"./02-Service%E6%A8%A1%E5%9D%97%E4%B8%8E%E4%BE%9D%E8%B5%96%E6%B3%A8%E5%85%A5.md\">02-Service、模块与依赖注入</a></td>\n<td>Repository、Service、IoC、DI、Module 和跨模块依赖</td>\n</tr>\n<tr>\n<td><a href=\"./03-TypeORM%E4%B8%8E%E7%94%A8%E6%88%B7CRUD.md\">03-TypeORM 与用户 CRUD</a></td>\n<td>Entity、Repository、数据库操作、异常、序列化和 Interceptor</td>\n</tr>\n<tr>\n<td><a href=\"./04-%E8%AE%A4%E8%AF%81%E6%8E%88%E6%9D%83%E4%B8%8E%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%8B%E8%AF%95.md\">04-认证授权与自动化测试</a></td>\n<td>密码哈希、Session、装饰器、Guard、单元测试和 E2E 测试</td>\n</tr>\n<tr>\n<td><a href=\"./05-%E9%85%8D%E7%BD%AE%E5%85%B3%E8%81%94%E6%9F%A5%E8%AF%A2%E4%B8%8E%E7%94%9F%E4%BA%A7%E9%83%A8%E7%BD%B2.md\">05-配置、关联查询与生产部署</a></td>\n<td>Config、环境隔离、关联关系、授权、QueryBuilder、Migration 和部署</td>\n</tr>\n<tr>\n<td><a href=\"./06-TypeScript%E7%B1%BB%E5%9E%8B%E7%B3%BB%E7%BB%9F%E5%9F%BA%E7%A1%80.md\">06-TypeScript 类型系统基础</a></td>\n<td>类型注解、推断、函数、对象、数组、元组、接口、类和继承</td>\n</tr>\n</tbody>\n</table>\n",
+  "toc": [
+    {
+      "id": "原始链接",
+      "level": 2,
+      "text": "原始链接"
+    },
+    {
+      "id": "目录",
+      "level": 2,
+      "text": "目录"
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "canonicalSlug": "02-domfiber-19cb0fed",
+  "aliases": [
+    "02-虚拟DOMFiber与调度机制"
+  ],
+  "title": "虚拟 DOM、Fiber 与调度机制",
+  "publishedAt": "2026-07-13T00:00:00.000Z",
+  "publishedLabel": "Jul 13, 2026",
+  "excerpt": "Fiber、lanes、Scheduler 及其字段属于 React 内部实现心智模型，不是稳定公共 API。业务代码应依赖公开的 React API，而不是内部字段名或优先级数值。",
+  "type": "Notes",
+  "searchText": "虚拟 DOM、Fiber 与调度机制 Notes React 19 Virtual DOM Fiber Reconciliation Scheduler Fiber、lanes、Scheduler 及其字段属于 React 内部实现心智模型，不是稳定公共 API。业务代码应依赖公开的 React API，而不是内部字段名或优先级数值。 1. 三棵树 学习 React 原理时，最容易混淆的是元素描述、Fiber 与真实 DOM。它们处在不同层： | 层 | 表示什么 | 典型生命周期 | | | | | | React 元素树 | 组件这次希望得到的界面描述 | 作为本轮协调输入，通常由渲染计算得到 | | Fiber 树 | React 协调工作的持久记录 | 在多次更新之间复用并保存工作状态 | | 宿主树 | 浏览器 DOM 或其他平台节点 | 提交阶段按必要变化更新 | 另外还有一类完全不同的树：Babel、SWC 解析源码得到的 AST。AST 属于 编译阶段 ；React 元素和 Fiber 属于 运行阶段 。不能因为它们都是 JavaScript 对象，就把 JSX AST、虚拟 DOM 和 Fiber 当成同一种结构。 1.1 JSX 与元素描述 这段 TSX： 在自动 JSX runtime 下，会被编译成对 中函数的调用。classic runtime 才会生成 。无论使用哪种转换，运行结果都可以概念化为： 这个接口只是帮助理解，不是 React 元素对象的稳定公开布局。应用不应修改元素对象，也不应读取未文档化的内部字段。 1.2 元素描述的作用 声明式组件只负责给出“下一份界面应该是什么”。协调器可以先在内存中比较前后描述，再把需要的变化交给具体渲染器： 跨平台能力来自协调与宿主操作的分离，不是因为一个普通 JavaScript 对象能自动变成任意平台界面。每个渲染器仍需实现目标平台的创建、更新与删除操作。 2. Trigger、Render、Commit 任何一次界面更新都应先用三阶段模型分析： 2.1 Trigger 只是把工作交给 React 首次渲染由根节点触发： state 更新同样会触发渲染。触发不表示 React 立即重写整棵 DOM，它只是让相应更新进入待处理工作。 2.2 Render 是纯计算 Render 阶段会调用组件并计算下一份结果。它可能发生多次，也可能产生一份最后没有提交的工作结果。因此渲染期间不能发送请求、修改 DOM 或改变组件外部对象。 并发能力主要作用于这段 计算工作 。在允许并发的路径上，React 可以在工作单元边界让出主线程，之后继续、重新开始或丢弃过时工作。 2.3 Commit 才改变宿主界面 Render 阶段完成后，React 才进入 Commit。DOM 插入、属性更新和删除在这里执行。一次提交开始后不会为了另一份 React 渲染工作在中途让出并展示半棵新树；需要分片的是提交前的可计算工作，而不是把一次 DOM 提交拆成用户可见的半成品。 组件重新执行也不代表 DOM 必然变化。如果新旧结果对应的文本、属性和节点身份相同，提交阶段可能不需要操作该 DOM 节点。 3. 协调与虚拟 DOM “虚拟 DOM”通常指运行时用于描述界面的 React 元素及相关树状结果。真正决定如何从旧结果走到新结果的过程叫 reconciliation ，即协调。日常所说的 React Diff 多半是这套协调过程的简称，不是某个公开 API。 虚拟 DOM 不是“任何时候都比手写 DOM 快”的保证。它的价值主要是： 给声明式组件提供统一的运行时表示。 让 React 有机会批量协调前后结果。 把协调逻辑与浏览器或原生平台的具体操作分开。 在通用抽象成本与可维护性之间取得工程平衡。 如果开发者精确知道唯一要改的 DOM 属性，直接写一次 DOM API 当然可能更少。React 优化的是复杂应用中持续更新的整体模型，而不是宣称每次比较都没有成本。 3.1 位置、类型与 可以用两条启发式规则理解协调： 1. 不同元素或组件类型通常代表不同子树，旧子树会被替换。 2. 同一父节点下的列表使用 区分稳定身份。 当列表重新排序时， 仍指向同一个业务实体，React 才能正确判断节点应复用、移动、插入还是删除。若使用数组下标，位置变化会让身份漂移，组件局部状态和输入状态可能跟到错误条目。 的作用域只在当前兄弟列表中。它需要稳定、可预测，并在这组兄弟之间唯一，不要求在整个应用全局唯一。 3.2 同类型复用 如果旧元素与新元素类型和身份可以对应，React 可以复用已有 Fiber 与宿主节点，但仍需比较新的 props、文本和子节点： 如果类型从 变成 ，通常会创建新宿主节点并删除旧节点。对组件而言，类型或 变化还会使其状态边界重置。 只按新旧节点顺序和 比较的简化循环，最多展示新增、更新、删除三类动作。真实协调器还要处理 、组件、Fragment、Suspense、错误边界和多种宿主环境，不能把这种循环当作 React 源码算法。 4. Fiber 工作记录 传统递归遍历依赖 JavaScript 调用栈。一旦深度递归开始，框架无法把浏览器调用栈保存到一半后随意恢复。Fiber 把组件树上的工作显式表示为 JavaScript 对象和链接关系，使协调器可以自己决定下一个工作单元。 一个 Fiber 可以理解为“某个组件或宿主节点的一份工作记录”。它不是 DOM 节点，也不是 Web Worker，更不是操作系统线程。 4.1 Fiber 字段 常见内部字段可以帮助定位职责，但字段名和组织方式可能随 React 版本变化： | 字段概念 | 作用 | | | | | 、 | 参与判断节点身份与能否复用 | | 、 、 | 把递归树表示为可逐步遍历的链接结构 | | 、 | 保存待处理输入与上次完成的输入 | | 、更新队列 | 保存组件状态与待处理更新 | | | 指向宿主节点、类实例或根等具体对象 | | | 连接 current 与 work in progress 两个版本 | | 、 | 汇总提交阶段需要执行的工作 | | 、 | 标记自身与子树尚待处理的更新集合 | 这些字段不是业务代码可以依赖的 API。React DevTools 或源码调试可能展示它们，但生产逻辑不应读写。 4.2 工作循环 这段简化伪代码展示了 、 、 如何替代一次不可控制的递归： 协调器处理一个 Fiber 后，显式返回下一个工作单元。并发工作循环可以在单元之间检查是否应该让出主线程。真实 、 和退出条件远比这个版本复杂。 4.3 双缓冲树 Fiber 使用双缓冲思想维护两套角色： 更新时，React 会复用或创建 work in progress Fiber，在上面计算子树并收集标记。只有整棵需要提交的工作完成后，才会提交结果并把完成的树变成新的 current。 如果更高优先级更新使当前计算过时，尚未提交的 work in progress 可以被放弃或重新计算。因为 DOM 还没在 Render 阶段改变，屏幕仍对应 current 树。 5. Lanes 与更新优先级 现代 React 内部使用 lanes 表示更新属于哪些待处理工作集合。可以把 lane 想成位掩码中的一位或一组位： 真实位分配、lane 名称、合并规则和选择算法都属于内部实现。业务代码不应保存 lane 数字，也不应假定某个事件永远映射到固定 bit。 Lanes 主要回答： 这个根上有哪些更新还没处理？ 当前这轮渲染应该选择哪些更新？ 某个子树是否包含本轮相关工作？ 新的高紧急度更新到来时，当前工作是否应重新安排？ 5.1 Lanes 与 Scheduler 两者都谈“优先级”，但处在不同层： Lanes 管理 React 更新集合和渲染选择；Scheduler 管理 JavaScript 回调何时运行以及何时协作式让出主线程。把两者都简单写成“数字越小越优先”会掩盖边界。 5.2 可中断边界 “Fiber 让 React 所有更新都能中断”是不准确的。更稳妥的说法是： 在支持并发的渲染路径上，部分 Render 工作可以让出、恢复、重启或丢弃。 同步或高紧急度更新可能直接完成，不一定经过可观察的让出。 工作量很小时，即使允许让出，也可能在一个时间片内完成。 Transition 等低紧急度工作更适合在更紧急更新到来时被重新安排。 Commit 阶段不会作为普通并发渲染工作被切成多个可中断片段。 并发渲染仍主要运行在同一个 JavaScript 主线程上。它是协作式调度，不是把组件自动并行到多个 CPU 核心。 6. Scheduler 浏览器主线程同时承担 JavaScript、用户事件、样式计算、布局和绘制等工作。一个长时间不返回的 JavaScript 任务会延迟输入响应与页面绘制。 React 不能在任意 JavaScript 指令中间强行抢占自己。它必须把工作拆成单元，并在安全边界主动检查是否该让出。 6.1 不是 Scheduler 可以在浏览器报告空闲时间时执行低优先级回调，并通过 deadline 查询剩余时间。它能表达“有空做一点，没空下次继续”的协作模型。 React Scheduler 并不是直接依赖原生 完成全部调度。兼容性、触发时机和优先级控制都不满足 React 的完整需求。浏览器环境中的宿主回调常借助 安排任务，再由 Scheduler 自己维护时间片、优先级与过期策略；具体宿主实现可能随版本和环境变化。 也不会神奇地把任务变成多线程。它只是让后续回调进入宿主事件循环，React 获得下一段执行机会。 6.2 优先级与过期时间 Scheduler 的基本心智模型是： 1. 为回调记录优先级、开始时间与过期时间。 2. 从可执行任务中选择最该处理的任务。 3. 在时间片内调用回调。 4. 若回调返回 continuation，则保留剩余工作，稍后继续。 5. 时间片用尽且任务未过期时，主动把控制权还给宿主。 高优先级任务到来时，正在运行的 JavaScript 回调不会在任意指令中被强制掐断。只有当前工作到达协作检查点并让出，调度器才能先处理新任务。 6.3 最小协作调度器 这段代码只保留 、过期时间、时间片和 continuation。它不是 React Scheduler 源码，也没有实现延迟任务、取消、错误恢复与真实最小堆： 一个可续执行的任务： 这里真正能够“继续”的原因不是 本身，而是任务把进度保存在 ，并返回 continuation。Fiber 也提供了可保存和恢复工作位置的数据结构，但真实实现要复杂得多。 7. Render 与 Commit 简化渲染器可以先为 Fiber 标记“新增、更新、删除”，等所有工作单元完成后再统一操作 DOM： 现代 React 内部会使用 与 等结构收集提交工作。旧资料常见的 、独立 effect list 等名字可能已经变化。稳定的边界是“Render 计算并标记，Commit 执行宿主变化”，不是某个具体字段名。 7.1 先计算再提交 如果边比较边把每个中间结果立即写进 DOM： 工作被打断时，页面可能停在不一致的半成品。 后来的高优先级更新难以放弃前一份计算。 渲染逻辑容易混入不可回滚的副作用。 把可丢弃的计算放在 Render，把不可随意撤回的宿主修改集中到 Commit，React 才能安全地重试与重新安排渲染工作。 8. 简化模型与真实实现 | 简化模型 | 应如何理解 | | | | | 手写 返回 | 用于理解元素描述；真实元素格式和开发字段不要依赖 | | 驱动工作循环 | 用于演示空闲切片；React Scheduler 不等同于原生该 API | | 新旧节点按顺序比较 | 只展示协调基本动作；真实逻辑还依赖 、组件类型和多种边界 | | 数组排序模拟优先队列 | 便于学习；真实 Scheduler 使用更合适的数据结构和更多队列 | | 标记新增、更新、删除 | 对应“Render 标记、Commit 执行”的思路，字段名不是稳定 API | | Fiber 让任务“可中断” | 仅部分 Render 路径可协作让出，不代表每次更新、每个阶段都可中断 | 原理代码的目标是解释职责，不是做一个兼容 React 19 的替代实现。真实协调器还需处理 Hooks、Context、Suspense、错误边界、hydration、服务端组件和不同宿主渲染器。 9. 更新链路 这条链路也说明了三组概念不能互换： React 元素描述“想要什么”。 Fiber 保存“这份渲染工作做到哪里、还要做什么”。 Scheduler 决定“什么时候继续执行回调”。 10. 常见误区 虚拟 DOM 就是 AST 不是。AST 是 Babel、SWC 等编译器解析源码的结果；React 元素是编译后 JavaScript 执行产生的运行时值。 Fiber 就是虚拟 DOM 节点 不准确。React 元素描述这次期望结果，Fiber 是跨渲染保存组件状态、更新队列和工作信息的内部记录。 有 Fiber 就一定不会卡 不成立。超长的事件处理函数、同步循环、Commit DOM 操作、布局抖动和第三方脚本仍能阻塞主线程。协作调度只能在框架可以控制的工作边界让出。 Scheduler 会抢占正在执行的 JavaScript 不会。浏览器中的 JavaScript 仍遵守 run to completion。所谓中断发生在 React 主动检查并让出之后。 每个 state 更新都能被中断 不会。更新紧急度、渲染路径和所在阶段都会影响行为；同步工作和 Commit 不能用“都可中断”概括。 就是多线程 不是。它可用于上下文通信，也可用于安排后续任务；React 浏览器调度仍主要在主线程协作执行。",
+  "readingMinutes": 19,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "React 19",
+    "Virtual DOM",
+    "Fiber",
+    "Reconciliation",
+    "Scheduler"
+  ],
+  "html": "<p>Fiber、lanes、Scheduler 及其字段属于 React 内部实现心智模型，不是稳定公共 API。业务代码应依赖公开的 React API，而不是内部字段名或优先级数值。</p>\n<h2 id=\"1-三棵树\">1. 三棵树</h2>\n<p>学习 React 原理时，最容易混淆的是元素描述、Fiber 与真实 DOM。它们处在不同层：</p>\n<table>\n<thead>\n<tr>\n<th>层</th>\n<th>表示什么</th>\n<th>典型生命周期</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>React 元素树</td>\n<td>组件这次希望得到的界面描述</td>\n<td>作为本轮协调输入，通常由渲染计算得到</td>\n</tr>\n<tr>\n<td>Fiber 树</td>\n<td>React 协调工作的持久记录</td>\n<td>在多次更新之间复用并保存工作状态</td>\n</tr>\n<tr>\n<td>宿主树</td>\n<td>浏览器 DOM 或其他平台节点</td>\n<td>提交阶段按必要变化更新</td>\n</tr>\n</tbody>\n</table>\n<p>另外还有一类完全不同的树：Babel、SWC 解析源码得到的 AST。AST 属于<strong>编译阶段</strong>；React 元素和 Fiber 属于<strong>运行阶段</strong>。不能因为它们都是 JavaScript 对象，就把 JSX AST、虚拟 DOM 和 Fiber 当成同一种结构。</p>\n<h3 id=\"11-jsx-与元素描述\">1.1 JSX 与元素描述</h3>\n<p>这段 TSX：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">const</span> view = (\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">type</span>=<span class=\"hljs-string\">\"button\"</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"primary\"</span>&gt;</span>\n    保存\n  <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>\n);\n</code></pre>\n<p>在自动 JSX runtime 下，会被编译成对 <code>react/jsx-runtime</code> 中函数的调用。classic runtime 才会生成 <code>React.createElement(...)</code>。无论使用哪种转换，运行结果都可以概念化为：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">interface</span> <span class=\"hljs-title class_\">ElementDescription</span> {\n  <span class=\"hljs-attr\">type</span>: <span class=\"hljs-built_in\">string</span>;\n  <span class=\"hljs-attr\">key</span>: <span class=\"hljs-built_in\">string</span> | <span class=\"hljs-literal\">null</span>;\n  <span class=\"hljs-attr\">props</span>: {\n    <span class=\"hljs-attr\">type</span>: <span class=\"hljs-built_in\">string</span>;\n    <span class=\"hljs-attr\">className</span>: <span class=\"hljs-built_in\">string</span>;\n    <span class=\"hljs-attr\">children</span>: <span class=\"hljs-built_in\">string</span>;\n  };\n}\n</code></pre>\n<p>这个接口只是帮助理解，不是 React 元素对象的稳定公开布局。应用不应修改元素对象，也不应读取未文档化的内部字段。</p>\n<h3 id=\"12-元素描述的作用\">1.2 元素描述的作用</h3>\n<p>声明式组件只负责给出“下一份界面应该是什么”。协调器可以先在内存中比较前后描述，再把需要的变化交给具体渲染器：</p>\n<pre><code class=\"hljs language-text\">组件输出 React 元素\n        ↓\n共享的协调思路\n        ↓\nReact DOM       React Native       其他渲染器\n浏览器节点       原生视图            各自宿主节点\n</code></pre>\n<p>跨平台能力来自协调与宿主操作的分离，不是因为一个普通 JavaScript 对象能自动变成任意平台界面。每个渲染器仍需实现目标平台的创建、更新与删除操作。</p>\n<h2 id=\"2-triggerrendercommit\">2. Trigger、Render、Commit</h2>\n<p>任何一次界面更新都应先用三阶段模型分析：</p>\n<pre><code class=\"hljs language-text\">Trigger\n首次 root.render，或某个状态更新进入队列\n    ↓\nRender\n调用组件，协调新旧结果，准备工作树和变更标记\n    ↓\nCommit\n把已完成结果写入 DOM，并处理与提交相关的工作\n    ↓\nBrowser paint\n浏览器把新 DOM 绘制成像素\n</code></pre>\n<h3 id=\"21-trigger-只是把工作交给-react\">2.1 Trigger 只是把工作交给 React</h3>\n<p>首次渲染由根节点触发：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> { createRoot } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react-dom/client'</span>;\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Status</span>(<span class=\"hljs-params\">{ online }: { online: <span class=\"hljs-built_in\">boolean</span> }</span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>{online ? '在线' : '离线'}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">p</span>&gt;</span></span>;\n}\n\n<span class=\"hljs-keyword\">const</span> container = <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">getElementById</span>(<span class=\"hljs-string\">'root'</span>);\n\n<span class=\"hljs-keyword\">if</span> (!container) {\n  <span class=\"hljs-keyword\">throw</span> <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Error</span>(<span class=\"hljs-string\">'缺少 #root'</span>);\n}\n\n<span class=\"hljs-keyword\">const</span> root = <span class=\"hljs-title function_\">createRoot</span>(container);\nroot.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Status</span> <span class=\"hljs-attr\">online</span>=<span class=\"hljs-string\">{false}</span> /&gt;</span></span>);\n\n<span class=\"hljs-built_in\">setTimeout</span>(<span class=\"hljs-function\">() =&gt;</span> {\n  root.<span class=\"hljs-title function_\">render</span>(<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Status</span> <span class=\"hljs-attr\">online</span> /&gt;</span></span>);\n}, <span class=\"hljs-number\">1000</span>);\n</code></pre>\n<p>state 更新同样会触发渲染。触发不表示 React 立即重写整棵 DOM，它只是让相应更新进入待处理工作。</p>\n<h3 id=\"22-render-是纯计算\">2.2 Render 是纯计算</h3>\n<p>Render 阶段会调用组件并计算下一份结果。它可能发生多次，也可能产生一份最后没有提交的工作结果。因此渲染期间不能发送请求、修改 DOM 或改变组件外部对象。</p>\n<p>并发能力主要作用于这段<strong>计算工作</strong>。在允许并发的路径上，React 可以在工作单元边界让出主线程，之后继续、重新开始或丢弃过时工作。</p>\n<h3 id=\"23-commit-才改变宿主界面\">2.3 Commit 才改变宿主界面</h3>\n<p>Render 阶段完成后，React 才进入 Commit。DOM 插入、属性更新和删除在这里执行。一次提交开始后不会为了另一份 React 渲染工作在中途让出并展示半棵新树；需要分片的是提交前的可计算工作，而不是把一次 DOM 提交拆成用户可见的半成品。</p>\n<p>组件重新执行也不代表 DOM 必然变化。如果新旧结果对应的文本、属性和节点身份相同，提交阶段可能不需要操作该 DOM 节点。</p>\n<h2 id=\"3-协调与虚拟-dom\">3. 协调与虚拟 DOM</h2>\n<p>“虚拟 DOM”通常指运行时用于描述界面的 React 元素及相关树状结果。真正决定如何从旧结果走到新结果的过程叫 <strong>reconciliation</strong>，即协调。日常所说的 React Diff 多半是这套协调过程的简称，不是某个公开 API。</p>\n<pre><code class=\"hljs language-text\">previous element result\n          +\nnext element result\n          ↓\nreconciliation\n          ↓\nreuse / update / insert / remove\n</code></pre>\n<p>虚拟 DOM 不是“任何时候都比手写 DOM 快”的保证。它的价值主要是：</p>\n<ul>\n<li>给声明式组件提供统一的运行时表示。</li>\n<li>让 React 有机会批量协调前后结果。</li>\n<li>把协调逻辑与浏览器或原生平台的具体操作分开。</li>\n<li>在通用抽象成本与可维护性之间取得工程平衡。</li>\n</ul>\n<p>如果开发者精确知道唯一要改的 DOM 属性，直接写一次 DOM API 当然可能更少。React 优化的是复杂应用中持续更新的整体模型，而不是宣称每次比较都没有成本。</p>\n<h3 id=\"31-位置类型与-key\">3.1 位置、类型与 <code>key</code></h3>\n<p>可以用两条启发式规则理解协调：</p>\n<ol>\n<li>不同元素或组件类型通常代表不同子树，旧子树会被替换。</li>\n<li>同一父节点下的列表使用 <code>key</code> 区分稳定身份。</li>\n</ol>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">interface</span> <span class=\"hljs-title class_\">Message</span> {\n  <span class=\"hljs-attr\">id</span>: <span class=\"hljs-built_in\">string</span>;\n  <span class=\"hljs-attr\">text</span>: <span class=\"hljs-built_in\">string</span>;\n}\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">MessageList</span>(<span class=\"hljs-params\">{ messages }: { messages: Message[] }</span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">ul</span>&gt;</span>\n      {messages.map((message) =&gt; (\n        <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">li</span> <span class=\"hljs-attr\">key</span>=<span class=\"hljs-string\">{message.id}</span>&gt;</span>{message.text}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">li</span>&gt;</span>\n      ))}\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">ul</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p>当列表重新排序时，<code>message.id</code> 仍指向同一个业务实体，React 才能正确判断节点应复用、移动、插入还是删除。若使用数组下标，位置变化会让身份漂移，组件局部状态和输入状态可能跟到错误条目。</p>\n<p><code>key</code> 的作用域只在当前兄弟列表中。它需要稳定、可预测，并在这组兄弟之间唯一，不要求在整个应用全局唯一。</p>\n<h3 id=\"32-同类型复用\">3.2 同类型复用</h3>\n<p>如果旧元素与新元素类型和身份可以对应，React 可以复用已有 Fiber 与宿主节点，但仍需比较新的 props、文本和子节点：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-comment\">// 标签身份可复用，但 className 与文本需要更新。</span>\n&lt;button className=<span class=\"hljs-string\">\"idle\"</span>&gt;保存&lt;/button&gt;\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"success\"</span>&gt;</span>已保存<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>\n</code></pre>\n<p>如果类型从 <code>span</code> 变成 <code>p</code>，通常会创建新宿主节点并删除旧节点。对组件而言，类型或 <code>key</code> 变化还会使其状态边界重置。</p>\n<p>只按新旧节点顺序和 <code>type</code> 比较的简化循环，最多展示新增、更新、删除三类动作。真实协调器还要处理 <code>key</code>、组件、Fragment、Suspense、错误边界和多种宿主环境，不能把这种循环当作 React 源码算法。</p>\n<h2 id=\"4-fiber-工作记录\">4. Fiber 工作记录</h2>\n<p>传统递归遍历依赖 JavaScript 调用栈。一旦深度递归开始，框架无法把浏览器调用栈保存到一半后随意恢复。Fiber 把组件树上的工作显式表示为 JavaScript 对象和链接关系，使协调器可以自己决定下一个工作单元。</p>\n<pre><code class=\"hljs language-text\">Parent Fiber\n    │ child\n    ▼\nFirstChild Fiber ── sibling ──▶ SecondChild Fiber\n    │ return                         │ return\n    └──────────── Parent ◀───────────┘\n</code></pre>\n<p>一个 Fiber 可以理解为“某个组件或宿主节点的一份工作记录”。它不是 DOM 节点，也不是 Web Worker，更不是操作系统线程。</p>\n<h3 id=\"41-fiber-字段\">4.1 Fiber 字段</h3>\n<p>常见内部字段可以帮助定位职责，但字段名和组织方式可能随 React 版本变化：</p>\n<table>\n<thead>\n<tr>\n<th>字段概念</th>\n<th>作用</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>type</code>、<code>key</code></td>\n<td>参与判断节点身份与能否复用</td>\n</tr>\n<tr>\n<td><code>child</code>、<code>sibling</code>、<code>return</code></td>\n<td>把递归树表示为可逐步遍历的链接结构</td>\n</tr>\n<tr>\n<td><code>pendingProps</code>、<code>memoizedProps</code></td>\n<td>保存待处理输入与上次完成的输入</td>\n</tr>\n<tr>\n<td><code>memoizedState</code>、更新队列</td>\n<td>保存组件状态与待处理更新</td>\n</tr>\n<tr>\n<td><code>stateNode</code></td>\n<td>指向宿主节点、类实例或根等具体对象</td>\n</tr>\n<tr>\n<td><code>alternate</code></td>\n<td>连接 current 与 work-in-progress 两个版本</td>\n</tr>\n<tr>\n<td><code>flags</code>、<code>subtreeFlags</code></td>\n<td>汇总提交阶段需要执行的工作</td>\n</tr>\n<tr>\n<td><code>lanes</code>、<code>childLanes</code></td>\n<td>标记自身与子树尚待处理的更新集合</td>\n</tr>\n</tbody>\n</table>\n<p>这些字段不是业务代码可以依赖的 API。React DevTools 或源码调试可能展示它们，但生产逻辑不应读写。</p>\n<h3 id=\"42-工作循环\">4.2 工作循环</h3>\n<p>这段简化伪代码展示了 <code>child</code>、<code>sibling</code>、<code>return</code> 如何替代一次不可控制的递归：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">interface</span> <span class=\"hljs-title class_\">TeachingFiber</span> {\n  <span class=\"hljs-attr\">child</span>: <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span>;\n  <span class=\"hljs-attr\">sibling</span>: <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span>;\n  <span class=\"hljs-attr\">return</span>: <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span>;\n}\n\n<span class=\"hljs-keyword\">declare</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">beginWork</span>(<span class=\"hljs-params\">\n  <span class=\"hljs-attr\">fiber</span>: <span class=\"hljs-title class_\">TeachingFiber</span>,\n</span>): <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span>;\n\n<span class=\"hljs-keyword\">declare</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">completeWork</span>(<span class=\"hljs-params\"><span class=\"hljs-attr\">fiber</span>: <span class=\"hljs-title class_\">TeachingFiber</span></span>): <span class=\"hljs-built_in\">void</span>;\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">performUnitOfWork</span>(<span class=\"hljs-params\">\n  <span class=\"hljs-attr\">fiber</span>: <span class=\"hljs-title class_\">TeachingFiber</span>,\n</span>): <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span> {\n  <span class=\"hljs-keyword\">const</span> child = <span class=\"hljs-title function_\">beginWork</span>(fiber);\n\n  <span class=\"hljs-keyword\">if</span> (child) {\n    <span class=\"hljs-keyword\">return</span> child;\n  }\n\n  <span class=\"hljs-keyword\">let</span> <span class=\"hljs-attr\">node</span>: <span class=\"hljs-title class_\">TeachingFiber</span> | <span class=\"hljs-literal\">null</span> = fiber;\n\n  <span class=\"hljs-keyword\">while</span> (node) {\n    <span class=\"hljs-title function_\">completeWork</span>(node);\n\n    <span class=\"hljs-keyword\">if</span> (node.<span class=\"hljs-property\">sibling</span>) {\n      <span class=\"hljs-keyword\">return</span> node.<span class=\"hljs-property\">sibling</span>;\n    }\n\n    node = node.<span class=\"hljs-property\">return</span>;\n  }\n\n  <span class=\"hljs-keyword\">return</span> <span class=\"hljs-literal\">null</span>;\n}\n</code></pre>\n<p>协调器处理一个 Fiber 后，显式返回下一个工作单元。并发工作循环可以在单元之间检查是否应该让出主线程。真实 <code>beginWork</code>、<code>completeWork</code> 和退出条件远比这个版本复杂。</p>\n<h3 id=\"43-双缓冲树\">4.3 双缓冲树</h3>\n<p>Fiber 使用双缓冲思想维护两套角色：</p>\n<pre><code class=\"hljs language-text\">current tree\n已经提交、对应当前屏幕\n       │ alternate\n       ▼\nwork-in-progress tree\n正在计算下一次结果\n</code></pre>\n<p>更新时，React 会复用或创建 work-in-progress Fiber，在上面计算子树并收集标记。只有整棵需要提交的工作完成后，才会提交结果并把完成的树变成新的 current。</p>\n<p>如果更高优先级更新使当前计算过时，尚未提交的 work-in-progress 可以被放弃或重新计算。因为 DOM 还没在 Render 阶段改变，屏幕仍对应 current 树。</p>\n<h2 id=\"5-lanes-与更新优先级\">5. Lanes 与更新优先级</h2>\n<p>现代 React 内部使用 lanes 表示更新属于哪些待处理工作集合。可以把 lane 想成位掩码中的一位或一组位：</p>\n<pre><code class=\"hljs language-text\">000001  某类紧急工作\n000100  某类普通工作\n010000  某个 transition 工作\n100000  某类空闲工作\n</code></pre>\n<p>真实位分配、lane 名称、合并规则和选择算法都属于内部实现。业务代码不应保存 lane 数字，也不应假定某个事件永远映射到固定 bit。</p>\n<p>Lanes 主要回答：</p>\n<ul>\n<li>这个根上有哪些更新还没处理？</li>\n<li>当前这轮渲染应该选择哪些更新？</li>\n<li>某个子树是否包含本轮相关工作？</li>\n<li>新的高紧急度更新到来时，当前工作是否应重新安排？</li>\n</ul>\n<h3 id=\"51-lanes-与-scheduler\">5.1 Lanes 与 Scheduler</h3>\n<p>两者都谈“优先级”，但处在不同层：</p>\n<pre><code class=\"hljs language-text\">React update\n   ↓ 标记 lane\nReconciler 选择本轮要渲染的 lanes\n   ↓\n为根安排 Scheduler task\n   ↓\nScheduler 决定何时获得主线程时间\n   ↓\nFiber work loop 执行所选工作\n   ↓\nCommit\n</code></pre>\n<p>Lanes 管理 React 更新集合和渲染选择；Scheduler 管理 JavaScript 回调何时运行以及何时协作式让出主线程。把两者都简单写成“数字越小越优先”会掩盖边界。</p>\n<h3 id=\"52-可中断边界\">5.2 可中断边界</h3>\n<p>“Fiber 让 React 所有更新都能中断”是不准确的。更稳妥的说法是：</p>\n<ul>\n<li>在支持并发的渲染路径上，部分 Render 工作可以让出、恢复、重启或丢弃。</li>\n<li>同步或高紧急度更新可能直接完成，不一定经过可观察的让出。</li>\n<li>工作量很小时，即使允许让出，也可能在一个时间片内完成。</li>\n<li>Transition 等低紧急度工作更适合在更紧急更新到来时被重新安排。</li>\n<li>Commit 阶段不会作为普通并发渲染工作被切成多个可中断片段。</li>\n</ul>\n<p>并发渲染仍主要运行在同一个 JavaScript 主线程上。它是协作式调度，不是把组件自动并行到多个 CPU 核心。</p>\n<h2 id=\"6-scheduler\">6. Scheduler</h2>\n<p>浏览器主线程同时承担 JavaScript、用户事件、样式计算、布局和绘制等工作。一个长时间不返回的 JavaScript 任务会延迟输入响应与页面绘制。</p>\n<pre><code class=\"hljs language-text\">长任务：\n[---------------- JavaScript ----------------]\n用户输入和绘制只能等待\n\n协作式切片：\n[JS work][让出][输入/绘制][JS work][让出]...\n</code></pre>\n<p>React 不能在任意 JavaScript 指令中间强行抢占自己。它必须把工作拆成单元，并在安全边界主动检查是否该让出。</p>\n<h3 id=\"61-requestidlecallback-不是-scheduler\">6.1 <code>requestIdleCallback</code> 不是 Scheduler</h3>\n<p><code>requestIdleCallback</code> 可以在浏览器报告空闲时间时执行低优先级回调，并通过 deadline 查询剩余时间。它能表达“有空做一点，没空下次继续”的协作模型。</p>\n<p>React Scheduler 并不是直接依赖原生 <code>requestIdleCallback</code> 完成全部调度。兼容性、触发时机和优先级控制都不满足 React 的完整需求。浏览器环境中的宿主回调常借助 <code>MessageChannel</code> 安排任务，再由 Scheduler 自己维护时间片、优先级与过期策略；具体宿主实现可能随版本和环境变化。</p>\n<p><code>MessageChannel</code> 也不会神奇地把任务变成多线程。它只是让后续回调进入宿主事件循环，React 获得下一段执行机会。</p>\n<h3 id=\"62-优先级与过期时间\">6.2 优先级与过期时间</h3>\n<p>Scheduler 的基本心智模型是：</p>\n<ol>\n<li>为回调记录优先级、开始时间与过期时间。</li>\n<li>从可执行任务中选择最该处理的任务。</li>\n<li>在时间片内调用回调。</li>\n<li>若回调返回 continuation，则保留剩余工作，稍后继续。</li>\n<li>时间片用尽且任务未过期时，主动把控制权还给宿主。</li>\n</ol>\n<p>高优先级任务到来时，正在运行的 JavaScript 回调不会在任意指令中被强制掐断。只有当前工作到达协作检查点并让出，调度器才能先处理新任务。</p>\n<h3 id=\"63-最小协作调度器\">6.3 最小协作调度器</h3>\n<p>这段代码只保留 <code>MessageChannel</code>、过期时间、时间片和 continuation。它不是 React Scheduler 源码，也没有实现延迟任务、取消、错误恢复与真实最小堆：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">type</span> <span class=\"hljs-title class_\">Priority</span> = <span class=\"hljs-string\">'user-blocking'</span> | <span class=\"hljs-string\">'normal'</span> | <span class=\"hljs-string\">'idle'</span>;\n<span class=\"hljs-keyword\">type</span> <span class=\"hljs-title class_\">TaskCallback</span> = <span class=\"hljs-function\">() =&gt;</span> <span class=\"hljs-title class_\">TaskCallback</span> | <span class=\"hljs-built_in\">void</span>;\n\n<span class=\"hljs-keyword\">interface</span> <span class=\"hljs-title class_\">Task</span> {\n  <span class=\"hljs-attr\">id</span>: <span class=\"hljs-built_in\">number</span>;\n  <span class=\"hljs-attr\">expiresAt</span>: <span class=\"hljs-built_in\">number</span>;\n  <span class=\"hljs-attr\">callback</span>: <span class=\"hljs-title class_\">TaskCallback</span>;\n}\n\n<span class=\"hljs-keyword\">const</span> <span class=\"hljs-attr\">timeoutByPriority</span>: <span class=\"hljs-title class_\">Record</span>&lt;<span class=\"hljs-title class_\">Priority</span>, <span class=\"hljs-built_in\">number</span>&gt; = {\n  <span class=\"hljs-string\">'user-blocking'</span>: <span class=\"hljs-number\">250</span>,\n  <span class=\"hljs-attr\">normal</span>: <span class=\"hljs-number\">5000</span>,\n  <span class=\"hljs-attr\">idle</span>: <span class=\"hljs-title class_\">Number</span>.<span class=\"hljs-property\">POSITIVE_INFINITY</span>,\n};\n\n<span class=\"hljs-keyword\">const</span> <span class=\"hljs-attr\">tasks</span>: <span class=\"hljs-title class_\">Task</span>[] = [];\n<span class=\"hljs-keyword\">const</span> channel = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">MessageChannel</span>();\n\n<span class=\"hljs-keyword\">let</span> nextId = <span class=\"hljs-number\">1</span>;\n<span class=\"hljs-keyword\">let</span> hostCallbackScheduled = <span class=\"hljs-literal\">false</span>;\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">sortTasks</span>(<span class=\"hljs-params\"></span>) {\n  tasks.<span class=\"hljs-title function_\">sort</span>(<span class=\"hljs-function\">(<span class=\"hljs-params\">a, b</span>) =&gt;</span> a.<span class=\"hljs-property\">expiresAt</span> - b.<span class=\"hljs-property\">expiresAt</span>);\n}\n\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">requestHostCallback</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">if</span> (hostCallbackScheduled) <span class=\"hljs-keyword\">return</span>;\n\n  hostCallbackScheduled = <span class=\"hljs-literal\">true</span>;\n  channel.<span class=\"hljs-property\">port2</span>.<span class=\"hljs-title function_\">postMessage</span>(<span class=\"hljs-literal\">null</span>);\n}\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">schedule</span>(<span class=\"hljs-params\">\n  <span class=\"hljs-attr\">priority</span>: <span class=\"hljs-title class_\">Priority</span>,\n  <span class=\"hljs-attr\">callback</span>: <span class=\"hljs-title class_\">TaskCallback</span>,\n</span>) {\n  tasks.<span class=\"hljs-title function_\">push</span>({\n    <span class=\"hljs-attr\">id</span>: nextId++,\n    <span class=\"hljs-attr\">expiresAt</span>: performance.<span class=\"hljs-title function_\">now</span>() + timeoutByPriority[priority],\n    callback,\n  });\n\n  <span class=\"hljs-title function_\">sortTasks</span>();\n  <span class=\"hljs-title function_\">requestHostCallback</span>();\n}\n\nchannel.<span class=\"hljs-property\">port1</span>.<span class=\"hljs-property\">onmessage</span> = <span class=\"hljs-function\">() =&gt;</span> {\n  hostCallbackScheduled = <span class=\"hljs-literal\">false</span>;\n  <span class=\"hljs-keyword\">const</span> sliceDeadline = performance.<span class=\"hljs-title function_\">now</span>() + <span class=\"hljs-number\">5</span>;\n\n  <span class=\"hljs-keyword\">while</span> (tasks.<span class=\"hljs-property\">length</span> &gt; <span class=\"hljs-number\">0</span>) {\n    <span class=\"hljs-keyword\">const</span> now = performance.<span class=\"hljs-title function_\">now</span>();\n    <span class=\"hljs-keyword\">const</span> task = tasks[<span class=\"hljs-number\">0</span>]!;\n    <span class=\"hljs-keyword\">const</span> didTimeout = task.<span class=\"hljs-property\">expiresAt</span> &lt;= now;\n\n    <span class=\"hljs-keyword\">if</span> (!didTimeout &amp;&amp; now &gt;= sliceDeadline) {\n      <span class=\"hljs-keyword\">break</span>;\n    }\n\n    tasks.<span class=\"hljs-title function_\">shift</span>();\n    <span class=\"hljs-keyword\">const</span> continuation = task.<span class=\"hljs-title function_\">callback</span>();\n\n    <span class=\"hljs-keyword\">if</span> (continuation) {\n      task.<span class=\"hljs-property\">callback</span> = continuation;\n      tasks.<span class=\"hljs-title function_\">push</span>(task);\n      <span class=\"hljs-title function_\">sortTasks</span>();\n    }\n  }\n\n  <span class=\"hljs-keyword\">if</span> (tasks.<span class=\"hljs-property\">length</span> &gt; <span class=\"hljs-number\">0</span>) {\n    <span class=\"hljs-title function_\">requestHostCallback</span>();\n  }\n};\n</code></pre>\n<p>一个可续执行的任务：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">createChunkedTask</span>(<span class=\"hljs-params\">\n  <span class=\"hljs-attr\">values</span>: <span class=\"hljs-built_in\">number</span>[],\n  chunkSize = <span class=\"hljs-number\">200</span>,\n</span>): <span class=\"hljs-title class_\">TaskCallback</span> {\n  <span class=\"hljs-keyword\">let</span> cursor = <span class=\"hljs-number\">0</span>;\n\n  <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">runChunk</span>(<span class=\"hljs-params\"></span>): <span class=\"hljs-title class_\">TaskCallback</span> | <span class=\"hljs-built_in\">void</span> {\n    <span class=\"hljs-keyword\">const</span> end = <span class=\"hljs-title class_\">Math</span>.<span class=\"hljs-title function_\">min</span>(cursor + chunkSize, values.<span class=\"hljs-property\">length</span>);\n\n    <span class=\"hljs-keyword\">while</span> (cursor &lt; end) {\n      <span class=\"hljs-title class_\">Math</span>.<span class=\"hljs-title function_\">sqrt</span>(values[cursor]);\n      cursor += <span class=\"hljs-number\">1</span>;\n    }\n\n    <span class=\"hljs-keyword\">if</span> (cursor &lt; values.<span class=\"hljs-property\">length</span>) {\n      <span class=\"hljs-keyword\">return</span> runChunk;\n    }\n  }\n\n  <span class=\"hljs-keyword\">return</span> runChunk;\n}\n\n<span class=\"hljs-keyword\">const</span> values = <span class=\"hljs-title class_\">Array</span>.<span class=\"hljs-title function_\">from</span>({ <span class=\"hljs-attr\">length</span>: <span class=\"hljs-number\">1000</span> }, <span class=\"hljs-function\">(<span class=\"hljs-params\">_, index</span>) =&gt;</span> index + <span class=\"hljs-number\">1</span>);\n<span class=\"hljs-title function_\">schedule</span>(<span class=\"hljs-string\">'normal'</span>, <span class=\"hljs-title function_\">createChunkedTask</span>(values));\n</code></pre>\n<p>这里真正能够“继续”的原因不是 <code>MessageChannel</code> 本身，而是任务把进度保存在 <code>cursor</code>，并返回 continuation。Fiber 也提供了可保存和恢复工作位置的数据结构，但真实实现要复杂得多。</p>\n<h2 id=\"7-render-与-commit\">7. Render 与 Commit</h2>\n<p>简化渲染器可以先为 Fiber 标记“新增、更新、删除”，等所有工作单元完成后再统一操作 DOM：</p>\n<pre><code class=\"hljs language-text\">Render phase\n构建 work-in-progress\n比较新旧输入\n记录需要执行的工作\n不把半成品展示到屏幕\n        ↓\nCommit phase\n执行插入、更新、删除\n更新 current 指向\n</code></pre>\n<p>现代 React 内部会使用 <code>flags</code> 与 <code>subtreeFlags</code> 等结构收集提交工作。旧资料常见的 <code>effectTag</code>、独立 effect list 等名字可能已经变化。稳定的边界是“Render 计算并标记，Commit 执行宿主变化”，不是某个具体字段名。</p>\n<h3 id=\"71-先计算再提交\">7.1 先计算再提交</h3>\n<p>如果边比较边把每个中间结果立即写进 DOM：</p>\n<ul>\n<li>工作被打断时，页面可能停在不一致的半成品。</li>\n<li>后来的高优先级更新难以放弃前一份计算。</li>\n<li>渲染逻辑容易混入不可回滚的副作用。</li>\n</ul>\n<p>把可丢弃的计算放在 Render，把不可随意撤回的宿主修改集中到 Commit，React 才能安全地重试与重新安排渲染工作。</p>\n<h2 id=\"8-简化模型与真实实现\">8. 简化模型与真实实现</h2>\n<table>\n<thead>\n<tr>\n<th>简化模型</th>\n<th>应如何理解</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>手写 <code>createElement</code> 返回 <code>{ type, props, children }</code></td>\n<td>用于理解元素描述；真实元素格式和开发字段不要依赖</td>\n</tr>\n<tr>\n<td><code>requestIdleCallback</code> 驱动工作循环</td>\n<td>用于演示空闲切片；React Scheduler 不等同于原生该 API</td>\n</tr>\n<tr>\n<td>新旧节点按顺序比较 <code>type</code></td>\n<td>只展示协调基本动作；真实逻辑还依赖 <code>key</code>、组件类型和多种边界</td>\n</tr>\n<tr>\n<td>数组排序模拟优先队列</td>\n<td>便于学习；真实 Scheduler 使用更合适的数据结构和更多队列</td>\n</tr>\n<tr>\n<td><code>effectTag</code> 标记新增、更新、删除</td>\n<td>对应“Render 标记、Commit 执行”的思路，字段名不是稳定 API</td>\n</tr>\n<tr>\n<td>Fiber 让任务“可中断”</td>\n<td>仅部分 Render 路径可协作让出，不代表每次更新、每个阶段都可中断</td>\n</tr>\n</tbody>\n</table>\n<p>原理代码的目标是解释职责，不是做一个兼容 React 19 的替代实现。真实协调器还需处理 Hooks、Context、Suspense、错误边界、hydration、服务端组件和不同宿主渲染器。</p>\n<h2 id=\"9-更新链路\">9. 更新链路</h2>\n<pre><code class=\"hljs language-text\">1. 事件或数据变化产生 update\n2. React 为 update 标记内部 lane\n3. 根节点汇总待处理 lanes\n4. React 根据紧急度安排同步工作或 Scheduler task\n5. Scheduler 获得主线程时间\n6. Fiber work loop 处理 work-in-progress\n7. 可并发路径在工作单元边界检查是否让出\n8. Render 完成后进入 Commit\n9. React DOM 执行必要宿主操作\n10. 完成树成为新的 current，浏览器随后绘制\n</code></pre>\n<p>这条链路也说明了三组概念不能互换：</p>\n<ul>\n<li>React 元素描述“想要什么”。</li>\n<li>Fiber 保存“这份渲染工作做到哪里、还要做什么”。</li>\n<li>Scheduler 决定“什么时候继续执行回调”。</li>\n</ul>\n<h2 id=\"10-常见误区\">10. 常见误区</h2>\n<h3 id=\"虚拟-dom-就是-ast\">虚拟 DOM 就是 AST</h3>\n<p>不是。AST 是 Babel、SWC 等编译器解析源码的结果；React 元素是编译后 JavaScript 执行产生的运行时值。</p>\n<h3 id=\"fiber-就是虚拟-dom-节点\">Fiber 就是虚拟 DOM 节点</h3>\n<p>不准确。React 元素描述这次期望结果，Fiber 是跨渲染保存组件状态、更新队列和工作信息的内部记录。</p>\n<h3 id=\"有-fiber-就一定不会卡\">有 Fiber 就一定不会卡</h3>\n<p>不成立。超长的事件处理函数、同步循环、Commit DOM 操作、布局抖动和第三方脚本仍能阻塞主线程。协作调度只能在框架可以控制的工作边界让出。</p>\n<h3 id=\"scheduler-会抢占正在执行的-javascript\">Scheduler 会抢占正在执行的 JavaScript</h3>\n<p>不会。浏览器中的 JavaScript 仍遵守 run-to-completion。所谓中断发生在 React 主动检查并让出之后。</p>\n<h3 id=\"每个-state-更新都能被中断\">每个 state 更新都能被中断</h3>\n<p>不会。更新紧急度、渲染路径和所在阶段都会影响行为；同步工作和 Commit 不能用“都可中断”概括。</p>\n<h3 id=\"messagechannel-就是多线程\"><code>MessageChannel</code> 就是多线程</h3>\n<p>不是。它可用于上下文通信，也可用于安排后续任务；React 浏览器调度仍主要在主线程协作执行。</p>\n",
+  "toc": [
+    {
+      "id": "1-三棵树",
+      "level": 2,
+      "text": "1. 三棵树"
+    },
+    {
+      "id": "11-jsx-与元素描述",
+      "level": 3,
+      "text": "1.1 JSX 与元素描述"
+    },
+    {
+      "id": "12-元素描述的作用",
+      "level": 3,
+      "text": "1.2 元素描述的作用"
+    },
+    {
+      "id": "2-triggerrendercommit",
+      "level": 2,
+      "text": "2. Trigger、Render、Commit"
+    },
+    {
+      "id": "21-trigger-只是把工作交给-react",
+      "level": 3,
+      "text": "2.1 Trigger 只是把工作交给 React"
+    },
+    {
+      "id": "22-render-是纯计算",
+      "level": 3,
+      "text": "2.2 Render 是纯计算"
+    },
+    {
+      "id": "23-commit-才改变宿主界面",
+      "level": 3,
+      "text": "2.3 Commit 才改变宿主界面"
+    },
+    {
+      "id": "3-协调与虚拟-dom",
+      "level": 2,
+      "text": "3. 协调与虚拟 DOM"
+    },
+    {
+      "id": "31-位置类型与-key",
+      "level": 3,
+      "text": "3.1 位置、类型与 key"
+    },
+    {
+      "id": "32-同类型复用",
+      "level": 3,
+      "text": "3.2 同类型复用"
+    },
+    {
+      "id": "4-fiber-工作记录",
+      "level": 2,
+      "text": "4. Fiber 工作记录"
+    },
+    {
+      "id": "41-fiber-字段",
+      "level": 3,
+      "text": "4.1 Fiber 字段"
+    },
+    {
+      "id": "42-工作循环",
+      "level": 3,
+      "text": "4.2 工作循环"
+    },
+    {
+      "id": "43-双缓冲树",
+      "level": 3,
+      "text": "4.3 双缓冲树"
+    },
+    {
+      "id": "5-lanes-与更新优先级",
+      "level": 2,
+      "text": "5. Lanes 与更新优先级"
+    },
+    {
+      "id": "51-lanes-与-scheduler",
+      "level": 3,
+      "text": "5.1 Lanes 与 Scheduler"
+    },
+    {
+      "id": "52-可中断边界",
+      "level": 3,
+      "text": "5.2 可中断边界"
+    },
+    {
+      "id": "6-scheduler",
+      "level": 2,
+      "text": "6. Scheduler"
+    },
+    {
+      "id": "61-requestidlecallback-不是-scheduler",
+      "level": 3,
+      "text": "6.1 requestIdleCallback 不是 Scheduler"
+    },
+    {
+      "id": "62-优先级与过期时间",
+      "level": 3,
+      "text": "6.2 优先级与过期时间"
+    },
+    {
+      "id": "63-最小协作调度器",
+      "level": 3,
+      "text": "6.3 最小协作调度器"
+    },
+    {
+      "id": "7-render-与-commit",
+      "level": 2,
+      "text": "7. Render 与 Commit"
+    },
+    {
+      "id": "71-先计算再提交",
+      "level": 3,
+      "text": "7.1 先计算再提交"
+    },
+    {
+      "id": "8-简化模型与真实实现",
+      "level": 2,
+      "text": "8. 简化模型与真实实现"
+    },
+    {
+      "id": "9-更新链路",
+      "level": 2,
+      "text": "9. 更新链路"
+    },
+    {
+      "id": "10-常见误区",
+      "level": 2,
+      "text": "10. 常见误区"
+    },
+    {
+      "id": "虚拟-dom-就是-ast",
+      "level": 3,
+      "text": "虚拟 DOM 就是 AST"
+    },
+    {
+      "id": "fiber-就是虚拟-dom-节点",
+      "level": 3,
+      "text": "Fiber 就是虚拟 DOM 节点"
+    },
+    {
+      "id": "有-fiber-就一定不会卡",
+      "level": 3,
+      "text": "有 Fiber 就一定不会卡"
+    },
+    {
+      "id": "scheduler-会抢占正在执行的-javascript",
+      "level": 3,
+      "text": "Scheduler 会抢占正在执行的 JavaScript"
+    },
+    {
+      "id": "每个-state-更新都能被中断",
+      "level": 3,
+      "text": "每个 state 更新都能被中断"
+    },
+    {
+      "id": "messagechannel-就是多线程",
+      "level": 3,
+      "text": "MessageChannel 就是多线程"
+    }
+  ]
+}

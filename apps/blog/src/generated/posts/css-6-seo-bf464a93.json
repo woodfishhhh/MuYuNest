@@ -1,0 +1,58 @@
+{
+  "canonicalSlug": "css-6-seo-bf464a93",
+  "aliases": [
+    "CSS 学习笔记（6）：小兔鲜儿项目搭建及基础配置（目录结构、SEO 标签、版心设置）"
+  ],
+  "title": "CSS 学习笔记（6）：小兔鲜儿项目搭建及基础配置（目录结构、SEO 标签、版心设置）",
+  "publishedAt": "2025-09-21T23:32:03.000Z",
+  "publishedLabel": "Sep 21, 2025",
+  "excerpt": "xtx-pc",
+  "type": "Notes",
+  "searchText": "CSS 学习笔记（6）：小兔鲜儿项目搭建及基础配置（目录结构、SEO 标签、版心设置） Notes 前端开发 CSS 前端开发 小兔鲜儿项目搭建 SEO 标签 版心设置 HTML 01 搭建项目目录 xtx pc images 文件夹：存放固定使用的图片素材，例如：logo、样式修饰图等等 uploads 文件夹：存放非固定使用的图片素材，例如：商品图、宣传图需要上传的图片 iconfont 文件夹：字体图标素材 css 文件夹：存放 CSS 文件（link 标签引入） base.css：基础公共样式 common.css：各个网页相同模块的重复样式，例如：头部、底部 index.css：首页 CSS 样式 index.html：首页 HTML 文件 引入样式表 02 网页头部SEO三大标签 SEO：搜索引擎优化，提升网站百度搜索排名 提升SEO的常见方法： 1. 竞价排名 2. 将网页制作成html后缀 3. 标签语义化（在合适的地方使用合适的标签） 4. …… 网页头部 SEO 标签： title：网页标题标签 description：网页描述 keywords：网页关键词 03 Favicon图标 Favicon 图标：网页图标，出现在浏览器标题栏，增加网站辨识度。 图标： favicon.ico ，一般存放到网站的 根目录 里面 04 版心 common.css",
+  "readingMinutes": 2,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "CSS"
+  ],
+  "tags": [
+    "前端开发",
+    "小兔鲜儿项目搭建",
+    "SEO 标签",
+    "版心设置",
+    "HTML"
+  ],
+  "html": "<h2 id=\"01-搭建项目目录\">01-搭建项目目录</h2>\n<p><img src=\"/imported-assets/e32f9fc03ca599a98ce95ca7a870a4648127101c.svg\" alt=\"1680342815532\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>xtx-pc\n<ul>\n<li>images 文件夹：存放固定使用的图片素材，例如：logo、样式修饰图等等</li>\n<li>uploads 文件夹：存放非固定使用的图片素材，例如：商品图、宣传图需要上传的图片</li>\n<li>iconfont 文件夹：字体图标素材</li>\n<li>css 文件夹：存放 CSS 文件（link 标签引入）\n<ul>\n<li>base.css：基础公共样式</li>\n<li>common.css：各个网页相同模块的重复样式，例如：头部、底部</li>\n<li>index.css：首页 CSS 样式</li>\n</ul>\n</li>\n<li>index.html：首页 HTML 文件</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"引入样式表\">引入样式表</h3>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">link</span> <span class=\"hljs-attr\">rel</span>=<span class=\"hljs-string\">\"stylesheet\"</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"./iconfont/iconfont.css\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">link</span> <span class=\"hljs-attr\">rel</span>=<span class=\"hljs-string\">\"stylesheet\"</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"./css/base.css\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">link</span> <span class=\"hljs-attr\">rel</span>=<span class=\"hljs-string\">\"stylesheet\"</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"./css/common.css\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">link</span> <span class=\"hljs-attr\">rel</span>=<span class=\"hljs-string\">\"stylesheet\"</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"./css/index.css\"</span>&gt;</span>\n</code></pre>\n<h2 id=\"02-网页头部seo三大标签\">02-网页头部SEO三大标签</h2>\n<p>SEO：搜索引擎优化，提升网站百度搜索排名</p>\n<p>提升SEO的常见方法：</p>\n<ol>\n<li>竞价排名</li>\n<li>将网页制作成html后缀</li>\n<li>标签语义化（在合适的地方使用合适的标签）</li>\n<li>……</li>\n</ol>\n<p>网页头部 SEO 标签：</p>\n<ul>\n<li>title：网页标题标签</li>\n<li>description：网页描述</li>\n<li>keywords：网页关键词</li>\n</ul>\n<p><img src=\"/imported-assets/7e08e97f831765680f9313f35d58b8223eb005d9.svg\" alt=\"1680342859110\" loading=\"lazy\" decoding=\"async\"></p>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-comment\">&lt;!-- meta:desc --&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">name</span>=<span class=\"hljs-string\">\"description\"</span> <span class=\"hljs-attr\">content</span>=<span class=\"hljs-string\">\"小兔鲜儿官网，致力于打造全球最大的食品、生鲜电商购物平台。\"</span>&gt;</span>\n<span class=\"hljs-comment\">&lt;!-- meta:kw --&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">name</span>=<span class=\"hljs-string\">\"keywords\"</span> <span class=\"hljs-attr\">content</span>=<span class=\"hljs-string\">\"小兔鲜儿,食品,生鲜,服装,家电,电商,购物\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">title</span>&gt;</span>小兔鲜儿-新鲜、惠民、快捷！<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">title</span>&gt;</span>\n</code></pre>\n<h2 id=\"03-favicon图标\">03-Favicon图标</h2>\n<p><img src=\"/imported-assets/b25acf8a1d54b03d17a4d11fcf8f7d4669c18b08.svg\" alt=\"1680342897355\" loading=\"lazy\" decoding=\"async\"></p>\n<p>Favicon 图标：网页图标，出现在浏览器标题栏，增加网站辨识度。</p>\n<p>图标：<strong>favicon.ico</strong>，一般存放到网站的<strong>根目录</strong>里面</p>\n<p><img src=\"/imported-assets/b113ba25f906c2296d1ef48bda6000fc2c8a4862.svg\" alt=\"1680342907910\" loading=\"lazy\" decoding=\"async\"></p>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-comment\">&lt;!-- link:favicon --&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">link</span> <span class=\"hljs-attr\">rel</span>=<span class=\"hljs-string\">\"shortcut icon\"</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"favicon.ico\"</span> <span class=\"hljs-attr\">type</span>=<span class=\"hljs-string\">\"image/x-icon\"</span>&gt;</span>\n</code></pre>\n<h2 id=\"04-版心\">04-版心</h2>\n<blockquote>\n<p>common.css</p>\n</blockquote>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* 版心 */</span>\n<span class=\"hljs-selector-class\">.wrapper</span> {\n  <span class=\"hljs-attribute\">margin</span>: <span class=\"hljs-number\">0</span> auto;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">1240px</span>;\n}\n</code></pre>\n<h2 id=\"\"></h2>\n",
+  "toc": [
+    {
+      "id": "01-搭建项目目录",
+      "level": 2,
+      "text": "01-搭建项目目录"
+    },
+    {
+      "id": "引入样式表",
+      "level": 3,
+      "text": "引入样式表"
+    },
+    {
+      "id": "02-网页头部seo三大标签",
+      "level": 2,
+      "text": "02-网页头部SEO三大标签"
+    },
+    {
+      "id": "03-favicon图标",
+      "level": 2,
+      "text": "03-Favicon图标"
+    },
+    {
+      "id": "04-版心",
+      "level": 2,
+      "text": "04-版心"
+    },
+    {
+      "id": "",
+      "level": 2,
+      "text": ""
+    }
+  ]
+}

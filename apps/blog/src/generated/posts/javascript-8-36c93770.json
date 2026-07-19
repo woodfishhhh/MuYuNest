@@ -1,0 +1,163 @@
+{
+  "canonicalSlug": "javascript-8-36c93770",
+  "aliases": [
+    "JavaScript 学习笔记（8）：面向对象编程与原型机制详解"
+  ],
+  "title": "JavaScript 学习笔记（8）：面向对象编程与原型机制详解",
+  "publishedAt": "2025-10-08T00:55:15.000Z",
+  "publishedLabel": "Oct 08, 2025",
+  "excerpt": "所有的对象里面都有 proto 对象原型 指向原型对象",
+  "type": "Notes",
+  "searchText": "JavaScript 学习笔记（8）：面向对象编程与原型机制详解 Notes 前端开发 JavaScript 前端开发 面向对象编程 JavaScript Java 继承 所有的对象里面都有 对象原型 指向原型对象 所有的原型对象里面有 constructor， 指向 创造改原型对象的构造函数 一、编程思想：从面向过程到面向对象 （一）面向过程 逻辑 ：聚焦 “步骤”，将问题拆解为一系列连续的操作，用函数实现每个步骤，最终按顺序调用完成任务。 案例 ：制作蛋炒饭 1. 函数 1： 2. 函数 2： 3. 函数 3： 4. 函数 4： 5. 执行顺序： → → → 适用场景 ：简单任务（如计算器、单步骤工具），逻辑直接但扩展性差。 （二）面向对象 逻辑 ：聚焦 “对象”，将问题拆解为具有特定功能的对象，通过对象间的协作完成任务。每个对象包含 “数据”（属性）和 “操作”（方法）。 三大特性 封装性 ：对象内部数据和方法被包裹，仅暴露必要接口（如 “手机” 对象封装了 “芯片”“电池” 等内部组件，只暴露 “打电话”“发消息” 等方法）。 继承性 ：子类可复用父类的属性和方法（如 “智能手机” 继承 “手机” 的 “通话” 功能，新增 “上网” 功能）。 多态性 ：同一方法在不同对象上有不同实现（如 “支付” 方法，支付宝对象实现 “扫码支付”，微信对象实现 “转账支付”）。 案例 制作蛋炒饭 食材对象（属性：米饭、鸡蛋、调料；方法： ） 厨师对象（属性：姓名；方法： 、 、 ） 协作：厨师对象调用食材对象的 ，再通过自身 等方法完成制作。 优势 ：代码复用性高、易维护，适合大型项目（如电商系统、管理平台）。 二、构造函数：面向对象的基础封装方式 概念 构造函数是创建对象的 “模板”，通过 绑定属性和方法，实例化后生成独立的对象，实现数据与行为的封装。 用法示例 问题分析 内存浪费 ：每个实例对象都会复制构造函数内的方法（如 、 ）。若创建 100 个实例，会存在 100 份相同的方法副本，占用多余内存。 解决方案 ：通过 原型对象 共享方法，避免重复创建。 三、原型对象（prototype）：共享方法的核心 概念 每个构造函数都有一个 属性，指向 原型对象 。 原型对象上的方法 / 属性可被所有实例共享，实例化时不会重复创建，节省内存。 构造函数、原型对象、实例的关系： （实例通过 关联原型对象）。 用法示例 1. 原型对象挂载共享方法 2. 方法查找规则（就近原则） 实例访问方法时，优先查找自身，若没有则查找原型对象： 四、constructor 属性：原型与构造函数的 “身份证” 核心作用 每个原型对象默认有 属性，指向其对应的构造函数，用于标识 “谁创建了这个原型对象”。 常见问题与解决 当用 对象字面量 重写原型时，会覆盖原有 ，需手动修正： 五、对象原型（ proto ）：原型链的连接纽带 概念 每个实例对象都有 属性（非标准属性，浏览器实现），指向其构造函数的 原型对象。 作用：为对象查找原型属性 / 方法提供 “路径”。 注意事项 与 意义相同（ 是 ES 规范中的内部属性， 是浏览器暴露的访问方式）。 的 属性指向实例的构造函数（如 ）。 六、原型继承：复用代码的高效方式 逻辑 通过将子类的原型设置为父类的实例，使子类继承父类的属性和方法，实现代码复用。 用法示例 七、原型链：属性查找的链式机制 概念 原型对象本身也是对象，其 会指向更高层级的原型对象，形成 链式结构 （原型链）。 终点：所有对象的原型链最终指向 ，而 为 （原型链的尽头）。 属性查找规则 对象访问属性 / 方法时，按以下顺序查找： 自身属性 → 实例.proto（构造函数.prototype） → 原型.proto → ... → Object.prototype → null （找不到则返回 ）。 示例验证 instanceof 运算符 检测构造函数的 是否在实例的原型链上（判断对象类型的核心依据）： 总结 面向对象编程 通过 “对象” 封装数据与行为，依托封装、继承、多态提升代码复用性和可维护性。 构造函数 是创建对象的模板，但存在方法重复创建的问题，需通过 原型对象 （ ）共享方法解决。 原型链 是属性查找的底层机制，通过 连接各级原型，最终指向 。 原型继承 是 JavaScript 实现继承的核心方式，通过修改子类原型为父类实例实现代码复用，同时需修正 指向。",
+  "readingMinutes": 7,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "JavaScript"
+  ],
+  "tags": [
+    "前端开发",
+    "面向对象编程",
+    "JavaScript",
+    "Java",
+    "继承"
+  ],
+  "html": "<p><strong>所有的对象里面都有 <code>__proto__ </code>对象原型 指向原型对象</strong></p>\n<p><strong>所有的原型对象里面有 constructor， 指向 创造改原型对象的构造函数</strong></p>\n<h2 id=\"一编程思想从面向过程到面向对象\">一、编程思想：从面向过程到面向对象</h2>\n<h3 id=\"一面向过程\">（一）面向过程</h3>\n<ul>\n<li>\n<p><strong>逻辑</strong>：聚焦 “步骤”，将问题拆解为一系列连续的操作，用函数实现每个步骤，最终按顺序调用完成任务。</p>\n</li>\n<li>\n<p>案例</p>\n<p>：制作蛋炒饭</p>\n<ol>\n<li>函数 1：<code>准备食材(米饭、鸡蛋、葱花)</code></li>\n<li>函数 2：<code>热油(锅、油)</code></li>\n<li>函数 3：<code>炒鸡蛋(鸡蛋、油)</code></li>\n<li>函数 4：<code>混合翻炒(米饭、鸡蛋、盐)</code></li>\n<li>执行顺序：<code>准备食材()</code> → <code>热油()</code> → <code>炒鸡蛋()</code> → <code>混合翻炒()</code></li>\n</ol>\n</li>\n<li>\n<p><strong>适用场景</strong>：简单任务（如计算器、单步骤工具），逻辑直接但扩展性差。</p>\n</li>\n</ul>\n<h3 id=\"二面向对象\">（二）面向对象</h3>\n<ul>\n<li>\n<p><strong>逻辑</strong>：聚焦 “对象”，将问题拆解为具有特定功能的对象，通过对象间的协作完成任务。每个对象包含 “数据”（属性）和 “操作”（方法）。</p>\n</li>\n<li>\n<p>三大特性</p>\n<ul>\n<li><strong>封装性</strong>：对象内部数据和方法被包裹，仅暴露必要接口（如 “手机” 对象封装了 “芯片”“电池” 等内部组件，只暴露 “打电话”“发消息” 等方法）。</li>\n<li><strong>继承性</strong>：子类可复用父类的属性和方法（如 “智能手机” 继承 “手机” 的 “通话” 功能，新增 “上网” 功能）。</li>\n<li><strong>多态性</strong>：同一方法在不同对象上有不同实现（如 “支付” 方法，支付宝对象实现 “扫码支付”，微信对象实现 “转账支付”）。</li>\n</ul>\n</li>\n<li>\n<p>案例</p>\n<p>制作蛋炒饭</p>\n<ul>\n<li>食材对象（属性：米饭、鸡蛋、调料；方法：<code>提供原料()</code>）</li>\n<li>厨师对象（属性：姓名；方法：<code>热油()</code>、<code>翻炒()</code>、<code>调味()</code>）</li>\n<li>协作：厨师对象调用食材对象的<code>提供原料()</code>，再通过自身<code>翻炒()</code>等方法完成制作。</li>\n</ul>\n</li>\n<li>\n<p><strong>优势</strong>：代码复用性高、易维护，适合大型项目（如电商系统、管理平台）。</p>\n</li>\n</ul>\n<h2 id=\"二构造函数面向对象的基础封装方式\">二、构造函数：面向对象的基础封装方式</h2>\n<h3 id=\"概念\">概念</h3>\n<p>构造函数是创建对象的 “模板”，通过<code>this</code>绑定属性和方法，实例化后生成独立的对象，实现数据与行为的封装。</p>\n<h3 id=\"用法示例\">用法示例</h3>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 定义构造函数（首字母大写，区分普通函数）</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-comment\">// 实例属性（每个对象独立拥有）</span>\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = <span class=\"hljs-string\">'佚名'</span>; \n  <span class=\"hljs-comment\">// 实例方法（每个对象独立拥有）</span>\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">setName</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\">name</span>) {\n    <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = name; <span class=\"hljs-comment\">// this指向当前实例对象</span>\n  };\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">getName</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span>);\n  };\n}\n\n<span class=\"hljs-comment\">// 实例化对象（用new调用构造函数）</span>\n<span class=\"hljs-keyword\">const</span> p1 = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\np1.<span class=\"hljs-title function_\">setName</span>(<span class=\"hljs-string\">'小明'</span>); \np1.<span class=\"hljs-title function_\">getName</span>(); <span class=\"hljs-comment\">// 输出：小明（p1的name被修改）</span>\n\n<span class=\"hljs-keyword\">const</span> p2 = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p2.<span class=\"hljs-property\">name</span>); <span class=\"hljs-comment\">// 输出：佚名（p1和p2完全独立）</span>\n</code></pre>\n<h3 id=\"问题分析\">问题分析</h3>\n<ul>\n<li><strong>内存浪费</strong>：每个实例对象都会复制构造函数内的方法（如<code>setName</code>、<code>getName</code>）。若创建 100 个实例，会存在 100 份相同的方法副本，占用多余内存。</li>\n<li><strong>解决方案</strong>：通过<strong>原型对象</strong>共享方法，避免重复创建。</li>\n</ul>\n<h2 id=\"三原型对象prototype共享方法的核心\">三、原型对象（prototype）：共享方法的核心</h2>\n<h3 id=\"概念-1\">概念</h3>\n<ul>\n<li>每个构造函数都有一个<code>prototype</code>属性，指向<strong>原型对象</strong>。</li>\n<li>原型对象上的方法 / 属性可被所有实例共享，实例化时不会重复创建，节省内存。</li>\n<li>构造函数、原型对象、实例的关系：<code>实例.__proto__ === 构造函数.prototype</code>（实例通过<code>__proto__</code>关联原型对象）。</li>\n</ul>\n<h3 id=\"用法示例-1\">用法示例</h3>\n<h4 id=\"1-原型对象挂载共享方法\">1. 原型对象挂载共享方法</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = <span class=\"hljs-string\">'佚名'</span>; <span class=\"hljs-comment\">// 实例属性（独立）</span>\n}\n\n<span class=\"hljs-comment\">// 原型对象挂载共享方法（所有实例共用）</span>\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">setName</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\">name</span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = name;\n};\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">getName</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span>);\n};\n\n<span class=\"hljs-comment\">// 实例化</span>\n<span class=\"hljs-keyword\">const</span> p1 = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n<span class=\"hljs-keyword\">const</span> p2 = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n\np1.<span class=\"hljs-title function_\">setName</span>(<span class=\"hljs-string\">'小红'</span>);\np1.<span class=\"hljs-title function_\">getName</span>(); <span class=\"hljs-comment\">// 输出：小红</span>\np2.<span class=\"hljs-title function_\">getName</span>(); <span class=\"hljs-comment\">// 输出：佚名（互不干扰）</span>\n\n<span class=\"hljs-comment\">// 验证方法共享（内存中仅1份）</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p1.<span class=\"hljs-property\">setName</span> === p2.<span class=\"hljs-property\">setName</span>); <span class=\"hljs-comment\">// 输出：true</span>\n</code></pre>\n<h4 id=\"2-方法查找规则就近原则\">2. 方法查找规则（就近原则）</h4>\n<p>实例访问方法时，优先查找自身，若没有则查找原型对象：</p>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-comment\">// 实例方法（优先级高于原型方法）</span>\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">sayHi</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n    <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'嗨！'</span>);\n  };\n}\n\n<span class=\"hljs-comment\">// 原型方法</span>\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">sayHi</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'Hi~'</span>);\n};\n\n<span class=\"hljs-keyword\">const</span> p = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\np.<span class=\"hljs-title function_\">sayHi</span>(); <span class=\"hljs-comment\">// 输出：嗨！（访问实例自身方法）</span>\n</code></pre>\n<h2 id=\"四constructor-属性原型与构造函数的-身份证\">四、constructor 属性：原型与构造函数的 “身份证”</h2>\n<h3 id=\"核心作用\">核心作用</h3>\n<p>每个原型对象默认有<code>constructor</code>属性，指向其对应的构造函数，用于标识 “谁创建了这个原型对象”。</p>\n<h3 id=\"常见问题与解决\">常见问题与解决</h3>\n<p>当用<strong>对象字面量</strong>重写原型时，会覆盖原有<code>constructor</code>，需手动修正：</p>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {}\n\n<span class=\"hljs-comment\">// 用对象字面量重写原型（覆盖原constructor）</span>\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span> = {\n  <span class=\"hljs-comment\">// 手动修正constructor指向原构造函数</span>\n  <span class=\"hljs-attr\">constructor</span>: <span class=\"hljs-title class_\">Person</span>, \n  <span class=\"hljs-attr\">walk</span>: <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) { <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'走路'</span>); },\n  <span class=\"hljs-attr\">eat</span>: <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) { <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'吃饭'</span>); }\n};\n\n<span class=\"hljs-keyword\">const</span> p = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p.<span class=\"hljs-property\">constructor</span> === <span class=\"hljs-title class_\">Person</span>); <span class=\"hljs-comment\">// 输出：true（修正后正确）</span>\n</code></pre>\n<h2 id=\"五对象原型proto原型链的连接纽带\">五、对象原型（<strong>proto</strong>）：原型链的连接纽带</h2>\n<h3 id=\"概念-2\">概念</h3>\n<ul>\n<li>每个实例对象都有<code>__proto__</code>属性（非标准属性，浏览器实现），指向其构造函数的<code>prototype</code>原型对象。</li>\n<li>作用：为对象查找原型属性 / 方法提供 “路径”。</li>\n</ul>\n<h3 id=\"注意事项\">注意事项</h3>\n<ul>\n<li><code>__proto__</code>与<code>[[prototype]]</code>意义相同（<code>[[prototype]]</code>是 ES 规范中的内部属性，<code>__proto__</code>是浏览器暴露的访问方式）。</li>\n<li><code>__proto__</code>的<code>constructor</code>属性指向实例的构造函数（如<code>p.__proto__.constructor === Person</code>）。</li>\n</ul>\n<h2 id=\"六原型继承复用代码的高效方式\">六、原型继承：复用代码的高效方式</h2>\n<h3 id=\"逻辑\">逻辑</h3>\n<p>通过将子类的原型设置为父类的实例，使子类继承父类的属性和方法，实现代码复用。</p>\n<h3 id=\"用法示例-2\">用法示例</h3>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 父类：人（共有的属性和方法）</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">eyes</span> = <span class=\"hljs-number\">2</span>; <span class=\"hljs-comment\">// 所有人都有2只眼睛</span>\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">head</span> = <span class=\"hljs-number\">1</span>; <span class=\"hljs-comment\">// 所有人都有1个头</span>\n}\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">walk</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'用腿走路'</span>);\n};\n\n<span class=\"hljs-comment\">// 子类：女人（继承父类，添加特有功能）</span>\n<span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Woman</span>(<span class=\"hljs-params\"></span>) {}\n<span class=\"hljs-comment\">// 关键：子类原型 = 父类实例（继承父类属性和方法）</span>\n<span class=\"hljs-title class_\">Woman</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span> = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n<span class=\"hljs-comment\">// 修正constructor指向子类自身</span>\n<span class=\"hljs-title class_\">Woman</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">constructor</span> = <span class=\"hljs-title class_\">Woman</span>;\n<span class=\"hljs-comment\">// 子类特有方法</span>\n<span class=\"hljs-title class_\">Woman</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">bearBaby</span> = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'生孩子'</span>);\n};\n\n<span class=\"hljs-comment\">// 测试继承</span>\n<span class=\"hljs-keyword\">const</span> woman = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Woman</span>();\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(woman.<span class=\"hljs-property\">eyes</span>); <span class=\"hljs-comment\">// 输出：2（继承父类属性）</span>\nwoman.<span class=\"hljs-title function_\">walk</span>(); <span class=\"hljs-comment\">// 输出：用腿走路（继承父类方法）</span>\nwoman.<span class=\"hljs-title function_\">bearBaby</span>(); <span class=\"hljs-comment\">// 输出：生孩子（子类特有方法）</span>\n</code></pre>\n<h2 id=\"七原型链属性查找的链式机制\">七、原型链：属性查找的链式机制</h2>\n<h3 id=\"概念-3\">概念</h3>\n<ul>\n<li>原型对象本身也是对象，其<code>__proto__</code>会指向更高层级的原型对象，形成<strong>链式结构</strong>（原型链）。</li>\n<li>终点：所有对象的原型链最终指向<code>Object.prototype</code>，而<code>Object.prototype.__proto__</code>为<code>null</code>（原型链的尽头）。</li>\n</ul>\n<h3 id=\"属性查找规则\">属性查找规则</h3>\n<p>对象访问属性 / 方法时，按以下顺序查找：\n<strong>自身属性 → 实例.proto（构造函数.prototype） → 原型.proto → ... → Object.prototype → null</strong>（找不到则返回<code>undefined</code>）。</p>\n<h3 id=\"示例验证\">示例验证</h3>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">Person</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-variable language_\">this</span>.<span class=\"hljs-property\">name</span> = <span class=\"hljs-string\">'小明'</span>; <span class=\"hljs-comment\">// 自身属性</span>\n}\n<span class=\"hljs-title class_\">Person</span>.<span class=\"hljs-property\"><span class=\"hljs-keyword\">prototype</span></span>.<span class=\"hljs-property\">age</span> = <span class=\"hljs-number\">18</span>; <span class=\"hljs-comment\">// 原型属性</span>\n\n<span class=\"hljs-keyword\">const</span> p = <span class=\"hljs-keyword\">new</span> <span class=\"hljs-title class_\">Person</span>();\n\n<span class=\"hljs-comment\">// 查找顺序验证</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p.<span class=\"hljs-property\">name</span>); <span class=\"hljs-comment\">// 自身有 → 小明</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p.<span class=\"hljs-property\">age</span>); <span class=\"hljs-comment\">// 自身无，查原型 → 18</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p.<span class=\"hljs-title function_\">toString</span>()); <span class=\"hljs-comment\">// 原型无，查Object.prototype → [object Object]</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p.<span class=\"hljs-property\">gender</span>); <span class=\"hljs-comment\">// 整条链无 → undefined</span>\n</code></pre>\n<h3 id=\"instanceof-运算符\">instanceof 运算符</h3>\n<p>检测构造函数的<code>prototype</code>是否在实例的原型链上（判断对象类型的核心依据）：</p>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p <span class=\"hljs-keyword\">instanceof</span> <span class=\"hljs-title class_\">Person</span>); <span class=\"hljs-comment\">// true（Person.prototype在p的原型链上）</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p <span class=\"hljs-keyword\">instanceof</span> <span class=\"hljs-title class_\">Object</span>); <span class=\"hljs-comment\">// true（Object.prototype在p的原型链上）</span>\n<span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(p <span class=\"hljs-keyword\">instanceof</span> <span class=\"hljs-title class_\">Array</span>); <span class=\"hljs-comment\">// false（Array.prototype不在p的原型链上）</span>\n</code></pre>\n<h2 id=\"总结\">总结</h2>\n<ul>\n<li><strong>面向对象编程</strong>通过 “对象” 封装数据与行为，依托封装、继承、多态提升代码复用性和可维护性。</li>\n<li><strong>构造函数</strong>是创建对象的模板，但存在方法重复创建的问题，需通过<strong>原型对象</strong>（<code>prototype</code>）共享方法解决。</li>\n<li><strong>原型链</strong>是属性查找的底层机制，通过<code>__proto__</code>连接各级原型，最终指向<code>Object.prototype</code>。</li>\n<li><strong>原型继承</strong>是 JavaScript 实现继承的核心方式，通过修改子类原型为父类实例实现代码复用，同时需修正<code>constructor</code>指向。</li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "一编程思想从面向过程到面向对象",
+      "level": 2,
+      "text": "一、编程思想：从面向过程到面向对象"
+    },
+    {
+      "id": "一面向过程",
+      "level": 3,
+      "text": "（一）面向过程"
+    },
+    {
+      "id": "二面向对象",
+      "level": 3,
+      "text": "（二）面向对象"
+    },
+    {
+      "id": "二构造函数面向对象的基础封装方式",
+      "level": 2,
+      "text": "二、构造函数：面向对象的基础封装方式"
+    },
+    {
+      "id": "概念",
+      "level": 3,
+      "text": "概念"
+    },
+    {
+      "id": "用法示例",
+      "level": 3,
+      "text": "用法示例"
+    },
+    {
+      "id": "问题分析",
+      "level": 3,
+      "text": "问题分析"
+    },
+    {
+      "id": "三原型对象prototype共享方法的核心",
+      "level": 2,
+      "text": "三、原型对象（prototype）：共享方法的核心"
+    },
+    {
+      "id": "概念-1",
+      "level": 3,
+      "text": "概念"
+    },
+    {
+      "id": "用法示例-1",
+      "level": 3,
+      "text": "用法示例"
+    },
+    {
+      "id": "1-原型对象挂载共享方法",
+      "level": 4,
+      "text": "1. 原型对象挂载共享方法"
+    },
+    {
+      "id": "2-方法查找规则就近原则",
+      "level": 4,
+      "text": "2. 方法查找规则（就近原则）"
+    },
+    {
+      "id": "四constructor-属性原型与构造函数的-身份证",
+      "level": 2,
+      "text": "四、constructor 属性：原型与构造函数的 “身份证”"
+    },
+    {
+      "id": "核心作用",
+      "level": 3,
+      "text": "核心作用"
+    },
+    {
+      "id": "常见问题与解决",
+      "level": 3,
+      "text": "常见问题与解决"
+    },
+    {
+      "id": "五对象原型proto原型链的连接纽带",
+      "level": 2,
+      "text": "五、对象原型（proto）：原型链的连接纽带"
+    },
+    {
+      "id": "概念-2",
+      "level": 3,
+      "text": "概念"
+    },
+    {
+      "id": "注意事项",
+      "level": 3,
+      "text": "注意事项"
+    },
+    {
+      "id": "六原型继承复用代码的高效方式",
+      "level": 2,
+      "text": "六、原型继承：复用代码的高效方式"
+    },
+    {
+      "id": "逻辑",
+      "level": 3,
+      "text": "逻辑"
+    },
+    {
+      "id": "用法示例-2",
+      "level": 3,
+      "text": "用法示例"
+    },
+    {
+      "id": "七原型链属性查找的链式机制",
+      "level": 2,
+      "text": "七、原型链：属性查找的链式机制"
+    },
+    {
+      "id": "概念-3",
+      "level": 3,
+      "text": "概念"
+    },
+    {
+      "id": "属性查找规则",
+      "level": 3,
+      "text": "属性查找规则"
+    },
+    {
+      "id": "示例验证",
+      "level": 3,
+      "text": "示例验证"
+    },
+    {
+      "id": "instanceof-运算符",
+      "level": 3,
+      "text": "instanceof 运算符"
+    },
+    {
+      "id": "总结",
+      "level": 2,
+      "text": "总结"
+    }
+  ]
+}

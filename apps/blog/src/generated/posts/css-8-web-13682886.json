@@ -1,0 +1,158 @@
+{
+  "canonicalSlug": "css-8-web-13682886",
+  "aliases": [
+    "CSS 学习笔记（8）：移动 Web 开发之平面转换与渐变效果"
+  ],
+  "title": "CSS 学习笔记（8）：移动 Web 开发之平面转换与渐变效果",
+  "publishedAt": "2025-09-21T23:31:38.000Z",
+  "publishedLabel": "Sep 21, 2025",
+  "excerpt": "使用位移、缩放、旋转、渐变效果",
+  "type": "Notes",
+  "searchText": "CSS 学习笔记（8）：移动 Web 开发之平面转换与渐变效果 Notes 前端开发 CSS 前端开发 移动 Web 开发之平面转换 渐变效果 HTML CSS 使用位移、缩放、旋转、渐变效果 01 平面转换 简介 作用：为元素添加动态效果，一般与过渡配合使用 概念：改变盒子在平面内的形态（位移、旋转、缩放、倾斜） 平面转换也叫 2D 转换，属性是 transform 平移 取值 像素单位数值 百分比（参照 盒子自身尺寸 计算结果） 正负 均可 技巧 translate 只写一个值 ，表示沿着 X 轴移动 单独设置 X 或 Y 轴移动距离：translateX 或 translateY 定位居中 方法一：margin 方法二：平移 → 百分比参照盒子自身尺寸计算结果 案例 双开门 HTML 结构 CSS 样式 旋转 取值：角度单位是 deg 技巧 取值正负均可 取值为正，顺时针旋转 取值为负，逆时针旋转 转换原点 默认情况下，转换原点是盒子中心点 取值： 方位名词 （left、top、right、bottom、center） 像素单位数值 百分比 案例 时钟 多重转换 多重转换技巧：先平移再旋转 多重转换原理：以第一种转换方式坐标轴为准转换形态 旋转会改变网页元素的坐标轴向 先写旋转，则后面的转换效果的轴向以旋转后的轴向为准，会影响转换结果 缩放 技巧 通常，只为 scale 设置一个值，表示 X 轴和 Y 轴等比例缩放 取值大于1表示放大，取值小于1表示缩小 案例 播放特效 CSS 样式 倾斜 取值：角度度数 deg 02 渐变 渐变是多个颜色逐渐变化的效果，一般用于设置盒子背景 分类： 线性渐变 径向渐变 线性渐变 取值： 渐变方向：可选 to 方位名词 角度度数 终点位置：可选 百分比 案例 产品展示 HTML 结构 CSS 样式 径向渐变 取值： 半径可以是2条，则为椭圆 圆心位置取值：像素单位数值 / 百分比 / 方位名词 03 综合案例 导航 频道 箭头旋转 频道列表 渐变按钮 搜索按钮 登录按钮 客户端按钮 轮播图 猜你喜欢",
+  "readingMinutes": 3,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "CSS"
+  ],
+  "tags": [
+    "前端开发",
+    "移动 Web 开发之平面转换",
+    "渐变效果",
+    "HTML",
+    "CSS"
+  ],
+  "html": "<p>使用位移、缩放、旋转、渐变效果</p>\n<h2 id=\"01-平面转换\">01-平面转换</h2>\n<h3 id=\"简介\">简介</h3>\n<p>作用：为元素添加动态效果，一般与过渡配合使用</p>\n<p>概念：改变盒子在平面内的形态（位移、旋转、缩放、倾斜）</p>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681357773327.png?_t=1752157502264\" alt=\"\" loading=\"lazy\" decoding=\"async\"></p>\n<p>平面转换也叫 2D 转换，属性是 <strong>transform</strong></p>\n<h3 id=\"平移\">平移</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(X轴移动距离, Y轴移动距离);\n</code></pre>\n<ul>\n<li>取值\n<ul>\n<li>像素单位数值</li>\n<li>百分比（参照<strong>盒子自身尺寸</strong>计算结果）</li>\n<li><strong>正负</strong>均可</li>\n</ul>\n</li>\n<li>技巧\n<ul>\n<li>translate <strong>只写一个值</strong>，表示沿着 <strong>X</strong> 轴移动</li>\n<li>单独设置 X 或 Y 轴移动距离：translateX 或 translateY</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"定位居中\">定位居中</h3>\n<ul>\n<li>方法一：margin</li>\n</ul>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358064880.png?_t=1752157502264\" alt=\"\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>方法二：平移 → 百分比参照盒子自身尺寸计算结果</li>\n</ul>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358076134.png?_t=1752157502264\" alt=\"\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"案例-双开门\">案例-双开门</h3>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358110583.png?_t=1752157502264\" alt=\"1681358110583\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>HTML 结构</li>\n</ul>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"father\"</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"left\"</span>&gt;</span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"right\"</span>&gt;</span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n</code></pre>\n<ul>\n<li>CSS 样式</li>\n</ul>\n<pre><code class=\"hljs language-css\">* {\n    <span class=\"hljs-attribute\">margin</span>: <span class=\"hljs-number\">0</span>;\n    <span class=\"hljs-attribute\">padding</span>: <span class=\"hljs-number\">0</span>;\n}\n\n<span class=\"hljs-comment\">/* 1. 布局：父子结构，父级是大图，子级是左右小图 */</span>\n<span class=\"hljs-selector-class\">.father</span> {\n    <span class=\"hljs-attribute\">display</span>: flex;\n    <span class=\"hljs-attribute\">margin</span>: <span class=\"hljs-number\">0</span> auto;\n    <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">1366px</span>;\n    <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">600px</span>;\n    <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">url</span>(<span class=\"hljs-string\">./images/bg.jpg</span>);\n\n    <span class=\"hljs-attribute\">overflow</span>: hidden;\n}\n\n<span class=\"hljs-selector-class\">.father</span> <span class=\"hljs-selector-class\">.left</span>,\n<span class=\"hljs-selector-class\">.father</span> <span class=\"hljs-selector-class\">.right</span> {\n    <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">50%</span>;\n    <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">600px</span>;\n    <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">url</span>(<span class=\"hljs-string\">./images/fm.jpg</span>);\n\n    <span class=\"hljs-attribute\">transition</span>: all .<span class=\"hljs-number\">5s</span>;\n}\n\n<span class=\"hljs-selector-class\">.father</span> <span class=\"hljs-selector-class\">.right</span> {\n    <span class=\"hljs-comment\">/* right 表示的取到精灵图右面的图片 */</span>\n    <span class=\"hljs-attribute\">background-position</span>: right <span class=\"hljs-number\">0</span>;\n}\n\n<span class=\"hljs-comment\">/* 2. 鼠标悬停的效果：左右移动 */</span>\n<span class=\"hljs-selector-class\">.father</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.left</span> {\n    <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(-<span class=\"hljs-number\">100%</span>);\n}\n\n<span class=\"hljs-selector-class\">.father</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.right</span> {\n    <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translateX</span>(<span class=\"hljs-number\">100%</span>);\n}\n</code></pre>\n<h3 id=\"旋转\">旋转</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">rotate</span>(旋转角度);\n</code></pre>\n<ul>\n<li>取值：角度单位是 <strong>deg</strong></li>\n<li>技巧\n<ul>\n<li>取值正负均可</li>\n<li>取值为正，顺时针旋转</li>\n<li>取值为负，逆时针旋转</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"转换原点\">转换原点</h3>\n<blockquote>\n<p>默认情况下，转换原点是盒子中心点</p>\n</blockquote>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform-origin</span>: 水平原点位置 垂直原点位置;\n</code></pre>\n<p>取值：</p>\n<ul>\n<li><strong>方位名词</strong>（left、top、right、bottom、center）</li>\n<li>像素单位数值</li>\n<li>百分比</li>\n</ul>\n<h3 id=\"案例-时钟\">案例-时钟</h3>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358351628.png?_t=1752157502264\" alt=\"1681358351628\" loading=\"lazy\" decoding=\"async\"></p>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-selector-class\">.hour</span> {\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">6px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">50px</span>;\n  <span class=\"hljs-attribute\">background-color</span>: <span class=\"hljs-number\">#333</span>;\n  <span class=\"hljs-attribute\">margin-left</span>: -<span class=\"hljs-number\">3px</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">rotate</span>(<span class=\"hljs-number\">15deg</span>);\n  <span class=\"hljs-attribute\">transform-origin</span>: center bottom;\n}\n\n<span class=\"hljs-selector-class\">.minute</span> {\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">5px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">65px</span>;\n  <span class=\"hljs-attribute\">background-color</span>: <span class=\"hljs-number\">#333</span>;\n  <span class=\"hljs-attribute\">margin-left</span>: -<span class=\"hljs-number\">3px</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">rotate</span>(<span class=\"hljs-number\">90deg</span>);\n  <span class=\"hljs-attribute\">transform-origin</span>: center bottom;\n}\n\n<span class=\"hljs-selector-class\">.second</span> {\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">4px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">80px</span>;\n  <span class=\"hljs-attribute\">background-color</span>: red;\n  <span class=\"hljs-attribute\">margin-left</span>: -<span class=\"hljs-number\">2px</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">rotate</span>(<span class=\"hljs-number\">240deg</span>);\n  <span class=\"hljs-attribute\">transform-origin</span>: center bottom;\n}\n</code></pre>\n<h3 id=\"多重转换\">多重转换</h3>\n<p>多重转换技巧：先平移再旋转</p>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>() <span class=\"hljs-built_in\">rotate</span>();\n</code></pre>\n<ul>\n<li>多重转换原理：以第一种转换方式坐标轴为准转换形态\n<ul>\n<li>旋转会改变网页元素的坐标轴向</li>\n<li>先写旋转，则后面的转换效果的轴向以旋转后的轴向为准，会影响转换结果</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"缩放\">缩放</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">scale</span>(缩放倍数);\n<span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">scale</span>(X轴缩放倍数, Y轴缩放倍数);\n</code></pre>\n<ul>\n<li>技巧\n<ul>\n<li>通常，只为 scale 设置一个值，表示 X 轴和 Y 轴等比例缩放</li>\n<li>取值大于1表示放大，取值小于1表示缩小</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"案例-播放特效\">案例-播放特效</h3>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358481436.png?_t=1752157502264\" alt=\"1681358481436\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>CSS 样式</li>\n</ul>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* 1. 摆放播放按钮：图片区域的中间 */</span>\n<span class=\"hljs-selector-class\">.box</span> <span class=\"hljs-selector-tag\">li</span> {\n  <span class=\"hljs-attribute\">overflow</span>: hidden;\n}\n\n<span class=\"hljs-selector-class\">.pic</span> {\n  <span class=\"hljs-attribute\">position</span>: relative;\n}\n\n<span class=\"hljs-selector-class\">.pic</span><span class=\"hljs-selector-pseudo\">::after</span> {\n  <span class=\"hljs-attribute\">position</span>: absolute;\n  <span class=\"hljs-attribute\">left</span>: <span class=\"hljs-number\">50%</span>;\n  <span class=\"hljs-attribute\">top</span>: <span class=\"hljs-number\">50%</span>;\n  <span class=\"hljs-comment\">/* margin-left: -29px;\n  margin-top: -29px; */</span>\n  <span class=\"hljs-comment\">/* transform: translate(-50%, -50%); */</span>\n\n  <span class=\"hljs-attribute\">content</span>: <span class=\"hljs-string\">''</span>;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">58px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">58px</span>;\n  <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">url</span>(<span class=\"hljs-string\">./images/play.png</span>);\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(-<span class=\"hljs-number\">50%</span>, -<span class=\"hljs-number\">50%</span>) <span class=\"hljs-built_in\">scale</span>(<span class=\"hljs-number\">5</span>);\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">0</span>;\n\n  <span class=\"hljs-attribute\">transition</span>: all .<span class=\"hljs-number\">5s</span>;\n}\n<span class=\"hljs-comment\">/* 2. hover效果：大按钮，看不见：透明是0 → 小按钮，看得见：透明度1 */</span>\n<span class=\"hljs-selector-class\">.box</span> <span class=\"hljs-selector-tag\">li</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.pic</span><span class=\"hljs-selector-pseudo\">::after</span> {\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(-<span class=\"hljs-number\">50%</span>, -<span class=\"hljs-number\">50%</span>) <span class=\"hljs-built_in\">scale</span>(<span class=\"hljs-number\">1</span>);\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">1</span>;\n}\n</code></pre>\n<h3 id=\"倾斜\">倾斜</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">skew</span>();\n</code></pre>\n<p>取值：角度度数 deg</p>\n<h2 id=\"02-渐变\">02-渐变</h2>\n<p>渐变是多个颜色逐渐变化的效果，一般用于设置盒子背景</p>\n<p>分类：</p>\n<ul>\n<li>线性渐变</li>\n</ul>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358603090.png?_t=1752157502264\" alt=\"1681358603090\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>径向渐变</li>\n</ul>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358608036.png?_t=1752157502264\" alt=\"1681358608036\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"线性渐变\">线性渐变</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">linear-gradient</span>(\n&nbsp; 渐变方向,\n&nbsp; 颜色<span class=\"hljs-number\">1</span> 终点位置,\n&nbsp; 颜色<span class=\"hljs-number\">2</span> 终点位置,\n&nbsp; ......\n);\n</code></pre>\n<p>取值：</p>\n<ul>\n<li>渐变方向：可选\n<ul>\n<li>to 方位名词</li>\n<li>角度度数</li>\n</ul>\n</li>\n<li>终点位置：可选\n<ul>\n<li>百分比</li>\n</ul>\n</li>\n</ul>\n<h3 id=\"案例-产品展示\">案例-产品展示</h3>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358742994.png?_t=1752157502264\" alt=\"1681358757636\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681358757636.png?_t=1752157502264\" alt=\"\" loading=\"lazy\" decoding=\"async\"></p>\n<ul>\n<li>HTML 结构</li>\n</ul>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"box\"</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">img</span> <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">\"./images/product.jpeg\"</span> <span class=\"hljs-attr\">alt</span>=<span class=\"hljs-string\">\"\"</span> /&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"title\"</span>&gt;</span>OceanStor Pacific 海量存储斩获2021 Interop金奖<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">class</span>=<span class=\"hljs-string\">\"mask\"</span>&gt;</span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span>\n</code></pre>\n<ul>\n<li>CSS 样式</li>\n</ul>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-selector-class\">.mask</span> {\n  <span class=\"hljs-attribute\">position</span>: absolute;\n  <span class=\"hljs-attribute\">left</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">top</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">100%</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">100%</span>;\n  <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">linear-gradient</span>(\n      transparent,\n      <span class=\"hljs-built_in\">rgba</span>(<span class=\"hljs-number\">0</span>,<span class=\"hljs-number\">0</span>,<span class=\"hljs-number\">0</span>,<span class=\"hljs-number\">0.5</span>)\n  );\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">0</span>;\n\n  <span class=\"hljs-attribute\">transition</span>: all .<span class=\"hljs-number\">5s</span>;\n}\n\n<span class=\"hljs-selector-class\">.box</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.mask</span> {\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">1</span>;\n}\n</code></pre>\n<h3 id=\"径向渐变\">径向渐变</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">radial-gradient</span>(\n&nbsp; 半径 at 圆心位置,\n&nbsp; 颜色<span class=\"hljs-number\">1</span> 终点位置,\n&nbsp; 颜色<span class=\"hljs-number\">2</span> 终点位置,\n&nbsp; ......\n);\n</code></pre>\n<p>取值：</p>\n<ul>\n<li>半径可以是2条，则为椭圆</li>\n<li>圆心位置取值：像素单位数值 / 百分比 / 方位名词</li>\n</ul>\n<h2 id=\"03-综合案例\">03-综合案例</h2>\n<p><img src=\"https://www.woodfishhhh.xyz/images/1681365549936.png?_t=1752157502264\" alt=\"1681365549936\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"导航-频道\">导航-频道</h3>\n<h4 id=\"箭头旋转\">箭头旋转</h4>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-selector-class\">.x-header-nav</span> <span class=\"hljs-selector-class\">.nav-item</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.icon-down</span> {\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">rotate</span>(-<span class=\"hljs-number\">180deg</span>);\n}\n</code></pre>\n<h4 id=\"频道列表\">频道列表</h4>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-selector-class\">.channel-layer</span> {\n  <span class=\"hljs-attribute\">position</span>: absolute;\n  <span class=\"hljs-attribute\">top</span>: <span class=\"hljs-number\">60px</span>;\n  <span class=\"hljs-attribute\">left</span>: <span class=\"hljs-number\">50%</span>;\n  <span class=\"hljs-attribute\">z-index</span>: -<span class=\"hljs-number\">2</span>;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">1080px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">120px</span>;\n  <span class=\"hljs-attribute\">padding</span>: <span class=\"hljs-number\">10px</span>;\n  <span class=\"hljs-attribute\">margin-left</span>: -<span class=\"hljs-number\">540px</span>;\n  <span class=\"hljs-attribute\">color</span>: <span class=\"hljs-number\">#72727b</span>;\n  <span class=\"hljs-attribute\">background-color</span>: <span class=\"hljs-number\">#f5f5f5</span>;\n  <span class=\"hljs-attribute\">border</span>: <span class=\"hljs-number\">1px</span> solid <span class=\"hljs-number\">#e4e4e4</span>;\n  <span class=\"hljs-attribute\">border-top</span>: none;\n  <span class=\"hljs-attribute\">transition</span>: all <span class=\"hljs-number\">0.5s</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translateY</span>(-<span class=\"hljs-number\">120px</span>);\n}\n\n<span class=\"hljs-comment\">/* TODO 2. 弹窗频道 */</span>\n<span class=\"hljs-selector-class\">.x-header-nav</span> <span class=\"hljs-selector-class\">.nav-item</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-class\">.channel-layer</span> {\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translateY</span>(<span class=\"hljs-number\">0</span>);\n}\n</code></pre>\n<h3 id=\"渐变按钮\">渐变按钮</h3>\n<h4 id=\"搜索按钮\">搜索按钮</h4>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-selector-class\">.x-header-search</span> <span class=\"hljs-selector-tag\">form</span> <span class=\"hljs-selector-class\">.btn</span> {\n  <span class=\"hljs-attribute\">position</span>: absolute;\n  <span class=\"hljs-attribute\">top</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">right</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">60px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">40px</span>;\n  <span class=\"hljs-attribute\">line-height</span>: <span class=\"hljs-number\">40px</span>;\n  <span class=\"hljs-attribute\">text-align</span>: center;\n  <span class=\"hljs-attribute\">background-color</span>: <span class=\"hljs-number\">#f86442</span>;\n  <span class=\"hljs-attribute\">border-top-right-radius</span>: <span class=\"hljs-number\">20px</span>;\n  <span class=\"hljs-attribute\">border-bottom-right-radius</span>: <span class=\"hljs-number\">20px</span>;\n  <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">linear-gradient</span>(\n    to right,\n    <span class=\"hljs-built_in\">rgba</span>(<span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">0.3</span>),\n    <span class=\"hljs-number\">#f86442</span>\n  );\n}\n</code></pre>\n<h4 id=\"登录按钮\">登录按钮</h4>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* TODO 7. 渐变按钮 */</span>\n<span class=\"hljs-selector-class\">.card</span> <span class=\"hljs-selector-class\">.card-info</span> <span class=\"hljs-selector-class\">.login</span> {\n  <span class=\"hljs-attribute\">padding</span>: <span class=\"hljs-number\">3px</span> <span class=\"hljs-number\">34px</span>;\n  <span class=\"hljs-attribute\">color</span>: <span class=\"hljs-number\">#fff</span>;\n  <span class=\"hljs-attribute\">background-color</span>: <span class=\"hljs-number\">#ff7251</span>;\n  <span class=\"hljs-attribute\">border-radius</span>: <span class=\"hljs-number\">30px</span>;\n  <span class=\"hljs-attribute\">box-shadow</span>: <span class=\"hljs-number\">0</span> <span class=\"hljs-number\">4px</span> <span class=\"hljs-number\">8px</span> <span class=\"hljs-number\">0</span> <span class=\"hljs-built_in\">rgb</span>(<span class=\"hljs-number\">252</span> <span class=\"hljs-number\">88</span> <span class=\"hljs-number\">50</span> / <span class=\"hljs-number\">50%</span>);\n  <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">linear-gradient</span>(\n    to right,\n    <span class=\"hljs-built_in\">rgba</span>(<span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">0.2</span>),\n    <span class=\"hljs-number\">#ff7251</span>\n  );\n}\n</code></pre>\n<h4 id=\"客户端按钮\">客户端按钮</h4>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* TODO 8. 径向渐变 */</span>\n<span class=\"hljs-selector-class\">.download</span> <span class=\"hljs-selector-class\">.dl</span> <span class=\"hljs-selector-class\">.dl-btn</span> {\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">68px</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">34px</span>;\n  <span class=\"hljs-attribute\">line-height</span>: <span class=\"hljs-number\">34px</span>;\n  <span class=\"hljs-attribute\">color</span>: <span class=\"hljs-number\">#fff</span>;\n  <span class=\"hljs-attribute\">text-align</span>: center;\n  <span class=\"hljs-attribute\">border-radius</span>: <span class=\"hljs-number\">4px</span>;\n  <span class=\"hljs-attribute\">background-image</span>: <span class=\"hljs-built_in\">radial-gradient</span>(\n    <span class=\"hljs-number\">50px</span> at <span class=\"hljs-number\">10px</span> <span class=\"hljs-number\">10px</span>,\n    <span class=\"hljs-built_in\">rgba</span>(<span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">255</span>, <span class=\"hljs-number\">0.5</span>),\n    transparent\n  );\n}\n</code></pre>\n<h3 id=\"轮播图\">轮播图</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* TODO 4. 摆放图片 */</span>\n<span class=\"hljs-selector-class\">.banner</span> <span class=\"hljs-selector-class\">.banner-list</span> <span class=\"hljs-selector-class\">.banner-item</span><span class=\"hljs-selector-class\">.left</span> {\n  <span class=\"hljs-attribute\">z-index</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(-<span class=\"hljs-number\">160px</span>) <span class=\"hljs-built_in\">scale</span>(<span class=\"hljs-number\">0.8</span>);\n  <span class=\"hljs-attribute\">transform-origin</span>: left center;\n}\n\n<span class=\"hljs-selector-class\">.banner</span> <span class=\"hljs-selector-class\">.banner-list</span> <span class=\"hljs-selector-class\">.banner-item</span><span class=\"hljs-selector-class\">.right</span> {\n  <span class=\"hljs-attribute\">z-index</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">translate</span>(<span class=\"hljs-number\">160px</span>) <span class=\"hljs-built_in\">scale</span>(<span class=\"hljs-number\">0.8</span>);\n  <span class=\"hljs-attribute\">transform-origin</span>: right center;\n}\n</code></pre>\n<h3 id=\"猜你喜欢\">猜你喜欢</h3>\n<pre><code class=\"hljs language-css\"><span class=\"hljs-comment\">/* TODO 5. 播放按钮和遮罩 */</span>\n<span class=\"hljs-selector-class\">.album-item</span> <span class=\"hljs-selector-class\">.album-item-box</span><span class=\"hljs-selector-pseudo\">::after</span> {\n  <span class=\"hljs-attribute\">position</span>: absolute;\n  <span class=\"hljs-attribute\">left</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">top</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">content</span>: <span class=\"hljs-string\">''</span>;\n  <span class=\"hljs-attribute\">width</span>: <span class=\"hljs-number\">100%</span>;\n  <span class=\"hljs-attribute\">height</span>: <span class=\"hljs-number\">100%</span>;\n  <span class=\"hljs-attribute\">background</span>: <span class=\"hljs-built_in\">rgba</span>(<span class=\"hljs-number\">0</span>,<span class=\"hljs-number\">0</span>,<span class=\"hljs-number\">0</span>,.<span class=\"hljs-number\">5</span>) <span class=\"hljs-built_in\">url</span>(<span class=\"hljs-string\">../assets/play.png</span>) no-repeat center / <span class=\"hljs-number\">20px</span>;\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">0</span>;\n  <span class=\"hljs-attribute\">transition</span>: all .<span class=\"hljs-number\">5s</span>;\n}\n\n<span class=\"hljs-selector-class\">.album-item</span> <span class=\"hljs-selector-class\">.album-item-box</span><span class=\"hljs-selector-pseudo\">:hover</span><span class=\"hljs-selector-pseudo\">::after</span> {\n  <span class=\"hljs-attribute\">opacity</span>: <span class=\"hljs-number\">1</span>;\n  <span class=\"hljs-attribute\">background-size</span>: <span class=\"hljs-number\">50px</span>;\n}\n\n\n<span class=\"hljs-comment\">/* TODO 6. 图片缩放 */</span>\n<span class=\"hljs-selector-class\">.album-item</span> <span class=\"hljs-selector-class\">.album-item-box</span><span class=\"hljs-selector-pseudo\">:hover</span> <span class=\"hljs-selector-tag\">img</span> {\n  <span class=\"hljs-attribute\">transform</span>: <span class=\"hljs-built_in\">scale</span>(<span class=\"hljs-number\">1.1</span>);\n}\n</code></pre>\n",
+  "toc": [
+    {
+      "id": "01-平面转换",
+      "level": 2,
+      "text": "01-平面转换"
+    },
+    {
+      "id": "简介",
+      "level": 3,
+      "text": "简介"
+    },
+    {
+      "id": "平移",
+      "level": 3,
+      "text": "平移"
+    },
+    {
+      "id": "定位居中",
+      "level": 3,
+      "text": "定位居中"
+    },
+    {
+      "id": "案例-双开门",
+      "level": 3,
+      "text": "案例-双开门"
+    },
+    {
+      "id": "旋转",
+      "level": 3,
+      "text": "旋转"
+    },
+    {
+      "id": "转换原点",
+      "level": 3,
+      "text": "转换原点"
+    },
+    {
+      "id": "案例-时钟",
+      "level": 3,
+      "text": "案例-时钟"
+    },
+    {
+      "id": "多重转换",
+      "level": 3,
+      "text": "多重转换"
+    },
+    {
+      "id": "缩放",
+      "level": 3,
+      "text": "缩放"
+    },
+    {
+      "id": "案例-播放特效",
+      "level": 3,
+      "text": "案例-播放特效"
+    },
+    {
+      "id": "倾斜",
+      "level": 3,
+      "text": "倾斜"
+    },
+    {
+      "id": "02-渐变",
+      "level": 2,
+      "text": "02-渐变"
+    },
+    {
+      "id": "线性渐变",
+      "level": 3,
+      "text": "线性渐变"
+    },
+    {
+      "id": "案例-产品展示",
+      "level": 3,
+      "text": "案例-产品展示"
+    },
+    {
+      "id": "径向渐变",
+      "level": 3,
+      "text": "径向渐变"
+    },
+    {
+      "id": "03-综合案例",
+      "level": 2,
+      "text": "03-综合案例"
+    },
+    {
+      "id": "导航-频道",
+      "level": 3,
+      "text": "导航-频道"
+    },
+    {
+      "id": "箭头旋转",
+      "level": 4,
+      "text": "箭头旋转"
+    },
+    {
+      "id": "频道列表",
+      "level": 4,
+      "text": "频道列表"
+    },
+    {
+      "id": "渐变按钮",
+      "level": 3,
+      "text": "渐变按钮"
+    },
+    {
+      "id": "搜索按钮",
+      "level": 4,
+      "text": "搜索按钮"
+    },
+    {
+      "id": "登录按钮",
+      "level": 4,
+      "text": "登录按钮"
+    },
+    {
+      "id": "客户端按钮",
+      "level": 4,
+      "text": "客户端按钮"
+    },
+    {
+      "id": "轮播图",
+      "level": 3,
+      "text": "轮播图"
+    },
+    {
+      "id": "猜你喜欢",
+      "level": 3,
+      "text": "猜你喜欢"
+    }
+  ]
+}

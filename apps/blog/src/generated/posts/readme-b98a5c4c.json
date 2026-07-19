@@ -1,0 +1,29 @@
+{
+  "canonicalSlug": "readme-b98a5c4c",
+  "aliases": [
+    "README"
+  ],
+  "title": "NestJS 全家桶",
+  "publishedAt": "2026-07-13T00:00:00.000Z",
+  "publishedLabel": "Jul 13, 2026",
+  "excerpt": "从 NestJS 的依赖注入和 HTTP 请求处理开始，逐步搭建文件处理、校验鉴权、接口文档以及 TypeORM 数据持久化能力。",
+  "type": "Notes",
+  "searchText": "NestJS 全家桶 Notes NestJS TypeScript TypeORM 后端开发 从 NestJS 的依赖注入和 HTTP 请求处理开始，逐步搭建文件处理、校验鉴权、接口文档以及 TypeORM 数据持久化能力。 目录 | 笔记 | 主要内容 | | | | | 01 NestJS 基础、装饰器与 CLI | 框架结构、IoC、DI、装饰器原理、工程目录和 CLI | | 02 从 Controller 到 Middleware | RESTful、Controller、Session、Provider、Module 和 Middleware | | 03 文件处理、拦截器与管道 | 上传下载、RxJS、响应与异常处理、Pipe 和 DTO 校验 | | 04 爬虫、守卫、自定义装饰器与 Swagger | Axios、Cheerio、Guard、元数据与接口文档 | | 05 TypeORM 实体、CRUD 与事务 | MySQL、Entity、Repository、分页排序、关联查询和事务 |",
+  "readingMinutes": 1,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "NestJS",
+    "TypeScript",
+    "TypeORM",
+    "后端开发"
+  ],
+  "html": "<p>从 NestJS 的依赖注入和 HTTP 请求处理开始，逐步搭建文件处理、校验鉴权、接口文档以及 TypeORM 数据持久化能力。</p>\n<h2 id=\"目录\">目录</h2>\n<table>\n<thead>\n<tr>\n<th>笔记</th>\n<th>主要内容</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"./01-NestJS%E5%9F%BA%E7%A1%80%E4%B8%8ECLI.md\">01-NestJS 基础、装饰器与 CLI</a></td>\n<td>框架结构、IoC、DI、装饰器原理、工程目录和 CLI</td>\n</tr>\n<tr>\n<td><a href=\"./02-Controller%E5%88%B0Middleware.md\">02-从 Controller 到 Middleware</a></td>\n<td>RESTful、Controller、Session、Provider、Module 和 Middleware</td>\n</tr>\n<tr>\n<td><a href=\"./03-%E6%96%87%E4%BB%B6%E5%A4%84%E7%90%86%E6%8B%A6%E6%88%AA%E5%99%A8%E4%B8%8E%E7%AE%A1%E9%81%93.md\">03-文件处理、拦截器与管道</a></td>\n<td>上传下载、RxJS、响应与异常处理、Pipe 和 DTO 校验</td>\n</tr>\n<tr>\n<td><a href=\"./04-%E7%88%AC%E8%99%AB%E5%AE%88%E5%8D%AB%E8%A3%85%E9%A5%B0%E5%99%A8%E4%B8%8ESwagger.md\">04-爬虫、守卫、自定义装饰器与 Swagger</a></td>\n<td>Axios、Cheerio、Guard、元数据与接口文档</td>\n</tr>\n<tr>\n<td><a href=\"./05-TypeORM%E5%AE%9E%E4%BD%93CRUD%E4%B8%8E%E4%BA%8B%E5%8A%A1.md\">05-TypeORM 实体、CRUD 与事务</a></td>\n<td>MySQL、Entity、Repository、分页排序、关联查询和事务</td>\n</tr>\n</tbody>\n</table>\n",
+  "toc": [
+    {
+      "id": "目录",
+      "level": 2,
+      "text": "目录"
+    }
+  ]
+}

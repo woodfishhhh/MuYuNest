@@ -1,0 +1,93 @@
+{
+  "canonicalSlug": "javascript-4-821cec52",
+  "aliases": [
+    "JavaScript 学习笔记（4）：函数封装与对象基础"
+  ],
+  "title": "JavaScript 学习笔记（4）：函数封装与对象基础",
+  "publishedAt": "2025-11-03T12:59:42.000Z",
+  "publishedLabel": "Nov 03, 2025",
+  "excerpt": "理解封装的意义，能够通过函数的声明实现逻辑的封装，知道对象数据类型的特征，结合数学对象实现简单计算功能。",
+  "type": "Notes",
+  "searchText": "JavaScript 学习笔记（4）：函数封装与对象基础 Notes 前端开发 JavaScript 前端开发 函数封装 JavaScript Java 函数 理解封装的意义，能够通过函数的声明实现逻辑的封装，知道对象数据类型的特征，结合数学对象实现简单计算功能。 理解函数的封装的特征 掌握函数声明的语法 理解什么是函数的返回值 知道并能使用常见的内置函数 函数 理解函数的封装特性，掌握函数的语法规则 声明和调用 函数可以把具有相同或相似逻辑的代码“包裹”起来，通过函数调用执行这些被“包裹”的代码逻辑，这么做的优势是有利于精简代码方便复用。 声明（定义） 声明（定义）一个完整函数包括关键字、函数名、形式参数、函数体、返回值5个部分 调用 声明（定义）的函数必须调用才会真正被执行，使用 调用函数。 注：函数名的命名规则与变量是一致的，并且尽量保证函数名的语义。 小案例： 小星星 参数 通过向函数传递参数，可以让函数更加灵活多变，参数可以理解成是一个变量。 声明（定义）一个功能为打招呼的函数 传入数据列表 声明这个函数需要传入几个数据 多个数据用逗号隔开 总结： 1. 声明（定义）函数时的形参没有数量限制，当有多个形参时使用 分隔 2. 调用函数传递的实参要与形参的顺序一致 形参和实参 形参：声明函数时写在函数名右边小括号里的叫形参（形式上的参数） 实参：调用函数时写在函数名右边小括号里的叫实参（实际上的参数） 形参可以理解为是在这个函数内声明的变量（比如 num1 = 10）实参可以理解为是给这个变量赋值 开发中尽量保持形参和实参个数一致 返回值 函数的本质是封装（包裹），函数体内的逻辑执行完毕后，函数外部如何获得函数内部的执行结果呢？要想获得函数内部逻辑的执行结果，需要通过 这个关键字，将内部执行结果传递到函数外部，这个被传递到外部的结果就是返回值。 总结： 1. 在函数体中使用return 关键字能将内部的执行结果交给函数外部使用 2. 函数内部只能出现1 次 return，并且 return 下一行代码不会再被执行，所以return 后面的数据不要换行写 3. return会立即结束当前函数 4. 函数可以没有return，这种情况默认返回值为 undefined 作用域 通常来说，一段程序代码中所用到的名字并不总是有效和可用的，而限定这个名字的可用性的代码范围就是这个名字的作用域。 作用域的使用提高了程序逻辑的局部性，增强了程序的可靠性，减少了名字冲突。 全局作用域 作用于所有代码执行的环境(整个 script 标签内部)或者一个独立的 js 文件 处于全局作用域内的变量，称为全局变量 局部作用域 作用于函数内的代码环境，就是局部作用域。 因为跟函数有关系，所以也称为函数作用域。 处于局部作用域内的变量称为局部变量 如果函数内部，变量没有声明，直接赋值，也当全局变量看，但是强烈不推荐 但是有一种情况，函数内部的形参可以看做是局部变量。 匿名函数 函数可以分为具名函数和匿名函数 匿名函数：没有名字的函数,无法直接使用。 函数表达式 立即执行函数 无需调用，立即执行，其实本质已经调用了 多个立即执行函数之间用分号隔开 ​ 在能够访问到的情况下 先局部 局部没有在找全局",
+  "readingMinutes": 6,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "JavaScript"
+  ],
+  "tags": [
+    "前端开发",
+    "函数封装",
+    "JavaScript",
+    "Java",
+    "函数"
+  ],
+  "html": "<blockquote>\n<p>理解封装的意义，能够通过函数的声明实现逻辑的封装，知道对象数据类型的特征，结合数学对象实现简单计算功能。</p>\n</blockquote>\n<ul>\n<li>理解函数的封装的特征</li>\n<li>掌握函数声明的语法</li>\n<li>理解什么是函数的返回值</li>\n<li>知道并能使用常见的内置函数</li>\n</ul>\n<h2 id=\"函数\">函数</h2>\n<blockquote>\n<p>理解函数的封装特性，掌握函数的语法规则</p>\n</blockquote>\n<h3 id=\"声明和调用\">声明和调用</h3>\n<p>函数可以把具有相同或相似逻辑的代码“包裹”起来，通过函数调用执行这些被“包裹”的代码逻辑，这么做的优势是有利于精简代码方便复用。</p>\n<h4 id=\"声明定义\">声明（定义）</h4>\n<p>声明（定义）一个完整函数包括关键字、函数名、形式参数、函数体、返回值5个部分</p>\n<p><img src=\"https://www.woodfishhhh.xyz/images/function.jpg.jpeg?_t=1752775107565\" alt=\"function\" loading=\"lazy\" decoding=\"async\"></p>\n<h4 id=\"调用\">调用</h4>\n<p>声明（定义）的函数必须调用才会真正被执行，使用 <code>()</code> 调用函数。</p>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-meta\">&lt;!DOCTYPE <span class=\"hljs-keyword\">html</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"en\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">head</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">charset</span>=<span class=\"hljs-string\">\"UTF-8\"</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">title</span>&gt;</span>JavaScript 基础 - 声明和调用<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">title</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">head</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">script</span>&gt;</span><span class=\"language-javascript\">\n    <span class=\"hljs-comment\">// 声明（定义）了最简单的函数，既没有形式参数，也没有返回值</span>\n    <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-params\"></span>) {\n      <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'嗨~'</span>)\n    }\n    <span class=\"hljs-comment\">// 函数调用，这些函数体内的代码逻辑会被执行</span>\n    <span class=\"hljs-comment\">// 函数名()</span>\n        \n    <span class=\"hljs-title function_\">sayHi</span>()\n    <span class=\"hljs-comment\">// 可以重复被调用，多少次都可以</span>\n    <span class=\"hljs-title function_\">sayHi</span>()\n  </span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">script</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span>\n</code></pre>\n<blockquote>\n<p>注：函数名的命名规则与变量是一致的，并且尽量保证函数名的语义。</p>\n</blockquote>\n<p>小案例： 小星星</p>\n<pre><code class=\"hljs language-javascript\">&lt;script&gt;\n        <span class=\"hljs-comment\">// 函数声明</span>\n        <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-params\"></span>) {\n            <span class=\"hljs-comment\">// document.write('hai~')</span>\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`*&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`**&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`***&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`****&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`*****&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`******&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`*******&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`********&lt;br&gt;`</span>)\n            <span class=\"hljs-variable language_\">document</span>.<span class=\"hljs-title function_\">write</span>(<span class=\"hljs-string\">`*********&lt;br&gt;`</span>)\n        }\n        <span class=\"hljs-comment\">// 函数调用</span>\n        <span class=\"hljs-title function_\">sayHi</span>()\n        <span class=\"hljs-title function_\">sayHi</span>()\n        <span class=\"hljs-title function_\">sayHi</span>()\n        <span class=\"hljs-title function_\">sayHi</span>()\n        <span class=\"hljs-title function_\">sayHi</span>()\n    &lt;/script&gt;\n</code></pre>\n<h3 id=\"参数\">参数</h3>\n<p>通过向函数传递参数，可以让函数更加灵活多变，参数可以理解成是一个变量。</p>\n<p>声明（定义）一个功能为打招呼的函数</p>\n<ul>\n<li>传入数据列表</li>\n<li>声明这个函数需要传入几个数据</li>\n<li>多个数据用逗号隔开</li>\n</ul>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-meta\">&lt;!DOCTYPE <span class=\"hljs-keyword\">html</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"en\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">head</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">charset</span>=<span class=\"hljs-string\">\"UTF-8\"</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">title</span>&gt;</span>JavaScript 基础 - 函数参数<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">title</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">head</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>\n\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">script</span>&gt;</span><span class=\"language-javascript\">\n    <span class=\"hljs-comment\">// 声明（定义）一个功能为打招呼的函数</span>\n    <span class=\"hljs-comment\">// function sayHi() {</span>\n    <span class=\"hljs-comment\">//   console.log('嗨~')</span>\n    <span class=\"hljs-comment\">// }</span>\n    <span class=\"hljs-comment\">// 调用函数</span>\n    <span class=\"hljs-comment\">// sayHi()</span>\n\t\n\n    <span class=\"hljs-comment\">// 这个函数似乎没有什么价值，除非能够向不同的人打招呼</span>\n    <span class=\"hljs-comment\">// 这就需要借助参数来实现了</span>\n    <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-params\">name</span>) {\n      <span class=\"hljs-comment\">// 参数 name 可以被理解成是一个变量</span>\n      <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(name)\n      <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'嗨~'</span> + name)\n    }\n\n    <span class=\"hljs-comment\">// 调用 sayHi 函数，括号中多了 '小明'</span>\n    <span class=\"hljs-comment\">// 这时相当于为参数 name 赋值了</span>\n    <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-string\">'小明'</span>)<span class=\"hljs-comment\">// 结果为 小明</span>\n\n    <span class=\"hljs-comment\">// 再次调用 sayHi 函数，括号中多了 '小红'</span>\n    <span class=\"hljs-comment\">// 这时相当于为参数 name 赋值了</span>\n    <span class=\"hljs-title function_\">sayHi</span>(<span class=\"hljs-string\">'小红'</span>) <span class=\"hljs-comment\">// 结果为 小红</span>\n  </span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">script</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span>\n</code></pre>\n<p>总结：</p>\n<ol>\n<li>声明（定义）函数时的形参没有数量限制，当有多个形参时使用 <code>,</code> 分隔</li>\n<li>调用函数传递的实参要与形参的顺序一致</li>\n</ol>\n<h4 id=\"形参和实参\">形参和实参</h4>\n<p>形参：声明函数时写在函数名右边小括号里的叫形参（形式上的参数）</p>\n<p>实参：调用函数时写在函数名右边小括号里的叫实参（实际上的参数）</p>\n<p>形参可以理解为是在这个函数内声明的变量（比如 num1 = 10）实参可以理解为是给这个变量赋值</p>\n<p>开发中尽量保持形参和实参个数一致</p>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-meta\">&lt;!DOCTYPE <span class=\"hljs-keyword\">html</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"en\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">head</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">charset</span>=<span class=\"hljs-string\">\"UTF-8\"</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">title</span>&gt;</span>JavaScript 基础 - 函数参数<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">title</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">head</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">script</span>&gt;</span><span class=\"language-javascript\">\n    <span class=\"hljs-comment\">// 声明（定义）一个计算任意两数字和的函数</span>\n    <span class=\"hljs-comment\">// 形参 x 和 y 分别表示任意两个数字，它们是两个变量</span>\n    <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">count</span>(<span class=\"hljs-params\">x, y</span>) {\n      <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(x + y);\n    }\n    <span class=\"hljs-comment\">// 调用函数，传入两个具体的数字做为实参</span>\n    <span class=\"hljs-comment\">// 此时 10 赋值给了形参 x</span>\n    <span class=\"hljs-comment\">// 此时 5  赋值给了形参 y</span>\n    <span class=\"hljs-title function_\">count</span>(<span class=\"hljs-number\">10</span>, <span class=\"hljs-number\">5</span>); <span class=\"hljs-comment\">// 结果为 15</span>\n  </span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">script</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span>\n</code></pre>\n<h3 id=\"返回值\">返回值</h3>\n<p>函数的本质是封装（包裹），函数体内的逻辑执行完毕后，函数外部如何获得函数内部的执行结果呢？要想获得函数内部逻辑的执行结果，需要通过 <code>return</code> 这个关键字，将内部执行结果传递到函数外部，这个被传递到外部的结果就是返回值。</p>\n<pre><code class=\"hljs language-html\"><span class=\"hljs-meta\">&lt;!DOCTYPE <span class=\"hljs-keyword\">html</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"en\"</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">head</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">meta</span> <span class=\"hljs-attr\">charset</span>=<span class=\"hljs-string\">\"UTF-8\"</span>&gt;</span>\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">title</span>&gt;</span>JavaScript 基础 - 函数返回值<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">title</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">head</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>\n\n  <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">script</span>&gt;</span><span class=\"language-javascript\">\n    <span class=\"hljs-comment\">// 定义求和函数</span>\n    <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">count</span>(<span class=\"hljs-params\">a, b</span>) {\n      <span class=\"hljs-keyword\">let</span> s = a + b\n      <span class=\"hljs-comment\">// s 即为 a + b 的结果</span>\n      <span class=\"hljs-comment\">// 通过 return 将 s 传递到外部</span>\n      <span class=\"hljs-keyword\">return</span> s\n    }\n\n    <span class=\"hljs-comment\">// 调用函数，如果一个函数有返回值</span>\n    <span class=\"hljs-comment\">// 那么可将这个返回值赋值给外部的任意变量</span>\n    <span class=\"hljs-keyword\">let</span> total = <span class=\"hljs-title function_\">count</span>(<span class=\"hljs-number\">5</span>, <span class=\"hljs-number\">12</span>)\n  </span><span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">script</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span>\n</code></pre>\n<p>总结：</p>\n<ol>\n<li>在函数体中使用return 关键字能将内部的执行结果交给函数外部使用</li>\n<li>函数内部只能出现1 次 return，并且 return 下一行代码不会再被执行，所以return 后面的数据不要换行写</li>\n<li>return会立即结束当前函数</li>\n<li>函数可以没有return，这种情况默认返回值为 undefined</li>\n</ol>\n<h3 id=\"作用域\">作用域</h3>\n<p>通常来说，一段程序代码中所用到的名字并不总是有效和可用的，而限定这个名字的可用性的代码范围就是这个名字的作用域。</p>\n<p>作用域的使用提高了程序逻辑的局部性，增强了程序的可靠性，减少了名字冲突。</p>\n<h4 id=\"全局作用域\">全局作用域</h4>\n<p>作用于所有代码执行的环境(整个 script 标签内部)或者一个独立的 js 文件</p>\n<p>处于全局作用域内的变量，称为全局变量</p>\n<h4 id=\"局部作用域\">局部作用域</h4>\n<p>作用于函数内的代码环境，就是局部作用域。 因为跟函数有关系，所以也称为函数作用域。</p>\n<p>处于局部作用域内的变量称为局部变量</p>\n<blockquote>\n<p>如果函数内部，变量没有声明，直接赋值，也当全局变量看，但是强烈不推荐</p>\n<p>但是有一种情况，函数内部的形参可以看做是局部变量。</p>\n</blockquote>\n<h3 id=\"匿名函数\">匿名函数</h3>\n<p>函数可以分为具名函数和匿名函数</p>\n<p>匿名函数：没有名字的函数,无法直接使用。</p>\n<h4 id=\"函数表达式\">函数表达式</h4>\n<pre><code class=\"hljs language-javascript\"><span class=\"hljs-comment\">// 声明</span>\n<span class=\"hljs-keyword\">let</span> fn = <span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>) { \n   <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'函数表达式'</span>)\n}\n<span class=\"hljs-comment\">// 调用</span>\n<span class=\"hljs-title function_\">fn</span>()\n</code></pre>\n<h4 id=\"立即执行函数\">立即执行函数</h4>\n<pre><code class=\"hljs language-javascript\">(<span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>){ xxx  })();\n(<span class=\"hljs-keyword\">function</span>(<span class=\"hljs-params\"></span>){xxxx}());\n</code></pre>\n<blockquote>\n<p>无需调用，立即执行，其实本质已经调用了</p>\n<p>多个立即执行函数之间用分号隔开</p>\n</blockquote>\n<p>​\t\t在能够访问到的情况下 先局部 局部没有在找全局</p>\n",
+  "toc": [
+    {
+      "id": "函数",
+      "level": 2,
+      "text": "函数"
+    },
+    {
+      "id": "声明和调用",
+      "level": 3,
+      "text": "声明和调用"
+    },
+    {
+      "id": "声明定义",
+      "level": 4,
+      "text": "声明（定义）"
+    },
+    {
+      "id": "调用",
+      "level": 4,
+      "text": "调用"
+    },
+    {
+      "id": "参数",
+      "level": 3,
+      "text": "参数"
+    },
+    {
+      "id": "形参和实参",
+      "level": 4,
+      "text": "形参和实参"
+    },
+    {
+      "id": "返回值",
+      "level": 3,
+      "text": "返回值"
+    },
+    {
+      "id": "作用域",
+      "level": 3,
+      "text": "作用域"
+    },
+    {
+      "id": "全局作用域",
+      "level": 4,
+      "text": "全局作用域"
+    },
+    {
+      "id": "局部作用域",
+      "level": 4,
+      "text": "局部作用域"
+    },
+    {
+      "id": "匿名函数",
+      "level": 3,
+      "text": "匿名函数"
+    },
+    {
+      "id": "函数表达式",
+      "level": 4,
+      "text": "函数表达式"
+    },
+    {
+      "id": "立即执行函数",
+      "level": 4,
+      "text": "立即执行函数"
+    }
+  ]
+}

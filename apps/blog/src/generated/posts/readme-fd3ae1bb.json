@@ -1,0 +1,36 @@
+{
+  "canonicalSlug": "readme-fd3ae1bb",
+  "aliases": [
+    "README"
+  ],
+  "title": "Vue 3 完全开发指南",
+  "publishedAt": "2026-07-13T00:00:00.000Z",
+  "publishedLabel": "Jul 13, 2026",
+  "excerpt": "从 Vue 3 响应式原理和组件体系出发，覆盖动画、自定义能力、工程化、Pinia、Vue Router、可视化项目，以及 PM2、Linux、Nginx 和 Web 安全基础。",
+  "type": "Notes",
+  "searchText": "Vue 3 完全开发指南 Notes Vue 3 TypeScript Vite Pinia Vue Router 前端工程化 从 Vue 3 响应式原理和组件体系出发，覆盖动画、自定义能力、工程化、Pinia、Vue Router、可视化项目，以及 PM2、Linux、Nginx 和 Web 安全基础。 示例统一采用 Composition API、 和当前通行写法；遇到版本敏感 API 时，以项目 lockfile 与对应官方文档为准。 原始链接 Vue3 + vite + Ts + pinia + 实战 + 源码 + electron 目录 | 笔记 | 对应页 | 主要内容 | | | :| | | 01 Vue 3 基础与响应式系统 | P1 P14 | SFC、模板、虚拟 DOM、Diff、 、 、 、侦听器与生命周期 | | 02 组件体系与通信 | P15 P22 | BEM、Props/Emits、递归与动态组件、插槽、异步组件、Teleport、KeepAlive | | 03 动画与高级组件模式 | P23 P35 | Transition、TransitionGroup、GSAP、provide/inject、Mitt、TSX 与组件 | | 04 自定义能力与运行时机制 | P36 P49 | 自定义指令、Composables、插件、全局能力、样式方案、事件循环与 | | 05 工程化、跨端与性能优化 | P50 P60 | Ionic、移动端适配、UnoCSS、渲染函数、Electron、编译宏、Webpack、性能与跨域 | | 06 Pinia 状态管理 | P61 P67 | Store、State、Getters、Actions、 、订阅与持久化 | | 07 数据可视化实战 | P68 P78 | 项目结构、接口、地图、表格、看板、饼图和折线图 | | 08 Vue Router 路由系统 | P79 P92 | 路由模式、导航、传参、嵌套与命名视图、守卫、元信息、滚动和动态路由 | | 09 PM2、Linux 与 Nginx 部署 | P93 P107 | PM2、Linux 权限、Nginx、反向代理、History 回退、日志与负载均衡 | | 10 Web 安全与隐私基础 | P108 P114 | Canvas 指纹、输入窃取风险、EXIF、蜜罐、自动化边界、输入法隐私和网络模型 |",
+  "readingMinutes": 3,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "Vue 3",
+    "TypeScript",
+    "Vite",
+    "Pinia",
+    "Vue Router",
+    "前端工程化"
+  ],
+  "html": "<p>从 Vue 3 响应式原理和组件体系出发，覆盖动画、自定义能力、工程化、Pinia、Vue Router、可视化项目，以及 PM2、Linux、Nginx 和 Web 安全基础。</p>\n<p>示例统一采用 Composition API、<code>&lt;script setup lang=\"ts\"&gt;</code> 和当前通行写法；遇到版本敏感 API 时，以项目 lockfile 与对应官方文档为准。</p>\n<h2 id=\"原始链接\">原始链接</h2>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV1dS4y1y7vd/\">Vue3 + vite + Ts + pinia + 实战 + 源码 + electron</a></li>\n</ul>\n<h2 id=\"目录\">目录</h2>\n<table>\n<thead>\n<tr>\n<th>笔记</th>\n<th>对应页</th>\n<th>主要内容</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><a href=\"./01-Vue3%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%93%8D%E5%BA%94%E5%BC%8F%E7%B3%BB%E7%BB%9F.md\">01-Vue 3 基础与响应式系统</a></td>\n<td>P1-P14</td>\n<td>SFC、模板、虚拟 DOM、Diff、<code>ref</code>、<code>reactive</code>、<code>computed</code>、侦听器与生命周期</td>\n</tr>\n<tr>\n<td><a href=\"./02-%E7%BB%84%E4%BB%B6%E4%BD%93%E7%B3%BB%E4%B8%8E%E9%80%9A%E4%BF%A1.md\">02-组件体系与通信</a></td>\n<td>P15-P22</td>\n<td>BEM、Props/Emits、递归与动态组件、插槽、异步组件、Teleport、KeepAlive</td>\n</tr>\n<tr>\n<td><a href=\"./03-%E5%8A%A8%E7%94%BB%E4%B8%8E%E9%AB%98%E7%BA%A7%E7%BB%84%E4%BB%B6%E6%A8%A1%E5%BC%8F.md\">03-动画与高级组件模式</a></td>\n<td>P23-P35</td>\n<td>Transition、TransitionGroup、GSAP、provide/inject、Mitt、TSX 与组件 <code>v-model</code></td>\n</tr>\n<tr>\n<td><a href=\"./04-%E8%87%AA%E5%AE%9A%E4%B9%89%E8%83%BD%E5%8A%9B%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E6%9C%BA%E5%88%B6.md\">04-自定义能力与运行时机制</a></td>\n<td>P36-P49</td>\n<td>自定义指令、Composables、插件、全局能力、样式方案、事件循环与 <code>nextTick</code></td>\n</tr>\n<tr>\n<td><a href=\"./05-%E5%B7%A5%E7%A8%8B%E5%8C%96%E8%B7%A8%E7%AB%AF%E4%B8%8E%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96.md\">05-工程化、跨端与性能优化</a></td>\n<td>P50-P60</td>\n<td>Ionic、移动端适配、UnoCSS、渲染函数、Electron、编译宏、Webpack、性能与跨域</td>\n</tr>\n<tr>\n<td><a href=\"./06-Pinia%E7%8A%B6%E6%80%81%E7%AE%A1%E7%90%86.md\">06-Pinia 状态管理</a></td>\n<td>P61-P67</td>\n<td>Store、State、Getters、Actions、<code>storeToRefs</code>、订阅与持久化</td>\n</tr>\n<tr>\n<td><a href=\"./07-%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96%E5%AE%9E%E6%88%98.md\">07-数据可视化实战</a></td>\n<td>P68-P78</td>\n<td>项目结构、接口、地图、表格、看板、饼图和折线图</td>\n</tr>\n<tr>\n<td><a href=\"./08-VueRouter%E8%B7%AF%E7%94%B1%E7%B3%BB%E7%BB%9F.md\">08-Vue Router 路由系统</a></td>\n<td>P79-P92</td>\n<td>路由模式、导航、传参、嵌套与命名视图、守卫、元信息、滚动和动态路由</td>\n</tr>\n<tr>\n<td><a href=\"./09-PM2Linux%E4%B8%8ENginx%E9%83%A8%E7%BD%B2.md\">09-PM2、Linux 与 Nginx 部署</a></td>\n<td>P93-P107</td>\n<td>PM2、Linux 权限、Nginx、反向代理、History 回退、日志与负载均衡</td>\n</tr>\n<tr>\n<td><a href=\"./10-Web%E5%AE%89%E5%85%A8%E4%B8%8E%E9%9A%90%E7%A7%81%E5%9F%BA%E7%A1%80.md\">10-Web 安全与隐私基础</a></td>\n<td>P108-P114</td>\n<td>Canvas 指纹、输入窃取风险、EXIF、蜜罐、自动化边界、输入法隐私和网络模型</td>\n</tr>\n</tbody>\n</table>\n",
+  "toc": [
+    {
+      "id": "原始链接",
+      "level": 2,
+      "text": "原始链接"
+    },
+    {
+      "id": "目录",
+      "level": 2,
+      "text": "目录"
+    }
+  ]
+}

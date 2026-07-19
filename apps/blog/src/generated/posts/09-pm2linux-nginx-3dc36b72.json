@@ -1,0 +1,201 @@
+{
+  "canonicalSlug": "09-pm2linux-nginx-3dc36b72",
+  "aliases": [
+    "09-PM2Linux与Nginx部署"
+  ],
+  "title": "PM2、Linux 与 Nginx 部署",
+  "publishedAt": "2026-07-13T00:00:00.000Z",
+  "publishedLabel": "Jul 13, 2026",
+  "excerpt": "一套常见的 Vue + Node 单机部署拓扑如下：",
+  "type": "Notes",
+  "searchText": "PM2、Linux 与 Nginx 部署 Notes PM2 Linux Nginx Vue 3 Node.js 生产部署 一套常见的 Vue + Node 单机部署拓扑如下： 关键边界： Nginx 是公网入口，负责 TLS、静态文件、反向代理、访问日志和基础限流。 Node 服务只监听回环地址，不把 3000、9000 等应用端口暴露到公网。 PM2 管理 Node 进程，不负责托管 Vue 构建后的静态文件。 云防火墙和主机防火墙通常只开放 SSH、HTTP、HTTPS。 1. PM2 解决什么问题 直接运行多个 会产生多个终端和独立生命周期。PM2 提供统一的启动、停止、重启、日志、监控、集群和开机恢复。 按 ID 操作适合临时排错；自动化脚本应按稳定的应用名称操作。 可看进程、CPU、内存和日志。 1.1 生产配置文件 把启动参数写进版本化的 Ecosystem 文件，避免每次手敲不同命令： 适合开发，不适合生产发布目录；文件变化可能引发重启风暴。 会按可用 CPU 启动多个实例，但不要机械占满低内存服务器。 Cluster 模式要求进程尽量无状态。Session、任务锁和限流状态不能只存在某个进程内存中。 WebSocket、定时任务和队列消费者需要额外评估粘性连接和“只执行一次”的约束。 1.2 Reload 与 Restart 会停止后再启动。Cluster 模式下 会逐个替换 Worker，可减少停机窗口： “零停机”不是无条件保证。新进程必须能正常启动，旧进程要处理终止信号并停止接收新请求，数据库迁移也必须向后兼容。 1.3 开机恢复 该命令会输出一条需要以管理员权限执行的系统服务安装命令。按输出执行后再保存当前进程清单： PM2 的运行用户必须和部署用户一致。不要一会儿用 root、一会儿用普通用户，否则会出现两套 和两份互相看不见的进程列表。 2. 云服务器与 SSH 2.1 公网、私网、DNS 与端口 公网 IP：供互联网访问，通常绑定 Nginx。 私网 IP：同一 VPC 内服务器通信，数据库优先走私网。 DNS：把域名解析到公网 IP；修改后需要等待缓存过期。 22：SSH；80：HTTP；443：HTTPS。 云厂商的 DDoS 基础防护不等于应用已经安全。仍需最小开放端口、限流、监控、备份和应急方案。 2.2 不用 root 直接部署 首次初始化可能需要管理员账号，随后应创建专用用户并使用密钥登录： 确认新用户能通过 SSH 登录后，再按组织规范关闭 root 密码登录。修改 SSH 配置前必须保留一个已验证的会话，避免把自己锁在服务器外。 修改后先检查配置，再重载： 不同发行版的服务名可能是 或 。 3. Linux 文件与权限 的一行可以拆成： 权限位： | 权限 | 数值 | 对普通文件 | 对目录 | | | : | | | | | 4 | 读取内容 | 列出名称 | | | 2 | 修改内容 | 创建、删除、重命名目录项 | | | 1 | 执行文件 | 进入并访问目录内对象 | 表示 Owner 为 、Group 为 、Others 无权限。三个数字分别对应 Owner、Group、Others。 不要用 解决部署报错。先从正在加载的配置中确认 Nginx Worker 用户，再只授予它读取前端产物所需的权限： 不要把上述 递归套到整个项目：部署脚本、原生模块和 需要保留执行位。Nginx 读取静态文件时，每一级父目录也必须允许对应用户或组进入， 可以逐级检查。 3.1 常用排错命令 可以避免把 grep 自己匹配出来。查看监听端口时优先使用 ，而不是只靠浏览器猜测。 4. 安装 Node.js 手动下载二进制包并修改 能帮助理解 ；生产机器更适合由包管理器或组织镜像安装并锁定版本： 原则： 1. 使用仍在维护的 Node LTS。 2. 记录版本并在 CI、测试、生产保持一致。 3. 不用不可信镜像替换全局 Registry。 4. 不把应用依赖全局安装；应用使用锁文件与 。 5. 服务启动前校验环境变量，密钥由部署系统注入。 如果使用手动二进制包， 各条目以冒号分隔： 系统服务不会必然读取交互式 Shell 的 Profile，因此最终仍应在 systemd/PM2 环境中显式确认 路径。 5. 部署 Node 接口 推荐目录： 构建和启动： Node 与 Nginx 同机部署时，Node 应只绑定 。容器或独立反向代理场景需要按实际网络命名空间选择监听地址，并由安全组、防火墙或容器网络限制来源。健康接口至少证明进程能响应；若发布依赖数据库，还应设计单独的 Readiness 检查，但不要在公网泄漏版本、环境变量或内部拓扑。 防火墙只开放真正需要的入口。以 firewalld 为例： 不要为了测试把 Node 的 3000/9999 端口永久开放到公网。通过本机 测 Node，通过 Nginx 的域名测完整链路。 6. Nginx 的角色 6.1 正向代理与反向代理 正向代理代表客户端访问外部服务，目标服务看到的是代理。 反向代理代表服务端集群接收客户端请求，客户端不需要知道后端实例。 本项目用的是反向代理：浏览器只访问同源的 ，Nginx 再转发到 Node。 6.2 静态与动态分离 Vue 的 HTML、JS、CSS 和图片由 Nginx 直接读取； 请求交给 Node。这样既减少 Node 的静态文件开销，也让缓存和压缩策略集中在入口层。 6.3 Worker 与连接数 通常按 CPU 自动选择 Worker。单 Worker 的 是最大连接数上限之一，理论总量近似： 真实上限还受文件描述符、反向代理一进一出连接、内存、内核参数和上游容量约束，不能只把数字调大。 7. 安装与管理 Nginx 优先使用发行版包或官方受信仓库，它能提供 systemd、升级和安全补丁集成： 适合确实需要自定义模块或编译选项的场景，但需要额外维护校验和、编译参数、安全补丁和升级流程。 常用命令： 每次重载前先执行 。 会让新 Worker 读取新配置，并让旧 Worker 尽量处理完现有连接；语法正确不代表上游地址和文件权限一定正确，重载后还要做请求验证。 直接使用 Nginx 二进制时： 是优雅退出， 是快速停止。由 systemd 安装的服务优先使用 ，不要混用多套进程管理方式。 8. 配置文件层级 指令位于 Main 上下文，但不要从别的发行版照抄固定账号：Debian/Ubuntu 的包通常使用 ，RHEL 系常见 。以当前机器实际加载的包配置和 输出为准。 Main：运行用户、Worker 数量、错误日志、PID。 ：连接处理参数。 ：MIME、日志、压缩、上游和通用 HTTP 设置。 ：一个域名/端口的虚拟主机。 ：按 URI 匹配处理方式。 允许内核更高效地发送静态文件。 控制空闲 Keep Alive 连接等待时间。Gzip/Brotli 是否开启取决于明确配置和编译模块，不能假定默认已经压缩。 9. Vue 静态站点与 API 代理 9.1 构建 是构建产物，不运行 Vite 开发服务器。下面是一份可用的 HTTP 配置骨架： 没有附加 URI，因此 会原样传给上游。若写成带路径或尾斜杠的形式，URI 替换规则会改变，配置后必须用真实请求验证。 Nginx 转发让浏览器看到的是同源 ，从而不需要在生产环境放开宽泛 CORS。它不会替代服务端认证和 CSRF 防护。 9.2 History 模式 404 访问根页面成功，但刷新 返回 404，原因是： 1. 客户端导航时，Vue Router 接管 。 2. 刷新时，浏览器直接向 Nginx 请求 。 3. 磁盘上没有这个文件。 这条规则先尝试真实静态文件，再把未知前端路由交回 SPA。 必须有更具体的 Location，不能也回退到 ，否则接口错误会伪装成 200 HTML。 9.3 HTTPS 生产站点应使用可信证书和自动续期。证书可以由云负载均衡、托管平台或 ACME 客户端管理。TLS 生效后再配置： 80 跳转到 443。 、 、 Cookie。 HSTS 只在确认所有子域都能长期使用 HTTPS 后逐步开启。 转发正确的 ，并让 Node 只信任受控代理。 10. 反向代理与跨域 开发环境常见两个 Origin： 协议、主机、端口任一不同就是不同 Origin。开发阶段用 Vite proxy；生产阶段用 Nginx： 浏览器始终请求当前站点的 。不要用代理转发不受信任的任意目标 URL，否则会形成开放代理或 SSRF 风险。 11. 日志与 GoAccess 11.1 三层日志 定位顺序： 1. Nginx 是否收到请求。 2. Nginx 返回状态码和耗时。 3. 上游是否连接成功。 4. Node 是否收到请求并正常响应。 访问日志可能包含 IP、路径、Query、User Agent 和 Referer。不要把 Token、密码、身份证号等放进 URL；限制日志访问权限，设置轮转和保留期限。 11.2 GoAccess GoAccess 可以把 Nginx Access Log 汇总为终端或 HTML 报告： 生成实时 HTML 前要确认 WebSocket、报告文件权限和暴露范围。统计面板本身包含访问行为数据，应放在内网、VPN 或认证之后，不能直接公开。 日志分析首先服务于容量、故障和安全审计，不应用来无目的长期追踪个人。 12. Nginx 负载均衡 多个 Node 实例可以放进一个 ： 策略： | 策略 | 特点 | | | | | 默认轮询 | 请求依次分配，适合容量相近实例 | | | 更高权重获得更大请求比例 | | | 优先给当前活动连接较少的实例 | | | 按客户端 IP 粘住实例，代理/NAT 下分布可能失衡 | | | 主实例都不可用时才参与 | 与 是开源 Nginx 的被动失败判定参数，不是完整的主动健康检查。备用节点也不是“某个请求超过 20 秒就立刻接管”的简单逻辑。 如果 PM2 已在同一个端口使用 Cluster 模式，PM2 自己会把连接分给 Worker；也可以让多个独立端口由 Nginx 分流。两层都做负载均衡前，应先明确进程模型、健康检查和日志归属。 压测不能只看“2000 次都成功”。至少记录： 并发数与持续时间。 P50/P95/P99 延迟。 错误率和超时率。 CPU、内存、事件循环延迟、数据库连接数。 测试数据、预热、客户端瓶颈和生产容量差异。 13. 一次可回滚的发布 这里假定压缩包顶层包含 和 ，校验和文件由可信 CI 生成，并且 Release 与 位于同一文件系统。脚本要求 已指向一个可用旧版本；首次上线应走单独的 Bootstrap 流程。 原子替换软链接；切换后的 PM2、Nginx 或健康检查只要失败， Trap 就会恢复旧链接并重新加载旧版本。 真实发布还要根据项目补充： 1. 数据库备份与向后兼容 Migration。 2. 构建产物校验和或镜像摘要。 3. 健康检查、关键业务 Smoke Test 和监控观察窗口。 4. 数据库变更失败时的前向修复或兼容回滚策略。 5. 清理旧 Release，但保留足够的回滚版本。 14. 故障定位 公网完全连不上 检查 DNS、云安全组、主机防火墙、Nginx 是否监听 80/443，以及域名是否到达正确服务器。 Nginx 返回 502 若本机能访问但 Nginx 仍 502，再查代理地址、Unix Socket/端口权限，以及 SELinux/AppArmor 策略。 Nginx 配置改了没生效 确认编辑的是正在使用的配置： Vue 子路由刷新 404 确认 有 ，而且 指向真正的 。 静态文件 403 检查 Nginx Worker 用户、文件 Owner/Group、每一级父目录的执行权限和 SELinux 上下文。不要直接改成 777。 PM2 重启后应用消失 确认启动和 使用同一个部署用户， 对应的 systemd 服务存在，并检查其日志。 15. 上线检查 [ ] Node、npm、PM2、Nginx 版本已记录并处于支持周期。 [ ] SSH 使用密钥与普通部署用户，root/密码登录按规范收紧。 [ ] 云防火墙和主机防火墙只开放必要端口。 [ ] Node 绑定 ，应用端口未暴露公网。 [ ] Vue 使用生产构建产物，Nginx 配置了静态缓存和 History fallback。 [ ] 单独反向代理，没有被 SPA fallback 吞掉。 [ ] PM2 使用 Ecosystem 文件，环境变量与密钥未写进仓库。 [ ] 、Node 健康检查和完整业务请求均通过。 [ ] TLS、Cookie、安全头和代理信任设置已按生产域名验证。 [ ] 日志不记录敏感信息，已配置权限、轮转、保留和告警。 [ ] 发布有数据库兼容策略、观察窗口和可执行回滚路径。 把 PM2、Linux 权限、Nginx 代理与 Upstream 连起来后，部署不再是“端口能访问就算完成”，而是一条可验证、最小暴露、可重载、可观测、可回滚的交付链。",
+  "readingMinutes": 18,
+  "coverImage": null,
+  "categories": [],
+  "tags": [
+    "PM2",
+    "Linux",
+    "Nginx",
+    "Vue 3",
+    "Node.js",
+    "生产部署"
+  ],
+  "html": "<p>一套常见的 Vue + Node 单机部署拓扑如下：</p>\n<pre><code class=\"hljs language-text\">Internet\n   ↓ 80/443\nNginx\n   ├─ /assets/*、/index.html → Vue dist 静态文件\n   └─ /api/*               → 127.0.0.1:3000\n                                  ↓\n                              PM2 管理 Node 进程\n</code></pre>\n<p>关键边界：</p>\n<ul>\n<li>Nginx 是公网入口，负责 TLS、静态文件、反向代理、访问日志和基础限流。</li>\n<li>Node 服务只监听回环地址，不把 3000、9000 等应用端口暴露到公网。</li>\n<li>PM2 管理 Node 进程，不负责托管 Vue 构建后的静态文件。</li>\n<li>云防火墙和主机防火墙通常只开放 SSH、HTTP、HTTPS。</li>\n</ul>\n<h2 id=\"1-pm2-解决什么问题\">1. PM2 解决什么问题</h2>\n<p>直接运行多个 <code>node app.js</code> 会产生多个终端和独立生命周期。PM2 提供统一的启动、停止、重启、日志、监控、集群和开机恢复。</p>\n<pre><code class=\"hljs language-bash\">npm install --global pm2\npm2 --version\n\npm2 start dist/server.js --name api\npm2 list\npm2 logs api\npm2 restart api\npm2 stop api\npm2 delete api\n</code></pre>\n<p>按 ID 操作适合临时排错；自动化脚本应按稳定的应用名称操作。<code>pm2 monit</code> 可看进程、CPU、内存和日志。</p>\n<h3 id=\"11-生产配置文件\">1.1 生产配置文件</h3>\n<p>把启动参数写进版本化的 Ecosystem 文件，避免每次手敲不同命令：</p>\n<pre><code class=\"hljs language-js\"><span class=\"hljs-comment\">// ecosystem.config.cjs</span>\n<span class=\"hljs-variable language_\">module</span>.<span class=\"hljs-property\">exports</span> = {\n  <span class=\"hljs-attr\">apps</span>: [\n    {\n      <span class=\"hljs-attr\">name</span>: <span class=\"hljs-string\">'api'</span>,\n      <span class=\"hljs-attr\">script</span>: <span class=\"hljs-string\">'./dist/server.js'</span>,\n      <span class=\"hljs-attr\">cwd</span>: <span class=\"hljs-string\">'/srv/myapp/current/server'</span>,\n      <span class=\"hljs-attr\">instances</span>: <span class=\"hljs-number\">2</span>,\n      <span class=\"hljs-attr\">exec_mode</span>: <span class=\"hljs-string\">'cluster'</span>,\n      <span class=\"hljs-attr\">watch</span>: <span class=\"hljs-literal\">false</span>,\n      <span class=\"hljs-attr\">max_memory_restart</span>: <span class=\"hljs-string\">'500M'</span>,\n      <span class=\"hljs-attr\">kill_timeout</span>: <span class=\"hljs-number\">10_000</span>,\n      <span class=\"hljs-attr\">listen_timeout</span>: <span class=\"hljs-number\">10_000</span>,\n      <span class=\"hljs-attr\">env_production</span>: {\n        <span class=\"hljs-attr\">NODE_ENV</span>: <span class=\"hljs-string\">'production'</span>,\n        <span class=\"hljs-attr\">HOST</span>: <span class=\"hljs-string\">'127.0.0.1'</span>,\n        <span class=\"hljs-attr\">PORT</span>: <span class=\"hljs-string\">'3000'</span>,\n      },\n    },\n  ],\n};\n</code></pre>\n<pre><code class=\"hljs language-bash\">pm2 startOrReload ecosystem.config.cjs --<span class=\"hljs-built_in\">env</span> production\npm2 save\n</code></pre>\n<ul>\n<li><code>watch</code> 适合开发，不适合生产发布目录；文件变化可能引发重启风暴。</li>\n<li><code>instances: \"max\"</code> 会按可用 CPU 启动多个实例，但不要机械占满低内存服务器。</li>\n<li>Cluster 模式要求进程尽量无状态。Session、任务锁和限流状态不能只存在某个进程内存中。</li>\n<li>WebSocket、定时任务和队列消费者需要额外评估粘性连接和“只执行一次”的约束。</li>\n</ul>\n<h3 id=\"12-reload-与-restart\">1.2 Reload 与 Restart</h3>\n<p><code>pm2 restart</code> 会停止后再启动。Cluster 模式下 <code>pm2 reload</code> 会逐个替换 Worker，可减少停机窗口：</p>\n<pre><code class=\"hljs language-bash\">pm2 reload api\n</code></pre>\n<p>“零停机”不是无条件保证。新进程必须能正常启动，旧进程要处理终止信号并停止接收新请求，数据库迁移也必须向后兼容。</p>\n<h3 id=\"13-开机恢复\">1.3 开机恢复</h3>\n<pre><code class=\"hljs language-bash\">pm2 startup\n</code></pre>\n<p>该命令会输出一条需要以管理员权限执行的系统服务安装命令。按输出执行后再保存当前进程清单：</p>\n<pre><code class=\"hljs language-bash\">pm2 save\nsystemctl status <span class=\"hljs-string\">\"pm2-<span class=\"hljs-subst\">$(id -un)</span>\"</span>\n</code></pre>\n<p>PM2 的运行用户必须和部署用户一致。不要一会儿用 root、一会儿用普通用户，否则会出现两套 <code>PM2_HOME</code> 和两份互相看不见的进程列表。</p>\n<h2 id=\"2-云服务器与-ssh\">2. 云服务器与 SSH</h2>\n<h3 id=\"21-公网私网dns-与端口\">2.1 公网、私网、DNS 与端口</h3>\n<ul>\n<li>公网 IP：供互联网访问，通常绑定 Nginx。</li>\n<li>私网 IP：同一 VPC 内服务器通信，数据库优先走私网。</li>\n<li>DNS：把域名解析到公网 IP；修改后需要等待缓存过期。</li>\n<li>22：SSH；80：HTTP；443：HTTPS。</li>\n</ul>\n<p>云厂商的 DDoS 基础防护不等于应用已经安全。仍需最小开放端口、限流、监控、备份和应急方案。</p>\n<h3 id=\"22-不用-root-直接部署\">2.2 不用 root 直接部署</h3>\n<p>首次初始化可能需要管理员账号，随后应创建专用用户并使用密钥登录：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> adduser deploy\n<span class=\"hljs-built_in\">sudo</span> usermod -aG <span class=\"hljs-built_in\">sudo</span> deploy\n\n<span class=\"hljs-built_in\">sudo</span> install -d -m 700 -o deploy -g deploy /home/deploy/.ssh\n<span class=\"hljs-built_in\">sudo</span> install -m 600 -o deploy -g deploy ./authorized_keys /home/deploy/.ssh/authorized_keys\n</code></pre>\n<p>确认新用户能通过 SSH 登录后，再按组织规范关闭 root 密码登录。修改 SSH 配置前必须保留一个已验证的会话，避免把自己锁在服务器外。</p>\n<pre><code class=\"hljs language-text\">PermitRootLogin no\nPasswordAuthentication no\nPubkeyAuthentication yes\n</code></pre>\n<p>修改后先检查配置，再重载：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> sshd -t\n<span class=\"hljs-built_in\">sudo</span> systemctl reload sshd\n</code></pre>\n<p>不同发行版的服务名可能是 <code>ssh</code> 或 <code>sshd</code>。</p>\n<h2 id=\"3-linux-文件与权限\">3. Linux 文件与权限</h2>\n<p><code>ls -l</code> 的一行可以拆成：</p>\n<pre><code class=\"hljs language-text\">-rw-r----- 1 deploy www-data 1842 Jul 13 12:00 app.conf\n│└┬┘└┬┘└┬┘   │      │\n│ │  │  │    owner  group\n│ │  │  └─ others: ---\n│ │  └──── group: r--\n│ └─────── owner: rw-\n└───────── file type: - 普通文件，d 目录，l 符号链接\n</code></pre>\n<p>权限位：</p>\n<table>\n<thead>\n<tr>\n<th>权限</th>\n<th>数值</th>\n<th>对普通文件</th>\n<th>对目录</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>r</code></td>\n<td>4</td>\n<td>读取内容</td>\n<td>列出名称</td>\n</tr>\n<tr>\n<td><code>w</code></td>\n<td>2</td>\n<td>修改内容</td>\n<td>创建、删除、重命名目录项</td>\n</tr>\n<tr>\n<td><code>x</code></td>\n<td>1</td>\n<td>执行文件</td>\n<td>进入并访问目录内对象</td>\n</tr>\n</tbody>\n</table>\n<p><code>chmod 750 file</code> 表示 Owner 为 <code>rwx</code>、Group 为 <code>r-x</code>、Others 无权限。三个数字分别对应 Owner、Group、Others。</p>\n<p>不要用 <code>chmod -R 777</code> 解决部署报错。先从正在加载的配置中确认 Nginx Worker 用户，再只授予它读取前端产物所需的权限：</p>\n<pre><code class=\"hljs language-bash\">nginx_user=<span class=\"hljs-string\">\"<span class=\"hljs-subst\">$(sudo nginx -T 2&gt;&amp;1 | awk '$1 == <span class=\"hljs-string\">\"user\"</span> { gsub(<span class=\"hljs-string\">\";\"</span>, <span class=\"hljs-string\">\"\"</span>, $2)</span>; print <span class=\"hljs-variable\">$2</span>; exit }')\"</span>\n<span class=\"hljs-built_in\">test</span> -n <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_user</span>\"</span>\nnginx_group=<span class=\"hljs-string\">\"<span class=\"hljs-subst\">$(id -gn <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_user</span>\"</span>)</span>\"</span>\n\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">chown</span> -R deploy:<span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_group</span>\"</span> /srv/myapp/current/web/dist\n<span class=\"hljs-built_in\">sudo</span> find /srv/myapp/current/web/dist -<span class=\"hljs-built_in\">type</span> d -<span class=\"hljs-built_in\">exec</span> <span class=\"hljs-built_in\">chmod</span> 750 {} \\;\n<span class=\"hljs-built_in\">sudo</span> find /srv/myapp/current/web/dist -<span class=\"hljs-built_in\">type</span> f -<span class=\"hljs-built_in\">exec</span> <span class=\"hljs-built_in\">chmod</span> 640 {} \\;\nnamei -l /srv/myapp/current/web/dist/index.html\n</code></pre>\n<p>不要把上述 <code>640</code> 递归套到整个项目：部署脚本、原生模块和 <code>node_modules/.bin</code> 需要保留执行位。Nginx 读取静态文件时，每一级父目录也必须允许对应用户或组进入，<code>namei -l</code> 可以逐级检查。</p>\n<h3 id=\"31-常用排错命令\">3.1 常用排错命令</h3>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">pwd</span>\n<span class=\"hljs-built_in\">ls</span> -lah\n<span class=\"hljs-built_in\">id</span>\n<span class=\"hljs-built_in\">stat</span> /srv/myapp/current\nps -ef | grep <span class=\"hljs-string\">'[n]ginx'</span>\nss -lntp\n<span class=\"hljs-built_in\">df</span> -h\nfree -h\n</code></pre>\n<p><code>grep '[n]ginx'</code> 可以避免把 grep 自己匹配出来。查看监听端口时优先使用 <code>ss</code>，而不是只靠浏览器猜测。</p>\n<h2 id=\"4-安装-nodejs\">4. 安装 Node.js</h2>\n<p>手动下载二进制包并修改 <code>/etc/profile</code> 能帮助理解 <code>PATH</code>；生产机器更适合由包管理器或组织镜像安装并锁定版本：</p>\n<pre><code class=\"hljs language-bash\">node --version\nnpm --version\n<span class=\"hljs-built_in\">command</span> -v node\n</code></pre>\n<p>原则：</p>\n<ol>\n<li>使用仍在维护的 Node LTS。</li>\n<li>记录版本并在 CI、测试、生产保持一致。</li>\n<li>不用不可信镜像替换全局 Registry。</li>\n<li>不把应用依赖全局安装；应用使用锁文件与 <code>npm ci</code>。</li>\n<li>服务启动前校验环境变量，密钥由部署系统注入。</li>\n</ol>\n<p>如果使用手动二进制包，<code>PATH</code> 各条目以冒号分隔：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">export</span> PATH=<span class=\"hljs-string\">\"/opt/node/bin:<span class=\"hljs-variable\">$PATH</span>\"</span>\n</code></pre>\n<p>系统服务不会必然读取交互式 Shell 的 Profile，因此最终仍应在 systemd/PM2 环境中显式确认 <code>node</code> 路径。</p>\n<h2 id=\"5-部署-node-接口\">5. 部署 Node 接口</h2>\n<p>推荐目录：</p>\n<pre><code class=\"hljs language-text\">/srv/myapp/\n├─ releases/\n│  ├─ 20260713-120000/\n│  └─ 20260713-133000/\n├─ current -&gt; releases/20260713-133000/\n└─ shared/\n   └─ logs/\n</code></pre>\n<p>构建和启动：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">cd</span> /srv/myapp/current/server\nnpm ci --omit=dev\npm2 startOrReload ecosystem.config.cjs --<span class=\"hljs-built_in\">env</span> production\ncurl --fail --silent http://127.0.0.1:3000/health\n</code></pre>\n<p>Node 与 Nginx 同机部署时，Node 应只绑定 <code>127.0.0.1</code>。容器或独立反向代理场景需要按实际网络命名空间选择监听地址，并由安全组、防火墙或容器网络限制来源。健康接口至少证明进程能响应；若发布依赖数据库，还应设计单独的 Readiness 检查，但不要在公网泄漏版本、环境变量或内部拓扑。</p>\n<p>防火墙只开放真正需要的入口。以 firewalld 为例：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> firewall-cmd --permanent --add-service=ssh\n<span class=\"hljs-built_in\">sudo</span> firewall-cmd --permanent --add-service=http\n<span class=\"hljs-built_in\">sudo</span> firewall-cmd --permanent --add-service=https\n<span class=\"hljs-built_in\">sudo</span> firewall-cmd --reload\n<span class=\"hljs-built_in\">sudo</span> firewall-cmd --list-all\n</code></pre>\n<p>不要为了测试把 Node 的 3000/9999 端口永久开放到公网。通过本机 <code>curl</code> 测 Node，通过 Nginx 的域名测完整链路。</p>\n<h2 id=\"6-nginx-的角色\">6. Nginx 的角色</h2>\n<h3 id=\"61-正向代理与反向代理\">6.1 正向代理与反向代理</h3>\n<ul>\n<li>正向代理代表客户端访问外部服务，目标服务看到的是代理。</li>\n<li>反向代理代表服务端集群接收客户端请求，客户端不需要知道后端实例。</li>\n</ul>\n<p>本项目用的是反向代理：浏览器只访问同源的 <code>https://example.com/api/*</code>，Nginx 再转发到 Node。</p>\n<h3 id=\"62-静态与动态分离\">6.2 静态与动态分离</h3>\n<p>Vue 的 HTML、JS、CSS 和图片由 Nginx 直接读取；<code>/api</code> 请求交给 Node。这样既减少 Node 的静态文件开销，也让缓存和压缩策略集中在入口层。</p>\n<h3 id=\"63-worker-与连接数\">6.3 Worker 与连接数</h3>\n<p><code>worker_processes auto</code> 通常按 CPU 自动选择 Worker。单 Worker 的 <code>worker_connections</code> 是最大连接数上限之一，理论总量近似：</p>\n<pre><code class=\"hljs language-text\">worker_processes × worker_connections\n</code></pre>\n<p>真实上限还受文件描述符、反向代理一进一出连接、内存、内核参数和上游容量约束，不能只把数字调大。</p>\n<h2 id=\"7-安装与管理-nginx\">7. 安装与管理 Nginx</h2>\n<p>优先使用发行版包或官方受信仓库，它能提供 systemd、升级和安全补丁集成：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-comment\"># Debian / Ubuntu</span>\n<span class=\"hljs-built_in\">sudo</span> apt update\n<span class=\"hljs-built_in\">sudo</span> apt install nginx\n\n<span class=\"hljs-comment\"># RHEL 系</span>\n<span class=\"hljs-built_in\">sudo</span> dnf install nginx\n</code></pre>\n<p><code>configure → make → make install</code> 适合确实需要自定义模块或编译选项的场景，但需要额外维护校验和、编译参数、安全补丁和升级流程。</p>\n<p>常用命令：</p>\n<pre><code class=\"hljs language-bash\">nginx -v\n<span class=\"hljs-built_in\">sudo</span> nginx -t\n<span class=\"hljs-built_in\">sudo</span> systemctl <span class=\"hljs-built_in\">enable</span> --now nginx\n<span class=\"hljs-built_in\">sudo</span> systemctl status nginx\n<span class=\"hljs-built_in\">sudo</span> systemctl reload nginx\n<span class=\"hljs-built_in\">sudo</span> systemctl stop nginx\n</code></pre>\n<p>每次重载前先执行 <code>nginx -t</code>。<code>reload</code> 会让新 Worker 读取新配置，并让旧 Worker 尽量处理完现有连接；语法正确不代表上游地址和文件权限一定正确，重载后还要做请求验证。</p>\n<p>直接使用 Nginx 二进制时：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> nginx -s reload\n<span class=\"hljs-built_in\">sudo</span> nginx -s quit\n</code></pre>\n<p><code>quit</code> 是优雅退出，<code>stop</code> 是快速停止。由 systemd 安装的服务优先使用 <code>systemctl</code>，不要混用多套进程管理方式。</p>\n<h2 id=\"8-配置文件层级\">8. 配置文件层级</h2>\n<pre><code class=\"hljs language-nginx\"><span class=\"hljs-attribute\">worker_processes</span> auto;\n\n<span class=\"hljs-section\">events</span> {\n    <span class=\"hljs-attribute\">worker_connections</span> <span class=\"hljs-number\">1024</span>;\n}\n\n<span class=\"hljs-section\">http</span> {\n    <span class=\"hljs-attribute\">include</span>       mime.types;\n    <span class=\"hljs-attribute\">default_type</span>  application/octet-stream;\n\n    <span class=\"hljs-attribute\">sendfile</span> <span class=\"hljs-literal\">on</span>;\n    <span class=\"hljs-attribute\">keepalive_timeout</span> <span class=\"hljs-number\">65</span>;\n\n    <span class=\"hljs-section\">server</span> {\n        <span class=\"hljs-attribute\">listen</span> <span class=\"hljs-number\">80</span>;\n        <span class=\"hljs-attribute\">server_name</span> example.com;\n\n        <span class=\"hljs-section\">location</span> / {\n            <span class=\"hljs-comment\"># 当前虚拟主机的路由规则</span>\n        }\n    }\n}\n</code></pre>\n<p><code>user</code> 指令位于 Main 上下文，但不要从别的发行版照抄固定账号：Debian/Ubuntu 的包通常使用 <code>www-data</code>，RHEL 系常见 <code>nginx</code>。以当前机器实际加载的包配置和 <code>ps</code> 输出为准。</p>\n<ul>\n<li>Main：运行用户、Worker 数量、错误日志、PID。</li>\n<li><code>events</code>：连接处理参数。</li>\n<li><code>http</code>：MIME、日志、压缩、上游和通用 HTTP 设置。</li>\n<li><code>server</code>：一个域名/端口的虚拟主机。</li>\n<li><code>location</code>：按 URI 匹配处理方式。</li>\n</ul>\n<p><code>sendfile on</code> 允许内核更高效地发送静态文件。<code>keepalive_timeout</code> 控制空闲 Keep-Alive 连接等待时间。Gzip/Brotli 是否开启取决于明确配置和编译模块，不能假定默认已经压缩。</p>\n<h2 id=\"9-vue-静态站点与-api-代理\">9. Vue 静态站点与 API 代理</h2>\n<h3 id=\"91-构建\">9.1 构建</h3>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">cd</span> /srv/myapp/current/web\nnpm ci\nnpm run build\n<span class=\"hljs-built_in\">test</span> -f dist/index.html\n</code></pre>\n<p><code>dist</code> 是构建产物，不运行 Vite 开发服务器。下面是一份可用的 HTTP 配置骨架：</p>\n<pre><code class=\"hljs language-nginx\"><span class=\"hljs-section\">upstream</span> node_backend {\n    least_conn;\n    <span class=\"hljs-attribute\">server</span> <span class=\"hljs-number\">127.0.0.1:3000</span> max_fails=<span class=\"hljs-number\">3</span> fail_timeout=<span class=\"hljs-number\">30s</span>;\n    <span class=\"hljs-attribute\">keepalive</span> <span class=\"hljs-number\">32</span>;\n}\n\n<span class=\"hljs-section\">server</span> {\n    <span class=\"hljs-attribute\">listen</span> <span class=\"hljs-number\">80</span>;\n    <span class=\"hljs-attribute\">server_name</span> example.com;\n\n    <span class=\"hljs-attribute\">root</span> /srv/myapp/current/web/dist;\n    <span class=\"hljs-attribute\">index</span> index.html;\n    <span class=\"hljs-attribute\">server_tokens</span> <span class=\"hljs-literal\">off</span>;\n\n    <span class=\"hljs-attribute\">access_log</span> /var/log/nginx/myapp.access.log;\n    <span class=\"hljs-attribute\">error_log</span>  /var/log/nginx/myapp.<span class=\"hljs-literal\">error</span>.log <span class=\"hljs-literal\">warn</span>;\n\n    <span class=\"hljs-section\">location</span> /api/ {\n        <span class=\"hljs-attribute\">proxy_pass</span> http://node_backend;\n        <span class=\"hljs-attribute\">proxy_http_version</span> <span class=\"hljs-number\">1</span>.<span class=\"hljs-number\">1</span>;\n        <span class=\"hljs-attribute\">proxy_set_header</span> Connection <span class=\"hljs-string\">\"\"</span>;\n        <span class=\"hljs-attribute\">proxy_set_header</span> Host <span class=\"hljs-variable\">$host</span>;\n        <span class=\"hljs-attribute\">proxy_set_header</span> X-Real-IP <span class=\"hljs-variable\">$remote_addr</span>;\n        <span class=\"hljs-attribute\">proxy_set_header</span> X-Forwarded-For <span class=\"hljs-variable\">$proxy_add_x_forwarded_for</span>;\n        <span class=\"hljs-attribute\">proxy_set_header</span> X-Forwarded-Proto <span class=\"hljs-variable\">$scheme</span>;\n        <span class=\"hljs-attribute\">proxy_connect_timeout</span> <span class=\"hljs-number\">3s</span>;\n        <span class=\"hljs-attribute\">proxy_read_timeout</span> <span class=\"hljs-number\">30s</span>;\n    }\n\n    <span class=\"hljs-section\">location</span> /assets/ {\n        <span class=\"hljs-attribute\">try_files</span> <span class=\"hljs-variable\">$uri</span> =<span class=\"hljs-number\">404</span>;\n        <span class=\"hljs-attribute\">add_header</span> Cache-Control <span class=\"hljs-string\">\"public, max-age=31536000, immutable\"</span> always;\n    }\n\n    <span class=\"hljs-section\">location</span> / {\n        <span class=\"hljs-attribute\">try_files</span> <span class=\"hljs-variable\">$uri</span> <span class=\"hljs-variable\">$uri</span>/ /index.html;\n    }\n}\n</code></pre>\n<p><code>proxy_pass http://node_backend;</code> 没有附加 URI，因此 <code>/api/users</code> 会原样传给上游。若写成带路径或尾斜杠的形式，URI 替换规则会改变，配置后必须用真实请求验证。</p>\n<p>Nginx 转发让浏览器看到的是同源 <code>/api</code>，从而不需要在生产环境放开宽泛 CORS。它不会替代服务端认证和 CSRF 防护。</p>\n<h3 id=\"92-history-模式-404\">9.2 History 模式 404</h3>\n<p>访问根页面成功，但刷新 <code>/about</code> 返回 404，原因是：</p>\n<ol>\n<li>客户端导航时，Vue Router 接管 <code>/about</code>。</li>\n<li>刷新时，浏览器直接向 Nginx 请求 <code>/about</code>。</li>\n<li>磁盘上没有这个文件。</li>\n</ol>\n<pre><code class=\"hljs language-nginx\"><span class=\"hljs-attribute\">try_files</span> <span class=\"hljs-variable\">$uri</span> <span class=\"hljs-variable\">$uri</span>/ /index.html;\n</code></pre>\n<p>这条规则先尝试真实静态文件，再把未知前端路由交回 SPA。<code>/api</code> 必须有更具体的 Location，不能也回退到 <code>index.html</code>，否则接口错误会伪装成 200 HTML。</p>\n<h3 id=\"93-https\">9.3 HTTPS</h3>\n<p>生产站点应使用可信证书和自动续期。证书可以由云负载均衡、托管平台或 ACME 客户端管理。TLS 生效后再配置：</p>\n<ul>\n<li>80 跳转到 443。</li>\n<li><code>Secure</code>、<code>HttpOnly</code>、<code>SameSite</code> Cookie。</li>\n<li>HSTS 只在确认所有子域都能长期使用 HTTPS 后逐步开启。</li>\n<li>转发正确的 <code>X-Forwarded-Proto</code>，并让 Node 只信任受控代理。</li>\n</ul>\n<h2 id=\"10-反向代理与跨域\">10. 反向代理与跨域</h2>\n<p>开发环境常见两个 Origin：</p>\n<pre><code class=\"hljs language-text\">http://localhost:5173  Vue\nhttp://localhost:3000  Node\n</code></pre>\n<p>协议、主机、端口任一不同就是不同 Origin。开发阶段用 Vite proxy；生产阶段用 Nginx：</p>\n<pre><code class=\"hljs language-nginx\"><span class=\"hljs-section\">location</span> /api/ {\n    <span class=\"hljs-attribute\">proxy_pass</span> http://127.0.0.1:3000;\n}\n</code></pre>\n<p>浏览器始终请求当前站点的 <code>/api/...</code>。不要用代理转发不受信任的任意目标 URL，否则会形成开放代理或 SSRF 风险。</p>\n<h2 id=\"11-日志与-goaccess\">11. 日志与 GoAccess</h2>\n<h3 id=\"111-三层日志\">11.1 三层日志</h3>\n<pre><code class=\"hljs language-bash\">pm2 logs api --lines 200\n<span class=\"hljs-built_in\">sudo</span> journalctl -u nginx --since <span class=\"hljs-string\">\"30 minutes ago\"</span>\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">tail</span> -f /var/log/nginx/myapp.access.log\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">tail</span> -f /var/log/nginx/myapp.error.log\n</code></pre>\n<p>定位顺序：</p>\n<ol>\n<li>Nginx 是否收到请求。</li>\n<li>Nginx 返回状态码和耗时。</li>\n<li>上游是否连接成功。</li>\n<li>Node 是否收到请求并正常响应。</li>\n</ol>\n<p>访问日志可能包含 IP、路径、Query、User-Agent 和 Referer。不要把 Token、密码、身份证号等放进 URL；限制日志访问权限，设置轮转和保留期限。</p>\n<h3 id=\"112-goaccess\">11.2 GoAccess</h3>\n<p>GoAccess 可以把 Nginx Access Log 汇总为终端或 HTML 报告：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> goaccess /var/log/nginx/myapp.access.log \\\n  --log-format=COMBINED\n</code></pre>\n<p>生成实时 HTML 前要确认 WebSocket、报告文件权限和暴露范围。统计面板本身包含访问行为数据，应放在内网、VPN 或认证之后，不能直接公开。</p>\n<p>日志分析首先服务于容量、故障和安全审计，不应用来无目的长期追踪个人。</p>\n<h2 id=\"12-nginx-负载均衡\">12. Nginx 负载均衡</h2>\n<p>多个 Node 实例可以放进一个 <code>upstream</code>：</p>\n<pre><code class=\"hljs language-nginx\"><span class=\"hljs-section\">upstream</span> node_backend {\n    least_conn;\n    <span class=\"hljs-attribute\">server</span> <span class=\"hljs-number\">127.0.0.1:3001</span> weight=<span class=\"hljs-number\">3</span> max_fails=<span class=\"hljs-number\">3</span> fail_timeout=<span class=\"hljs-number\">30s</span>;\n    <span class=\"hljs-attribute\">server</span> <span class=\"hljs-number\">127.0.0.1:3002</span> weight=<span class=\"hljs-number\">2</span> max_fails=<span class=\"hljs-number\">3</span> fail_timeout=<span class=\"hljs-number\">30s</span>;\n    <span class=\"hljs-attribute\">server</span> <span class=\"hljs-number\">127.0.0.1:3003</span> backup;\n    <span class=\"hljs-attribute\">keepalive</span> <span class=\"hljs-number\">32</span>;\n}\n</code></pre>\n<p>策略：</p>\n<table>\n<thead>\n<tr>\n<th>策略</th>\n<th>特点</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>默认轮询</td>\n<td>请求依次分配，适合容量相近实例</td>\n</tr>\n<tr>\n<td><code>weight</code></td>\n<td>更高权重获得更大请求比例</td>\n</tr>\n<tr>\n<td><code>least_conn</code></td>\n<td>优先给当前活动连接较少的实例</td>\n</tr>\n<tr>\n<td><code>ip_hash</code></td>\n<td>按客户端 IP 粘住实例，代理/NAT 下分布可能失衡</td>\n</tr>\n<tr>\n<td><code>backup</code></td>\n<td>主实例都不可用时才参与</td>\n</tr>\n</tbody>\n</table>\n<p><code>max_fails</code> 与 <code>fail_timeout</code> 是开源 Nginx 的被动失败判定参数，不是完整的主动健康检查。备用节点也不是“某个请求超过 20 秒就立刻接管”的简单逻辑。</p>\n<p>如果 PM2 已在同一个端口使用 Cluster 模式，PM2 自己会把连接分给 Worker；也可以让多个独立端口由 Nginx 分流。两层都做负载均衡前，应先明确进程模型、健康检查和日志归属。</p>\n<p>压测不能只看“2000 次都成功”。至少记录：</p>\n<ul>\n<li>并发数与持续时间。</li>\n<li>P50/P95/P99 延迟。</li>\n<li>错误率和超时率。</li>\n<li>CPU、内存、事件循环延迟、数据库连接数。</li>\n<li>测试数据、预热、客户端瓶颈和生产容量差异。</li>\n</ul>\n<h2 id=\"13-一次可回滚的发布\">13. 一次可回滚的发布</h2>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">set</span> -Eeuo pipefail\n\napp_root=/srv/myapp\nartifact=/tmp/myapp-release.tar.gz\nchecksum=/tmp/myapp-release.tar.gz.sha256\nrelease=<span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/releases/<span class=\"hljs-subst\">$(date +%Y%m%d-%H%M%S)</span>\"</span>\nold_target=<span class=\"hljs-string\">\"<span class=\"hljs-subst\">$(readlink -f <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/current\"</span> 2&gt;/dev/null || true)</span>\"</span>\n<span class=\"hljs-built_in\">test</span> -n <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$old_target</span>\"</span>\n<span class=\"hljs-built_in\">test</span> -d <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$old_target</span>\"</span>\nswitched=0\n\n<span class=\"hljs-function\"><span class=\"hljs-title\">rollback</span></span>() {\n  status=$?\n  <span class=\"hljs-built_in\">trap</span> - ERR\n\n  <span class=\"hljs-keyword\">if</span> (( switched )); <span class=\"hljs-keyword\">then</span>\n    rollback_link=<span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/.current.rollback.$$\"</span>\n    <span class=\"hljs-built_in\">ln</span> -s <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$old_target</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$rollback_link</span>\"</span>\n    <span class=\"hljs-built_in\">mv</span> -Tf <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$rollback_link</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/current\"</span>\n    pm2 startOrReload <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/current/server/ecosystem.config.cjs\"</span> \\\n      --<span class=\"hljs-built_in\">env</span> production || <span class=\"hljs-literal\">true</span>\n    <span class=\"hljs-built_in\">sudo</span> nginx -t &amp;&amp; <span class=\"hljs-built_in\">sudo</span> systemctl reload nginx || <span class=\"hljs-literal\">true</span>\n  <span class=\"hljs-keyword\">fi</span>\n\n  <span class=\"hljs-built_in\">exit</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$status</span>\"</span>\n}\n<span class=\"hljs-built_in\">trap</span> rollback ERR\n\n<span class=\"hljs-built_in\">sha256sum</span> -c <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$checksum</span>\"</span>\n<span class=\"hljs-built_in\">mkdir</span> -p <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>\"</span>\ntar -xzf <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$artifact</span>\"</span> -C <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>\"</span>\n<span class=\"hljs-built_in\">test</span> -f <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web/package-lock.json\"</span>\n<span class=\"hljs-built_in\">test</span> -f <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/server/package-lock.json\"</span>\n\n(\n  <span class=\"hljs-built_in\">cd</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web\"</span>\n  npm ci\n  npm run build\n  <span class=\"hljs-built_in\">test</span> -f dist/index.html\n)\n\n(\n  <span class=\"hljs-built_in\">cd</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/server\"</span>\n  npm ci\n  npm run build\n  npm prune --omit=dev\n)\n\nnginx_user=<span class=\"hljs-string\">\"<span class=\"hljs-subst\">$(sudo nginx -T 2&gt;&amp;1 | awk '$1 == <span class=\"hljs-string\">\"user\"</span> { gsub(<span class=\"hljs-string\">\";\"</span>, <span class=\"hljs-string\">\"\"</span>, $2)</span>; print <span class=\"hljs-variable\">$2</span>; exit }')\"</span>\n<span class=\"hljs-built_in\">test</span> -n <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_user</span>\"</span>\nnginx_group=<span class=\"hljs-string\">\"<span class=\"hljs-subst\">$(id -gn <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_user</span>\"</span>)</span>\"</span>\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">chgrp</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_group</span>\"</span> \\\n  <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/releases\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web\"</span>\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">chmod</span> 710 \\\n  <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/releases\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web\"</span>\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">chgrp</span> -R <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$nginx_group</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web/dist\"</span>\n<span class=\"hljs-built_in\">sudo</span> find <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web/dist\"</span> -<span class=\"hljs-built_in\">type</span> d -<span class=\"hljs-built_in\">exec</span> <span class=\"hljs-built_in\">chmod</span> 750 {} \\;\n<span class=\"hljs-built_in\">sudo</span> find <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>/web/dist\"</span> -<span class=\"hljs-built_in\">type</span> f -<span class=\"hljs-built_in\">exec</span> <span class=\"hljs-built_in\">chmod</span> 640 {} \\;\n\nnew_link=<span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/.current.new.$$\"</span>\n<span class=\"hljs-built_in\">ln</span> -s <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$release</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$new_link</span>\"</span>\n<span class=\"hljs-built_in\">mv</span> -Tf <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$new_link</span>\"</span> <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/current\"</span>\nswitched=1\n\npm2 startOrReload <span class=\"hljs-string\">\"<span class=\"hljs-variable\">$app_root</span>/current/server/ecosystem.config.cjs\"</span> \\\n  --<span class=\"hljs-built_in\">env</span> production\n\n<span class=\"hljs-built_in\">sudo</span> nginx -t\n<span class=\"hljs-built_in\">sudo</span> systemctl reload nginx\n\ncurl --fail https://example.com/\ncurl --fail https://example.com/api/health\n\n<span class=\"hljs-built_in\">trap</span> - ERR\n</code></pre>\n<p>这里假定压缩包顶层包含 <code>web/</code> 和 <code>server/</code>，校验和文件由可信 CI 生成，并且 Release 与 <code>current</code> 位于同一文件系统。脚本要求 <code>current</code> 已指向一个可用旧版本；首次上线应走单独的 Bootstrap 流程。<code>mv -T</code> 原子替换软链接；切换后的 PM2、Nginx 或健康检查只要失败，<code>ERR</code> Trap 就会恢复旧链接并重新加载旧版本。</p>\n<p>真实发布还要根据项目补充：</p>\n<ol>\n<li>数据库备份与向后兼容 Migration。</li>\n<li>构建产物校验和或镜像摘要。</li>\n<li>健康检查、关键业务 Smoke Test 和监控观察窗口。</li>\n<li>数据库变更失败时的前向修复或兼容回滚策略。</li>\n<li>清理旧 Release，但保留足够的回滚版本。</li>\n</ol>\n<h2 id=\"14-故障定位\">14. 故障定位</h2>\n<h3 id=\"公网完全连不上\">公网完全连不上</h3>\n<p>检查 DNS、云安全组、主机防火墙、Nginx 是否监听 80/443，以及域名是否到达正确服务器。</p>\n<h3 id=\"nginx-返回-502\">Nginx 返回 502</h3>\n<pre><code class=\"hljs language-bash\">curl -v http://127.0.0.1:3000/health\nss -lntp | grep <span class=\"hljs-string\">':3000'</span>\npm2 status\n<span class=\"hljs-built_in\">sudo</span> <span class=\"hljs-built_in\">tail</span> -n 100 /var/log/nginx/myapp.error.log\n</code></pre>\n<p>若本机能访问但 Nginx 仍 502，再查代理地址、Unix Socket/端口权限，以及 SELinux/AppArmor 策略。</p>\n<h3 id=\"nginx-配置改了没生效\">Nginx 配置改了没生效</h3>\n<p>确认编辑的是正在使用的配置：</p>\n<pre><code class=\"hljs language-bash\"><span class=\"hljs-built_in\">sudo</span> nginx -T\n<span class=\"hljs-built_in\">sudo</span> nginx -t\n<span class=\"hljs-built_in\">sudo</span> systemctl reload nginx\n</code></pre>\n<h3 id=\"vue-子路由刷新-404\">Vue 子路由刷新 404</h3>\n<p>确认 <code>location /</code> 有 <code>try_files</code>，而且 <code>root</code> 指向真正的 <code>dist</code>。</p>\n<h3 id=\"静态文件-403\">静态文件 403</h3>\n<p>检查 Nginx Worker 用户、文件 Owner/Group、每一级父目录的执行权限和 SELinux 上下文。不要直接改成 777。</p>\n<h3 id=\"pm2-重启后应用消失\">PM2 重启后应用消失</h3>\n<p>确认启动和 <code>pm2 save</code> 使用同一个部署用户，<code>pm2 startup</code> 对应的 systemd 服务存在，并检查其日志。</p>\n<h2 id=\"15-上线检查\">15. 上线检查</h2>\n<ul>\n<li>[ ] Node、npm、PM2、Nginx 版本已记录并处于支持周期。</li>\n<li>[ ] SSH 使用密钥与普通部署用户，root/密码登录按规范收紧。</li>\n<li>[ ] 云防火墙和主机防火墙只开放必要端口。</li>\n<li>[ ] Node 绑定 <code>127.0.0.1</code>，应用端口未暴露公网。</li>\n<li>[ ] Vue 使用生产构建产物，Nginx 配置了静态缓存和 History fallback。</li>\n<li>[ ] <code>/api</code> 单独反向代理，没有被 SPA fallback 吞掉。</li>\n<li>[ ] PM2 使用 Ecosystem 文件，环境变量与密钥未写进仓库。</li>\n<li>[ ] <code>nginx -t</code>、Node 健康检查和完整业务请求均通过。</li>\n<li>[ ] TLS、Cookie、安全头和代理信任设置已按生产域名验证。</li>\n<li>[ ] 日志不记录敏感信息，已配置权限、轮转、保留和告警。</li>\n<li>[ ] 发布有数据库兼容策略、观察窗口和可执行回滚路径。</li>\n</ul>\n<p>把 PM2、Linux 权限、Nginx 代理与 Upstream 连起来后，部署不再是“端口能访问就算完成”，而是一条可验证、最小暴露、可重载、可观测、可回滚的交付链。</p>\n",
+  "toc": [
+    {
+      "id": "1-pm2-解决什么问题",
+      "level": 2,
+      "text": "1. PM2 解决什么问题"
+    },
+    {
+      "id": "11-生产配置文件",
+      "level": 3,
+      "text": "1.1 生产配置文件"
+    },
+    {
+      "id": "12-reload-与-restart",
+      "level": 3,
+      "text": "1.2 Reload 与 Restart"
+    },
+    {
+      "id": "13-开机恢复",
+      "level": 3,
+      "text": "1.3 开机恢复"
+    },
+    {
+      "id": "2-云服务器与-ssh",
+      "level": 2,
+      "text": "2. 云服务器与 SSH"
+    },
+    {
+      "id": "21-公网私网dns-与端口",
+      "level": 3,
+      "text": "2.1 公网、私网、DNS 与端口"
+    },
+    {
+      "id": "22-不用-root-直接部署",
+      "level": 3,
+      "text": "2.2 不用 root 直接部署"
+    },
+    {
+      "id": "3-linux-文件与权限",
+      "level": 2,
+      "text": "3. Linux 文件与权限"
+    },
+    {
+      "id": "31-常用排错命令",
+      "level": 3,
+      "text": "3.1 常用排错命令"
+    },
+    {
+      "id": "4-安装-nodejs",
+      "level": 2,
+      "text": "4. 安装 Node.js"
+    },
+    {
+      "id": "5-部署-node-接口",
+      "level": 2,
+      "text": "5. 部署 Node 接口"
+    },
+    {
+      "id": "6-nginx-的角色",
+      "level": 2,
+      "text": "6. Nginx 的角色"
+    },
+    {
+      "id": "61-正向代理与反向代理",
+      "level": 3,
+      "text": "6.1 正向代理与反向代理"
+    },
+    {
+      "id": "62-静态与动态分离",
+      "level": 3,
+      "text": "6.2 静态与动态分离"
+    },
+    {
+      "id": "63-worker-与连接数",
+      "level": 3,
+      "text": "6.3 Worker 与连接数"
+    },
+    {
+      "id": "7-安装与管理-nginx",
+      "level": 2,
+      "text": "7. 安装与管理 Nginx"
+    },
+    {
+      "id": "8-配置文件层级",
+      "level": 2,
+      "text": "8. 配置文件层级"
+    },
+    {
+      "id": "9-vue-静态站点与-api-代理",
+      "level": 2,
+      "text": "9. Vue 静态站点与 API 代理"
+    },
+    {
+      "id": "91-构建",
+      "level": 3,
+      "text": "9.1 构建"
+    },
+    {
+      "id": "92-history-模式-404",
+      "level": 3,
+      "text": "9.2 History 模式 404"
+    },
+    {
+      "id": "93-https",
+      "level": 3,
+      "text": "9.3 HTTPS"
+    },
+    {
+      "id": "10-反向代理与跨域",
+      "level": 2,
+      "text": "10. 反向代理与跨域"
+    },
+    {
+      "id": "11-日志与-goaccess",
+      "level": 2,
+      "text": "11. 日志与 GoAccess"
+    },
+    {
+      "id": "111-三层日志",
+      "level": 3,
+      "text": "11.1 三层日志"
+    },
+    {
+      "id": "112-goaccess",
+      "level": 3,
+      "text": "11.2 GoAccess"
+    },
+    {
+      "id": "12-nginx-负载均衡",
+      "level": 2,
+      "text": "12. Nginx 负载均衡"
+    },
+    {
+      "id": "13-一次可回滚的发布",
+      "level": 2,
+      "text": "13. 一次可回滚的发布"
+    },
+    {
+      "id": "14-故障定位",
+      "level": 2,
+      "text": "14. 故障定位"
+    },
+    {
+      "id": "公网完全连不上",
+      "level": 3,
+      "text": "公网完全连不上"
+    },
+    {
+      "id": "nginx-返回-502",
+      "level": 3,
+      "text": "Nginx 返回 502"
+    },
+    {
+      "id": "nginx-配置改了没生效",
+      "level": 3,
+      "text": "Nginx 配置改了没生效"
+    },
+    {
+      "id": "vue-子路由刷新-404",
+      "level": 3,
+      "text": "Vue 子路由刷新 404"
+    },
+    {
+      "id": "静态文件-403",
+      "level": 3,
+      "text": "静态文件 403"
+    },
+    {
+      "id": "pm2-重启后应用消失",
+      "level": 3,
+      "text": "PM2 重启后应用消失"
+    },
+    {
+      "id": "15-上线检查",
+      "level": 2,
+      "text": "15. 上线检查"
+    }
+  ]
+}
