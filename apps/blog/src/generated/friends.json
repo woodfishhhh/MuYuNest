@@ -124,5 +124,12 @@
     "avatar": "https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEVnPlqMYbFvQjdTPScDRQX6XGI965oYAACtyUAAjRrkVXSZSl9-t3fpTwE.jpg",
     "descr": "就这样，细水长流",
     "className": "友情链接"
+  },
+  {
+    "name": "JZY 的博客",
+    "link": "https://jinzhenyi.dpdns.org/",
+    "avatar": "https://jinzhenyi.dpdns.org/assets/images/tx.png",
+    "descr": "jzy的博客",
+    "className": "友情链接"
   }
 ]
