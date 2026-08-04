@@ -1,0 +1,68 @@
+{
+  "canonicalSlug": "nextjs16-project-routing",
+  "aliases": [
+    "01-Next.js项目结构与路由"
+  ],
+  "title": "Next.js 项目结构与路由",
+  "publishedAt": "2026-08-04T00:00:00.000Z",
+  "publishedLabel": "Aug 04, 2026",
+  "excerpt": "新项目直接使用 App Router：",
+  "type": "Notes",
+  "searchText": "Next.js 项目结构与路由 Notes 前端开发 Next.js Next.js 16 App Router Routing Layout shadcn/ui 1. 先把项目跑起来 新项目直接使用 App Router： 脚手架默认会把 TypeScript、ESLint、Tailwind CSS 和 App Router 配好。 中的 脚本最终执行 Next.js 开发服务器，默认地址是 。 几个根目录文件的职责很固定： 目录不只是页面目录。页面、布局、加载状态、错误边界、Route Handler 和业务代码都可以按路由边界放在这里，但不应该把所有逻辑堆进一个 。 2. 文件夹就是路由 最小页面： 增加 ： 是页面约定文件，文件名写成 或 都不会自动成为 App Router 页面。 3. Layout 解决什么问题 如果每个页面都重新渲染导航栏，页面之间切换时就会重复创建相同结构。 用 接住当前路由的页面： 布局是嵌套的。 只会包住 下面的页面， 仍然是最外层布局： 这样可以把营销站、登录页、后台分别放进不同布局，而不是在一个导航栏组件里根据 URL 写大量 。 4. Link 是默认导航方式 普通 会触发完整页面导航，浏览器需要重新加载整个文档。应用内部跳转优先用 ： 提供客户端导航和预取能力。共享布局可以保持在页面上，只有需要变化的路由内容更新，导航不会出现整页白屏。 外部地址或必须触发完整文档跳转的场景仍然使用 。不要为了“统一”把所有链接都改成 。 5. 动态路由 博客文章的 ID 不是固定字符串，目录名用方括号： Next.js 16 中，动态路由的 按 Promise 接收： 这是一个容易被旧教程带偏的地方。旧代码经常直接写 ，在当前版本应先 。 动态参数来自 URL，不能因为 TypeScript 写成某种 ID 类型就认为它已经通过了运行时校验。真正查询数据库时，仍要让后端函数用 Convex validator 校验参数，并处理文章不存在的情况。 6. Route Group 不占用 URL 圆括号目录是路由组，只用于组织文件： 不会出现在 URL 中，但其中的 会包住组内页面。登录和注册页面如果不应该显示博客导航栏，就不要把 放进 ： 这个边界比“在 Navbar 里检查 pathname 再隐藏自己”清晰得多。 7. UI 组件安装与客户端边界 教程使用 shadcn/ui 组合表单、卡片、输入框、分隔线和按钮： 这些组件的源码会进入项目，业务代码从项目自己的 导入，而不是直接从底层 Radix 包导入。这样主题、样式和组件变体由项目统一管理。 主题切换需要浏览器状态和 ，因此把交互集中到一个小 Client Component： 不要因为一个主题按钮就把根布局变成大 Client Component。服务器布局继续负责静态结构，只有需要状态、事件、浏览器 API 或自定义 Hook 的叶子组件标记 。 使用基于 class 的主题方案时，服务端首屏和客户端读取本地主题可能不一致，可以在根 上使用 。它只是消除已知的 hydration 警告，不是修复任意服务端与客户端输出不一致的通用开关。 8. 这一章的判断标准 共享导航、字体和全局元数据放在布局，不复制到每个页面。 应用内跳转默认用 ，外部跳转用 。 动态页面放在 目录，Next.js 16 先 。 只想组织文件而不想改变 URL 时，用 。 交互组件尽量小，服务器组件不要被一个按钮拖成整棵 Client Tree。",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "Next.js"
+  ],
+  "tags": [
+    "Next.js 16",
+    "App Router",
+    "Routing",
+    "Layout",
+    "shadcn/ui"
+  ],
+  "html": "<h2 id=\"1-先把项目跑起来\">1. 先把项目跑起来</h2>\n<p>新项目直接使用 App Router：</p>\n<pre><code class=\"hljs language-bash\">pnpm create next-app@latest nextjs16-blog\n<span class=\"hljs-built_in\">cd</span> nextjs16-blog\npnpm dev\n</code></pre>\n<p>脚手架默认会把 TypeScript、ESLint、Tailwind CSS 和 App Router 配好。<code>package.json</code> 中的 <code>dev</code> 脚本最终执行 Next.js 开发服务器，默认地址是 <code>http://localhost:3000</code>。</p>\n<p>几个根目录文件的职责很固定：</p>\n<pre><code class=\"hljs language-text\">app/\n├─ layout.tsx       根布局，包住所有页面\n├─ page.tsx         / 路由\n└─ globals.css      全局样式\npublic/             不经过模块导入的静态资源\nnext.config.ts      Next.js 配置\npackage.json        脚本与依赖\npnpm-lock.yaml      依赖解析结果\n</code></pre>\n<p><code>app</code> 目录不只是页面目录。页面、布局、加载状态、错误边界、Route Handler 和业务代码都可以按路由边界放在这里，但不应该把所有逻辑堆进一个 <code>page.tsx</code>。</p>\n<h2 id=\"2-文件夹就是路由\">2. 文件夹就是路由</h2>\n<p>最小页面：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-comment\">// app/page.tsx</span>\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">HomePage</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>博客首页<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>;\n}\n</code></pre>\n<p>增加 <code>/about</code>：</p>\n<pre><code class=\"hljs language-text\">app/\n└─ about/\n   └─ page.tsx\n</code></pre>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-comment\">// app/about/page.tsx</span>\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">AboutPage</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>关于本站<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>;\n}\n</code></pre>\n<p><code>page.tsx</code> 是页面约定文件，文件名写成 <code>about.tsx</code> 或 <code>index.tsx</code> 都不会自动成为 App Router 页面。</p>\n<h2 id=\"3-layout-解决什么问题\">3. Layout 解决什么问题</h2>\n<p>如果每个页面都重新渲染导航栏，页面之间切换时就会重复创建相同结构。<code>layout.tsx</code> 用 <code>children</code> 接住当前路由的页面：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-comment\">// app/layout.tsx</span>\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-keyword\">type</span> { <span class=\"hljs-title class_\">Metadata</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> <span class=\"hljs-attr\">metadata</span>: <span class=\"hljs-title class_\">Metadata</span> = {\n  <span class=\"hljs-attr\">title</span>: <span class=\"hljs-string\">'Next.js 博客'</span>,\n  <span class=\"hljs-attr\">description</span>: <span class=\"hljs-string\">'一个使用 App Router 的博客应用'</span>,\n};\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">RootLayout</span>(<span class=\"hljs-params\">{\n  children,\n}: <span class=\"hljs-title class_\">Readonly</span>&lt;{ children: React.ReactNode }&gt;</span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"zh-CN\"</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>\n        <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">header</span>&gt;</span>共享导航栏<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">header</span>&gt;</span>\n        <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">main</span>&gt;</span>{children}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">main</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p>布局是嵌套的。<code>app/blog/layout.tsx</code> 只会包住 <code>/blog</code> 下面的页面，<code>app/layout.tsx</code> 仍然是最外层布局：</p>\n<pre><code class=\"hljs language-text\">/blog/hello\nRootLayout\n  └─ BlogLayout\n      └─ app/blog/hello/page.tsx\n</code></pre>\n<p>这样可以把营销站、登录页、后台分别放进不同布局，而不是在一个导航栏组件里根据 URL 写大量 <code>if</code>。</p>\n<h2 id=\"4-link-是默认导航方式\">4. Link 是默认导航方式</h2>\n<p>普通 <code>&lt;a&gt;</code> 会触发完整页面导航，浏览器需要重新加载整个文档。应用内部跳转优先用 <code>next/link</code>：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">Link</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/link'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">BlogNav</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">nav</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Link</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"/\"</span>&gt;</span>首页<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Link</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Link</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"/blog\"</span>&gt;</span>文章<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Link</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Link</span> <span class=\"hljs-attr\">href</span>=<span class=\"hljs-string\">\"/blog/new\"</span>&gt;</span>写文章<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Link</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">nav</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p><code>Link</code> 提供客户端导航和预取能力。共享布局可以保持在页面上，只有需要变化的路由内容更新，导航不会出现整页白屏。</p>\n<p>外部地址或必须触发完整文档跳转的场景仍然使用 <code>&lt;a&gt;</code>。不要为了“统一”把所有链接都改成 <code>Link</code>。</p>\n<h2 id=\"5-动态路由\">5. 动态路由</h2>\n<p>博客文章的 ID 不是固定字符串，目录名用方括号：</p>\n<pre><code class=\"hljs language-text\">app/blog/[postId]/page.tsx\n</code></pre>\n<p>Next.js 16 中，动态路由的 <code>params</code> 按 Promise 接收：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">type</span> <span class=\"hljs-title class_\">PostPageProps</span> = {\n  <span class=\"hljs-attr\">params</span>: <span class=\"hljs-title class_\">Promise</span>&lt;{ <span class=\"hljs-attr\">postId</span>: <span class=\"hljs-built_in\">string</span> }&gt;;\n};\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">PostPage</span>(<span class=\"hljs-params\">{ params }: <span class=\"hljs-title class_\">PostPageProps</span></span>) {\n  <span class=\"hljs-keyword\">const</span> { postId } = <span class=\"hljs-keyword\">await</span> params;\n\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>文章：{postId}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>;\n}\n</code></pre>\n<p>这是一个容易被旧教程带偏的地方。旧代码经常直接写 <code>params.postId</code>，在当前版本应先 <code>await params</code>。</p>\n<p>动态参数来自 URL，不能因为 TypeScript 写成某种 ID 类型就认为它已经通过了运行时校验。真正查询数据库时，仍要让后端函数用 Convex validator 校验参数，并处理文章不存在的情况。</p>\n<h2 id=\"6-route-group-不占用-url\">6. Route Group 不占用 URL</h2>\n<p>圆括号目录是路由组，只用于组织文件：</p>\n<pre><code class=\"hljs language-text\">app/\n├─ (shared)/\n│  ├─ layout.tsx\n│  ├─ page.tsx              # 仍然是 /\n│  └─ blog/page.tsx         # 仍然是 /blog\n└─ auth/\n   ├─ login/page.tsx        # /auth/login\n   └─ signup/page.tsx       # /auth/signup\n</code></pre>\n<p><code>(shared)</code> 不会出现在 URL 中，但其中的 <code>layout.tsx</code> 会包住组内页面。登录和注册页面如果不应该显示博客导航栏，就不要把 <code>auth</code> 放进 <code>(shared)</code>：</p>\n<pre><code class=\"hljs language-text\">app/\n├─ (shared)/\n│  ├─ layout.tsx            # 导航栏只在这里\n│  └─ blog/page.tsx\n└─ auth/\n   └─ login/page.tsx        # 不继承博客布局\n</code></pre>\n<p>这个边界比“在 Navbar 里检查 pathname 再隐藏自己”清晰得多。</p>\n<h2 id=\"7-ui-组件安装与客户端边界\">7. UI 组件安装与客户端边界</h2>\n<p>教程使用 shadcn/ui 组合表单、卡片、输入框、分隔线和按钮：</p>\n<pre><code class=\"hljs language-bash\">pnpm dlx shadcn@latest add button card field input textarea separator\n</code></pre>\n<p>这些组件的源码会进入项目，业务代码从项目自己的 <code>components/ui</code> 导入，而不是直接从底层 Radix 包导入。这样主题、样式和组件变体由项目统一管理。</p>\n<p>主题切换需要浏览器状态和 <code>localStorage</code>，因此把交互集中到一个小 Client Component：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-comment\">// components/theme-toggle.tsx</span>\n<span class=\"hljs-string\">'use client'</span>;\n\n<span class=\"hljs-keyword\">import</span> { useState } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">ThemeToggle</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> [dark, setDark] = <span class=\"hljs-title function_\">useState</span>(<span class=\"hljs-literal\">false</span>);\n\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">button</span> <span class=\"hljs-attr\">type</span>=<span class=\"hljs-string\">\"button\"</span> <span class=\"hljs-attr\">onClick</span>=<span class=\"hljs-string\">{()</span> =&gt;</span> setDark((value) =&gt; !value)}&gt;\n      {dark ? '浅色' : '深色'}\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">button</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p>不要因为一个主题按钮就把根布局变成大 Client Component。服务器布局继续负责静态结构，只有需要状态、事件、浏览器 API 或自定义 Hook 的叶子组件标记 <code>'use client'</code>。</p>\n<p>使用基于 class 的主题方案时，服务端首屏和客户端读取本地主题可能不一致，可以在根 <code>&lt;html&gt;</code> 上使用 <code>suppressHydrationWarning</code>。它只是消除已知的 hydration 警告，不是修复任意服务端与客户端输出不一致的通用开关。</p>\n<h2 id=\"8-这一章的判断标准\">8. 这一章的判断标准</h2>\n<ul>\n<li>共享导航、字体和全局元数据放在布局，不复制到每个页面。</li>\n<li>应用内跳转默认用 <code>Link</code>，外部跳转用 <code>&lt;a&gt;</code>。</li>\n<li>动态页面放在 <code>[param]</code> 目录，Next.js 16 先 <code>await params</code>。</li>\n<li>只想组织文件而不想改变 URL 时，用 <code>(group)</code>。</li>\n<li>交互组件尽量小，服务器组件不要被一个按钮拖成整棵 Client Tree。</li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "1-先把项目跑起来",
+      "level": 2,
+      "text": "1. 先把项目跑起来"
+    },
+    {
+      "id": "2-文件夹就是路由",
+      "level": 2,
+      "text": "2. 文件夹就是路由"
+    },
+    {
+      "id": "3-layout-解决什么问题",
+      "level": 2,
+      "text": "3. Layout 解决什么问题"
+    },
+    {
+      "id": "4-link-是默认导航方式",
+      "level": 2,
+      "text": "4. Link 是默认导航方式"
+    },
+    {
+      "id": "5-动态路由",
+      "level": 2,
+      "text": "5. 动态路由"
+    },
+    {
+      "id": "6-route-group-不占用-url",
+      "level": 2,
+      "text": "6. Route Group 不占用 URL"
+    },
+    {
+      "id": "7-ui-组件安装与客户端边界",
+      "level": 2,
+      "text": "7. UI 组件安装与客户端边界"
+    },
+    {
+      "id": "8-这一章的判断标准",
+      "level": 2,
+      "text": "8. 这一章的判断标准"
+    }
+  ]
+}

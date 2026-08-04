@@ -1,0 +1,54 @@
+{
+  "canonicalSlug": "nextjs16-cache-dynamic-routes",
+  "aliases": [
+    "05-缓存再验证与动态文章路由"
+  ],
+  "title": "Next.js 16 全栈实战：缓存、再验证与动态文章路由",
+  "publishedAt": "2026-08-04T00:00:00.000Z",
+  "publishedLabel": "Aug 04, 2026",
+  "excerpt": "博客首页和文章详情页的访问模式不同：首页适合缓存一段时间，文章详情需要根据 ID 查询，发布文章后又要主动让列表失效。缓存设计的关键不是“所有东西都缓存”，而是明确数据的新鲜度和失效入口。",
+  "type": "Notes",
+  "searchText": "Next.js 16 全栈实战：缓存、再验证与动态文章路由 Notes 前端开发 Next.js Next.js 16 Cache ISR Revalidation Dynamic Routes Convex 缓存、再验证与动态文章路由 博客首页和文章详情页的访问模式不同：首页适合缓存一段时间，文章详情需要根据 ID 查询，发布文章后又要主动让列表失效。缓存设计的关键不是“所有东西都缓存”，而是明确数据的新鲜度和失效入口。 1. 时间再验证与按需再验证 传统的 ISR 思路是为路由设置一个时间窗口： 这表示缓存内容最多在一段时间后重新生成。它适合变化不频繁、允许短暂陈旧的页面。发布文章后，如果希望列表马上出现，可以在写入成功后执行按需再验证： 是路由级失效，适合“某个页面整体需要重新生成”的场景。后面引入 Cache Components 后，还可以通过 tag 精确失效某类数据，不要把两种模型混在一起却没有明确规则。Next.js 版本演进较快，使用 Cache Components 时要以当前版本文档为准，避免盲目叠加旧的 route segment 配置。 2. 动态路由和异步 文章详情页可以放在： Next.js 16 中，动态参数按异步值处理： 只提供 TypeScript 类型约束，不会在运行时验证字符串。来自 URL 的 ID 仍然可能是恶意输入，Convex 函数需要处理无效 ID、找不到文章和无权限访问等情况。 数据库函数通常只接受一个 ID，并把存储图片解析为最终 URL： 3. 详情页的数据与展示边界 详情页常见的渲染结构是： 发布时间、作者和正文是服务端可直接渲染的内容；评论输入框、点赞、在线状态等需要事件或实时数据的区域，再单独下沉为 Client Component。这样既保留首屏速度，也避免给整页增加 hydration 成本。 4. 选择缓存策略的判断表 | 数据 | 推荐策略 | 失效方式 | | | | | | 博客导航和稳定配置 | 长时间缓存 | 配置改变时按需失效 | | 文章列表 | 短时间缓存或按 tag 缓存 | 创建/删除文章后失效 | | 文章详情 | 按 ID 查询，可缓存 | 更新文章后失效对应路径或 tag | | 当前用户、权限、实时评论 | 动态/实时查询 | 会话或数据库更新驱动 | 不要为了让构建通过而把所有页面强行变成静态。更可靠的做法是先标注每个数据源的生命周期，再决定它应该在哪一层缓存。 5. 本章检查清单 明确页面允许陈旧多久，以及谁负责触发失效。 动态 先 ，不要沿用旧版本的同步写法。 URL 参数仍需运行时校验，TypeScript 类型不能替代鉴权。 文章不存在时返回 ，而不是渲染一张空白详情页。 互动区域与服务端内容分离，避免整页客户端化。",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "Next.js"
+  ],
+  "tags": [
+    "Next.js 16",
+    "Cache",
+    "ISR",
+    "Revalidation",
+    "Dynamic Routes",
+    "Convex"
+  ],
+  "html": "<h1>缓存、再验证与动态文章路由</h1>\n<p>博客首页和文章详情页的访问模式不同：首页适合缓存一段时间，文章详情需要根据 ID 查询，发布文章后又要主动让列表失效。缓存设计的关键不是“所有东西都缓存”，而是明确数据的新鲜度和失效入口。</p>\n<h2 id=\"1-时间再验证与按需再验证\">1. 时间再验证与按需再验证</h2>\n<p>传统的 ISR 思路是为路由设置一个时间窗口：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> revalidate = <span class=\"hljs-number\">30</span>;\n</code></pre>\n<p>这表示缓存内容最多在一段时间后重新生成。它适合变化不频繁、允许短暂陈旧的页面。发布文章后，如果希望列表马上出现，可以在写入成功后执行按需再验证：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">import</span> { revalidatePath } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/cache'</span>;\n\n<span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetchMutation</span>(api.<span class=\"hljs-property\">posts</span>.<span class=\"hljs-property\">create</span>, input);\n<span class=\"hljs-title function_\">revalidatePath</span>(<span class=\"hljs-string\">'/blog'</span>);\n</code></pre>\n<p><code>revalidatePath</code> 是路由级失效，适合“某个页面整体需要重新生成”的场景。后面引入 Cache Components 后，还可以通过 tag 精确失效某类数据，不要把两种模型混在一起却没有明确规则。Next.js 版本演进较快，使用 Cache Components 时要以当前版本文档为准，避免盲目叠加旧的 route segment 配置。</p>\n<h2 id=\"2-动态路由和异步-params\">2. 动态路由和异步 <code>params</code></h2>\n<p>文章详情页可以放在：</p>\n<pre><code class=\"hljs language-text\">app/blog/[postId]/page.tsx\n</code></pre>\n<p>Next.js 16 中，动态参数按异步值处理：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> { notFound } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/navigation'</span>;\n<span class=\"hljs-keyword\">import</span> { fetchQuery } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'convex/nextjs'</span>;\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-keyword\">type</span> { <span class=\"hljs-title class_\">Id</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@/convex/_generated/dataModel'</span>;\n\n<span class=\"hljs-keyword\">type</span> <span class=\"hljs-title class_\">Props</span> = {\n  <span class=\"hljs-attr\">params</span>: <span class=\"hljs-title class_\">Promise</span>&lt;{ <span class=\"hljs-attr\">postId</span>: <span class=\"hljs-title class_\">Id</span>&lt;<span class=\"hljs-string\">'posts'</span>&gt; }&gt;;\n};\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">PostPage</span>(<span class=\"hljs-params\">{ params }: <span class=\"hljs-title class_\">Props</span></span>) {\n  <span class=\"hljs-keyword\">const</span> { postId } = <span class=\"hljs-keyword\">await</span> params;\n  <span class=\"hljs-keyword\">const</span> post = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetchQuery</span>(api.<span class=\"hljs-property\">posts</span>.<span class=\"hljs-property\">getById</span>, { postId });\n\n  <span class=\"hljs-keyword\">if</span> (!post) <span class=\"hljs-title function_\">notFound</span>();\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">PostDetail</span> <span class=\"hljs-attr\">post</span>=<span class=\"hljs-string\">{post}</span> /&gt;</span></span>;\n}\n</code></pre>\n<p><code>Id&lt;'posts'&gt;</code> 只提供 TypeScript 类型约束，不会在运行时验证字符串。来自 URL 的 ID 仍然可能是恶意输入，Convex 函数需要处理无效 ID、找不到文章和无权限访问等情况。</p>\n<p>数据库函数通常只接受一个 ID，并把存储图片解析为最终 URL：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> getById = <span class=\"hljs-title function_\">query</span>({\n  <span class=\"hljs-attr\">args</span>: { <span class=\"hljs-attr\">postId</span>: v.<span class=\"hljs-title function_\">id</span>(<span class=\"hljs-string\">'posts'</span>) },\n  <span class=\"hljs-attr\">handler</span>: <span class=\"hljs-title function_\">async</span> (ctx, { postId }) =&gt; {\n    <span class=\"hljs-keyword\">const</span> post = <span class=\"hljs-keyword\">await</span> ctx.<span class=\"hljs-property\">db</span>.<span class=\"hljs-title function_\">get</span>(postId);\n    <span class=\"hljs-keyword\">if</span> (!post) <span class=\"hljs-keyword\">return</span> <span class=\"hljs-literal\">null</span>;\n\n    <span class=\"hljs-keyword\">return</span> {\n      ...post,\n      <span class=\"hljs-attr\">imageUrl</span>: post.<span class=\"hljs-property\">imageStorageId</span>\n        ? <span class=\"hljs-keyword\">await</span> ctx.<span class=\"hljs-property\">storage</span>.<span class=\"hljs-title function_\">getUrl</span>(post.<span class=\"hljs-property\">imageStorageId</span>)\n        : <span class=\"hljs-literal\">null</span>,\n    };\n  },\n});\n</code></pre>\n<h2 id=\"3-详情页的数据与展示边界\">3. 详情页的数据与展示边界</h2>\n<p>详情页常见的渲染结构是：</p>\n<pre><code class=\"hljs language-tsx\">&lt;article&gt;\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>{post.title}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span></span>\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">time</span> <span class=\"hljs-attr\">dateTime</span>=<span class=\"hljs-string\">{post.createdAt.toISOString()}</span>&gt;</span>\n    {formatDate(post.createdAt)}\n  <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">time</span>&gt;</span></span>\n  {post.<span class=\"hljs-property\">imageUrl</span> &amp;&amp; (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">div</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"relative aspect-video overflow-hidden\"</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Image</span> <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">{post.imageUrl}</span> <span class=\"hljs-attr\">alt</span>=<span class=\"hljs-string\">{post.title}</span> <span class=\"hljs-attr\">fill</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"object-cover\"</span> /&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">div</span>&gt;</span></span>\n  )}\n  &lt;<span class=\"hljs-title class_\">MarkdownContent</span>&gt;{post.<span class=\"hljs-property\">body</span>}&lt;/<span class=\"hljs-title class_\">MarkdownContent</span>&gt;\n&lt;/article&gt;\n</code></pre>\n<p>发布时间、作者和正文是服务端可直接渲染的内容；评论输入框、点赞、在线状态等需要事件或实时数据的区域，再单独下沉为 Client Component。这样既保留首屏速度，也避免给整页增加 hydration 成本。</p>\n<h2 id=\"4-选择缓存策略的判断表\">4. 选择缓存策略的判断表</h2>\n<table>\n<thead>\n<tr>\n<th>数据</th>\n<th>推荐策略</th>\n<th>失效方式</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>博客导航和稳定配置</td>\n<td>长时间缓存</td>\n<td>配置改变时按需失效</td>\n</tr>\n<tr>\n<td>文章列表</td>\n<td>短时间缓存或按 tag 缓存</td>\n<td>创建/删除文章后失效</td>\n</tr>\n<tr>\n<td>文章详情</td>\n<td>按 ID 查询，可缓存</td>\n<td>更新文章后失效对应路径或 tag</td>\n</tr>\n<tr>\n<td>当前用户、权限、实时评论</td>\n<td>动态/实时查询</td>\n<td>会话或数据库更新驱动</td>\n</tr>\n</tbody>\n</table>\n<p>不要为了让构建通过而把所有页面强行变成静态。更可靠的做法是先标注每个数据源的生命周期，再决定它应该在哪一层缓存。</p>\n<h2 id=\"5-本章检查清单\">5. 本章检查清单</h2>\n<ul>\n<li>明确页面允许陈旧多久，以及谁负责触发失效。</li>\n<li>动态 <code>params</code> 先 <code>await</code>，不要沿用旧版本的同步写法。</li>\n<li>URL 参数仍需运行时校验，TypeScript 类型不能替代鉴权。</li>\n<li>文章不存在时返回 <code>notFound()</code>，而不是渲染一张空白详情页。</li>\n<li>互动区域与服务端内容分离，避免整页客户端化。</li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "1-时间再验证与按需再验证",
+      "level": 2,
+      "text": "1. 时间再验证与按需再验证"
+    },
+    {
+      "id": "2-动态路由和异步-params",
+      "level": 2,
+      "text": "2. 动态路由和异步 params"
+    },
+    {
+      "id": "3-详情页的数据与展示边界",
+      "level": 2,
+      "text": "3. 详情页的数据与展示边界"
+    },
+    {
+      "id": "4-选择缓存策略的判断表",
+      "level": 2,
+      "text": "4. 选择缓存策略的判断表"
+    },
+    {
+      "id": "5-本章检查清单",
+      "level": 2,
+      "text": "5. 本章检查清单"
+    }
+  ]
+}

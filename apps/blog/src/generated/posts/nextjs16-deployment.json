@@ -1,0 +1,59 @@
+{
+  "canonicalSlug": "nextjs16-deployment",
+  "aliases": [
+    "08-部署与生产环境排错"
+  ],
+  "title": "Next.js 16 全栈实战：部署与生产环境排错",
+  "publishedAt": "2026-08-04T00:00:00.000Z",
+  "publishedLabel": "Aug 04, 2026",
+  "excerpt": "全栈项目部署不是“把仓库导入 Vercel”这么简单。Next.js 应用、Convex 后端、认证系统和远程图片各自有环境配置；本地可以正常运行，只能说明开发环境闭环成立，不能替代生产验收。",
+  "type": "Notes",
+  "searchText": "Next.js 16 全栈实战：部署与生产环境排错 Notes 工程实践 部署运维 Next.js 16 Vercel GitHub Convex Deployment Environment Variables 部署与生产环境排错 全栈项目部署不是“把仓库导入 Vercel”这么简单。Next.js 应用、Convex 后端、认证系统和远程图片各自有环境配置；本地可以正常运行，只能说明开发环境闭环成立，不能替代生产验收。 1. 先让仓库具备可部署状态 提交前确认没有把 、部署密钥、数据库导出或本地调试文件加入版本库。更稳妥的方式是先检查： 2. Vercel 与 Convex 的环境变量 Vercel 项目应分别配置 Development、Preview 和 Production。生产环境至少需要一套与本地不同的值： | 变量 | 用途 | 公开性 | | | | | | | 让构建过程部署/同步 Convex 后端 | 仅构建环境 | | | 浏览器访问生产 Convex deployment | 可公开 | | | Better Auth 的站点/API 地址 | 可公开，但需正确配置 | | | 签名和保护认证会话 | 仅服务端 | | | 生产站点地址 | 通常仅服务端 | Convex 的 地址和 地址职责不同，不要因为字符串相似就互换。 应使用真实的生产 URL，认证回调、cookie 域和协议也要与部署域名一致。 项目使用的构建命令可以让 Convex 先部署，再执行 Next.js build： 具体命令应根据项目包管理器和 Convex 配置调整。关键是构建阶段能访问 ，而运行时浏览器拿到的是生产 deployment 的公开 URL。 3. 开发和生产是两套数据 开发环境和生产环境通常对应不同的 Convex deployment 与数据库。部署成功后，生产页面一开始没有本地文章是正常现象，不要为了“看到数据”把生产环境连接回开发数据库。 上线前应明确： 生产 schema 是否已经部署。 生产环境认证配置是否已经写入。 是否需要用正式账号创建一条验收文章。 是否有数据迁移、备份和回滚方案。 Preview 环境是否误用了 Production secret。 4. 首次部署失败时的排查顺序 课程中遇到的典型问题是缓存/数据依赖导致首次构建难以判断。排查时可以临时缩小变量： 1. 先确认 build 日志中的具体失败阶段，是 Next.js 编译、Convex 部署还是运行时请求。 2. 对依赖请求数据的页面暂时关闭不必要的缓存，或使用 明确它需要动态执行。 3. 让最小生产构建通过后，再逐项恢复 、tag 和动态区块。 4. 不要把“临时改成动态”当成永久修复，确认数据生命周期后再选择缓存策略。 这类处理的目标是隔离故障来源，而不是遇到任何构建失败都删除缓存。 5. 远程图片是常见的第二个坑 本地配置可能只允许开发 Convex host： 生产文章使用的 storage URL 如果来自另一个 host，就会在 Vercel 页面中触发 的 remote host 错误。修复时把实际生产 host 纳入 ，然后重新部署并验证文章列表、详情页和图片加载。 6. 生产验收清单 首页、登录、注册、退出登录可用。 正式账号能创建文章，标题、正文和图片都能保存。 文章列表和动态详情路由可访问，找不到文章会返回 404 页面。 评论创建、实时刷新和权限校验正常。 Presence、搜索和 metadata 在生产域名下工作。 浏览器 Network 和构建日志中没有泄露 secret。 生产图片域名已加入 配置。 Preview、Production 的环境变量没有串用。 部署后重新跑一遍最小回归，而不是只看 Vercel 显示“Ready”。",
+  "readingMinutes": 5,
+  "coverImage": null,
+  "categories": [
+    "工程实践",
+    "部署运维"
+  ],
+  "tags": [
+    "Next.js 16",
+    "Vercel",
+    "GitHub",
+    "Convex",
+    "Deployment",
+    "Environment Variables"
+  ],
+  "html": "<h1>部署与生产环境排错</h1>\n<p>全栈项目部署不是“把仓库导入 Vercel”这么简单。Next.js 应用、Convex 后端、认证系统和远程图片各自有环境配置；本地可以正常运行，只能说明开发环境闭环成立，不能替代生产验收。</p>\n<h2 id=\"1-先让仓库具备可部署状态\">1. 先让仓库具备可部署状态</h2>\n<pre><code class=\"hljs language-bash\">git init\ngit add .\ngit commit -m <span class=\"hljs-string\">\"feat: build full-stack blog\"</span>\ngit branch -M main\ngit remote add origin &lt;your-repository-url&gt;\ngit push -u origin main\n</code></pre>\n<p>提交前确认没有把 <code>.env.local</code>、部署密钥、数据库导出或本地调试文件加入版本库。更稳妥的方式是先检查：</p>\n<pre><code class=\"hljs language-bash\">git status --short\ngit diff --check\n</code></pre>\n<h2 id=\"2-vercel-与-convex-的环境变量\">2. Vercel 与 Convex 的环境变量</h2>\n<p>Vercel 项目应分别配置 Development、Preview 和 Production。生产环境至少需要一套与本地不同的值：</p>\n<table>\n<thead>\n<tr>\n<th>变量</th>\n<th>用途</th>\n<th>公开性</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><code>CONVEX_DEPLOY_KEY</code></td>\n<td>让构建过程部署/同步 Convex 后端</td>\n<td>仅构建环境</td>\n</tr>\n<tr>\n<td><code>NEXT_PUBLIC_CONVEX_URL</code></td>\n<td>浏览器访问生产 Convex deployment</td>\n<td>可公开</td>\n</tr>\n<tr>\n<td><code>NEXT_PUBLIC_CONVEX_SITE_URL</code></td>\n<td>Better Auth 的站点/API 地址</td>\n<td>可公开，但需正确配置</td>\n</tr>\n<tr>\n<td><code>BETTER_AUTH_SECRET</code></td>\n<td>签名和保护认证会话</td>\n<td>仅服务端</td>\n</tr>\n<tr>\n<td><code>SITE_URL</code></td>\n<td>生产站点地址</td>\n<td>通常仅服务端</td>\n</tr>\n</tbody>\n</table>\n<p>Convex 的 <code>.cloud</code> 地址和 <code>.site</code> 地址职责不同，不要因为字符串相似就互换。<code>SITE_URL</code> 应使用真实的生产 URL，认证回调、cookie 域和协议也要与部署域名一致。</p>\n<p>项目使用的构建命令可以让 Convex 先部署，再执行 Next.js build：</p>\n<pre><code class=\"hljs language-bash\">npx convex deploy --cmd <span class=\"hljs-string\">\"pnpm run build\"</span>\n</code></pre>\n<p>具体命令应根据项目包管理器和 Convex 配置调整。关键是构建阶段能访问 <code>CONVEX_DEPLOY_KEY</code>，而运行时浏览器拿到的是生产 deployment 的公开 URL。</p>\n<h2 id=\"3-开发和生产是两套数据\">3. 开发和生产是两套数据</h2>\n<p>开发环境和生产环境通常对应不同的 Convex deployment 与数据库。部署成功后，生产页面一开始没有本地文章是正常现象，不要为了“看到数据”把生产环境连接回开发数据库。</p>\n<p>上线前应明确：</p>\n<ul>\n<li>生产 schema 是否已经部署。</li>\n<li>生产环境认证配置是否已经写入。</li>\n<li>是否需要用正式账号创建一条验收文章。</li>\n<li>是否有数据迁移、备份和回滚方案。</li>\n<li>Preview 环境是否误用了 Production secret。</li>\n</ul>\n<h2 id=\"4-首次部署失败时的排查顺序\">4. 首次部署失败时的排查顺序</h2>\n<p>课程中遇到的典型问题是缓存/数据依赖导致首次构建难以判断。排查时可以临时缩小变量：</p>\n<ol>\n<li>先确认 build 日志中的具体失败阶段，是 Next.js 编译、Convex 部署还是运行时请求。</li>\n<li>对依赖请求数据的页面暂时关闭不必要的缓存，或使用 <code>connection()</code> 明确它需要动态执行。</li>\n<li>让最小生产构建通过后，再逐项恢复 <code>use cache</code>、tag 和动态区块。</li>\n<li>不要把“临时改成动态”当成永久修复，确认数据生命周期后再选择缓存策略。</li>\n</ol>\n<p>这类处理的目标是隔离故障来源，而不是遇到任何构建失败都删除缓存。</p>\n<h2 id=\"5-远程图片是常见的第二个坑\">5. 远程图片是常见的第二个坑</h2>\n<p>本地配置可能只允许开发 Convex host：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-attr\">images</span>: {\n  <span class=\"hljs-attr\">remotePatterns</span>: [\n    { <span class=\"hljs-attr\">protocol</span>: <span class=\"hljs-string\">'https'</span>, <span class=\"hljs-attr\">hostname</span>: <span class=\"hljs-string\">'dev-xxx.convex.cloud'</span> },\n  ],\n},\n</code></pre>\n<p>生产文章使用的 storage URL 如果来自另一个 host，就会在 Vercel 页面中触发 <code>next/image</code> 的 remote host 错误。修复时把实际生产 host 纳入 <code>remotePatterns</code>，然后重新部署并验证文章列表、详情页和图片加载。</p>\n<h2 id=\"6-生产验收清单\">6. 生产验收清单</h2>\n<ul>\n<li>首页、登录、注册、退出登录可用。</li>\n<li>正式账号能创建文章，标题、正文和图片都能保存。</li>\n<li>文章列表和动态详情路由可访问，找不到文章会返回 404 页面。</li>\n<li>评论创建、实时刷新和权限校验正常。</li>\n<li>Presence、搜索和 metadata 在生产域名下工作。</li>\n<li>浏览器 Network 和构建日志中没有泄露 secret。</li>\n<li>生产图片域名已加入 <code>next/image</code> 配置。</li>\n<li>Preview、Production 的环境变量没有串用。</li>\n<li>部署后重新跑一遍最小回归，而不是只看 Vercel 显示“Ready”。</li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "1-先让仓库具备可部署状态",
+      "level": 2,
+      "text": "1. 先让仓库具备可部署状态"
+    },
+    {
+      "id": "2-vercel-与-convex-的环境变量",
+      "level": 2,
+      "text": "2. Vercel 与 Convex 的环境变量"
+    },
+    {
+      "id": "3-开发和生产是两套数据",
+      "level": 2,
+      "text": "3. 开发和生产是两套数据"
+    },
+    {
+      "id": "4-首次部署失败时的排查顺序",
+      "level": 2,
+      "text": "4. 首次部署失败时的排查顺序"
+    },
+    {
+      "id": "5-远程图片是常见的第二个坑",
+      "level": 2,
+      "text": "5. 远程图片是常见的第二个坑"
+    },
+    {
+      "id": "6-生产验收清单",
+      "level": 2,
+      "text": "6. 生产验收清单"
+    }
+  ]
+}
