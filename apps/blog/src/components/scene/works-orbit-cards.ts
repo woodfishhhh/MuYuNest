@@ -843,6 +843,24 @@ interface WorksCardPalette {
   shadow: string;
 }
 
+const workAvatarCache = new Map<string, HTMLImageElement>();
+
+function getWorkAvatar(avatarUrl: string, onLoad?: () => void) {
+  if (typeof Image === "undefined") return null;
+
+  let image = workAvatarCache.get(avatarUrl);
+  if (!image) {
+    image = new Image();
+    image.decoding = "async";
+    workAvatarCache.set(avatarUrl, image);
+    image.src = avatarUrl;
+  }
+
+  if (image.complete && image.naturalWidth > 0) return image;
+  if (onLoad) image.addEventListener("load", onLoad, { once: true });
+  return null;
+}
+
 function getWorksCardPalette(isDay: boolean): WorksCardPalette {
   if (isDay) {
     return {
@@ -868,6 +886,7 @@ function drawCardTexture(
   work: WorkProjectData,
   index: number,
   theme: ThemeMode,
+  onAvatarLoad?: () => void,
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -889,19 +908,28 @@ function drawCardTexture(
   drawTextLine(ctx, presentation.title, 64, 84, 576);
   ctx.restore();
 
-  roundedRect(ctx, 64, 120, 96, 96, 48);
+  roundedRect(ctx, 64, 120, 96, 96, 20);
   ctx.fillStyle = palette.badgeFill;
   ctx.fill();
-  roundedRect(ctx, 64, 120, 96, 96, 48);
+  roundedRect(ctx, 64, 120, 96, 96, 20);
   ctx.strokeStyle = palette.badgeStroke;
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  ctx.fillStyle = palette.fg;
-  ctx.font = '600 27px "IBM Plex Mono", "Cascadia Code", monospace';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(presentation.orderLabel, 112, 168);
+  const avatar = getWorkAvatar(presentation.avatarUrl, onAvatarLoad);
+  if (avatar) {
+    ctx.save();
+    roundedRect(ctx, 64, 120, 96, 96, 20);
+    ctx.clip();
+    ctx.drawImage(avatar, 64, 120, 96, 96);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = palette.fg;
+    ctx.font = '600 27px "IBM Plex Mono", "Cascadia Code", monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(presentation.orderLabel, 112, 168);
+  }
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
@@ -985,9 +1013,15 @@ function createCard(
   backdropTexture: THREE.FramebufferTexture,
 ) {
   const canvas = createCanvas();
-  drawCardTexture(canvas, work, index, theme);
+  let cardTheme = theme;
+  let texture: THREE.CanvasTexture | null = null;
+  const redrawWithAvatar = () => {
+    drawCardTexture(canvas, work, index, cardTheme);
+    if (texture) texture.needsUpdate = true;
+  };
+  drawCardTexture(canvas, work, index, theme, redrawWithAvatar);
 
-  const texture = new THREE.CanvasTexture(canvas);
+  texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 4;
   texture.generateMipmaps = false;
@@ -1028,6 +1062,11 @@ function createCard(
     glassMaterial,
     glassMesh,
     group,
+    redrawTexture(nextTheme: ThemeMode) {
+      cardTheme = nextTheme;
+      drawCardTexture(canvas, work, index, nextTheme);
+      texture.needsUpdate = true;
+    },
     texture,
     work,
   };
@@ -1329,9 +1368,8 @@ export function createWorksOrbitCards({ theme, works }: WorksOrbitCardsOptions):
       hoveredSlug = interactionEnabled ? (hit?.slug ?? null) : null;
     },
     setTheme(nextTheme) {
-      cards.forEach((card, index) => {
-        drawCardTexture(card.texture.image as HTMLCanvasElement, card.work, index, nextTheme);
-        card.texture.needsUpdate = true;
+      cards.forEach((card) => {
+        card.redrawTexture(nextTheme);
         applyGlassMaterialTheme(card.glassMaterial, nextTheme);
       });
     },

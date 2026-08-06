@@ -40,7 +40,9 @@ const caseItems = computed(() =>
           <h3 class="works-case__title">{{ item.title }}</h3>
 
           <div class="works-case__identity">
-            <span class="works-case__avatar">{{ item.orderLabel }}</span>
+            <span class="works-case__avatar">
+              <img :src="item.avatarUrl" alt="" width="48" height="48" />
+            </span>
             <div class="works-case__summary">
               <strong>{{ item.kind }}</strong>
               <p>{{ item.description }}</p>
@@ -113,13 +115,19 @@ const caseItems = computed(() =>
   flex: none;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.1);
-  color: var(--works-card-fg);
-  font-size: 0.84rem;
-  font-weight: 600;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.625rem;
+  background: rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+}
+
+.works-case__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .works-case__summary {

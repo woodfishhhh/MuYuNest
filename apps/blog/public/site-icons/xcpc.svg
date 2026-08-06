@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">XCPC Template</title>
+  <rect width="64" height="64" rx="12" fill="#111318"/>
+  <path d="m24 15-12 17 12 17M40 15l12 17-12 17" fill="none" stroke="#ffca5c" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <path d="M25 26h14M25 33h14M25 40h9" stroke="#f7f8f4" stroke-linecap="round" stroke-width="4"/>
+  <circle cx="41" cy="40" r="3" fill="#57d6d0"/>
+</svg>

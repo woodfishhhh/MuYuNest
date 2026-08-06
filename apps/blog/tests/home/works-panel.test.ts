@@ -11,6 +11,7 @@ const works = [
     name: "WoodFishNest",
     description: "Three.js powered immersive blog hub.",
     kind: "Blog",
+    avatarUrl: "/site-icons/woodfish.svg",
     liveUrl: "https://blog.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/VueThreeBlog",
   },
@@ -19,6 +20,7 @@ const works = [
     name: "WeatherDemo",
     description: "Monochrome weather workspace and forecast explorer.",
     kind: "App",
+    avatarUrl: "/site-icons/weather.svg",
     liveUrl: "https://weather.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/WeatherDemo",
   },
@@ -27,6 +29,7 @@ const works = [
     name: "Pretext",
     description: "Interactive pretext geometry experiment.",
     kind: "Lab",
+    avatarUrl: "/site-icons/pretext.svg",
     liveUrl: "https://pretext.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/Pretext-cube",
   },
@@ -116,6 +119,11 @@ describe("WorksPanel", () => {
     expect(wrapper.find("[data-testid='works-view-orbit']").exists()).toBe(false);
     expect(wrapper.find("[data-testid='works-view-case']").exists()).toBe(true);
     expect(wrapper.findAll("[data-testid='works-item']")).toHaveLength(3);
+    expect(wrapper.findAll(".works-case__avatar img").map((image) => image.attributes("src"))).toEqual([
+      "/site-icons/woodfish.svg",
+      "/site-icons/weather.svg",
+      "/site-icons/pretext.svg",
+    ]);
     expect(
       wrapper
         .findAll("[data-testid='works-item']")

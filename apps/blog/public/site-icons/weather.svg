@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">WeatherDemo</title>
+  <rect width="64" height="64" rx="12" fill="#eaf7fb"/>
+  <circle cx="42" cy="22" r="10" fill="#ffca5c"/>
+  <path d="M12 41.5c0-6.4 5.1-11.5 11.5-11.5 1.5 0 3 .3 4.3.8A13 13 0 0 1 52 37.5c0 6.4-4.9 11.5-11.4 11.5H20.2A8.2 8.2 0 0 1 12 41.5Z" fill="#fff" stroke="#17242a" stroke-linejoin="round" stroke-width="4"/>
+  <path d="M20 55h16" stroke="#57d6d0" stroke-linecap="round" stroke-width="4"/>
+</svg>

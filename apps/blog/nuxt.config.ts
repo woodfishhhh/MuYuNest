@@ -104,7 +104,7 @@ export default defineNuxtConfig({
         {
           rel: "icon",
           type: "image/svg+xml",
-          href: `${process.env.NUXT_APP_BASE_URL || "/"}favicon.svg`,
+          href: `${process.env.NUXT_APP_BASE_URL || "/"}site-icons/woodfish.svg`,
         },
         {
           rel: "apple-touch-icon",
@@ -182,7 +182,7 @@ export default defineNuxtConfig({
       start_url: process.env.NUXT_APP_BASE_URL || "/",
       scope: process.env.NUXT_APP_BASE_URL || "/",
       display: "standalone",
-      icons: [{ src: "favicon.svg", sizes: "any", type: "image/svg+xml" }],
+      icons: [{ src: "site-icons/woodfish.svg", sizes: "any", type: "image/svg+xml" }],
     },
     workbox: {
       cleanupOutdatedCaches: true,

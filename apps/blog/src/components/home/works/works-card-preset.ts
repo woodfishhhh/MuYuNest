@@ -32,6 +32,7 @@ export function createWorksCardPresentation(work: WorkProjectData, index: number
       source: "Source:",
       website: "Website:",
     },
+    avatarUrl: work.avatarUrl,
     description: work.description,
     kind: work.kind.toUpperCase(),
     orderLabel: String(index + 1).padStart(2, "0"),

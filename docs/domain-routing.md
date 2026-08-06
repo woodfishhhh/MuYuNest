@@ -14,6 +14,18 @@ not a static-site document root.
 `filter.woodfish.site` is owned by its separate nginx configuration and must not
 be added to or removed from `deploy/nginx.conf`.
 
+## Site Identity Assets
+
+Canonical site icons live in `apps/blog/public/site-icons/`. The blog references
+its icon directly; nginx maps the legacy favicon paths used by Pretext, Weather,
+XCPC, and the image-bed admin to their matching icon in that shared directory.
+This keeps every browser tab identifiable without requiring unrelated site
+bundles to be rebuilt during a routing-only deployment.
+
+When adding a public subdomain, add one square SVG source to this directory and
+an exact favicon location in `deploy/nginx.conf`. Use a PNG derivative only when
+the existing page declares a PNG favicon path.
+
 ## DNS And TLS
 
 The `blog`, `pretext`, `weather`, and `xcpc` A records point to

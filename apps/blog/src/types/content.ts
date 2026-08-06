@@ -73,6 +73,7 @@ export interface WorkProjectData {
   name: string;
   description: string;
   kind: string;
+  avatarUrl: string;
   liveUrl: string;
   githubUrl: string;
 }
