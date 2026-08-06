@@ -148,7 +148,7 @@ body {
   font-family: inherit; /* Tailwind handles font-family */
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 ::view-transition-old(*),

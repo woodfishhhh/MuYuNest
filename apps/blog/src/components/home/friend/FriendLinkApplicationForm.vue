@@ -288,9 +288,11 @@ function confirmIssueRedirect() {
       </form>
 
       <div
-        v-if="showReminder"
+        v-show="showReminder"
+        :aria-hidden="!showReminder"
         data-testid="friend-application-reminder"
         class="friend-application-reminder"
+        :inert="!showReminder"
       >
         <div class="text-[11px] tracking-[0.16em] text-[var(--stage-hint-strong)]">确认跳转</div>
         <p class="mt-2 text-sm leading-6 text-[var(--stage-hint)]">

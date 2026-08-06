@@ -6,13 +6,14 @@ import { stepAuthorSlideIndex, useAuthorSlider } from "@/composables/useAuthorSl
 
 const mountedWrappers: VueWrapper[] = [];
 
-function mountSliderHarness() {
+function mountSliderHarness(interactionActive = true) {
   const wrapper = mount(
     defineComponent({
       setup() {
+        const active = shallowRef(interactionActive);
         const viewportRef = shallowRef<HTMLElement | null>(null);
         const trackRef = shallowRef<HTMLElement | null>(null);
-        const { activeIndex } = useAuthorSlider({ viewportRef, trackRef });
+        const { activeIndex } = useAuthorSlider({ active, viewportRef, trackRef });
 
         return { activeIndex, trackRef, viewportRef };
       },
@@ -83,6 +84,22 @@ describe("stepAuthorSlideIndex", () => {
       deltaY: 120,
     });
     scrollRegion.element.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(wrapper.get("[data-active-index]").text()).toBe("0");
+  });
+
+  it("does not intercept wheel input while its cached panel is inactive", async () => {
+    const wrapper = mountSliderHarness(false);
+    await nextTick();
+    await nextTick();
+
+    const event = new WheelEvent("wheel", {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 120,
+    });
+    window.dispatchEvent(event);
 
     expect(event.defaultPrevented).toBe(false);
     expect(wrapper.get("[data-active-index]").text()).toBe("0");

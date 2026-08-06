@@ -37,6 +37,13 @@ describe("Nuxt app config", () => {
     expect(configSource).toContain('from: "pinia"');
   });
 
+  it("allows the liquid-gl snapshot worker without broadening script sources", () => {
+    const configSource = readNuxtConfigSource();
+
+    expect(configSource).toContain("worker-src 'self' blob:");
+    expect(configSource).toContain("script-src 'self' 'unsafe-inline' 'unsafe-eval'");
+  });
+
   it("keeps CI/deploy scripts on Nuxt generation plus dist verification", () => {
     const packageJson = readBlogPackageJson();
 

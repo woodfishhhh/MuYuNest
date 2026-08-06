@@ -112,7 +112,7 @@ function visitRandomFriend() {
     data-testid="friend-panel-root"
     class="relative min-h-screen w-full text-[var(--stage-fg)]"
   >
-    <section data-testid="friend-panel-application" class="friend-application-pane hidden md:block">
+    <section data-testid="friend-panel-application" class="friend-application-pane hidden lg:block">
       <FriendLinkApplicationForm />
     </section>
 
@@ -153,7 +153,7 @@ function visitRandomFriend() {
 
     <button
       data-testid="friend-mobile-drawer-toggle"
-      class="friend-mobile-application-trigger md:hidden"
+      class="friend-mobile-application-trigger lg:hidden"
       :style="mobileTriggerStyle"
       type="button"
       @blur="resetMobileTriggerTilt"
@@ -167,9 +167,11 @@ function visitRandomFriend() {
 
     <Transition name="friend-drawer">
       <div
-        v-if="isMobileApplicationOpen"
+        v-show="isMobileApplicationOpen"
+        :aria-hidden="!isMobileApplicationOpen"
         data-testid="friend-mobile-drawer"
-        class="friend-mobile-drawer md:hidden"
+        class="friend-mobile-drawer lg:hidden"
+        :inert="!isMobileApplicationOpen"
       >
         <button
           class="friend-mobile-drawer__backdrop"
@@ -403,15 +405,27 @@ function visitRandomFriend() {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
-:root[data-theme="night"] .friend-links-pane__random {
-  background: rgba(8, 12, 24, 0.28);
-}
-
+:root[data-theme="night"] .friend-links-pane__random,
 :root[data-theme="night"] .friend-links-pane__travellings {
   background: rgba(8, 12, 24, 0.28);
 }
 
-@media (min-width: 768px) {
+@media (max-width: 639px) {
+  .friend-links-pane__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .friend-links-pane__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .friend-mobile-application-trigger {
+    display: none;
+  }
+
   .friend-links-pane {
     top: 12vh;
     right: 4vw;

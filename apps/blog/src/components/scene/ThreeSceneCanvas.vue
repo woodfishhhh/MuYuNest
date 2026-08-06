@@ -4,6 +4,11 @@ import { useRouter } from "vue-router";
 import gsap from "gsap";
 import * as THREE from "three";
 
+import {
+  clearSceneMagneticPointerTarget,
+  projectNdcBoundsToPointerTarget,
+  setSceneMagneticPointerTarget,
+} from "@/utils/magnetic-pointer";
 import { createCircleTexture } from "@/components/scene/circle-texture";
 import {
   getGeometryTransformTarget,
@@ -19,7 +24,6 @@ import {
   shouldTweenRotation,
 } from "@/components/scene/hypercube-rotation";
 import {
-  isDesktopWorksOrbitMode,
   resolveScenePointerDownAction,
   shouldRunSceneHoverRaycast,
   shouldRaycastSceneGeometry,
@@ -34,6 +38,7 @@ import {
 } from "@/components/scene/works-orbit-cards";
 import { useHypercube, type Hypercube } from "@/composables/useHypercube";
 import { useMobiusStrip, type MobiusStrip } from "@/composables/useMobiusStrip";
+import { supportsContentLayout } from "@/utils/responsive";
 import { useStarField, type StarField } from "@/composables/useStarField";
 import { useTheme, type ThemeMode } from "@/composables/useTheme";
 import { useThreeScene, type ThreeScene } from "@/composables/useThreeScene";
@@ -57,11 +62,22 @@ const { theme } = useTheme();
 
 const isDragging = ref(false);
 const cardHovered = ref(false);
+const cardActionHovered = ref(false);
 const cardGrabActive = ref(false);
 const geometryHovered = ref(false);
 const isMobile = ref(false);
 const supportsWorksOrbit = ref(false);
-const hasCardHoverOnly = computed(() => cardHovered.value && !cardGrabActive.value);
+const hasWorkActionHover = computed(
+  () => cardActionHovered.value && !cardGrabActive.value,
+);
+const hasWorkCardGrabHover = computed(
+  () =>
+    store.mode === "works" &&
+    store.worksViewMode === "orbit" &&
+    cardHovered.value &&
+    !cardActionHovered.value &&
+    !cardGrabActive.value,
+);
 
 const onPointerDown = () => {
   if (store.isFocusing) isDragging.value = true;
@@ -71,6 +87,9 @@ const onPointerUp = () => {
 };
 const onPointerLeave = () => {
   isDragging.value = false;
+  pointerInsideCanvas = false;
+  clearSceneMagneticPointerTarget();
+  if (!worksOrbitCards?.isInteracting()) pointer.set(0, 0);
 };
 const onClickBackground = (event: MouseEvent) => {
   if (suppressNextCanvasClick) {
@@ -121,6 +140,7 @@ let sceneTimer: THREE.Timer | null = null;
 let circleTexture: THREE.CanvasTexture | null = null;
 let reducedMotionQuery: MediaQueryList | null = null;
 let prefersReducedMotion = false;
+let pointerInsideCanvas = false;
 let suppressNextCanvasClick = false;
 let sceneDisposed = false;
 
@@ -268,7 +288,7 @@ function updateGeometryTransform(immediate = false) {
   const height = container.value.clientHeight;
   let splitCenterOffset = 0;
 
-  if (width >= 768) {
+  if (supportsContentLayout(width)) {
     const aspect = width / Math.max(height, 1);
     const distance = 12;
     // For author view, panel is exactly 50vw wide, so left side bounds are 50vw. Center of that is 0.5.
@@ -337,7 +357,7 @@ function handleResize() {
   if (!container.value || !threeScene) return;
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
-  isMobile.value = width < 768;
+  isMobile.value = !supportsContentLayout(width);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   applyThemeGeometryState(theme.value);
 
@@ -358,7 +378,8 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
   if (!container.value || !threeScene || !worksOrbitCards) return;
   const activeGeometry = getActiveGeometry();
   const visible =
-    isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value) &&
+    store.mode === "works" &&
+    supportsWorksOrbit.value &&
     !store.isFocusing &&
     !!activeGeometry;
 
@@ -378,6 +399,7 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     center: geometryWorldCenter,
     delta,
     elapsed,
+    layout: store.worksViewMode,
     pointerNdc: pointer,
     reducedMotion: prefersReducedMotion,
     viewport: worksViewport,
@@ -388,6 +410,7 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     worksOrbitCards.setHovered(null);
     worksOrbitCards.clearInteraction();
     cardHovered.value = false;
+    cardActionHovered.value = false;
     cardGrabActive.value = false;
   }
 
@@ -435,11 +458,35 @@ function updatePointerFromEvent(event: PointerEvent | MouseEvent) {
 }
 
 function handlePointerMove(event: PointerEvent) {
+  pointerInsideCanvas = true;
   updatePointerFromEvent(event);
   if (worksOrbitCards?.isInteracting()) {
     event.stopPropagation();
     worksOrbitCards.drag(pointer);
   }
+}
+
+function syncWorksMagneticPointerTarget(hit: ReturnType<WorksOrbitCards["pick"]>) {
+  if (!pointerInsideCanvas || !hit || !worksOrbitCards || !container.value) {
+    clearSceneMagneticPointerTarget();
+    return;
+  }
+
+  const screenBounds = worksOrbitCards.getActionScreenBounds(hit);
+  if (!screenBounds) {
+    clearSceneMagneticPointerTarget();
+    return;
+  }
+
+  const viewport = container.value.getBoundingClientRect();
+  setSceneMagneticPointerTarget(
+    projectNdcBoundsToPointerTarget(
+      `works-action:${hit.slug}:${hit.action}`,
+      screenBounds,
+      viewport,
+      4,
+    ),
+  );
 }
 
 function releaseCardInteraction(event?: PointerEvent) {
@@ -467,28 +514,33 @@ function handleCanvasPointerDown(event: PointerEvent) {
   updatePointerFromEvent(event);
   raycaster.setFromCamera(pointer, threeScene.camera);
 
-  if (
-    isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value)
-  ) {
-    const worksHit = worksOrbitCards?.pick(raycaster, pointer);
+  if (store.mode === "works" && supportsWorksOrbit.value) {
+    const worksActionHit = worksOrbitCards?.pick(raycaster, pointer);
+    const worksCardHit = worksOrbitCards?.pickHover(raycaster, pointer);
     const action = resolveScenePointerDownAction({
       mode: store.mode,
       worksViewMode: store.worksViewMode,
       isFocusing: store.isFocusing,
       isMobile: !supportsWorksOrbit.value,
-      hasWorksHit: !!worksHit,
+      hasWorksActionHit: !!worksActionHit,
+      hasWorksCardHit: !!worksCardHit,
       hasGeometryHit: false,
     });
 
-    if (action === "grab-card" && worksHit) {
+    if (action === "grab-card" && worksCardHit) {
       event.stopPropagation();
       suppressNextCanvasClick = true;
       if (event.currentTarget instanceof HTMLCanvasElement) {
         event.currentTarget.setPointerCapture(event.pointerId);
       }
-      worksOrbitCards?.beginDrag(worksHit, pointer);
+      worksOrbitCards?.beginDrag(worksCardHit, pointer);
       cardHovered.value = true;
       cardGrabActive.value = true;
+    }
+    if (action === "activate-card" && worksActionHit) {
+      event.stopPropagation();
+      suppressNextCanvasClick = true;
+      window.open(worksActionHit.url, "_blank", "noopener,noreferrer");
     }
     return;
   }
@@ -506,7 +558,8 @@ function handleCanvasPointerDown(event: PointerEvent) {
     worksViewMode: store.worksViewMode,
     isFocusing: store.isFocusing,
     isMobile: isMobile.value,
-    hasWorksHit: false,
+    hasWorksActionHit: false,
+    hasWorksCardHit: false,
     hasGeometryHit: intersects.length > 0,
   });
 
@@ -528,7 +581,7 @@ onMounted(async () => {
 
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
-  isMobile.value = width < 768;
+  isMobile.value = !supportsContentLayout(width);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
 
   threeScene = useThreeScene({
@@ -687,17 +740,23 @@ onMounted(async () => {
     let worksHit: ReturnType<WorksOrbitCards["pick"]> = null;
     if (
       !store.isFocusing &&
-      isDesktopWorksOrbitMode(store.mode, store.worksViewMode, !supportsWorksOrbit.value) &&
+      store.mode === "works" &&
+      supportsWorksOrbit.value &&
       worksOrbitCards
     ) {
       raycaster.setFromCamera(pointer, threeScene.camera);
       worksHit = worksOrbitCards.pick(raycaster, pointer);
-      worksOrbitCards.setHovered(worksHit);
-      cardHovered.value = !!worksHit || worksOrbitCards.isInteracting();
+      const worksHoverHit = worksOrbitCards.pickHover(raycaster, pointer);
+      worksOrbitCards.setHovered(worksHoverHit);
+      syncWorksMagneticPointerTarget(worksHit);
+      cardHovered.value = !!worksHoverHit || worksOrbitCards.isInteracting();
+      cardActionHovered.value = !!worksHit;
       cardGrabActive.value = worksOrbitCards.isInteracting();
     } else {
       worksOrbitCards?.setHovered(null);
+      clearSceneMagneticPointerTarget();
       cardHovered.value = false;
+      cardActionHovered.value = false;
       cardGrabActive.value = false;
     }
 
@@ -739,6 +798,7 @@ onMounted(async () => {
 watch(
   () => store.mode,
   (mode, previousMode) => {
+    clearSceneMagneticPointerTarget();
     geometryHovered.value = false;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
     if (!hasEquivalentGeometryTransformMode(mode, previousMode)) {
@@ -751,7 +811,9 @@ watch(
 watch(
   () => store.worksViewMode,
   () => {
+    clearSceneMagneticPointerTarget();
     cardHovered.value = false;
+    cardActionHovered.value = false;
     cardGrabActive.value = false;
     worksOrbitCards?.clearInteraction();
     worksOrbitCards?.setHovered(null);
@@ -777,6 +839,7 @@ watch(theme, (nextTheme) => {
     targetRotation.copy(geometry.group.rotation);
   }
   cardHovered.value = false;
+  cardActionHovered.value = false;
   cardGrabActive.value = false;
   geometryHovered.value = false;
   lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
@@ -788,6 +851,7 @@ watch(theme, (nextTheme) => {
 
 onBeforeUnmount(() => {
   sceneDisposed = true;
+  clearSceneMagneticPointerTarget();
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
   if (container.value) container.value.removeEventListener("pointermove", handlePointerMove);
@@ -853,15 +917,19 @@ onBeforeUnmount(() => {
     ref="container"
     class="absolute inset-0 z-0 h-[100dvh]"
     :class="{
-      'cursor-grab': (store.isFocusing && !isDragging) || hasCardHoverOnly,
+      'cursor-grab': (store.isFocusing && !isDragging) || hasWorkCardGrabHover,
       'cursor-grabbing': (store.isFocusing && isDragging) || cardGrabActive,
-      'cursor-pointer': geometryHovered && !store.isFocusing,
+      'cursor-pointer': (geometryHovered && !store.isFocusing) || hasWorkActionHover,
     }"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
     @pointerleave="onPointerLeave"
     @click="onClickBackground"
   >
-    <canvas ref="canvasRef" class="h-full w-full outline-none"></canvas>
+    <canvas
+      ref="canvasRef"
+      class="h-full w-full outline-none"
+      data-liquid-gl-snapshot
+    ></canvas>
   </div>
 </template>

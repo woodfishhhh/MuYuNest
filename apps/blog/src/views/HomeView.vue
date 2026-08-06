@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main data-home-stage class="relative min-h-screen overflow-hidden text-[var(--stage-fg)]">
+  <main data-home-stage class="relative h-dvh overflow-hidden text-[var(--stage-fg)]">
     <SiteNav />
 
     <SlideController :blog-scroll-container="blogScrollContainerRef">
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
           class="home-panel-cache pointer-events-auto absolute inset-0"
         >
           <div class="flex h-full w-full items-center justify-center">
-            <AuthorPanel v-if="author" :author="author" />
+            <AuthorPanel v-if="author" :active="siteStore.mode === 'author'" :author="author" />
             <div
               v-else
               class="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-6 py-7 text-[var(--stage-hint)]"
@@ -342,5 +342,10 @@ onBeforeUnmount(() => {
   content-visibility: hidden;
   pointer-events: none;
   visibility: hidden;
+}
+
+/* liquid-gl draws in a body-level canvas, so panel visibility alone cannot suspend its lenses. */
+.home-panel-cache[data-panel-active="false"] :deep([data-liquid-gl-target]) {
+  display: none;
 }
 </style>

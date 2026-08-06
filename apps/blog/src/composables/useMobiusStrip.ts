@@ -35,6 +35,15 @@ const MOBIUS_RING_POSE = {
   x: 0.32,
   y: 0.36,
 } as const;
+const MOBIUS_RING_POSE_RESPONSE = 3.5;
+
+function wrapAngle(angle: number) {
+  return Math.atan2(Math.sin(angle), Math.cos(angle));
+}
+
+export function resolveNearestMobiusPoseAngle(current: number, target: number) {
+  return current + Math.atan2(Math.sin(target - current), Math.cos(target - current));
+}
 
 function indexFor(segmentsV: number, u: number, v: number) {
   return u * segmentsV + v;
@@ -138,22 +147,28 @@ export function useMobiusStrip(): MobiusStrip {
   group.add(occluder);
 
   let interactionIntensity = 0;
+  let interactionPose: { x: number; y: number } | null = null;
 
   function update(delta: number) {
     const intensity = THREE.MathUtils.clamp(interactionIntensity, 0, 1);
     const normalMotion = 1 - intensity * 0.6;
-    group.rotation.y += delta * MOBIUS_ROTATION_SPEED.y * normalMotion;
-    group.rotation.x += delta * MOBIUS_ROTATION_SPEED.x * normalMotion;
+    line.rotation.y += delta * MOBIUS_ROTATION_SPEED.y * normalMotion;
+    line.rotation.x += delta * MOBIUS_ROTATION_SPEED.x * normalMotion;
 
-    if (intensity <= 0) return;
+    if (intensity > 0) {
+      interactionPose ??= {
+        x: resolveNearestMobiusPoseAngle(group.rotation.x, MOBIUS_RING_POSE.x),
+        y: resolveNearestMobiusPoseAngle(group.rotation.y, MOBIUS_RING_POSE.y),
+      };
 
-    const poseAlpha = 1 - Math.exp(-delta * 10 * intensity);
-    group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, MOBIUS_RING_POSE.x, poseAlpha);
-    group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, MOBIUS_RING_POSE.y, poseAlpha);
-    group.rotation.z += delta * (1.15 + intensity * 0.65) * intensity;
+      const poseAlpha = 1 - Math.exp(-delta * MOBIUS_RING_POSE_RESPONSE * intensity);
+      group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, interactionPose.x, poseAlpha);
+      group.rotation.y = THREE.MathUtils.lerp(group.rotation.y, interactionPose.y, poseAlpha);
+      group.rotation.z += delta * (1.15 + intensity * 0.65) * intensity;
 
-    const ribbonSpin = delta * 0.32 * intensity;
-    line.rotation.z += ribbonSpin;
+      line.rotation.z += delta * 0.32 * intensity;
+    }
+
     hitMesh.rotation.copy(line.rotation);
     occluder.rotation.copy(line.rotation);
   }
@@ -167,7 +182,23 @@ export function useMobiusStrip(): MobiusStrip {
   }
 
   function setInteractionIntensity(value: number) {
-    interactionIntensity = THREE.MathUtils.clamp(value, 0, 1);
+    const nextIntensity = THREE.MathUtils.clamp(value, 0, 1);
+
+    if (nextIntensity > 0 && interactionIntensity <= 0) {
+      group.rotation.set(
+        wrapAngle(group.rotation.x),
+        wrapAngle(group.rotation.y),
+        wrapAngle(group.rotation.z),
+      );
+      interactionPose = {
+        x: resolveNearestMobiusPoseAngle(group.rotation.x, MOBIUS_RING_POSE.x),
+        y: resolveNearestMobiusPoseAngle(group.rotation.y, MOBIUS_RING_POSE.y),
+      };
+    } else if (nextIntensity <= 0) {
+      interactionPose = null;
+    }
+
+    interactionIntensity = nextIntensity;
   }
 
   function dispose() {

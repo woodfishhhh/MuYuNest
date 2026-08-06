@@ -1,16 +1,17 @@
 import type { SiteMode, WorksViewMode } from "@/stores/site";
+import { supportsWideLayout } from "@/utils/responsive";
 
 export const SCENE_HOVER_RAYCAST_INTERVAL = 1 / 30;
-export const WORKS_ORBIT_MIN_WIDTH = 1024;
 
-export type ScenePointerDownAction = "grab-card" | "focus-geometry" | "none";
+export type ScenePointerDownAction = "activate-card" | "grab-card" | "focus-geometry" | "none";
 
 export interface ScenePointerDownActionOptions {
   mode: SiteMode;
   worksViewMode: WorksViewMode;
   isFocusing: boolean;
   isMobile: boolean;
-  hasWorksHit: boolean;
+  hasWorksActionHit: boolean;
+  hasWorksCardHit: boolean;
   hasGeometryHit: boolean;
 }
 
@@ -23,7 +24,7 @@ export function isDesktopWorksOrbitMode(
 }
 
 export function supportsWorksOrbitViewport(width: number) {
-  return width >= WORKS_ORBIT_MIN_WIDTH;
+  return supportsWideLayout(width);
 }
 
 export function shouldRaycastSceneGeometry(
@@ -48,13 +49,15 @@ export function resolveScenePointerDownAction({
   worksViewMode,
   isFocusing,
   isMobile,
-  hasWorksHit,
+  hasWorksActionHit,
+  hasWorksCardHit,
   hasGeometryHit,
 }: ScenePointerDownActionOptions): ScenePointerDownAction {
   if (isFocusing) return "none";
   if (mode === "works" && !isMobile) {
-    if (worksViewMode !== "orbit") return "none";
-    return hasWorksHit ? "grab-card" : "none";
+    if (hasWorksActionHit) return "activate-card";
+    if (worksViewMode === "orbit" && hasWorksCardHit) return "grab-card";
+    return "none";
   }
 
   if (!shouldRaycastSceneGeometry(mode, worksViewMode, isFocusing, isMobile)) {

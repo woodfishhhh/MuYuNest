@@ -58,7 +58,7 @@ function isActive(id: (typeof navItems)[number]["id"]) {
       </a>
     </div>
 
-    <div class="pointer-events-auto hidden items-center gap-3 md:flex">
+    <div data-testid="site-nav-wide" class="pointer-events-auto hidden items-center gap-3 lg:flex">
       <div data-nav-group="desktop" class="flex gap-8">
         <RouterLink
           v-for="item in navItems"
@@ -89,7 +89,7 @@ function isActive(id: (typeof navItems)[number]["id"]) {
       />
     </div>
 
-    <div class="pointer-events-auto flex items-center gap-2 md:hidden">
+    <div data-testid="site-nav-compact" class="pointer-events-auto flex items-center gap-2 lg:hidden">
       <ThemeToggle
         data-nav-theme-toggle="mobile"
         :theme="theme"
@@ -123,7 +123,7 @@ function isActive(id: (typeof navItems)[number]["id"]) {
     <Transition name="fade-slide">
       <div
         v-if="isOpen"
-        class="pointer-events-auto absolute right-4 top-16 sm:right-6 sm:top-20 flex min-w-[150px] flex-col gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--background)] p-4 shadow-lg md:hidden"
+        class="pointer-events-auto absolute right-4 top-16 sm:right-6 sm:top-20 flex min-w-[150px] flex-col gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--background)] p-4 shadow-lg lg:hidden"
       >
         <RouterLink
           v-for="item in navItems"

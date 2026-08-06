@@ -49,4 +49,48 @@ describe("AuthorCapsuleScreen", () => {
     expect(dropzoneRule).toMatch(/z-index:\s*0;/);
     expect(source).toMatch(/\.author-capsule--dropzone\.is-dropzone-visible\s*{[^}]+opacity:\s*1;/s);
   });
+
+  it("marks dark monochrome logos for night-theme inversion", async () => {
+    vi.resetModules();
+    vi.doMock("@/composables/useMatterCapsules", () => ({
+      useMatterCapsules: () => ({
+        activateSkill: () => {},
+      }),
+    }));
+
+    const AuthorCapsuleScreen = (await import("@/components/home/author/AuthorCapsuleScreen.vue"))
+      .default;
+    const skills = [
+      "Express",
+      "Matter.js",
+      "GitHub Actions",
+      "Next.js",
+      "Three.js",
+      "shadcn/ui",
+      "Vue",
+    ].map(
+      (title) => ({
+        title,
+        color: "#000000",
+        img: `/${title}.svg`,
+        officialUrl: "https://example.com/",
+      }),
+    );
+    const wrapper = mount(AuthorCapsuleScreen, {
+      props: { active: true, skills },
+    });
+
+    expect(wrapper.findAll(".author-capsule__icon--night-invert")).toHaveLength(6);
+    expect(wrapper.find('img[alt="Vue"]')?.classes()).not.toContain(
+      "author-capsule__icon--night-invert",
+    );
+
+    const source = readFileSync(
+      resolve(process.cwd(), "src/components/home/author/AuthorCapsuleScreen.vue"),
+      "utf8",
+    );
+    expect(source).toContain(
+      ':root[data-theme="night"] .author-capsule__icon--night-invert',
+    );
+  });
 });

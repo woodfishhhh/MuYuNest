@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from "vue";
+import { computed } from "vue";
 
 import { useTheme } from "@/composables/useTheme";
 import type { WorkProjectData } from "@/types/content";
 
 import LiquidGlassCard from "./LiquidGlassCard.vue";
 import WorkActionLinks from "./WorkActionLinks.vue";
-import { createWorksCardPresentation, WORKS_CARD_PRESET } from "./works-card-preset";
+import { createWorksCardPresentation } from "./works-card-preset";
 
 const props = defineProps<{
   works: WorkProjectData[];
 }>();
 
 const { theme } = useTheme();
-const caseSurface = useTemplateRef<HTMLElement>("caseSurface");
 
 const caseItems = computed(() =>
   props.works.map((work, index) => createWorksCardPresentation(work, index)),
@@ -22,26 +21,20 @@ const caseItems = computed(() =>
 
 <template>
   <section
-    ref="caseSurface"
     class="works-case"
     :class="{ 'works-case--day': theme === 'day' }"
     data-testid="works-view-case"
   >
-    <div class="works-case__list" data-layout="card-example-grid">
+    <div class="works-case__list" data-layout="webgl-glass-grid">
       <LiquidGlassCard
         v-for="item in caseItems"
         :key="item.work.slug"
-        :aberration-intensity="WORKS_CARD_PRESET.aberrationIntensity"
-        :blur-amount="0.5"
         class="works-case__glass"
-        :corner-radius="WORKS_CARD_PRESET.cornerRadius"
+        :corner-radius="8"
         data-glass="liquid"
         data-testid="works-item"
-        :displacement-scale="WORKS_CARD_PRESET.displacementScale"
-        :elasticity="0"
-        :mouse-container="caseSurface"
-        :padding="WORKS_CARD_PRESET.padding"
-        :saturation="WORKS_CARD_PRESET.saturation * 100"
+        padding="clamp(1.125rem, 5vw, 2rem)"
+        variant="case"
       >
         <article class="works-case__card">
           <h3 class="works-case__title">{{ item.title }}</h3>
@@ -90,7 +83,7 @@ const caseItems = computed(() =>
 
 .works-case__card {
   display: flex;
-  width: 18rem;
+  width: 100%;
   min-width: 0;
   min-height: 11.75rem;
   flex-direction: column;
@@ -103,7 +96,7 @@ const caseItems = computed(() =>
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: 0;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .works-case__identity {
@@ -143,14 +136,11 @@ const caseItems = computed(() =>
 }
 
 .works-case__summary p {
-  display: -webkit-box;
   margin: 0.18rem 0 0;
-  overflow: hidden;
   color: var(--works-card-muted);
   font-size: 0.76rem;
   line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .works-case--day {
@@ -163,41 +153,18 @@ const caseItems = computed(() =>
   background: rgba(255, 255, 255, 0.3);
 }
 
-.works-case--day .works-case__glass::after {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  border: 1px solid rgba(0, 0, 0, 0.62);
-  border-radius: 32px;
-  box-sizing: border-box;
-  content: "";
-  pointer-events: none;
-}
-
 @media (max-width: 1023px) {
   .works-case {
     align-content: start;
     overflow: visible;
-    padding: 0.5rem 1rem 2rem;
+    padding: 0.5rem 0 2rem;
   }
 
   .works-case__list {
-    grid-template-columns: minmax(0, 22rem);
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
     gap: 1rem;
-  }
-
-  .works-case__card {
-    width: min(18rem, calc(100vw - 6rem));
-  }
-}
-
-@media (max-width: 359px) {
-  .works-case {
-    padding-inline: 0.75rem;
-  }
-
-  .works-case__card {
-    width: calc(100vw - 5.5rem);
   }
 }
 </style>

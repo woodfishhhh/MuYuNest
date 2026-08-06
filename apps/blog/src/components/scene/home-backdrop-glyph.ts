@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import type { ThemeMode } from "@/composables/useTheme";
+import { supportsContentLayout } from "@/utils/responsive";
 
 interface HomeBackdropGlyphOptions {
   texture: THREE.Texture;
@@ -55,7 +56,7 @@ function applyTheme(material: THREE.MeshBasicMaterial, theme: ThemeMode) {
 }
 
 function getGlyphWidth(viewport: HomeBackdropGlyphViewport) {
-  return viewport.width < 768 ? 11.8 : 13.8;
+  return supportsContentLayout(viewport.width) ? 13.8 : 11.8;
 }
 
 export async function loadHomeBackdropTexture(): Promise<THREE.Texture> {
@@ -109,7 +110,7 @@ export function createHomeBackdropGlyph({
   function updateViewport(viewport: HomeBackdropGlyphViewport) {
     const width = getGlyphWidth(viewport);
     mesh.scale.set(width, width / GLYPH_ASPECT, 1);
-    mesh.position.y = viewport.width < 768 ? 0.08 : -0.08;
+    mesh.position.y = supportsContentLayout(viewport.width) ? -0.08 : 0.08;
   }
 
   function dispose() {

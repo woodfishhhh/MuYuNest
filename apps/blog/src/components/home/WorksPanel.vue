@@ -3,34 +3,33 @@ import { computed, onMounted, onUnmounted, shallowRef } from "vue";
 
 import WorksCaseView from "@/components/home/works/WorksCaseView.vue";
 import WorksViewToggle from "@/components/home/works/WorksViewToggle.vue";
-import { WORKS_ORBIT_MIN_WIDTH } from "@/components/scene/scene-interaction";
 import { useSiteStore } from "@/stores/site";
 import type { WorkProjectData } from "@/types/content";
+import { WIDE_LAYOUT_MEDIA_QUERY } from "@/utils/responsive";
 
 defineProps<{
   works: WorkProjectData[];
 }>();
 
-const largeViewportQuery = `(min-width: ${WORKS_ORBIT_MIN_WIDTH}px)`;
-const isLargeViewport = shallowRef(resolveIsLargeViewport());
+const isWideLayout = shallowRef(resolveIsWideLayout());
 const store = useSiteStore();
 
 let mediaQueryList: MediaQueryList | null = null;
 
-const isDesktopOrbit = computed(() => isLargeViewport.value && store.worksViewMode === "orbit");
-const showCaseView = computed(() => !isLargeViewport.value || store.worksViewMode === "case");
-const panelDescription = "作品卡片已进入WebGL轨道。按住卡片拖向中心,松手打开Live站点。";
+const isDesktopOrbit = computed(() => isWideLayout.value && store.worksViewMode === "orbit");
+const showCaseView = computed(() => !isWideLayout.value);
+const panelDescription = "把卡片拖向屏幕中心进入项目";
 
-function resolveIsLargeViewport() {
+function resolveIsWideLayout() {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return true;
   }
 
-  return window.matchMedia(largeViewportQuery).matches;
+  return window.matchMedia(WIDE_LAYOUT_MEDIA_QUERY).matches;
 }
 
 function handleMediaChange(event: MediaQueryListEvent) {
-  isLargeViewport.value = event.matches;
+  isWideLayout.value = event.matches;
 }
 
 onMounted(() => {
@@ -38,8 +37,8 @@ onMounted(() => {
     return;
   }
 
-  mediaQueryList = window.matchMedia(largeViewportQuery);
-  isLargeViewport.value = mediaQueryList.matches;
+  mediaQueryList = window.matchMedia(WIDE_LAYOUT_MEDIA_QUERY);
+  isWideLayout.value = mediaQueryList.matches;
 
   if (typeof mediaQueryList.addEventListener === "function") {
     mediaQueryList.addEventListener("change", handleMediaChange);
@@ -70,14 +69,14 @@ onUnmounted(() => {
         <p v-if="isDesktopOrbit">{{ panelDescription }}</p>
       </div>
       <WorksViewToggle
-        v-if="isLargeViewport"
+        v-if="isWideLayout"
         :model-value="store.worksViewMode"
         class="works-panel__toggle"
         @update:model-value="store.setWorksViewMode"
       />
     </div>
 
-    <ul v-if="isDesktopOrbit" class="works-panel__a11y-links" aria-label="作品链接">
+    <ul v-if="isWideLayout" class="works-panel__a11y-links" aria-label="作品链接">
       <li v-for="work in works" :key="work.slug">
         <a :href="work.liveUrl" rel="noreferrer noopener" target="_blank">
           {{ work.name }}
@@ -90,10 +89,8 @@ onUnmounted(() => {
 
     <Transition name="works-case-view">
       <div
-        v-show="showCaseView"
+        v-if="showCaseView"
         class="works-panel__body"
-        :aria-hidden="showCaseView ? undefined : 'true'"
-        :inert="showCaseView ? undefined : true"
       >
         <WorksCaseView :works="works" />
       </div>

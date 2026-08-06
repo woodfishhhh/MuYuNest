@@ -135,10 +135,10 @@ function resetTilt() {
         />
 
         <div class="min-w-0 flex-1">
-          <h3 class="truncate text-xl font-semibold text-[var(--stage-fg)]">
+          <h3 class="friend-link-card__title text-xl font-semibold text-[var(--stage-fg)]">
             {{ props.link.name }}
           </h3>
-          <p class="mt-2 truncate text-[12px] text-[var(--stage-hint-strong)]">
+          <p class="friend-link-card__domain mt-2 text-[12px] text-[var(--stage-hint-strong)]">
             {{ domain }}
           </p>
         </div>
@@ -227,8 +227,14 @@ function resetTilt() {
   transform: translateZ(18px);
 }
 
-.friend-link-card__description {
+.friend-link-card__description,
+.friend-link-card__title,
+.friend-link-card__domain {
   overflow-wrap: anywhere;
+}
+
+.friend-link-card__title {
+  line-height: 1.2;
 }
 
 .friend-link-card__pin {

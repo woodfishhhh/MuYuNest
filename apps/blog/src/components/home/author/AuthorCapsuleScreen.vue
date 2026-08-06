@@ -12,6 +12,18 @@ const props = defineProps<{
 const sceneRef = useTemplateRef<HTMLElement>("scene");
 const skillsRef = shallowRef(props.skills);
 const activeRef = computed(() => props.active);
+const NIGHT_INVERTED_ICON_TITLES = new Set([
+  "Express",
+  "GitHub Actions",
+  "Matter.js",
+  "Next.js",
+  "shadcn/ui",
+  "Three.js",
+]);
+
+function usesNightInvertedIcon(title: string) {
+  return NIGHT_INVERTED_ICON_TITLES.has(title);
+}
 
 const { activateSkill } = useMatterCapsules({
   active: activeRef,
@@ -59,6 +71,9 @@ const { activateSkill } = useMatterCapsules({
               :src="skill.img"
               draggable="false"
               class="author-capsule__icon"
+              :class="{
+                'author-capsule__icon--night-invert': usesNightInvertedIcon(skill.title),
+              }"
             />
             <span class="author-capsule__label">{{ skill.title }}</span>
           </button>
@@ -183,6 +198,11 @@ const { activateSkill } = useMatterCapsules({
   object-fit: contain;
   flex-shrink: 0;
   pointer-events: none;
+  transition: filter 0.2s ease;
+}
+
+:root[data-theme="night"] .author-capsule__icon--night-invert {
+  filter: invert(1) brightness(1.12);
 }
 
 .author-capsule__label {

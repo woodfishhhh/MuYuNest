@@ -27,6 +27,9 @@ importers:
       gsap:
         specifier: ^3.14.2
         version: 3.15.0
+      liquid-gl:
+        specifier: 2.0.1
+        version: 2.0.1
       matter-js:
         specifier: ^0.20.0
         version: 0.20.0
@@ -4347,6 +4350,9 @@ packages:
 
   linkify-it@5.0.0:
     resolution: {integrity: sha512-5aHCbzQRADcdP+ATqnDuhhJ/MRIqDkZX5pyjFHRRysS8vZ5AbqGEoFIb6pYHPZ+L/OC2Lc+xT8uHVVR5CAK/wQ==}
+
+  liquid-gl@2.0.1:
+    resolution: {integrity: sha512-4HTE7uwAeTlT3VZe6gUSHrGpfIb8SivqQAG9TAel9HJp776rqHbEpgviFoaGsgf1KAsrIkQ/uyOuVxqixOWMZg==}
 
   listhen@1.10.0:
     resolution: {integrity: sha512-kfz4C0OrC6IpaVMtYDJtf6PFjurxe9NBBoDAh/o2p587INryFOO4DQ9OetbCdDrWFt1m1CJKvYrzkGsuPHw8nQ==}
@@ -10372,6 +10378,8 @@ snapshots:
   linkify-it@5.0.0:
     dependencies:
       uc.micro: 2.1.0
+
+  liquid-gl@2.0.1: {}
 
   listhen@1.10.0(srvx@0.11.16):
     dependencies:

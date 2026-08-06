@@ -1,7 +1,15 @@
-import { nextTick, onBeforeUnmount, onMounted, shallowRef, type ShallowRef } from "vue";
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  type Ref,
+  type ShallowRef,
+} from "vue";
 import gsap from "gsap";
 
 interface UseAuthorSliderOptions {
+  active?: Readonly<Ref<boolean>>;
   viewportRef: Readonly<ShallowRef<HTMLElement | null>>;
   trackRef: Readonly<ShallowRef<HTMLElement | null>>;
 }
@@ -73,7 +81,7 @@ export function stepAuthorSlideIndex(currentIndex: number, direction: -1 | 1, to
   return Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
 }
 
-export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOptions) {
+export function useAuthorSlider({ active, viewportRef, trackRef }: UseAuthorSliderOptions) {
   const activeIndex = shallowRef(0);
 
   let transitionTween: gsap.core.Tween | null = null;
@@ -82,6 +90,10 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   let touchStartTarget: EventTarget | null = null;
   let touchStartScrollableStates: ScrollableAncestorState[] = [];
   let unlockTimer: number | null = null;
+
+  function isInteractionActive() {
+    return active?.value ?? true;
+  }
 
   function getSlides() {
     if (!trackRef.value) {
@@ -185,6 +197,10 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   }
 
   function handleWheel(event: WheelEvent) {
+    if (!isInteractionActive()) {
+      return;
+    }
+
     if (Math.abs(event.deltaY) < WHEEL_THRESHOLD) {
       return;
     }
@@ -199,12 +215,24 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   }
 
   function handleTouchStart(event: TouchEvent) {
+    if (!isInteractionActive()) {
+      touchStartTarget = null;
+      touchStartScrollableStates = [];
+      return;
+    }
+
     touchStartY = event.touches[0]?.clientY ?? 0;
     touchStartTarget = event.target;
     touchStartScrollableStates = getScrollableAncestorStates(event.target, viewportRef.value);
   }
 
   function handleTouchEnd(event: TouchEvent) {
+    if (!isInteractionActive()) {
+      touchStartTarget = null;
+      touchStartScrollableStates = [];
+      return;
+    }
+
     const target = touchStartTarget;
     const scrollableStates = touchStartScrollableStates;
     touchStartTarget = null;
@@ -229,6 +257,10 @@ export function useAuthorSlider({ viewportRef, trackRef }: UseAuthorSliderOption
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (!isInteractionActive()) {
+      return;
+    }
+
     if (event.key === "ArrowDown" || event.key === "PageDown" || event.key === " ") {
       event.preventDefault();
       step(1);

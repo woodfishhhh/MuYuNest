@@ -21,7 +21,8 @@ describe("scene interaction routing", () => {
         worksViewMode: "orbit",
         isFocusing: false,
         isMobile: false,
-        hasWorksHit: false,
+        hasWorksActionHit: false,
+        hasWorksCardHit: false,
         hasGeometryHit: true,
       }),
     ).toBe("none");
@@ -29,15 +30,30 @@ describe("scene interaction routing", () => {
     expect(shouldRaycastSceneGeometry("works", "orbit", false, false)).toBe(false);
   });
 
-  it("routes desktop works card hits to grab-card only", () => {
+  it("activates the explicitly hit Works action in Orbit mode", () => {
     expect(
       resolveScenePointerDownAction({
         mode: "works",
         worksViewMode: "orbit",
         isFocusing: false,
         isMobile: false,
-        hasWorksHit: true,
+        hasWorksActionHit: true,
+        hasWorksCardHit: true,
         hasGeometryHit: true,
+      }),
+    ).toBe("activate-card");
+  });
+
+  it("grabs an Orbit card body without treating it as an action link", () => {
+    expect(
+      resolveScenePointerDownAction({
+        mode: "works",
+        worksViewMode: "orbit",
+        isFocusing: false,
+        isMobile: false,
+        hasWorksActionHit: false,
+        hasWorksCardHit: true,
+        hasGeometryHit: false,
       }),
     ).toBe("grab-card");
   });
@@ -49,7 +65,8 @@ describe("scene interaction routing", () => {
         worksViewMode: "orbit",
         isFocusing: false,
         isMobile: false,
-        hasWorksHit: false,
+        hasWorksActionHit: false,
+        hasWorksCardHit: false,
         hasGeometryHit: true,
       }),
     ).toBe("focus-geometry");
@@ -65,7 +82,8 @@ describe("scene interaction routing", () => {
           worksViewMode: "orbit",
           isFocusing: false,
           isMobile: false,
-          hasWorksHit: false,
+          hasWorksActionHit: false,
+          hasWorksCardHit: false,
           hasGeometryHit: true,
         }),
       ).toBe("none");
@@ -74,15 +92,28 @@ describe("scene interaction routing", () => {
     }
   });
 
-  it("disables orbit-card routing when desktop works is in Case mode", () => {
+  it("activates card action links when desktop works is in Case mode", () => {
     expect(
       resolveScenePointerDownAction({
         mode: "works",
         worksViewMode: "case",
         isFocusing: false,
         isMobile: false,
-        hasWorksHit: true,
+        hasWorksActionHit: true,
+        hasWorksCardHit: true,
         hasGeometryHit: true,
+      }),
+    ).toBe("activate-card");
+
+    expect(
+      resolveScenePointerDownAction({
+        mode: "works",
+        worksViewMode: "case",
+        isFocusing: false,
+        isMobile: false,
+        hasWorksActionHit: false,
+        hasWorksCardHit: true,
+        hasGeometryHit: false,
       }),
     ).toBe("none");
 

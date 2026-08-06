@@ -133,7 +133,7 @@ export default defineNuxtConfig({
         {
           "http-equiv": "Content-Security-Policy",
           content:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; base-uri 'self'; form-action 'self' https://github.com;",
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; base-uri 'self'; form-action 'self' https://github.com;",
         },
       ],
       title: "WoodFishNest | 木鱼的鱼窝",

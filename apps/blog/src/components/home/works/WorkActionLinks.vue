@@ -9,27 +9,31 @@ defineProps<{
 
 <template>
   <div class="work-actions" :class="{ 'work-actions--compact': compact }">
-    <a
-      :href="work.liveUrl"
-      :aria-label="`进入 ${work.name} 网站`"
-      class="work-actions__link work-actions__link--live"
-      data-kind="live"
-      rel="noreferrer noopener"
-      target="_blank"
-    >
+    <div class="work-actions__row">
       <span class="work-actions__label">Website:</span>
-      <span class="work-actions__value">进入项目</span>
-    </a>
-    <a
-      :href="work.githubUrl"
-      :aria-label="`查看 ${work.name} GitHub 仓库`"
-      class="work-actions__link work-actions__link--github"
-      data-kind="github"
-      rel="noreferrer noopener"
-      target="_blank"
-    >
+      <a
+        :href="work.liveUrl"
+        :aria-label="`进入 ${work.name} 网站`"
+        class="work-actions__link work-actions__link--live"
+        data-kind="live"
+        data-magnetic-pointer="work-action-live"
+        rel="noreferrer noopener"
+        target="_blank"
+      >
+        进入项目
+      </a>
+    </div>
+    <div class="work-actions__row">
       <span class="work-actions__label">Source:</span>
-      <span class="work-actions__value">
+      <a
+        :href="work.githubUrl"
+        :aria-label="`查看 ${work.name} GitHub 仓库`"
+        class="work-actions__link work-actions__link--github"
+        data-kind="github"
+        data-magnetic-pointer="work-action-github"
+        rel="noreferrer noopener"
+        target="_blank"
+      >
         <svg
           aria-hidden="true"
           class="work-actions__github-icon"
@@ -42,8 +46,8 @@ defineProps<{
           />
         </svg>
         GitHub
-      </span>
-    </a>
+      </a>
+    </div>
   </div>
 </template>
 
@@ -59,12 +63,19 @@ defineProps<{
   padding-top: 0.75rem;
 }
 
-.work-actions__link {
+.work-actions__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-width: 0;
+}
+
+.work-actions__link {
+  display: inline-flex;
   min-height: 1.35rem;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 4px;
   color: var(--works-card-fg, white);
   font-size: 0.78rem;
   letter-spacing: 0;
@@ -90,19 +101,15 @@ defineProps<{
   color: var(--works-card-muted, rgba(255, 255, 255, 0.92));
 }
 
-.work-actions__value {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--works-card-fg, white);
-  text-align: right;
-}
-
 .work-actions__github-icon {
   width: 0.9rem;
   height: 0.9rem;
   flex: none;
 }
 
+@media (pointer: coarse) {
+  .work-actions__link {
+    min-height: 2.75rem;
+  }
+}
 </style>

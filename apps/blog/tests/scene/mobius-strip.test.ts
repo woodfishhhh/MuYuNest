@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vite-plus/test";
 
-import { generateMobiusData, useMobiusStrip } from "@/composables/useMobiusStrip";
+import {
+  generateMobiusData,
+  resolveNearestMobiusPoseAngle,
+  useMobiusStrip,
+} from "@/composables/useMobiusStrip";
 
 function pairKey(a: number, b: number) {
   return `${a}:${b}`;
@@ -92,6 +96,51 @@ describe("mobius strip", () => {
     expect(strip.group.rotation.x).toBeCloseTo(0.32, 1);
     expect(strip.group.rotation.y).toBeCloseTo(0.36, 1);
     expect(strip.group.rotation.z).toBeGreaterThan(1.4);
+
+    strip.dispose();
+  });
+
+  it("keeps idle ribbon motion off the scene-owned parent rotation", () => {
+    const strip = useMobiusStrip();
+
+    strip.update(1);
+
+    expect(strip.group.rotation.x).toBe(0);
+    expect(strip.group.rotation.y).toBe(0);
+    expect(strip.line.rotation.x).toBeCloseTo(0.01);
+    expect(strip.line.rotation.y).toBeCloseTo(0.03);
+    expect(strip.hitMesh.rotation.x).toBeCloseTo(strip.line.rotation.x);
+    expect(strip.occluder.rotation.y).toBeCloseTo(strip.line.rotation.y);
+
+    strip.dispose();
+  });
+
+  it("uses the nearest equivalent ring pose after a long idle rotation", () => {
+    const strip = useMobiusStrip();
+    const manyTurns = Math.PI * 2 * 48;
+    strip.group.rotation.set(manyTurns + 3, -manyTurns - 3, manyTurns + 0.4);
+    const beforeInteraction = strip.group.quaternion.clone();
+
+    strip.setInteractionIntensity(1);
+    expect(Math.abs(strip.group.rotation.x)).toBeLessThanOrEqual(Math.PI);
+    expect(Math.abs(strip.group.rotation.y)).toBeLessThanOrEqual(Math.PI);
+    expect(strip.group.quaternion.angleTo(beforeInteraction)).toBeLessThan(0.000_001);
+
+    let previousFrame = strip.group.quaternion.clone();
+    let maximumFrameRotation = 0;
+    for (let frame = 0; frame < 180; frame += 1) {
+      strip.update(1 / 60);
+      maximumFrameRotation = Math.max(
+        maximumFrameRotation,
+        strip.group.quaternion.angleTo(previousFrame),
+      );
+      previousFrame = strip.group.quaternion.clone();
+    }
+
+    expect(maximumFrameRotation).toBeLessThan(0.25);
+    expect(
+      Math.abs(resolveNearestMobiusPoseAngle(strip.group.rotation.x, 0.32) - strip.group.rotation.x),
+    ).toBeLessThan(0.001);
 
     strip.dispose();
   });

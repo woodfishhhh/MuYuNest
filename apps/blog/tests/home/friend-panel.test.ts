@@ -108,7 +108,7 @@ describe("FriendPanel", () => {
 
     expect(openSpy).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain("请先在你的博客友链页加入 woodfish，再勾选确认。");
-    expect(wrapper.find("[data-testid='friend-application-reminder']").exists()).toBe(false);
+    expect(wrapper.get("[data-testid='friend-application-reminder']").isVisible()).toBe(false);
   });
 
   it("shows friend domains instead of legacy class labels", () => {
@@ -160,11 +160,15 @@ describe("FriendPanel", () => {
       },
     });
 
-    expect(wrapper.find("[data-testid='friend-mobile-drawer']").exists()).toBe(false);
+    expect(wrapper.get("[data-testid='friend-mobile-drawer']").attributes("style")).toContain(
+      "display: none",
+    );
 
     await wrapper.get("[data-testid='friend-mobile-drawer-toggle']").trigger("click");
 
-    expect(wrapper.get("[data-testid='friend-mobile-drawer']").isVisible()).toBe(true);
+    expect(
+      wrapper.get("[data-testid='friend-mobile-drawer']").attributes("style") ?? "",
+    ).not.toContain("display: none");
     expect(
       wrapper
         .get("[data-testid='friend-mobile-drawer']")
@@ -174,7 +178,9 @@ describe("FriendPanel", () => {
 
     await wrapper.get("[data-testid='friend-mobile-drawer-close']").trigger("click");
 
-    expect(wrapper.find("[data-testid='friend-mobile-drawer']").exists()).toBe(false);
+    expect(wrapper.get("[data-testid='friend-mobile-drawer']").attributes("style")).toContain(
+      "display: none",
+    );
   });
 
   it("renders a regular two-column waterfall without repeated loop segments", () => {
@@ -190,6 +196,11 @@ describe("FriendPanel", () => {
     expect(wrapper.find("[data-testid='friend-loop-segment']").exists()).toBe(false);
     expect(wrapper.get("#friend-links-container")).toBeTruthy();
     expect(wrapper.findAll("[data-testid='friend-link-card']")).toHaveLength(2);
+
+    for (const card of wrapper.findAll("[data-testid='friend-link-card']")) {
+      expect(card.attributes("data-glass-preset")).toBeUndefined();
+      expect(card.find(".friend-link-card__pin").exists()).toBe(true);
+    }
 
     expect(columns[0]?.findAll("[data-testid='friend-link-card']").length).toBeGreaterThan(0);
     expect(columns[1]?.findAll("[data-testid='friend-link-card']").length).toBeGreaterThan(0);
@@ -214,6 +225,25 @@ describe("FriendPanel", () => {
       "--card-min-height",
     );
     expect(wrapper.text()).toContain(longDescription);
+  });
+
+  it("lets long friend names and domains wrap instead of clipping them", () => {
+    const wrapper = mount(FriendLinkCard, {
+      props: {
+        link: {
+          name: "Sigirka-善良耙耙柑",
+          link: "https://a-very-long-friend-domain.example.com",
+          avatar: "",
+          descr: "完整展示友链信息。",
+          className: "友情链接",
+        },
+      },
+    });
+
+    expect(wrapper.get("h3").classes()).not.toContain("truncate");
+    expect(wrapper.get("h3").text()).toBe("Sigirka-善良耙耙柑");
+    expect(wrapper.get("h3 + p").classes()).not.toContain("truncate");
+    expect(wrapper.get("h3 + p").text()).toBe("a-very-long-friend-domain.example.com");
   });
 
   it("maps pointer position into per-card pseudo-3d style variables", async () => {
@@ -256,46 +286,23 @@ describe("FriendPanel", () => {
 
     expect(style).toContain("--tilt-rotate-x: 3.90deg");
     expect(style).toContain("--tilt-rotate-y: 3.90deg");
-    expect(style).toContain("--tilt-glare-opacity: 0.34");
+    expect(style).toContain("--tilt-glare-x: 80.0%");
+    expect(style).toContain("--tilt-glare-y: 20.0%");
     expect(style).toContain("--card-lift: -7px");
   });
 
-  it("maps pointer position into the mobile submit trigger pseudo-3d style variables", async () => {
+  it("restores the original floating mobile submit trigger", () => {
     const wrapper = mount(FriendPanel, {
       props: {
         links,
       },
     });
     const trigger = wrapper.get("[data-testid='friend-mobile-drawer-toggle']");
-
-    vi.spyOn(trigger.element, "getBoundingClientRect").mockReturnValue({
-      x: 0,
-      y: 0,
-      top: 0,
-      right: 100,
-      bottom: 40,
-      left: 0,
-      width: 100,
-      height: 40,
-      toJSON: () => ({}),
-    } as DOMRect);
-
-    const pointerMove = new MouseEvent("pointermove", {
-      clientX: 80,
-      clientY: 8,
-      bubbles: true,
-    });
-    Object.defineProperty(pointerMove, "pointerType", { value: "mouse" });
-
-    trigger.element.dispatchEvent(pointerMove);
-    await nextTick();
-
     const style = trigger.attributes("style") ?? "";
 
-    expect(style).toContain("--friend-trigger-rotate-x: 3.90deg");
-    expect(style).toContain("--friend-trigger-rotate-y: 3.90deg");
-    expect(style).toContain("--friend-trigger-glare-opacity: 0.34");
-    expect(style).toContain("--friend-trigger-lift: -7px");
+    expect(trigger.attributes("data-glass-preset")).toBeUndefined();
+    expect(style).toContain("--friend-trigger-rotate-x: 0deg");
+    expect(style).toContain("--friend-trigger-lift: 0px");
   });
 
   it("renders playful application-card motion layers while filling a draft", async () => {

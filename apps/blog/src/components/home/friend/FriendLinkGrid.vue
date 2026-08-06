@@ -129,15 +129,24 @@ function splitIntoColumns(cards: FriendCardLayout[]) {
   transform: translateY(18px);
 }
 
+@media (max-width: 639px) {
+  .friend-waterfall-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .friend-waterfall-column,
+  .friend-waterfall-column__cards {
+    gap: 1rem;
+  }
+}
+
 @media (min-width: 768px) {
   .friend-waterfall-scroller {
     padding: 0.5rem 0.9rem 2.2rem;
   }
 
-  .friend-waterfall-grid {
-    gap: 1.25rem;
-  }
-
+  .friend-waterfall-grid,
   .friend-waterfall-column,
   .friend-waterfall-column__cards {
     gap: 1.25rem;

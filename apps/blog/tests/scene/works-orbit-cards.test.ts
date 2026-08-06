@@ -1,12 +1,15 @@
 import * as THREE from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
+import { WORKS_WEBGL_GLASS_PROFILE } from "@/components/home/works/works-card-preset";
 import {
   createWorksOrbitCardFrame,
   createWorksOrbitCards,
+  getWorksCaseGridSlot,
   getWorksCenterMagnetStrength,
   getWorksOrbitRadii,
   isWorksLaunchZone,
+  resolveWorksCaseGridLayout,
   WORKS_ORBIT_CARD_RENDER_LAYER,
   WORKS_ORBIT_CARD_SIZE,
 } from "@/components/scene/works-orbit-cards";
@@ -84,6 +87,7 @@ function updateOrbitCards(
     center: new THREE.Vector3(0, 0, 0),
     delta,
     elapsed,
+    layout: "orbit",
     reducedMotion: true,
     viewport: {
       height: 900,
@@ -181,6 +185,43 @@ describe("createWorksOrbitCardFrame", () => {
     expect(WORKS_ORBIT_CARD_SIZE.width / WORKS_ORBIT_CARD_SIZE.height).toBeCloseTo(352 / 236);
   });
 
+  it("centers the Case layout as a responsive two-column grid", () => {
+    const viewport = { height: 900, width: 1440 };
+    const slots = [0, 1, 2, 3].map((index) => getWorksCaseGridSlot(index, 4, viewport));
+
+    expect(slots.every((slot) => slot.width === 352 && slot.height === 236)).toBe(true);
+    expect(slots[0]?.x).toBeCloseTo(532);
+    expect(slots[1]?.x).toBeCloseTo(908);
+    expect(slots[0]?.y).toBeCloseTo(374);
+    expect(slots[2]?.y).toBeCloseTo(634);
+
+    const compactSlot = getWorksCaseGridSlot(0, 4, { height: 600, width: 1024 });
+    expect(compactSlot.width).toBeLessThan(352);
+    expect(compactSlot.y - compactSlot.height / 2).toBeGreaterThanOrEqual(104);
+  });
+
+  it("adapts Case columns automatically as more projects are plugged in", () => {
+    const viewport = { height: 900, width: 1440 };
+
+    expect(resolveWorksCaseGridLayout(4, viewport)).toMatchObject({ columns: 2, rows: 2 });
+    expect(resolveWorksCaseGridLayout(6, viewport)).toMatchObject({ columns: 3, rows: 2 });
+    expect(resolveWorksCaseGridLayout(8, viewport)).toMatchObject({ columns: 3, rows: 3 });
+    expect(resolveWorksCaseGridLayout(12, viewport)).toMatchObject({ columns: 4, rows: 3 });
+
+    const twelveSlots = Array.from({ length: 12 }, (_value, index) =>
+      getWorksCaseGridSlot(index, 12, viewport),
+    );
+    expect(
+      twelveSlots.every(
+        (slot) =>
+          slot.x - slot.width / 2 >= 23.99 &&
+          slot.x + slot.width / 2 <= viewport.width - 23.99 &&
+          slot.y - slot.height / 2 >= 103.99 &&
+          slot.y + slot.height / 2 <= viewport.height - 31.99,
+      ),
+    ).toBe(true);
+  });
+
   it("keeps front and back orbit cards inside a compact vertical corridor", () => {
     const radii = getWorksOrbitRadii(1440);
     const frontElapsed = (Math.PI / 2 + Math.PI * 0.12) / 0.24;
@@ -222,6 +263,7 @@ describe("createWorksOrbitCardFrame", () => {
         center: new THREE.Vector3(),
         delta: 0.016,
         elapsed,
+        layout: "orbit",
         reducedMotion: false,
         viewport: { height, width },
         visible: true,
@@ -258,6 +300,288 @@ describe("createWorksOrbitCardFrame", () => {
     cards.dispose();
   });
 
+  it("recalls Orbit cards into Case slots and sends them back into flight", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const viewport = { height: 900, width: 1440 };
+    updateOrbitCards(cards, camera, 0, 0.016);
+
+    const orbitPosition = cards.group.children[0]?.position.clone();
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.36,
+      elapsed: 0.36,
+      layout: "case",
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    expect(cards.isLayoutTransitioning()).toBe(true);
+    expect(cards.group.children[0]?.position.equals(orbitPosition ?? new THREE.Vector3())).toBe(false);
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.36,
+      elapsed: 0.72,
+      layout: "case",
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    expect(cards.isLayoutTransitioning()).toBe(false);
+    const projected = cards.group.children[0]?.position.clone().project(camera);
+    const slot = getWorksCaseGridSlot(0, works.length, viewport);
+    expect(((projected?.x ?? 0) + 1) * viewport.width * 0.5).toBeCloseTo(slot.x, 2);
+    expect((1 - (projected?.y ?? 0)) * viewport.height * 0.5).toBeCloseTo(slot.y, 2);
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.36,
+      elapsed: 1.08,
+      layout: "orbit",
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+    expect(cards.isLayoutTransitioning()).toBe(true);
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.36,
+      elapsed: 1.44,
+      layout: "orbit",
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+    expect(cards.isLayoutTransitioning()).toBe(false);
+
+    cards.dispose();
+  });
+
+  it("keeps the Case Website and Source actions clickable without turning the whole card into a link", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const viewport = { height: 900, width: 1440 };
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0,
+      elapsed: 0,
+      layout: "case",
+      reducedMotion: true,
+      viewport,
+      visible: true,
+    });
+
+    const slot = getWorksCaseGridSlot(0, works.length, viewport);
+    const center = new THREE.Vector2(
+      (slot.x / viewport.width) * 2 - 1,
+      1 - (slot.y / viewport.height) * 2,
+    );
+    const halfWidth = slot.width / viewport.width;
+    const halfHeight = slot.height / viewport.height;
+    const raycaster = new THREE.Raycaster();
+
+    const livePointer = center
+      .clone()
+      .add(new THREE.Vector2(halfWidth * 0.65, halfHeight * -0.45));
+    raycaster.setFromCamera(livePointer, camera);
+    const liveHit = cards.pick(raycaster, livePointer);
+    expect(liveHit).toEqual(
+      expect.objectContaining({ action: "live", url: works[0]?.liveUrl }),
+    );
+
+    const githubPointer = center
+      .clone()
+      .add(new THREE.Vector2(halfWidth * 0.65, halfHeight * -0.68));
+    raycaster.setFromCamera(githubPointer, camera);
+    expect(cards.pick(raycaster, githubPointer)).toEqual(
+      expect.objectContaining({ action: "github", url: works[0]?.githubUrl }),
+    );
+
+    raycaster.setFromCamera(center, camera);
+    expect(cards.pick(raycaster, center)).toBeNull();
+    expect(cards.pickHover(raycaster, center)).toEqual(
+      expect.objectContaining({ slug: works[0]?.slug }),
+    );
+    const screenBounds = cards.getScreenBounds(works[0]!.slug);
+    expect(screenBounds).not.toBeNull();
+    expect(screenBounds!.halfHeight).toBeGreaterThan(0);
+    expect(screenBounds!.halfWidth).toBeCloseTo(halfWidth);
+    expect(screenBounds!.x).toBeCloseTo(center.x);
+    expect(screenBounds!.y).toBeCloseTo(center.y);
+    const liveBounds = cards.getActionScreenBounds(liveHit!);
+    expect(liveBounds?.corners).toHaveLength(4);
+    expect(liveBounds!.halfWidth).toBeLessThan(screenBounds!.halfWidth / 2);
+    expect(liveBounds!.x).toBeGreaterThan(screenBounds!.x);
+    expect(cards.getScreenBounds("missing-work")).toBeNull();
+
+    cards.dispose();
+  });
+
+  it("tilts the hovered Case card toward the local pointer like a Friend card", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const viewport = { height: 900, width: 1440 };
+    const cardGroup = cards.group.children[0] as THREE.Group;
+    const slot = getWorksCaseGridSlot(0, works.length, viewport);
+    const center = new THREE.Vector2(
+      (slot.x / viewport.width) * 2 - 1,
+      1 - (slot.y / viewport.height) * 2,
+    );
+    const pointer = center
+      .clone()
+      .add(
+        new THREE.Vector2(
+          (slot.width / viewport.width) * 0.72,
+          (slot.height / viewport.height) * 0.6,
+        ),
+      );
+    const raycaster = new THREE.Raycaster();
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 1,
+      elapsed: 1,
+      layout: "case",
+      pointerNdc: center,
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+    const neutralQuaternion = cardGroup.quaternion.clone();
+    const neutralScale = cardGroup.scale.x;
+
+    raycaster.setFromCamera(pointer, camera);
+    const hoverHit = cards.pickHover(raycaster, pointer);
+    expect(hoverHit).toEqual(expect.objectContaining({ slug: works[0]?.slug }));
+    expect(cards.pick(raycaster, pointer)).toBeNull();
+    cards.setHovered(hoverHit);
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 1,
+      elapsed: 2,
+      layout: "case",
+      pointerNdc: pointer,
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+    expect(cardGroup.quaternion.angleTo(neutralQuaternion)).toBeGreaterThan(0.04);
+    expect(cardGroup.scale.x).toBeGreaterThan(neutralScale);
+    const tiltedActionBounds = cards.getActionScreenBounds({
+      action: "live",
+      slug: works[0]!.slug,
+      url: works[0]!.liveUrl,
+    });
+    expect(tiltedActionBounds?.corners).toHaveLength(4);
+    expect(
+      Math.abs(tiltedActionBounds!.corners![0].y - tiltedActionBounds!.corners![1].y),
+    ).toBeGreaterThan(0.0001);
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 1,
+      elapsed: 3,
+      layout: "case",
+      pointerNdc: pointer,
+      reducedMotion: true,
+      viewport,
+      visible: true,
+    });
+    expect(cardGroup.quaternion.angleTo(neutralQuaternion)).toBeLessThan(0.0001);
+
+    cards.dispose();
+  });
+
+  it("tilts Orbit cards locally while easing hover scale in and out", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const viewport = { height: 900, width: 1440 };
+    const cardGroup = cards.group.children[0] as THREE.Group;
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 1,
+      elapsed: 1,
+      layout: "orbit",
+      pointerNdc: new THREE.Vector2(),
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    const bounds = cards.getScreenBounds(works[0]!.slug)!;
+    const pointer = new THREE.Vector2(
+      bounds.x + bounds.halfWidth * 0.68,
+      bounds.y + bounds.halfHeight * 0.62,
+    );
+    const neutralQuaternion = cardGroup.quaternion.clone();
+    const neutralScale = cardGroup.scale.x;
+    cards.setHovered({ action: "live", slug: works[0]!.slug, url: works[0]!.liveUrl });
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.016,
+      elapsed: 1,
+      layout: "orbit",
+      pointerNdc: pointer,
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    expect(cardGroup.quaternion.angleTo(neutralQuaternion)).toBeGreaterThan(0.005);
+    expect(cardGroup.scale.x).toBeGreaterThan(neutralScale);
+    expect(cardGroup.scale.x).toBeLessThan(neutralScale * 1.08);
+
+    for (let index = 0; index < 60; index += 1) {
+      cards.update({
+        camera,
+        center: new THREE.Vector3(),
+        delta: 0.016,
+        elapsed: 1,
+        layout: "orbit",
+        pointerNdc: pointer,
+        reducedMotion: false,
+        viewport,
+        visible: true,
+      });
+    }
+    const expandedScale = cardGroup.scale.x;
+    expect(expandedScale / neutralScale).toBeCloseTo(1.08, 2);
+
+    cards.setHovered(null);
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.016,
+      elapsed: 1,
+      layout: "orbit",
+      pointerNdc: pointer,
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+    expect(cardGroup.scale.x).toBeLessThan(expandedScale);
+    expect(cardGroup.scale.x).toBeGreaterThan(neutralScale);
+
+    cards.dispose();
+  });
+
   it("launches the live URL only when a dragged card is released in the center zone", () => {
     const camera = createCamera();
     const cards = createWorksOrbitCards({ theme: "night", works });
@@ -276,6 +600,80 @@ describe("createWorksOrbitCardFrame", () => {
       url: works[0].liveUrl,
     });
     expect(cards.isInteracting()).toBe(false);
+
+    cards.dispose();
+  });
+
+  it("eases a grabbed Orbit card forward without snapping its pose", () => {
+    const camera = createCamera();
+    const cards = createWorksOrbitCards({ theme: "night", works });
+    const cardGroup = cards.group.children[0] as THREE.Group;
+    const viewport = { height: 900, width: 1440 };
+
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.016,
+      elapsed: 1,
+      layout: "orbit",
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    const bounds = cards.getScreenBounds(works[0]!.slug)!;
+    const pointer = new THREE.Vector2(
+      bounds.x + bounds.halfWidth * 0.62,
+      bounds.y + bounds.halfHeight * 0.34,
+    );
+    const startPosition = cardGroup.position.clone();
+    const startScreenPosition = startPosition.clone().project(camera);
+    const startScale = cardGroup.scale.x;
+    const startRenderOrder = cardGroup.renderOrder;
+
+    cards.beginDrag(
+      { action: "live", slug: works[0]!.slug, url: works[0]!.liveUrl },
+      pointer,
+    );
+    cards.update({
+      camera,
+      center: new THREE.Vector3(),
+      delta: 0.016,
+      elapsed: 1.016,
+      layout: "orbit",
+      pointerNdc: pointer,
+      reducedMotion: false,
+      viewport,
+      visible: true,
+    });
+
+    const firstFramePosition = cardGroup.position.clone();
+    const firstFrameScreenPosition = firstFramePosition.clone().project(camera);
+    const firstFrameScale = cardGroup.scale.x;
+    expect(firstFramePosition.distanceTo(startPosition)).toBeLessThan(0.12);
+    expect(firstFrameScreenPosition.distanceTo(startScreenPosition)).toBeLessThan(0.002);
+    expect(firstFrameScale).toBeGreaterThan(startScale);
+    expect(firstFrameScale).toBeLessThan(startScale * 1.02);
+    expect(cardGroup.renderOrder).toBeGreaterThan(startRenderOrder);
+    expect(cardGroup.renderOrder).toBeLessThan(300);
+
+    for (let index = 0; index < 24; index += 1) {
+      cards.update({
+        camera,
+        center: new THREE.Vector3(),
+        delta: 0.016,
+        elapsed: 1.032 + index * 0.016,
+        layout: "orbit",
+        pointerNdc: pointer,
+        reducedMotion: false,
+        viewport,
+        visible: true,
+      });
+    }
+
+    expect(cardGroup.position.distanceTo(startPosition)).toBeGreaterThan(1);
+    expect(cardGroup.scale.x).toBeGreaterThan(firstFrameScale);
+    expect(cardGroup.renderOrder).toBe(1_000);
 
     cards.dispose();
   });
@@ -362,19 +760,29 @@ describe("createWorksOrbitCardFrame", () => {
         ((cardMesh?.material.map as THREE.CanvasTexture).image as HTMLCanvasElement).height,
     ).toBeCloseTo(352 / 236);
     expect(glassMesh?.material.depthTest).toBe(true);
-    expect(glassMesh?.material.depthWrite).toBe(true);
+    expect(glassMesh?.material.depthWrite).toBe(false);
     expect(glassMesh?.material.fragmentShader).toContain("roundedBoxSdf");
     expect(glassMesh?.material.fragmentShader).toContain("uBackdrop");
+    expect(glassMesh?.material.fragmentShader).toContain("readFrostedBackdrop");
     expect(glassMesh?.material.fragmentShader).toContain("screenBlend");
     expect(glassMesh?.material.fragmentShader).toContain("overlayBlend");
-    expect(glassMesh?.material.uniforms.uBlurPx.value).toBe(20);
+    expect(glassMesh?.material.uniforms.uRefraction.value).toBe(
+      WORKS_WEBGL_GLASS_PROFILE.refraction,
+    );
+    expect(glassMesh?.material.uniforms.uAberration.value).toBe(0);
+    expect(glassMesh?.material.uniforms.uBevelDepth.value).toBe(
+      WORKS_WEBGL_GLASS_PROFILE.bevelDepth,
+    );
+    expect(glassMesh?.material.uniforms.uBevelWidth.value).toBe(
+      WORKS_WEBGL_GLASS_PROFILE.bevelWidth,
+    );
+    expect(glassMesh?.material.uniforms.uFrost.value).toBe(WORKS_WEBGL_GLASS_PROFILE.frost);
     expect(glassMesh?.material.uniforms.uSaturation.value).toBe(1.4);
-    expect(glassMesh?.material.uniforms.uDisplacementScale.value).toBe(100);
-    expect(glassMesh?.material.uniforms.uAberrationIntensity.value).toBe(2);
-    expect(glassMesh?.material.uniforms.uAberrationBlur.value).toBe(0.3);
     expect(glassMesh?.material.uniforms.uRimWidthPx.value).toBe(1.5);
     expect(glassMesh?.material.uniforms.uDayBorderWidthPx.value).toBe(1);
     expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
+    expect(glassMesh?.material.uniforms.uGlassOpacity.value).toBe(0.64);
+    expect(glassMesh?.material.uniforms.uTintStrength.value).toBe(0.075);
 
     cards.dispose();
   });
@@ -389,8 +797,14 @@ describe("createWorksOrbitCardFrame", () => {
     expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
     cards.setTheme("day");
     expect(glassMesh?.material.uniforms.uDayMode.value).toBe(1);
+    expect(glassMesh?.material.uniforms.uAberration.value).toBe(0.01);
+    expect(glassMesh?.material.uniforms.uGlassOpacity.value).toBe(0.58);
+    expect(glassMesh?.material.uniforms.uTintStrength.value).toBe(0.18);
     cards.setTheme("night");
     expect(glassMesh?.material.uniforms.uDayMode.value).toBe(0);
+    expect(glassMesh?.material.uniforms.uAberration.value).toBe(0);
+    expect(glassMesh?.material.uniforms.uGlassOpacity.value).toBe(0.64);
+    expect(glassMesh?.material.uniforms.uTintStrength.value).toBe(0.075);
 
     cards.dispose();
   });
@@ -499,7 +913,7 @@ describe("createWorksOrbitCardFrame", () => {
     cards.dispose();
   });
 
-  it("crossfades Orbit cards while disabling interaction as soon as Case is selected", () => {
+  it("hides Works cards immediately when the active route leaves Works", () => {
     const camera = createCamera();
     const cards = createWorksOrbitCards({ theme: "night", works });
     const cardGroup = cards.group.children[0] as THREE.Group;
@@ -516,23 +930,8 @@ describe("createWorksOrbitCardFrame", () => {
       center: new THREE.Vector3(),
       delta: 0.016,
       elapsed: 0.216,
+      layout: "orbit",
       pointerNdc: new THREE.Vector2(),
-      reducedMotion: false,
-      viewport: { height: 900, width: 1440 },
-      visible: false,
-    });
-
-    expect(cards.group.visible).toBe(true);
-    expect(cardMesh?.material.opacity).toBeGreaterThan(0);
-    expect(cardMesh?.material.opacity).toBeLessThan(1);
-    expect(glassMesh?.material.uniforms.uViewAlpha.value).toBe(cardMesh?.material.opacity);
-    expect(cards.pick(new THREE.Raycaster(), new THREE.Vector2())).toBeNull();
-
-    cards.update({
-      camera,
-      center: new THREE.Vector3(),
-      delta: 1,
-      elapsed: 1.216,
       reducedMotion: false,
       viewport: { height: 900, width: 1440 },
       visible: false,
@@ -541,6 +940,7 @@ describe("createWorksOrbitCardFrame", () => {
     expect(cards.group.visible).toBe(false);
     expect(cardMesh?.material.opacity).toBe(0);
     expect(glassMesh?.material.uniforms.uViewAlpha.value).toBe(0);
+    expect(cards.pick(new THREE.Raycaster(), new THREE.Vector2())).toBeNull();
 
     cards.dispose();
   });

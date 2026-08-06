@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useTemplateRef } from "vue";
+import { computed, useTemplateRef } from "vue";
 
 import AuthorAboutScreen from "@/components/home/author/AuthorAboutScreen.vue";
 import AuthorCapsuleScreen from "@/components/home/author/AuthorCapsuleScreen.vue";
@@ -8,14 +8,22 @@ import AuthorPoemScreen from "@/components/home/author/AuthorPoemScreen.vue";
 import { useAuthorSlider } from "@/composables/useAuthorSlider";
 import type { AuthorProfileData } from "@/types/content";
 
-const props = defineProps<{
-  author: AuthorProfileData;
-}>();
+const props = withDefaults(
+  defineProps<{
+    active?: boolean;
+    author: AuthorProfileData;
+  }>(),
+  {
+    active: true,
+  },
+);
 
 const viewportRef = useTemplateRef<HTMLElement>("viewport");
 const trackRef = useTemplateRef<HTMLElement>("track");
+const isActive = computed(() => props.active);
 
 const { activeIndex, goToSlide } = useAuthorSlider({
+  active: isActive,
   viewportRef,
   trackRef,
 });
@@ -169,12 +177,7 @@ const screens = [
   box-shadow: inset 0 0 0 1px rgba(21, 28, 40, 0.18);
 }
 
-@media (max-width: 767px) {
-  .author-stage__dots {
-    right: 0.9rem;
-    gap: 0.6rem;
-  }
-
+@media (max-width: 1023px) {
   :deep(.author-screen__shell) {
     padding: 0;
     background: var(--author-shell-bg-mobile);
@@ -183,8 +186,18 @@ const screens = [
   :deep(.author-screen__panel) {
     width: 100%;
     min-height: 100%;
-    padding: clamp(1.2rem, 3vh, 2rem) 1.5rem 1.5rem;
     overflow-y: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .author-stage__dots {
+    right: 0.9rem;
+    gap: 0.6rem;
+  }
+
+  :deep(.author-screen__panel) {
+    padding: clamp(1.2rem, 3vh, 2rem) 1.5rem 1.5rem;
   }
 
   /* About panel on mobile: nav clearance */
@@ -193,7 +206,7 @@ const screens = [
   }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   :deep(.author-screen__panel--poster) {
     overflow: visible;
   }

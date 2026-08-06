@@ -24,6 +24,7 @@ function prefetchArticle() {
 
 <template>
   <RouterLink
+    data-magnetic-pointer="blog-card"
     data-testid="blog-result-card"
     :to="{ name: 'post', params: { slug: props.post.canonicalSlug }, query: props.blogQuery }"
     class="blog-result-row group relative grid gap-3 border-b border-[var(--border-subtle)] py-5 transition-colors last:border-b-0 hover:bg-[var(--surface-soft)] md:grid-cols-[8.5rem_minmax(0,1fr)] md:gap-6 md:px-3"

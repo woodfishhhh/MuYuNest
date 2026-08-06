@@ -1,6 +1,8 @@
 import { nextTick, onBeforeUnmount, onMounted, watch, type ShallowRef } from "vue";
 import Matter from "matter-js";
 
+import { supportsContentLayout } from "@/utils/responsive";
+
 type CapsuleSkill = {
   title: string;
   color: string;
@@ -331,7 +333,7 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
 
     for (const element of capsuleElements) {
       const isTitle = element.hasAttribute("data-author-fixed");
-      const isMobile = bounds.width < 768;
+      const isMobile = !supportsContentLayout(bounds.width);
       const width = Math.max(element.offsetWidth, isTitle ? 260 : isMobile ? 60 : 120);
       if (isTitle) {
         const cx = Math.max(gutter, bounds.width * 0.32 - width / 2);
@@ -476,7 +478,7 @@ export function useMatterCapsules({ active, sceneRef, skills }: UseMatterCapsule
     const usableWidth = Math.max(1, bounds.width - gutter * 2);
     capsuleBodies = capsuleElements.map((element, index) => {
       const initiallyStatic = element.hasAttribute("data-author-fixed");
-      const isMobile = bounds.width < 768;
+      const isMobile = !supportsContentLayout(bounds.width);
       const width = Math.max(element.offsetWidth, initiallyStatic ? 288 : isMobile ? 60 : 120);
       const height = Math.max(element.offsetHeight, initiallyStatic ? 126 : isMobile ? 26 : 52);
       const staticX = Math.min(
