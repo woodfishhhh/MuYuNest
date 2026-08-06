@@ -23,8 +23,8 @@ This keeps every browser tab identifiable without requiring unrelated site
 bundles to be rebuilt during a routing-only deployment.
 
 When adding a public subdomain, add one square SVG source to this directory and
-an exact favicon location in `deploy/nginx.conf`. Use a PNG derivative only when
-the existing page declares a PNG favicon path.
+an exact favicon location in `deploy/nginx.conf`. Add a PNG or ICO derivative
+only when the existing page declares that legacy favicon format.
 
 ## DNS And TLS
 
