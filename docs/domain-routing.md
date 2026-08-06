@@ -10,7 +10,6 @@ not a static-site document root.
 | `https://weather.woodfish.site/` | `/usr/share/nginx/html/weather` | `/weather/` compatibility assets |
 | `https://xcpc.woodfish.site/` | `/usr/share/nginx/html/xcpc-super-template` | `/xcpc-super-template/` compatibility assets |
 | `https://img.woodfish.site/` | image-bed routes and `/admin/` | unchanged |
-| `https://analytics.woodfish.site/` | host-side analytics dashboard | Basic-authenticated reverse proxy |
 
 `filter.woodfish.site` is owned by its separate nginx configuration and must not
 be added to or removed from `deploy/nginx.conf`.
@@ -29,7 +28,7 @@ only when the existing page declares that legacy favicon format.
 
 ## DNS And TLS
 
-The `blog`, `pretext`, `weather`, `xcpc`, and `analytics` A records point to
+The `blog`, `pretext`, `weather`, and `xcpc` A records point to
 `36.151.148.198`. Each hostname has its own Let's Encrypt certificate under
 `/etc/letsencrypt/live/<hostname>/`; `certbot.timer` renews them. The webroot for
 ACME HTTP-01 challenges is `/opt/blog-stack/certbot/www` on the host and
@@ -70,9 +69,9 @@ curl.exe -I https://woodfish.site/newBlog/friend/?from=legacy
 curl.exe -I https://pretext.woodfish.site/
 curl.exe -I https://weather.woodfish.site/
 curl.exe -I https://xcpc.woodfish.site/
-curl.exe -I https://analytics.woodfish.site/
+curl.exe -I https://blog.woodfish.site/analytics/
 ```
 
 The canonical pages must return `200`; legacy URLs must return `308` with the
-same path and query on the canonical hostname. The analytics hostname must
+same path and query on the canonical hostname. The private analytics path must
 return `401` without credentials and `200` after HTTP Basic authentication.
