@@ -131,5 +131,19 @@
     "avatar": "https://jinzhenyi.dpdns.org/assets/images/tx.png",
     "descr": "jzy的博客",
     "className": "友情链接"
+  },
+  {
+    "name": "GalError",
+    "link": "https://www.galerror.top/",
+    "avatar": "https://www.galerror.top/favicon.webp",
+    "descr": "Galgame报错解决百科",
+    "className": "友情链接"
+  },
+  {
+    "name": "D-blog",
+    "link": "https://blog.pldduck.com",
+    "avatar": "https://blog.pldduck.com/logo.png",
+    "descr": "跑路的duck的技术分享和生活随笔",
+    "className": "友情链接"
   }
 ]
