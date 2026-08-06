@@ -62,7 +62,7 @@ fi
 # shellcheck disable=SC1090
 source "$credentials_file"
 printf 'woodfish:%s\n' "$(openssl passwd -apr1 "$ANALYTICS_PASSWORD")" > "$auth_file"
-chmod 0640 "$auth_file"
+chmod 0644 "$auth_file"
 
 systemctl daemon-reload
 systemctl enable --now visitor-counter
