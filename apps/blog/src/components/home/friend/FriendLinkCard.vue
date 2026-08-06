@@ -107,6 +107,8 @@ function resetTilt() {
 <template>
   <a
     data-testid="friend-link-card"
+    data-analytics-event="friend-outbound"
+    :data-analytics-event-site="domain"
     :href="props.link.link"
     :style="cardStyle"
     :tabindex="props.focusable ? undefined : -1"

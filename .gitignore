@@ -22,6 +22,8 @@ playwright-report
 .vite/
 .vite-inspect/
 *.local
+__pycache__/
+*.py[cod]
 
 # Agent/workflow local artifacts
 .claude/

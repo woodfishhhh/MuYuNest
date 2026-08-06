@@ -4,6 +4,7 @@ import { computed, shallowRef } from "vue";
 import FriendLinkApplicationForm from "@/components/home/friend/FriendLinkApplicationForm.vue";
 import FriendLinkGrid from "@/components/home/friend/FriendLinkGrid.vue";
 import type { FriendLinkData } from "@/types/content";
+import { trackAnalyticsEvent } from "@/utils/analytics";
 import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const props = defineProps<{
@@ -103,6 +104,7 @@ function visitRandomFriend() {
   }
 
   const target = props.links[Math.floor(Math.random() * props.links.length)];
+  trackAnalyticsEvent("friend-random", { site: target.name });
   window.open(target.link, "_blank", "noopener,noreferrer");
 }
 </script>
@@ -141,6 +143,8 @@ function visitRandomFriend() {
             :title="TRAVELLINGS_TITLE"
             target="_blank"
             rel="noopener noreferrer"
+            data-analytics-event="travellings-outbound"
+            data-analytics-event-location="friend"
           >
             开往
           </a>

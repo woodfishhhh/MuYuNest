@@ -44,6 +44,7 @@ import { useTheme, type ThemeMode } from "@/composables/useTheme";
 import { useThreeScene, type ThreeScene } from "@/composables/useThreeScene";
 import { getWorkProjects } from "@/content/works";
 import { getRouteLocationForSiteMode } from "@/utils/site-mode";
+import { trackAnalyticsEvent } from "@/utils/analytics";
 import { useSiteStore } from "@/stores/site";
 import type { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 
@@ -500,6 +501,8 @@ function releaseCardInteraction(event?: PointerEvent) {
   suppressNextCanvasClick = true;
   const result = worksOrbitCards.release(sceneTimer?.getElapsed() ?? 0);
   if (result?.action === "launch") {
+    const project = getWorkProjects().find((work) => work.liveUrl === result.url);
+    trackAnalyticsEvent("works-drag-launch", { project: project?.slug ?? "unknown" });
     window.open(result.url, "_blank", "noopener,noreferrer");
   }
   cardGrabActive.value = worksOrbitCards.isInteracting();
@@ -540,6 +543,10 @@ function handleCanvasPointerDown(event: PointerEvent) {
     if (action === "activate-card" && worksActionHit) {
       event.stopPropagation();
       suppressNextCanvasClick = true;
+      trackAnalyticsEvent("works-outbound", {
+        action: worksActionHit.action,
+        project: worksActionHit.slug,
+      });
       window.open(worksActionHit.url, "_blank", "noopener,noreferrer");
     }
     return;

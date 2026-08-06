@@ -17,6 +17,9 @@ defineProps<{
         class="work-actions__link work-actions__link--live"
         data-kind="live"
         data-magnetic-pointer="work-action-live"
+        data-analytics-event="works-outbound"
+        data-analytics-event-action="live"
+        :data-analytics-event-project="work.slug"
         rel="noreferrer noopener"
         target="_blank"
       >
@@ -31,6 +34,9 @@ defineProps<{
         class="work-actions__link work-actions__link--github"
         data-kind="github"
         data-magnetic-pointer="work-action-github"
+        data-analytics-event="works-outbound"
+        data-analytics-event-action="github"
+        :data-analytics-event-project="work.slug"
         rel="noreferrer noopener"
         target="_blank"
       >

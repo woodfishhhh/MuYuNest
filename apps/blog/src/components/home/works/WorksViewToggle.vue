@@ -32,6 +32,8 @@ function selectView(value: WorksViewMode) {
       :aria-pressed="props.modelValue === option.value"
       :class="{ 'works-toggle__button--active': props.modelValue === option.value }"
       :data-testid="`works-view-toggle-${option.value}`"
+      data-analytics-event="works-view-mode"
+      :data-analytics-event-mode="option.value"
       class="works-toggle__button"
       type="button"
       @click="selectView(option.value)"

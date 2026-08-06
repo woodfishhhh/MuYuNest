@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>WoodFish Analytics</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./dashboard.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">WOODFISH ANALYTICS</p>
+          <h1>博客数据概览</h1>
+        </div>
+        <div class="toolbar">
+          <label class="range-control">
+            <span>时间范围</span>
+            <select id="range-select">
+              <option value="7">近 7 天</option>
+              <option value="30" selected>近 30 天</option>
+              <option value="90">近 90 天</option>
+            </select>
+          </label>
+          <button id="refresh-button" type="button">刷新</button>
+        </div>
+      </header>
+
+      <section class="status-row" aria-live="polite">
+        <span id="status">正在读取数据...</span>
+        <span id="generated-at"></span>
+      </section>
+
+      <section id="kpis" class="kpi-grid" aria-label="关键指标"></section>
+
+      <section class="panel chart-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="section-label">趋势</p>
+            <h2>访问变化</h2>
+          </div>
+          <div class="segmented" role="group" aria-label="趋势指标">
+            <button class="active" data-chart-metric="pageviews" type="button">浏览量</button>
+            <button data-chart-metric="visitors" type="button">访客</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="trend-chart"></canvas>
+        </div>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel span-2">
+          <div class="panel-heading"><h2>热门页面</h2></div>
+          <div id="top-pages" class="rank-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>来源</h2></div>
+          <div id="referrers" class="rank-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>设备</h2></div>
+          <div id="devices" class="rank-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>浏览器</h2></div>
+          <div id="browsers" class="rank-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>操作系统</h2></div>
+          <div id="operating-systems" class="rank-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-heading"><h2>自定义事件</h2></div>
+          <div id="custom-events" class="rank-list"></div>
+        </article>
+        <article class="panel span-2">
+          <div class="panel-heading"><h2>页面体验</h2></div>
+          <div id="web-vitals" class="vitals-grid"></div>
+        </article>
+      </section>
+    </main>
+    <script src="./dashboard.js" defer></script>
+  </body>
+</html>

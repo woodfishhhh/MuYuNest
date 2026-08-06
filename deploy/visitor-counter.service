@@ -8,11 +8,20 @@ WorkingDirectory=/opt/blog-stack/services/visitor-counter
 Environment=VISITOR_COUNTER_HOST=0.0.0.0
 Environment=VISITOR_COUNTER_PORT=3011
 Environment=VISITOR_COUNTER_DATA_FILE=/opt/blog-stack/services/visitor-counter/data/visitor-count.json
+Environment=VISITOR_ANALYTICS_DATA_FILE=/opt/blog-stack/services/visitor-counter/data/analytics.sqlite3
+Environment=VISITOR_ANALYTICS_DASHBOARD_DIR=/opt/blog-stack/services/visitor-counter/dashboard
+Environment=VISITOR_ANALYTICS_SECRET_FILE=/etc/woodfish/analytics-secret
+Environment=VISITOR_ANALYTICS_ALLOWED_ORIGIN=https://blog.woodfish.site
 ExecStart=/usr/bin/python3 /opt/blog-stack/services/visitor-counter/visitor-counter.py
 Restart=always
 RestartSec=2
 StandardOutput=journal
 StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/blog-stack/services/visitor-counter/data
 
 [Install]
 WantedBy=multi-user.target

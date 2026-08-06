@@ -6,6 +6,7 @@ import { useTheme } from "@/composables/useTheme";
 import { getRouteLocationForSiteMode } from "@/utils/site-mode";
 import { useSiteStore } from "@/stores/site";
 import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
+import { trackAnalyticsEvent } from "@/utils/analytics";
 
 const siteStore = useSiteStore();
 const { theme, toggleThemeAt } = useTheme();
@@ -25,6 +26,7 @@ function handleNav() {
 }
 
 function handleToggleTheme(payload: { x: number; y: number }) {
+  trackAnalyticsEvent("theme-change", { theme: theme.value === "day" ? "night" : "day" });
   toggleThemeAt(payload.x, payload.y);
 }
 
@@ -53,6 +55,8 @@ function isActive(id: (typeof navItems)[number]["id"]) {
         :title="TRAVELLINGS_TITLE"
         target="_blank"
         rel="noopener noreferrer"
+        data-analytics-event="travellings-outbound"
+        data-analytics-event-location="navigation"
       >
         开往
       </a>
