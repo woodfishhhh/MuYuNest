@@ -221,7 +221,7 @@ onBeforeUnmount(() => {
           </div>
         </Transition>
 
-        <div v-if="showVisitorCount" class="pointer-events-none absolute bottom-6 left-6 z-20">
+        <div v-if="showVisitorCount" class="pointer-events-auto absolute bottom-6 left-6 z-20">
           <VisitorCountBadge
             :total="visitorCountTotal"
             :is-loading="visitorCountLoading"

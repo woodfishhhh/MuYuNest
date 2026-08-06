@@ -9,6 +9,8 @@ process also accepts analytics events and stores them in SQLite.
 - `blog.woodfish.site/api/analytics/collect` is the only public collection endpoint.
 - `blog.woodfish.site/analytics/` serves the private dashboard and summary API
   behind nginx HTTP Basic authentication.
+- The `Visitors` badge in the lower-left corner of the home page links to the
+  authenticated dashboard.
 - `server/visitor-counter.py` owns collection, aggregation, retention, and the
   existing visitor-counter endpoints.
 - `server/analytics-dashboard/` contains the dependency-free dashboard.

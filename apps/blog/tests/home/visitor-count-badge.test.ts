@@ -15,6 +15,9 @@ describe("VisitorCountBadge", () => {
 
     expect(wrapper.get("[data-testid='visitor-count-badge']").text()).toContain("Visitors");
     expect(wrapper.get("[data-testid='visitor-count-badge']").text()).toContain("128");
+    expect(wrapper.get("[data-testid='visitor-count-badge']").attributes("href")).toBe(
+      "/analytics/",
+    );
   });
 
   it("shows a quiet loading state before the total arrives", () => {
