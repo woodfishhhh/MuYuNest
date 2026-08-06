@@ -1,5 +1,283 @@
 [
   {
+    "canonicalSlug": "nextjs16-project-runtime",
+    "aliases": [
+      "01-项目搭建与运行时边界"
+    ],
+    "title": "Next.js 16 项目搭建与运行时边界",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "Next.js 项目最容易在第一步就留下隐患：Node 版本不满足要求，脚手架选项和团队习惯不一致，或者把服务器代码、浏览器代码和静态资源混在一起。先把这些边界固定，后面的路由、AI 和认证才不会一边写一边返工。",
+    "type": "Notes",
+    "searchText": "Next.js 16 项目搭建与运行时边界 Notes 前端开发 Next.js Next.js 16 React App Router Turbopack React Compiler Next.js 项目最容易在第一步就留下隐患：Node 版本不满足要求，脚手架选项和团队习惯不一致，或者把服务器代码、浏览器代码和静态资源混在一起。先把这些边界固定，后面的路由、AI 和认证才不会一边写一边返工。 1. 版本和脚手架 这套课程以 Next.js 16.0.2 为基准，Node.js 至少使用 。项目初始化可以把选择显式写进命令，减少多人协作时的交互差异： 如果使用交互式脚手架，关键选择通常是： TypeScript：开启。 目录：开启，业务代码和配置更容易分层。 App Router：开启。 Tailwind：按项目需要开启。 Turbopack：开发环境可以开启；它是打包器，不等于 React Compiler。 import alias：保留 ，避免相对路径在深层目录中失控。 React Compiler 解决的是组件编译和优化问题，Turbopack 解决的是模块构建和开发服务器问题。二者职责不同，开启其中一个不会自动替代另一个。 2. 目录各自负责什么 下的文件不会被当作模块编译。例如 通过 访问。 下的代码会进入构建图，图片、字体和业务模块应按需要导入，而不是把所有东西都丢进 。 根布局是整个 App Router 的 HTML 外壳： 必须提供 和 ， 是当前路由的页面内容。 才是具体的页面： 3. 三个运行命令 不能代替 。没有新的构建产物时，它启动的是上一次构建结果；部署脚本应先构建，再启动或交给平台接管。 4. 先理解服务器边界 App Router 中的组件默认是 Server Component。服务器组件可以直接读取服务端数据、访问私有环境变量，但不能使用浏览器状态和事件： 需要 、 、事件处理器、浏览器 API 或自定义客户端 Hook 时，才在文件顶部声明： 不要因为一个按钮就把根布局和整个页面树变成 Client Component。更好的边界是服务器页面包住一个很小的交互叶子组件。 5. 这一层的验收标准 Node.js 版本满足项目要求，并且团队使用同一个包管理器。 、 、 都能独立运行。 只放真正的公开静态资源，私有文件不通过它暴露。 根布局保留 、 和 。 页面默认保持 Server Component，只有真实交互才声明 。",
+    "readingMinutes": 4,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "React",
+      "App Router",
+      "Turbopack",
+      "React Compiler"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-app-router",
+    "aliases": [
+      "02-App-Router与路由系统"
+    ],
+    "title": "Next.js 16 App Router 与路由系统",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "App Router 的核心不是“多了几个文件名”，而是把 URL、布局、加载状态、错误边界和组件生命周期绑定到文件系统。理解这些约定后，页面之间的共享结构不需要再靠一个巨大组件读取 pathname 来判断。",
+    "type": "Notes",
+    "searchText": "Next.js 16 App Router 与路由系统 Notes 前端开发 Next.js Next.js 16 App Router Layout Dynamic Routes Parallel Routes App Router 的核心不是“多了几个文件名”，而是把 URL、布局、加载状态、错误边界和组件生命周期绑定到文件系统。理解这些约定后，页面之间的共享结构不需要再靠一个巨大组件读取 pathname 来判断。 1. 文件夹就是 URL，文件名决定能力 文件夹本身不会产生页面；只有其中存在 时， 才是可访问路由。 、 和 是约定文件，名字不能随意改。 页面和布局的嵌套关系： 访问 时，页面会被根布局和 依次包住。布局适合放不会随子页面切换而消失的导航、字体、Provider 和共享数据。 2. 和 的区别 二者都可以共享 UI，但生命周期不同： | 文件 | 切换子路由时 | 状态 | | | | | | | | | 保持挂载 | 保留 | 通常只初始化一次 | | | 重新挂载 | 重置 | 每次进入都重新执行 | 需要持久化的导航状态、Provider 和页面外壳放 ；需要每次切换都重置的表单、动画或埋点边界放 。带 Hook 的布局或模板必须声明 ，但这不意味着父级所有页面都要客户端化。 3. 加载、错误和 404 异步页面可以配同级 ： 页面抛出异常时，同级 接管显示。错误边界本身需要客户端能力： 全局 404 可以放在 ： 数据查询发现资源不存在时，在服务器组件中调用 ，不要返回一个标题为空的“成功页面”： 4. 动态、分组和平行路由 动态段用方括号： Next.js 16 中 按 Promise 接收： 路由组使用圆括号，不会进入 URL： 平行路由用 把多个页面区域交给同一个布局： 它适合仪表盘、侧栏和弹窗等可以独立加载或独立切换的区域。不要为了“目录看起来高级”滥用平行路由；如果两个区域没有独立生命周期，普通组件组合更清楚。 5. 导航方式 应用内跳转优先使用 ： 需要事件中跳转时使用客户端 Hook： 服务器端完成条件判断时使用 ： 不要把 当成权限控制。它只是导航；资源权限仍要在 Route Handler、Server Action 或数据库查询边界重新验证。",
+    "readingMinutes": 3,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "App Router",
+      "Layout",
+      "Dynamic Routes",
+      "Parallel Routes"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-route-handlers-cookies",
+    "aliases": [
+      "03-Route-Handler与Cookie会话"
+    ],
+    "title": "Next.js 16 Route Handler 与 Cookie 会话",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "Route Handler 是 App Router 中的后端入口。它适合处理 Webhook、上传、登录、第三方回调和需要明确 HTTP 方法的接口。页面跳转解决不了这些问题，必须把请求解析、响应状态、Cookie 属性和服务端鉴权写在同一条边界上。",
+    "type": "Notes",
+    "searchText": "Next.js 16 Route Handler 与 Cookie 会话 Notes 前端开发 Next.js Next.js 16 Route Handler HTTP Cookie Session Route Handler 是 App Router 中的后端入口。它适合处理 Webhook、上传、登录、第三方回调和需要明确 HTTP 方法的接口。页面跳转解决不了这些问题，必须把请求解析、响应状态、Cookie 属性和服务端鉴权写在同一条边界上。 1. 最小 Route Handler 文件名固定为 ，路径直接映射 URL： 可以直接返回 Web 标准 ，需要 JSON、重定向或设置 Cookie 时使用 更方便。 2. 查询参数、JSON 和状态码 几个容易忽略的点： 查询参数从 读取，不要手写字符串切割。 是异步操作，只能消费一次请求体。 创建资源使用 ，参数缺失用 或 ，不要所有失败都返回 。 的请求头必须有 。 同一个文件可以导出 、 、 、 、 等方法。方法名必须是大写导出函数，不能导出一个自定义名称期待框架自动识别。 3. 动态 API 路由 Next.js 16 的动态 需要 。这和页面动态路由一致；不能把旧版本的同步写法复制到新项目里。 4. Cookie 的正确用途 Cookie 适合保存一个短小的、可校验的会话标识，不适合直接保存密码、完整用户对象或未经保护的权限信息。Route Handler 中读写 Cookie： 读取登录态： 防止客户端 JavaScript 直接读取会话 Cookie， 保证生产环境只走 HTTPS， 降低跨站请求伪造风险。真正的 session 还要服务端存储或签名校验；把固定字符串写入 Cookie 只能演示 API 链路，不能作为生产认证方案。 5. 前端检查登录态 客户端可以请求 来更新界面，但不能把客户端状态当成授权结论： 页面和 API 都必须独立检查会话。否则用户可以绕过页面按钮，直接调用接口。",
+    "readingMinutes": 3,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "Route Handler",
+      "HTTP",
+      "Cookie",
+      "Session"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-ai-proxy-rendering",
+    "aliases": [
+      "04-AI-SDKProxy与渲染模式"
+    ],
+    "title": "Next.js 16 AI SDK、Proxy 与渲染模式",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "AI 聊天页的难点不在于调用一次模型，而在于把密钥留在服务器、把回复流式传回浏览器、保存上下文，并且不让一个小交互把整个页面拖进客户端。Proxy、RSC 和三种渲染模式解决的是同一条链路上的不同问题。",
+    "type": "Notes",
+    "searchText": "Next.js 16 AI SDK、Proxy 与渲染模式 Notes 前端开发 Next.js Next.js 16 AI SDK Streaming Proxy RSC SSR AI 聊天页的难点不在于调用一次模型，而在于把密钥留在服务器、把回复流式传回浏览器、保存上下文，并且不让一个小交互把整个页面拖进客户端。Proxy、RSC 和三种渲染模式解决的是同一条链路上的不同问题。 1. AI 请求必须停在服务器 安装 Vercel AI SDK 和模型适配器： 如果使用 DeepSeek 等 OpenAI 兼容服务，只需要替换 provider 和 base URL： 只能在服务器模块读取。不能把它写进 ，也不能从客户端直接请求模型供应商。 2. Route Handler 返回流 把 AI 入口放在约定目录后， 可以使用默认 API 路径： 这里有三个边界： 1. 读取客户端上下文。 2. 把 UI 消息转换成模型需要的消息格式。 3. 生成增量结果，响应使用流式格式而不是等待完整字符串。 不要把客户端提交的消息无限制地直接转发给模型。生产代码还应限制消息数量和单条长度，校验 role/content，设置超时、错误响应和用量上限。 3. 客户端消费上下文 消息结构包含 、 和 。不要假定所有 part 都是文本，未来加入图片、工具调用或文件时要按 分支。底部空节点配合 是简单可靠的自动滚动边界，比不断修改 更不容易和流式渲染打架。 4. Proxy：拦截、转发和快速门禁 Next.js 16 把原来的 Middleware 文件名改成了 ，功能没有因此变成新的鉴权系统： Proxy 可以做： 根据 matcher 只拦截需要的路径。 添加 CORS 响应头。 把 转发给另一个后端。 根据 Header、Cookie、Query 做简单匹配。 做限流或登录态的快速门禁。 但 Cookie 存在不等于会话有效，Proxy 也不应该承担复杂的数据库权限查询。真正的资源授权仍需要在 Route Handler、Server Action 或服务端数据函数中完成。 5. CSR、SSR、SSG 和 hydration | 模式 | HTML 主要在哪里生成 | 首屏 | SEO | 适合场景 | | | | | | | | CSR | 浏览器 | 较慢 | 较弱 | 后台和强交互应用 | | SSR | 每次请求的服务器 | 较快 | 好 | 电商、动态博客 | | SSG | 构建阶段 | 很快 | 好 | 文档、营销页、稳定内容 | SSR 返回 HTML 后，浏览器还要下载 JavaScript，对比服务端生成的结构并绑定事件，这一步叫 hydration。HTML 先出现但按钮暂时不能点击，是正常的 hydration 过程，不是页面没有渲染。 RSC 在 SSR 上进一步拆分： Server Component 默认在服务器执行，可以读取数据库和私有模块，不进入客户端 bundle。 Client Component 用 标记，需要状态、事件或浏览器 API 时才使用。 服务端组件可以包住客户端组件，客户端组件不能直接在内部 import 服务器组件。 如果一个模块只能被服务器使用，安装并声明 ： 这样当客户端模块误导入它时，构建阶段就会失败，而不是把私有实现悄悄打进浏览器。 6. RSC 漏洞和升级纪律 RSC、Server Actions 和相关解析器属于高权限边界。发现框架安全公告后，不要只改一个依赖字符串就结束： 升级后至少检查：生产构建、Route Handler、Server Action、登录回调和缓存行为。课程演示了受影响版本升级到修复版本的过程，但具体安全版本会变化，生产项目必须以当前官方公告和锁文件为准。",
+    "readingMinutes": 5,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "AI SDK",
+      "Streaming",
+      "Proxy",
+      "RSC",
+      "SSR"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-cache-components",
+    "aliases": [
+      "05-Cache-Components与缓存策略"
+    ],
+    "title": "Next.js 16 Cache Components 与缓存策略",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "“刷新后数据没变”不一定是 Bug，可能是 Next.js 把页面推导成了静态内容。缓存组件的价值，是把静态外壳、可缓存数据和每次请求都要变化的动态数据放进同一条路由，同时让开发者明确控制缓存边界。",
+    "type": "Notes",
+    "searchText": "Next.js 16 Cache Components 与缓存策略 Notes 前端开发 Next.js Next.js 16 Cache Components PPR Suspense Revalidation “刷新后数据没变”不一定是 Bug，可能是 Next.js 把页面推导成了静态内容。缓存组件的价值，是把静态外壳、可缓存数据和每次请求都要变化的动态数据放进同一条路由，同时让开发者明确控制缓存边界。 1. 三种内容 静态内容包括本地 JSON、模块导入和纯计算。动态内容包括 、 、 、URL 参数和数据库查询。缓存内容的本质是：动态数据不必每次从源头重新读取，但也不必永久静态化。 2. 开启 Cache Components 开启后，动态内容不能无边界地直接出现在静态树中，应放入 ： 服务端先返回标题和骨架，动态区域稍后通过流式响应填入。这就是 static shell：页面外壳先出来，慢数据不再阻塞整个路由。 3. 明确缓存函数 缓存的键会受到函数参数和闭包变量影响。用户私有数据必须包含用户维度，不能把所有用户的结果塞进同一个共享缓存函数。缓存函数还要避免读取不可序列化的隐式全局状态。 4. 旧缓存策略要能读懂 未启用 Cache Components 时，常见控制方式包括： 读取 、 等请求上下文也会让页面进入动态路径。它们不是“关缓存的魔法开关”，而是在逻辑上说明页面依赖当前请求。 启用 Cache Components 后，控制权更明确：动态内容仍然需要 ，需要缓存的函数再用 、 和 标注。不要把旧的 route segment 配置和新的缓存模型无规则叠加。 5. 、 与失效 缓存生命周期需要区分两个动作： 后台再验证：缓存到期后后台更新，当前用户可以继续读旧值。 立即失效：缓存被清掉，下一次读取必须回源。 不同 Next.js 版本和缓存组件 API 对应的具体参数名可能不同，使用前要对照当前版本文档。业务上应先回答三个问题：数据最多能旧多久、谁触发更新、更新失败时是否允许继续使用旧值。 6. 缓存排错顺序 开发模式中的结果不能直接代表生产缓存。生产排查按这个顺序： 1. 看构建输出里页面是 Static 还是 Dynamic。 2. 列出页面读取的请求上下文和数据源。 3. 暂时移除缓存，确认数据源本身是否正常。 4. 恢复缓存并给动态区域补上 。 5. 用明确的生命周期和 tag 重新上线。 不要为了让数据“每次都变”就永久关闭缓存。先找出静态推导和动态依赖的真实边界。",
+    "readingMinutes": 4,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "Cache Components",
+      "PPR",
+      "Suspense",
+      "Revalidation"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-image-font-script",
+    "aliases": [
+      "06-ImageFontScript与静态资源"
+    ],
+    "title": "Next.js 16 Image、Font、Script 与静态资源",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "图片、字体和第三方脚本都可能在首屏阶段改变布局、阻塞主线程或拖慢 LCP。Next.js 的内置组件不是为了替换 HTML 标签，而是把尺寸、加载优先级、远程来源和缓存策略变成可检查的配置。",
+    "type": "Notes",
+    "searchText": "Next.js 16 Image、Font、Script 与静态资源 Notes 前端开发 Next.js Next.js 16 Image Font Script Core Web Vitals LCP 图片、字体和第三方脚本都可能在首屏阶段改变布局、阻塞主线程或拖慢 LCP。Next.js 的内置组件不是为了替换 HTML 标签，而是把尺寸、加载优先级、远程来源和缓存策略变成可检查的配置。 1. 先解决布局偏移 静态路径： 原生字符串 必须提供 和 ，Next.js 才能在图片下载完成前预留空间，避免 CLS。首屏最大的图片可以使用 ；普通图片默认懒加载，不要给列表里的每一张图都提高优先级。 静态导入会自动带出尺寸： 需要铺满容器时使用 ，但父容器必须有定位和稳定尺寸： 不是“不需要尺寸”，而是把尺寸责任转移给父容器。没有 、固定高度或定位上下文，图片仍会造成布局不稳定。 2. 远程图片白名单 远程图片必须在 中显式允许： 、 、 和端口可以一起限制。不要使用一个过宽的 允许任意远程来源，否则图片代理会变成不必要的攻击面。开发域名和生产域名不同，也要分别加入配置。 Next.js 会根据浏览器的 、 和设备宽度选择合适的 ，并把 PNG/JPEG 转成 WebP 或 AVIF。 和 控制候选尺寸，但只有配合正确的 ，浏览器才知道当前布局需要多宽的图。 3. 首屏图片和 LCP LCP 关注首屏最大的文本或图片什么时候完成绘制。判断图片策略： | 图片位置 | 策略 | | | | | 首屏 Hero / 主要封面 | 或当前版本推荐的 preload 方式 | | 首屏以下的文章列表 | 默认懒加载 | | 装饰背景 | 先判断是否真的需要图片，避免占用主资源 | | 不确定宽高的远程图 | 先获取元数据，或使用稳定的 容器 | 不要用 掩盖巨大的原图。压缩、格式和尺寸选择正确，通常比把所有图片都设成高优先级更有效。 4. Google 字体： 本地字体： 在构建时处理字体，减少运行时请求和字体切换造成的布局偏移。中文字体体积通常很大，不能不加筛选就把完整字库放进首屏；按产品覆盖范围拆分或选择合适子集。 5. 第三方统计、聊天或支付脚本要明确加载策略： 常见策略： ：非常少用，只给确实必须在交互前存在的脚本。 ：页面开始可交互后加载，适合统计等常规脚本。 ：浏览器空闲时加载，适合低优先级资源。 ：仅在项目和当前 Next.js 支持的情况下使用，先验证第三方脚本兼容性。 不要把第三方脚本直接写进 ，也不要为一个只在某个页面出现的功能把脚本放进根布局。加载范围越小，首屏越轻。",
+    "readingMinutes": 4,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "Image",
+      "Font",
+      "Script",
+      "Core Web Vitals",
+      "LCP"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-ssg-mdx-server-actions",
+    "aliases": [
+      "07-SSGMDX与Server-Actions"
+    ],
+    "title": "Next.js 16 SSG、MDX 与 Server Actions",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "静态导出解决的是“构建一次、部署静态文件”的问题，MDX 解决的是“内容和组件一起写”的问题，Server Actions 则把表单提交直接连接到服务端函数。三者适合不同边界，不能因为都能写页面就混为一谈。",
+    "type": "Notes",
+    "searchText": "Next.js 16 SSG、MDX 与 Server Actions Notes 前端开发 Next.js Next.js 16 SSG MDX Server Actions React 19 静态导出解决的是“构建一次、部署静态文件”的问题，MDX 解决的是“内容和组件一起写”的问题，Server Actions 则把表单提交直接连接到服务端函数。三者适合不同边界，不能因为都能写页面就混为一谈。 1. 静态导出：把页面编译成文件 在 中开启静态导出： 执行 后，默认会生成 目录。 可以直接交给 Nginx、对象存储、CDN 或其他静态服务器。 会让路由更容易映射到 这种静态目录结构；如果托管平台已经有自己的路由规则，也应按平台行为验证。 静态导出的取舍很明确： | 适合 | 不适合 | | | | | 官网、文档、博客、帮助中心 | 依赖请求时 Cookie 的页面 | | 构建时就能确定的数据 | 必须运行在 Node.js 上的 Route Handler | | 低成本 CDN 分发 | 实时个性化内容和服务端交互 | | 不需要服务器运行时的项目 | 依赖动态 API、数据库或身份状态的页面 | 静态页面中的客户端交互仍然可以运行，但交互逻辑必须在浏览器中完成；不能把服务端动态能力伪装成静态能力。 2. 动态路由必须在构建时枚举 动态路由需要通过 告诉构建过程需要生成哪些路径： 如果路径来自数据库或远程 CMS， 必须在构建阶段能访问它。数据变更后不会自动刷新已经生成的 HTML，通常需要重新构建并重新部署。 的默认图片优化依赖 Next.js 服务端运行时，而纯静态导出没有这个运行时。可选方案是： 也可以使用原生 ，或配置自己的图片 loader。静态导出前必须检查图片、动态路由、重写和 API 依赖，避免本地构建成功、上线后页面却缺能力。 3. MDX：Markdown 中组合 React 组件 MDX 是 Markdown 和 JSX 的混合语法。它适合文章、文档和教程：正文保持 Markdown 的可读性，需要交互时再引入 React 组件。 安装并配置： 可以为所有 MDX 文件提供统一的组件映射： 远程 MDX 的边界 远程 Markdown 可以当作文本获取，交给受控的 Markdown/MDX 编译链处理。不要把不可信内容直接当成任意 React 代码执行；MDX 能调用组件和表达式，远程内容的作者、依赖和编译环境必须可信。文章系统如果只需要 Markdown，使用安全的 Markdown renderer 往往更简单。 4. Server Actions：表单直接调用服务端函数 一个最小的 Server Action： 表单字段必须有 ，否则不会出现在 中。服务端函数仍然必须做鉴权、校验和权限判断； 不是授权机制。 5. 固定参数用 ，用户输入用校验 编辑某条记录时，固定的记录 ID 可以通过 传入，而不是依赖一个可被用户修改的隐藏字段： 真实项目更适合使用 Zod 等 schema validator，将类型转换、长度限制和业务规则集中起来。 只是方便读取，不能替代白名单校验。 6. 给用户反馈： 与 pending 状态 需要显示服务端返回的错误或成功消息时，在 Client Component 中使用 React 的 ： 也可以在提交按钮组件中使用 ，把 pending 状态限制在表单内部。把 Action 放在独立的服务端模块中，Client Component 只负责交互状态，边界会更清楚。 7. 一套可迁移的判断表 | 需求 | 合适的能力 | | | | | 构建后无需服务器运行 | | | 文档内容需要组件 | MDX | | 浏览器提交表单并改数据库 | Server Action | | 给表单返回校验结果 | | | 提交期间禁用按钮 | | | 固定资源 ID | | | 内容更新后刷新缓存 | 或 tag 失效 | 先判断页面的运行时需求，再决定采用静态导出、动态渲染还是 Server Action。技术选型应该由数据生命周期和安全边界驱动，而不是由 API 名字驱动。",
+    "readingMinutes": 6,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "SSG",
+      "MDX",
+      "Server Actions",
+      "React 19"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-env-i18n-css",
+    "aliases": [
+      "08-环境变量i18n配置与CSS"
+    ],
+    "title": "Next.js 16 环境变量、国际化、配置与 CSS",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "环境变量保护运行时配置，国际化组织不同语言的内容和 URL，next.config.ts 管理框架级行为，CSS 方案决定样式的隔离和维护方式。它们都属于基础设施，应该集中、明确、可验证。",
+    "type": "Notes",
+    "searchText": "Next.js 16 环境变量、国际化、配置与 CSS Notes 前端开发 Next.js Next.js 16 环境变量 i18n next.config.ts CSS Modules 环境变量保护运行时配置，国际化组织不同语言的内容和 URL， 管理框架级行为，CSS 方案决定样式的隔离和维护方式。它们都属于基础设施，应该集中、明确、可验证。 1. 环境变量：秘密只留在服务端 应用代码通过 读取环境变量： 本地开发通常使用 ： 不应提交到 Git。可以提交 ，但只放变量名和无效示例： 前缀表示变量允许被客户端代码读取。Next.js 会在构建时把它们内联到浏览器 bundle 中，因此下面这种写法会泄露秘密： 数据库密码、私有 API Key、签名密钥、内部服务地址不要使用 。服务端模块可以使用 防止被客户端误导入： 跨平台执行临时变量时，命令语法不同： 生产环境不要把密钥硬编码在仓库或构建日志里。部署平台的 Environment Variables、密钥管理服务和权限控制才是生产配置的来源。 2. i18n 的核心是“语言 URL + 字典” 语言通常由语言代码和地区代码组成，例如 、 、 。一个简单的配置： 字典按语言拆分： 加载字典时使用明确的白名单，不能把用户传入的路径直接拼接进 ： 3. 使用 建立本地化路由 将语言放进路由参数： 可以用 预生成全部语言页面： 默认语言的 URL 策略要先定下来：所有语言都带前缀最简单；如果要隐藏默认语言，则必须处理 与 的规范化、重定向和 canonical，避免搜索引擎看到重复页面。 4. 根据 做一次性重定向 浏览器会通过 表达偏好，可以使用 和 做匹配： Proxy 只负责入口路由选择： 必须跳过 API、静态资源和已经带语言的路径，否则会出现重定向循环，或者让图片、脚本请求被错误改写。语言探测适合做第一次访问的默认选择，用户手动切换后应以明确的 URL、Cookie 或账户设置为准。 客户端语言切换可以只替换当前路径的语言段： 生产实现还要保留查询参数、处理根路径和避免空路径；组件只是展示交互，翻译内容仍由服务端路由决定。 5. 只放框架级配置 一个可维护的配置文件应该只做框架配置和少量可审计的常量： 高频选项： | 选项 | 用途 | 注意 | | | | | | | 部署在子路径 | 会影响链接和静态资源 URL | | | 指定资源前缀/CDN | 不是通用的站点根路径替换 | | | 统一 URL 斜杠 | 要和托管平台路由匹配 | | | 永久或临时重定向 | 用于迁移旧 URL | | | 内部改写 | 浏览器地址不变，注意缓存和代理边界 | | | 安全头和缓存头 | 先确认是否会覆盖平台默认值 | | | 生成精简 Node 部署产物 | 适合自建容器，不等于静态导出 | | | 转译指定依赖 | 只处理确实存在兼容问题的包 | | | 检查内部链接 | 适合大型应用减少拼写错误 | 不要把 API 密钥写进 配置，也不要为了“看起来高级”把所有实验选项全部打开。每一项配置都应该有明确的运行时需求和回滚方式。 6. CSS 方案与边界 全局样式放在根布局引入： 组件局部样式使用 CSS Modules： 常见方案的取舍： | 方案 | 优点 | 代价 | | | | | | Tailwind / utility | 组合快、约束清晰、适合设计系统 | class 可能变长，需要统一 token | | CSS Modules | 默认隔离、接近原生 CSS | 动态样式需要额外组织 | | Global CSS | 适合 reset、变量和全局规则 | 容易发生命名冲突 | | CSS in JS | 动态主题能力强 | SSR、运行时开销和配置更复杂 | 无论采用哪种方案，都要把设计 token、全局 reset 和组件局部样式分开。不要让 和全局选择器成为组件之间的隐形通信机制。",
+    "readingMinutes": 6,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "环境变量",
+      "i18n",
+      "next.config.ts",
+      "CSS Modules"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-seo-web-vitals",
+    "aliases": [
+      "09-SEO抓取元数据与Web-Vitals"
+    ],
+    "title": "Next.js 16 SEO：抓取、元数据与 Web Vitals",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "SEO 不是给页面塞几个关键词，而是让搜索引擎能够发现、抓取、理解并正确展示内容，同时让真实用户获得稳定、快速的体验。Next.js 可以生成 robots、sitemap、Metadata、JSON-LD 和 Open Graph，但内容质量、链接结构和性能仍然决定最终效果。",
+    "type": "Notes",
+    "searchText": "Next.js 16 SEO：抓取、元数据与 Web Vitals Notes 前端开发 Next.js Next.js 16 SEO Metadata JSON-LD Open Graph Web Vitals SEO 不是给页面塞几个关键词，而是让搜索引擎能够发现、抓取、理解并正确展示内容，同时让真实用户获得稳定、快速的体验。Next.js 可以生成 robots、sitemap、Metadata、JSON LD 和 Open Graph，但内容质量、链接结构和性能仍然决定最终效果。 1. 搜索引擎的基本链路 可以把搜索过程拆成四步： 1. 发现 URL：通过站内链接、外部链接或 sitemap 找到页面。 2. 抓取页面：请求 HTML、资源和允许访问的内容。 3. 建立索引：解析正文、标题、结构化数据和页面关系。 4. 生成排名与展示：根据相关性、质量、体验、权威性和搜索意图呈现结果。 所以 SEO 的基础不是某个魔法字段，而是：可访问的页面、清晰的内部链接、稳定的 URL、真实有用的内容、正确的技术信号和持续的性能监测。不要使用隐藏文字、关键词堆砌、诱导跳转或批量低质量页面等做法。 2. ：声明抓取边界 在 App Router 中创建 ： 访问 时，Next.js 会生成文本结果。 表示通用规则，也可以为特定爬虫提供单独规则。 不是访问控制，不能用来保护密码、后台数据或私有接口；真正的敏感资源必须由认证和服务端权限控制保护。 并非所有爬虫都支持，不能把它当作通用的流量控制方案。生产环境要检查主域名、协议、部署前缀和 sitemap 地址是否一致。 3. ：告诉搜索引擎页面在哪里 静态 sitemap： 数据库驱动的页面使用异步函数： 单个 sitemap 的 URL 数量和文件大小有限。内容规模很大时用 拆分，或由独立的 sitemap 服务生成索引。只放真实、可索引、返回 200 的 canonical URL，不要把登录页、筛选组合和重复 URL 全部塞进去。 4. Metadata：标题和描述要反映页面内容 静态页面可以直接导出 ： 动态页面使用 ： 布局和页面的 metadata 会按层级合并，页面级字段可以覆盖父级字段。 还支持 、 和 ，要先定义清晰的标题策略，避免出现重复后缀或标题过长。生成 metadata 的数据请求应在服务端完成，并与页面数据共享缓存策略。 5. JSON LD：给机器看的结构化语义 结构化数据可以帮助搜索引擎理解文章、作者、面包屑和产品等实体。以博客文章为例： 在这里是把 JSON 放进 script 文本，不是渲染用户 HTML；仍然要对动态字符串做安全序列化。不要直接拼接 JSON，也不要为了搜索结果虚构作者、评分、价格或日期。结构化数据必须与用户实际看到的页面内容一致，并使用符合 schema.org 的类型和字段。 6. Open Graph 与 Twitter/X 卡片 社交分享需要明确的标题、描述、URL 和图片： 文章页面可使用 ，并补充作者和发布时间。 让相对图片路径能够解析成绝对 URL；生产域名、协议和图片尺寸必须按真实部署验证。Twitter/X 通常可以复用 Open Graph 信息，但需要不同卡片效果时应显式设置 。 7. Web Vitals：用真实用户体验校验 SEO 基础 常用指标及参考阈值： | 指标 | 衡量内容 | 良好 | | | | | | LCP | 最大内容绘制速度 | 不超过 2.5 秒 | | INP | 交互响应延迟 | 不超过 200 毫秒 | | CLS | 累积布局偏移 | 不超过 0.1 | 超过良好阈值并不等于页面不可用，但说明需要继续优化；指标要结合设备、网络和真实用户分布判断。可以用 采集浏览器数据： 数据接收接口要限制频率、校验字段，并避免把完整 URL、用户输入或身份信息无条件写入分析系统。实验室工具和真实用户数据各有用途：Lighthouse、PageSpeed Insights 适合定位问题，CrUX 或自有 RUM 适合观察真实设备，Search Console 适合检查索引与搜索表现。 8. 发布前检查清单 每个重要页面都有唯一、准确的 title 和 description。 canonical、语言 URL、站点域名和 Open Graph URL 使用同一套规范。 没有误禁首页、CSS、JS 或需要抓取的公开内容。 sitemap 只包含公开、规范、可访问的 URL。 JSON LD 与页面可见内容一致，并通过结构化数据测试。 首屏图片有稳定尺寸，字体和第三方脚本不会制造明显布局偏移。 通过真实设备检查 LCP、INP、CLS，而不只看本地开发环境。",
+    "readingMinutes": 7,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "SEO",
+      "Metadata",
+      "JSON-LD",
+      "Open Graph",
+      "Web Vitals"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-prisma-better-auth-vercel",
+    "aliases": [
+      "10-PrismaBetter-Auth与Vercel"
+    ],
+    "title": "Next.js 16 Prisma、Better Auth 与 Vercel",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "数据库、身份验证和部署是一个完整应用的闭环：Prisma 负责把 schema 变成可使用的数据库客户端，Better Auth 负责会话和登录流程，Vercel 负责把应用、环境变量和生产数据库连接起来。每个环节都必须区分开发配置和生产配置。",
+    "type": "Notes",
+    "searchText": "Next.js 16 Prisma、Better Auth 与 Vercel Notes 前端开发 Next.js Next.js 16 Prisma Better Auth PostgreSQL Vercel 数据库、身份验证和部署是一个完整应用的闭环：Prisma 负责把 schema 变成可使用的数据库客户端，Better Auth 负责会话和登录流程，Vercel 负责把应用、环境变量和生产数据库连接起来。每个环节都必须区分开发配置和生产配置。 1. Prisma 的职责 Prisma 常见工作流： 1. 在 中描述数据模型。 2. 使用迁移命令把模型变化同步到数据库。 3. 生成类型安全的 Prisma Client。 4. 在服务端模块中通过 Client 读写数据。 初始化和安装版本应以当前项目的 Prisma 文档为准： 典型 schema： 放在 或部署平台环境变量中。使用 Prisma 7 时，具体生成器、配置文件和 adapter API 可能随版本变化，不能把课程中的版本号当作今天项目的永恒接口；以项目实际安装版本的迁移结果和官方文档为准。 开发迁移用于建立和演进本地数据库；生产环境要使用经过审查的迁移链，不要把 当成生产部署命令。 2. 在 Next.js 中复用 Prisma Client 开发环境的热更新会反复执行模块代码，如果每次都创建一个新的 Client，可能耗尽数据库连接。用全局变量保存开发实例： 查询只能在服务端模块或服务端函数中执行： 不要把 Prisma Client、数据库 URL 或查询结果中不必要的字段传给 Client Component。服务端边界既是性能边界，也是秘密和权限边界。 3. Better Auth：把登录流程放在服务端 安装 Better Auth 及其 Prisma adapter。实际包名和 adapter API 要锁定在项目使用的版本： 一个常见的配置骨架： 认证配置使用服务端环境变量： 生产环境要为每个部署环境生成合适的随机 secret，不能提交到仓库，也不能使用用户可控的短字符串。 必须和部署后的站点 URL 一致，否则回调和 Cookie 域可能出现问题。 4. 暴露认证 Route Handler Better Auth 的请求处理器可以挂到 catch all 路由： 这类 Route Handler 只是 HTTP 入口，不是权限判断的替代品。业务页面和写操作仍然要读取当前 session，并对资源归属进行检查： 在服务端获取 session 时要使用当前请求 headers。客户端 session hook 适合更新导航和交互状态，不能作为服务端数据访问的唯一授权依据。 5. 登录和注册交互 客户端可以调用 Better Auth 生成的 client： 生产登录流程至少要考虑密码策略、速率限制、CSRF/Origin 校验、会话过期、退出登录、密码重置、邮箱验证和错误信息的枚举风险。演示用的固定账号、明文密码和前端硬编码密钥不能直接上线。 6. OAuth 回调必须与部署地址一致 启用 GitHub 等社交登录时，需要在供应商后台配置精确的回调 URL，并把 client ID、client secret 放在环境变量中： 本地、预览和生产域名通常不同，三套回调配置不要混用。部署后出现“登录后跳回错误地址”，优先检查 、OAuth provider callback、Cookie 的 属性和代理转发的协议头。 7. Vercel 部署的配置顺序 一个可复现的部署流程： 1. 将项目连接到 Git 仓库，确认构建分支和 Node.js 版本。 2. 在 Vercel 为 Development、Preview、Production 分别填写环境变量。 3. 配置生产 、 、 、OAuth 密钥和必要的公开变量。 4. 在构建阶段生成 Prisma Client，并在部署流程中执行经过审核的生产迁移。 5. 部署后检查公开页面、数据库读写、登录、退出、OAuth 回调和静态资源。 构建脚本可以集中管理： 数据库迁移通常由独立的 release job 执行，而不是让每个应用实例启动时竞争迁移锁。若必须在部署命令中执行，也要保证迁移是幂等的、可审查的，并且生产数据库备份和回滚方案已经准备好。 8. Vercel CLI 与自建部署的区别 CLI 可以用于预览和发布： 这些命令不等于所有项目都应该采用的生产流程。Vercel 的托管运行时、环境变量和域名配置是一套体系； 更适合自建 Node.js 容器，两者不要混成同一部署假设。静态导出则是另一条路线，不能依赖 Vercel 的服务端能力。 部署后的验收清单： 页面能在无登录状态下正常访问。 受保护页面在服务端拒绝未授权请求。 注册、登录、退出和 session 刷新都能完成。 数据库迁移版本与生产 schema 一致。 变量中没有秘密。 图片远程域名、字体、favicon 和 Open Graph 资源可访问。 Preview 和 Production 使用正确的域名、数据库与认证回调。 失败部署不会留下半完成迁移或错误的 Cookie 域。",
+    "readingMinutes": 7,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "Prisma",
+      "Better Auth",
+      "PostgreSQL",
+      "Vercel"
+    ]
+  },
+  {
+    "canonicalSlug": "nextjs16-ai-seo",
+    "aliases": [
+      "README"
+    ],
+    "title": "Next.js 16 + AI + SEO 实战笔记",
+    "publishedAt": "2026-08-06T00:00:00.000Z",
+    "publishedLabel": "Aug 06, 2026",
+    "excerpt": "这套笔记围绕一个实际的 Next.js 应用展开：先把 App Router 和请求链路弄清楚，再接入 AI、缓存、静态内容、认证、Prisma 与 SEO，最后落到 Vercel 部署。",
+    "type": "Notes",
+    "searchText": "Next.js 16 + AI + SEO 实战笔记 Notes 前端开发 Next.js Next.js 16 AI SDK SEO Prisma Better Auth 这套笔记围绕一个实际的 Next.js 应用展开：先把 App Router 和请求链路弄清楚，再接入 AI、缓存、静态内容、认证、Prisma 与 SEO，最后落到 Vercel 部署。 | 顺序 | 笔记 | 范围 | | | | | | 01 | 项目搭建与运行时边界 | P1 P2 | | 02 | App Router 与路由系统 | P3 P6 | | 03 | Route Handler 与 Cookie 会话 | P7 P8 | | 04 | AI SDK、Proxy 与渲染模式 | P9 P13 | | 05 | Cache Components 与缓存策略 | P14 P15 | | 06 | Image、Font、Script 与静态资源 | P16 P18 | | 07 | SSG、MDX 与 Server Actions | P19 P21 | | 08 | 环境变量、i18n、配置与 CSS | P22 P25 | | 09 | SEO：抓取、元数据与 Web Vitals | P26 P33 | | 10 | Prisma、Better Auth 与 Vercel | P34 P36 | 主线 这套笔记暂不覆盖具体业务项目源码，而是把每个能力压缩成可迁移的实现骨架、边界和容易出错的地方。",
+    "readingMinutes": 2,
+    "coverImage": null,
+    "categories": [
+      "前端开发",
+      "Next.js"
+    ],
+    "tags": [
+      "Next.js 16",
+      "AI SDK",
+      "SEO",
+      "Prisma",
+      "Better Auth"
+    ]
+  },
+  {
     "canonicalSlug": "nextjs16-project-routing",
     "aliases": [
       "01-Next.js项目结构与路由"

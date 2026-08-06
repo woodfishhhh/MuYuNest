@@ -1,0 +1,54 @@
+{
+  "canonicalSlug": "nextjs16-image-font-script",
+  "aliases": [
+    "06-ImageFontScript与静态资源"
+  ],
+  "title": "Next.js 16 Image、Font、Script 与静态资源",
+  "publishedAt": "2026-08-06T00:00:00.000Z",
+  "publishedLabel": "Aug 06, 2026",
+  "excerpt": "图片、字体和第三方脚本都可能在首屏阶段改变布局、阻塞主线程或拖慢 LCP。Next.js 的内置组件不是为了替换 HTML 标签，而是把尺寸、加载优先级、远程来源和缓存策略变成可检查的配置。",
+  "type": "Notes",
+  "searchText": "Next.js 16 Image、Font、Script 与静态资源 Notes 前端开发 Next.js Next.js 16 Image Font Script Core Web Vitals LCP 图片、字体和第三方脚本都可能在首屏阶段改变布局、阻塞主线程或拖慢 LCP。Next.js 的内置组件不是为了替换 HTML 标签，而是把尺寸、加载优先级、远程来源和缓存策略变成可检查的配置。 1. 先解决布局偏移 静态路径： 原生字符串 必须提供 和 ，Next.js 才能在图片下载完成前预留空间，避免 CLS。首屏最大的图片可以使用 ；普通图片默认懒加载，不要给列表里的每一张图都提高优先级。 静态导入会自动带出尺寸： 需要铺满容器时使用 ，但父容器必须有定位和稳定尺寸： 不是“不需要尺寸”，而是把尺寸责任转移给父容器。没有 、固定高度或定位上下文，图片仍会造成布局不稳定。 2. 远程图片白名单 远程图片必须在 中显式允许： 、 、 和端口可以一起限制。不要使用一个过宽的 允许任意远程来源，否则图片代理会变成不必要的攻击面。开发域名和生产域名不同，也要分别加入配置。 Next.js 会根据浏览器的 、 和设备宽度选择合适的 ，并把 PNG/JPEG 转成 WebP 或 AVIF。 和 控制候选尺寸，但只有配合正确的 ，浏览器才知道当前布局需要多宽的图。 3. 首屏图片和 LCP LCP 关注首屏最大的文本或图片什么时候完成绘制。判断图片策略： | 图片位置 | 策略 | | | | | 首屏 Hero / 主要封面 | 或当前版本推荐的 preload 方式 | | 首屏以下的文章列表 | 默认懒加载 | | 装饰背景 | 先判断是否真的需要图片，避免占用主资源 | | 不确定宽高的远程图 | 先获取元数据，或使用稳定的 容器 | 不要用 掩盖巨大的原图。压缩、格式和尺寸选择正确，通常比把所有图片都设成高优先级更有效。 4. Google 字体： 本地字体： 在构建时处理字体，减少运行时请求和字体切换造成的布局偏移。中文字体体积通常很大，不能不加筛选就把完整字库放进首屏；按产品覆盖范围拆分或选择合适子集。 5. 第三方统计、聊天或支付脚本要明确加载策略： 常见策略： ：非常少用，只给确实必须在交互前存在的脚本。 ：页面开始可交互后加载，适合统计等常规脚本。 ：浏览器空闲时加载，适合低优先级资源。 ：仅在项目和当前 Next.js 支持的情况下使用，先验证第三方脚本兼容性。 不要把第三方脚本直接写进 ，也不要为一个只在某个页面出现的功能把脚本放进根布局。加载范围越小，首屏越轻。",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "Next.js"
+  ],
+  "tags": [
+    "Next.js 16",
+    "Image",
+    "Font",
+    "Script",
+    "Core Web Vitals",
+    "LCP"
+  ],
+  "html": "<p>图片、字体和第三方脚本都可能在首屏阶段改变布局、阻塞主线程或拖慢 LCP。Next.js 的内置组件不是为了替换 HTML 标签，而是把尺寸、加载优先级、远程来源和缓存策略变成可检查的配置。</p>\n<h2 id=\"1-image-先解决布局偏移\">1. <code>Image</code> 先解决布局偏移</h2>\n<p>静态路径：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">Image</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/image'</span>;\n\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Image</span>\n  <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">\"/hero.png\"</span>\n  <span class=\"hljs-attr\">alt</span>=<span class=\"hljs-string\">\"产品首页\"</span>\n  <span class=\"hljs-attr\">width</span>=<span class=\"hljs-string\">{1920}</span>\n  <span class=\"hljs-attr\">height</span>=<span class=\"hljs-string\">{1080}</span>\n  <span class=\"hljs-attr\">priority</span>\n/&gt;</span></span>;\n</code></pre>\n<p>原生字符串 <code>src</code> 必须提供 <code>width</code> 和 <code>height</code>，Next.js 才能在图片下载完成前预留空间，避免 CLS。首屏最大的图片可以使用 <code>priority</code>；普通图片默认懒加载，不要给列表里的每一张图都提高优先级。</p>\n<p>静态导入会自动带出尺寸：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> hero <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'@/public/hero.png'</span>;\n\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Image</span> <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">{hero}</span> <span class=\"hljs-attr\">alt</span>=<span class=\"hljs-string\">\"产品首页\"</span> /&gt;</span></span>;\n</code></pre>\n<p>需要铺满容器时使用 <code>fill</code>，但父容器必须有定位和稳定尺寸：</p>\n<pre><code class=\"hljs language-tsx\">&lt;div className=<span class=\"hljs-string\">\"relative aspect-video overflow-hidden\"</span>&gt;\n  <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Image</span>\n    <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">{post.coverUrl}</span>\n    <span class=\"hljs-attr\">alt</span>=<span class=\"hljs-string\">{post.title}</span>\n    <span class=\"hljs-attr\">fill</span>\n    <span class=\"hljs-attr\">sizes</span>=<span class=\"hljs-string\">\"(max-width: 768px) 100vw, 50vw\"</span>\n    <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">\"object-cover\"</span>\n  /&gt;</span></span>\n&lt;/div&gt;\n</code></pre>\n<p><code>fill</code> 不是“不需要尺寸”，而是把尺寸责任转移给父容器。没有 <code>aspect-ratio</code>、固定高度或定位上下文，图片仍会造成布局不稳定。</p>\n<h2 id=\"2-远程图片白名单\">2. 远程图片白名单</h2>\n<p>远程图片必须在 <code>next.config.ts</code> 中显式允许：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">const</span> <span class=\"hljs-attr\">nextConfig</span>: <span class=\"hljs-title class_\">NextConfig</span> = {\n  <span class=\"hljs-attr\">images</span>: {\n    <span class=\"hljs-attr\">remotePatterns</span>: [\n      {\n        <span class=\"hljs-attr\">protocol</span>: <span class=\"hljs-string\">'https'</span>,\n        <span class=\"hljs-attr\">hostname</span>: <span class=\"hljs-string\">'images.unsplash.com'</span>,\n        <span class=\"hljs-attr\">pathname</span>: <span class=\"hljs-string\">'/**'</span>,\n      },\n    ],\n    <span class=\"hljs-attr\">formats</span>: [<span class=\"hljs-string\">'image/avif'</span>, <span class=\"hljs-string\">'image/webp'</span>],\n  },\n};\n</code></pre>\n<p><code>protocol</code>、<code>hostname</code>、<code>pathname</code> 和端口可以一起限制。不要使用一个过宽的 <code>**</code> 允许任意远程来源，否则图片代理会变成不必要的攻击面。开发域名和生产域名不同，也要分别加入配置。</p>\n<p>Next.js 会根据浏览器的 <code>Accept</code>、<code>sizes</code> 和设备宽度选择合适的 <code>srcset</code>，并把 PNG/JPEG 转成 WebP 或 AVIF。<code>deviceSizes</code> 和 <code>imageSizes</code> 控制候选尺寸，但只有配合正确的 <code>sizes</code>，浏览器才知道当前布局需要多宽的图。</p>\n<h2 id=\"3-首屏图片和-lcp\">3. 首屏图片和 LCP</h2>\n<p>LCP 关注首屏最大的文本或图片什么时候完成绘制。判断图片策略：</p>\n<table>\n<thead>\n<tr>\n<th>图片位置</th>\n<th>策略</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>首屏 Hero / 主要封面</td>\n<td><code>priority</code> 或当前版本推荐的 preload 方式</td>\n</tr>\n<tr>\n<td>首屏以下的文章列表</td>\n<td>默认懒加载</td>\n</tr>\n<tr>\n<td>装饰背景</td>\n<td>先判断是否真的需要图片，避免占用主资源</td>\n</tr>\n<tr>\n<td>不确定宽高的远程图</td>\n<td>先获取元数据，或使用稳定的 <code>fill</code> 容器</td>\n</tr>\n</tbody>\n</table>\n<p>不要用 <code>priority</code> 掩盖巨大的原图。压缩、格式和尺寸选择正确，通常比把所有图片都设成高优先级更有效。</p>\n<h2 id=\"4-nextfont\">4. <code>next/font</code></h2>\n<p>Google 字体：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Inter</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/font/google'</span>;\n\n<span class=\"hljs-keyword\">const</span> inter = <span class=\"hljs-title class_\">Inter</span>({\n  <span class=\"hljs-attr\">subsets</span>: [<span class=\"hljs-string\">'latin'</span>],\n  <span class=\"hljs-attr\">display</span>: <span class=\"hljs-string\">'swap'</span>,\n});\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">RootLayout</span>(<span class=\"hljs-params\">{ children }: <span class=\"hljs-title class_\">LayoutProps</span>&lt;<span class=\"hljs-string\">'/'</span>&gt;</span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">html</span> <span class=\"hljs-attr\">lang</span>=<span class=\"hljs-string\">\"zh-CN\"</span> <span class=\"hljs-attr\">className</span>=<span class=\"hljs-string\">{inter.className}</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">body</span>&gt;</span>{children}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">body</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">html</span>&gt;</span></span>\n  );\n}\n</code></pre>\n<p>本地字体：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> localFont <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/font/local'</span>;\n\n<span class=\"hljs-keyword\">const</span> brandFont = <span class=\"hljs-title function_\">localFont</span>({\n  <span class=\"hljs-attr\">src</span>: <span class=\"hljs-string\">'./fonts/Brand.woff2'</span>,\n  <span class=\"hljs-attr\">display</span>: <span class=\"hljs-string\">'swap'</span>,\n  <span class=\"hljs-attr\">variable</span>: <span class=\"hljs-string\">'--font-brand'</span>,\n});\n</code></pre>\n<p><code>next/font</code> 在构建时处理字体，减少运行时请求和字体切换造成的布局偏移。中文字体体积通常很大，不能不加筛选就把完整字库放进首屏；按产品覆盖范围拆分或选择合适子集。</p>\n<h2 id=\"5-nextscript\">5. <code>next/script</code></h2>\n<p>第三方统计、聊天或支付脚本要明确加载策略：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> <span class=\"hljs-title class_\">Script</span> <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/script'</span>;\n\n<span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Script</span>\n  <span class=\"hljs-attr\">src</span>=<span class=\"hljs-string\">\"https://analytics.example.com/script.js\"</span>\n  <span class=\"hljs-attr\">strategy</span>=<span class=\"hljs-string\">\"afterInteractive\"</span>\n  <span class=\"hljs-attr\">onLoad</span>=<span class=\"hljs-string\">{()</span> =&gt;</span><span class=\"language-javascript\"> <span class=\"hljs-variable language_\">console</span>.<span class=\"hljs-title function_\">log</span>(<span class=\"hljs-string\">'analytics ready'</span>)}\n/&gt;</span></span>;\n</code></pre>\n<p>常见策略：</p>\n<ul>\n<li><code>beforeInteractive</code>：非常少用，只给确实必须在交互前存在的脚本。</li>\n<li><code>afterInteractive</code>：页面开始可交互后加载，适合统计等常规脚本。</li>\n<li><code>lazyOnload</code>：浏览器空闲时加载，适合低优先级资源。</li>\n<li><code>worker</code>：仅在项目和当前 Next.js 支持的情况下使用，先验证第三方脚本兼容性。</li>\n</ul>\n<p>不要把第三方脚本直接写进 <code>&lt;head&gt;</code>，也不要为一个只在某个页面出现的功能把脚本放进根布局。加载范围越小，首屏越轻。</p>\n",
+  "toc": [
+    {
+      "id": "1-image-先解决布局偏移",
+      "level": 2,
+      "text": "1. Image 先解决布局偏移"
+    },
+    {
+      "id": "2-远程图片白名单",
+      "level": 2,
+      "text": "2. 远程图片白名单"
+    },
+    {
+      "id": "3-首屏图片和-lcp",
+      "level": 2,
+      "text": "3. 首屏图片和 LCP"
+    },
+    {
+      "id": "4-nextfont",
+      "level": 2,
+      "text": "4. next/font"
+    },
+    {
+      "id": "5-nextscript",
+      "level": 2,
+      "text": "5. next/script"
+    }
+  ]
+}

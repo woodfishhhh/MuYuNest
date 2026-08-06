@@ -1,0 +1,33 @@
+{
+  "canonicalSlug": "nextjs16-ai-seo",
+  "aliases": [
+    "README"
+  ],
+  "title": "Next.js 16 + AI + SEO 实战笔记",
+  "publishedAt": "2026-08-06T00:00:00.000Z",
+  "publishedLabel": "Aug 06, 2026",
+  "excerpt": "这套笔记围绕一个实际的 Next.js 应用展开：先把 App Router 和请求链路弄清楚，再接入 AI、缓存、静态内容、认证、Prisma 与 SEO，最后落到 Vercel 部署。",
+  "type": "Notes",
+  "searchText": "Next.js 16 + AI + SEO 实战笔记 Notes 前端开发 Next.js Next.js 16 AI SDK SEO Prisma Better Auth 这套笔记围绕一个实际的 Next.js 应用展开：先把 App Router 和请求链路弄清楚，再接入 AI、缓存、静态内容、认证、Prisma 与 SEO，最后落到 Vercel 部署。 | 顺序 | 笔记 | 范围 | | | | | | 01 | 项目搭建与运行时边界 | P1 P2 | | 02 | App Router 与路由系统 | P3 P6 | | 03 | Route Handler 与 Cookie 会话 | P7 P8 | | 04 | AI SDK、Proxy 与渲染模式 | P9 P13 | | 05 | Cache Components 与缓存策略 | P14 P15 | | 06 | Image、Font、Script 与静态资源 | P16 P18 | | 07 | SSG、MDX 与 Server Actions | P19 P21 | | 08 | 环境变量、i18n、配置与 CSS | P22 P25 | | 09 | SEO：抓取、元数据与 Web Vitals | P26 P33 | | 10 | Prisma、Better Auth 与 Vercel | P34 P36 | 主线 这套笔记暂不覆盖具体业务项目源码，而是把每个能力压缩成可迁移的实现骨架、边界和容易出错的地方。",
+  "readingMinutes": 2,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "Next.js"
+  ],
+  "tags": [
+    "Next.js 16",
+    "AI SDK",
+    "SEO",
+    "Prisma",
+    "Better Auth"
+  ],
+  "html": "<p>这套笔记围绕一个实际的 Next.js 应用展开：先把 App Router 和请求链路弄清楚，再接入 AI、缓存、静态内容、认证、Prisma 与 SEO，最后落到 Vercel 部署。</p>\n<table>\n<thead>\n<tr>\n<th>顺序</th>\n<th>笔记</th>\n<th>范围</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>01</td>\n<td><a href=\"01-%E9%A1%B9%E7%9B%AE%E6%90%AD%E5%BB%BA%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E8%BE%B9%E7%95%8C.md\">项目搭建与运行时边界</a></td>\n<td>P1-P2</td>\n</tr>\n<tr>\n<td>02</td>\n<td><a href=\"02-App-Router%E4%B8%8E%E8%B7%AF%E7%94%B1%E7%B3%BB%E7%BB%9F.md\">App Router 与路由系统</a></td>\n<td>P3-P6</td>\n</tr>\n<tr>\n<td>03</td>\n<td><a href=\"03-Route-Handler%E4%B8%8ECookie%E4%BC%9A%E8%AF%9D.md\">Route Handler 与 Cookie 会话</a></td>\n<td>P7-P8</td>\n</tr>\n<tr>\n<td>04</td>\n<td><a href=\"04-AI-SDKProxy%E4%B8%8E%E6%B8%B2%E6%9F%93%E6%A8%A1%E5%BC%8F.md\">AI SDK、Proxy 与渲染模式</a></td>\n<td>P9-P13</td>\n</tr>\n<tr>\n<td>05</td>\n<td><a href=\"05-Cache-Components%E4%B8%8E%E7%BC%93%E5%AD%98%E7%AD%96%E7%95%A5.md\">Cache Components 与缓存策略</a></td>\n<td>P14-P15</td>\n</tr>\n<tr>\n<td>06</td>\n<td><a href=\"06-ImageFontScript%E4%B8%8E%E9%9D%99%E6%80%81%E8%B5%84%E6%BA%90.md\">Image、Font、Script 与静态资源</a></td>\n<td>P16-P18</td>\n</tr>\n<tr>\n<td>07</td>\n<td><a href=\"07-SSGMDX%E4%B8%8EServer-Actions.md\">SSG、MDX 与 Server Actions</a></td>\n<td>P19-P21</td>\n</tr>\n<tr>\n<td>08</td>\n<td><a href=\"08-%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8Fi18n%E9%85%8D%E7%BD%AE%E4%B8%8ECSS.md\">环境变量、i18n、配置与 CSS</a></td>\n<td>P22-P25</td>\n</tr>\n<tr>\n<td>09</td>\n<td><a href=\"09-SEO%E6%8A%93%E5%8F%96%E5%85%83%E6%95%B0%E6%8D%AE%E4%B8%8EWeb-Vitals.md\">SEO：抓取、元数据与 Web Vitals</a></td>\n<td>P26-P33</td>\n</tr>\n<tr>\n<td>10</td>\n<td><a href=\"10-PrismaBetter-Auth%E4%B8%8EVercel.md\">Prisma、Better Auth 与 Vercel</a></td>\n<td>P34-P36</td>\n</tr>\n</tbody>\n</table>\n<h2 id=\"主线\">主线</h2>\n<pre><code class=\"hljs language-text\">Next.js 项目\n  -&gt; 文件系统路由与服务器边界\n  -&gt; Route Handler / Cookie\n  -&gt; AI SDK 与流式输出\n  -&gt; Proxy / RSC / Cache Components\n  -&gt; Image / Font / Script / SSG / MDX\n  -&gt; Server Actions / 环境变量 / i18n\n  -&gt; robots / sitemap / JSON-LD / Open Graph / Web Vitals\n  -&gt; Prisma / Better Auth / Vercel\n</code></pre>\n<p>这套笔记暂不覆盖具体业务项目源码，而是把每个能力压缩成可迁移的实现骨架、边界和容易出错的地方。</p>\n",
+  "toc": [
+    {
+      "id": "主线",
+      "level": 2,
+      "text": "主线"
+    }
+  ]
+}

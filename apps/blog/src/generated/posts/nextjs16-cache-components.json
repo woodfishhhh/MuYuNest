@@ -1,0 +1,58 @@
+{
+  "canonicalSlug": "nextjs16-cache-components",
+  "aliases": [
+    "05-Cache-Components与缓存策略"
+  ],
+  "title": "Next.js 16 Cache Components 与缓存策略",
+  "publishedAt": "2026-08-06T00:00:00.000Z",
+  "publishedLabel": "Aug 06, 2026",
+  "excerpt": "“刷新后数据没变”不一定是 Bug，可能是 Next.js 把页面推导成了静态内容。缓存组件的价值，是把静态外壳、可缓存数据和每次请求都要变化的动态数据放进同一条路由，同时让开发者明确控制缓存边界。",
+  "type": "Notes",
+  "searchText": "Next.js 16 Cache Components 与缓存策略 Notes 前端开发 Next.js Next.js 16 Cache Components PPR Suspense Revalidation “刷新后数据没变”不一定是 Bug，可能是 Next.js 把页面推导成了静态内容。缓存组件的价值，是把静态外壳、可缓存数据和每次请求都要变化的动态数据放进同一条路由，同时让开发者明确控制缓存边界。 1. 三种内容 静态内容包括本地 JSON、模块导入和纯计算。动态内容包括 、 、 、URL 参数和数据库查询。缓存内容的本质是：动态数据不必每次从源头重新读取，但也不必永久静态化。 2. 开启 Cache Components 开启后，动态内容不能无边界地直接出现在静态树中，应放入 ： 服务端先返回标题和骨架，动态区域稍后通过流式响应填入。这就是 static shell：页面外壳先出来，慢数据不再阻塞整个路由。 3. 明确缓存函数 缓存的键会受到函数参数和闭包变量影响。用户私有数据必须包含用户维度，不能把所有用户的结果塞进同一个共享缓存函数。缓存函数还要避免读取不可序列化的隐式全局状态。 4. 旧缓存策略要能读懂 未启用 Cache Components 时，常见控制方式包括： 读取 、 等请求上下文也会让页面进入动态路径。它们不是“关缓存的魔法开关”，而是在逻辑上说明页面依赖当前请求。 启用 Cache Components 后，控制权更明确：动态内容仍然需要 ，需要缓存的函数再用 、 和 标注。不要把旧的 route segment 配置和新的缓存模型无规则叠加。 5. 、 与失效 缓存生命周期需要区分两个动作： 后台再验证：缓存到期后后台更新，当前用户可以继续读旧值。 立即失效：缓存被清掉，下一次读取必须回源。 不同 Next.js 版本和缓存组件 API 对应的具体参数名可能不同，使用前要对照当前版本文档。业务上应先回答三个问题：数据最多能旧多久、谁触发更新、更新失败时是否允许继续使用旧值。 6. 缓存排错顺序 开发模式中的结果不能直接代表生产缓存。生产排查按这个顺序： 1. 看构建输出里页面是 Static 还是 Dynamic。 2. 列出页面读取的请求上下文和数据源。 3. 暂时移除缓存，确认数据源本身是否正常。 4. 恢复缓存并给动态区域补上 。 5. 用明确的生命周期和 tag 重新上线。 不要为了让数据“每次都变”就永久关闭缓存。先找出静态推导和动态依赖的真实边界。",
+  "readingMinutes": 4,
+  "coverImage": null,
+  "categories": [
+    "前端开发",
+    "Next.js"
+  ],
+  "tags": [
+    "Next.js 16",
+    "Cache Components",
+    "PPR",
+    "Suspense",
+    "Revalidation"
+  ],
+  "html": "<p>“刷新后数据没变”不一定是 Bug，可能是 Next.js 把页面推导成了静态内容。缓存组件的价值，是把静态外壳、可缓存数据和每次请求都要变化的动态数据放进同一条路由，同时让开发者明确控制缓存边界。</p>\n<h2 id=\"1-三种内容\">1. 三种内容</h2>\n<pre><code class=\"hljs language-text\">静态内容       -&gt; 构建时就能确定\n动态内容       -&gt; 依赖请求、Cookie、Header、URL 或实时接口\n缓存内容       -&gt; 动态数据被缓存，再嵌入静态外壳\n</code></pre>\n<p>静态内容包括本地 JSON、模块导入和纯计算。动态内容包括 <code>fetch</code>、<code>cookies()</code>、<code>headers()</code>、URL 参数和数据库查询。缓存内容的本质是：动态数据不必每次从源头重新读取，但也不必永久静态化。</p>\n<h2 id=\"2-开启-cache-components\">2. 开启 Cache Components</h2>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-comment\">// next.config.ts</span>\n<span class=\"hljs-keyword\">import</span> <span class=\"hljs-keyword\">type</span> { <span class=\"hljs-title class_\">NextConfig</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next'</span>;\n\n<span class=\"hljs-keyword\">const</span> <span class=\"hljs-attr\">nextConfig</span>: <span class=\"hljs-title class_\">NextConfig</span> = {\n  <span class=\"hljs-attr\">cacheComponents</span>: <span class=\"hljs-literal\">true</span>,\n};\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> nextConfig;\n</code></pre>\n<p>开启后，动态内容不能无边界地直接出现在静态树中，应放入 <code>Suspense</code>：</p>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> { <span class=\"hljs-title class_\">Suspense</span> } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'react'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">default</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">DashboardPage</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">return</span> (\n    <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">main</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">h1</span>&gt;</span>Dashboard<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">h1</span>&gt;</span>\n      <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">Suspense</span> <span class=\"hljs-attr\">fallback</span>=<span class=\"hljs-string\">{</span>&lt;<span class=\"hljs-attr\">p</span>&gt;</span>加载实时数据...<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">p</span>&gt;</span>}&gt;\n        <span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">RandomProfile</span> /&gt;</span>\n      <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">Suspense</span>&gt;</span>\n    <span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">main</span>&gt;</span></span>\n  );\n}\n\n<span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">RandomProfile</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-keyword\">const</span> response = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetch</span>(<span class=\"hljs-string\">'https://example.com/profile'</span>);\n  <span class=\"hljs-keyword\">const</span> profile = <span class=\"hljs-keyword\">await</span> response.<span class=\"hljs-title function_\">json</span>();\n  <span class=\"hljs-keyword\">return</span> <span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">p</span>&gt;</span>{profile.name}<span class=\"hljs-tag\">&lt;/<span class=\"hljs-name\">p</span>&gt;</span></span>;\n}\n</code></pre>\n<p>服务端先返回标题和骨架，动态区域稍后通过流式响应填入。这就是 static shell：页面外壳先出来，慢数据不再阻塞整个路由。</p>\n<h2 id=\"3-use-cache-明确缓存函数\">3. <code>use cache</code> 明确缓存函数</h2>\n<pre><code class=\"hljs language-tsx\"><span class=\"hljs-keyword\">import</span> { cacheLife, cacheTag } <span class=\"hljs-keyword\">from</span> <span class=\"hljs-string\">'next/cache'</span>;\n\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">async</span> <span class=\"hljs-keyword\">function</span> <span class=\"hljs-title function_\">getPopularPosts</span>(<span class=\"hljs-params\"></span>) {\n  <span class=\"hljs-string\">'use cache'</span>;\n  <span class=\"hljs-title function_\">cacheLife</span>(<span class=\"hljs-string\">'hours'</span>);\n  <span class=\"hljs-title function_\">cacheTag</span>(<span class=\"hljs-string\">'popular-posts'</span>);\n\n  <span class=\"hljs-keyword\">return</span> db.<span class=\"hljs-property\">post</span>.<span class=\"hljs-title function_\">findMany</span>({\n    <span class=\"hljs-attr\">orderBy</span>: { <span class=\"hljs-attr\">views</span>: <span class=\"hljs-string\">'desc'</span> },\n    <span class=\"hljs-attr\">take</span>: <span class=\"hljs-number\">10</span>,\n  });\n}\n</code></pre>\n<p>缓存的键会受到函数参数和闭包变量影响。用户私有数据必须包含用户维度，不能把所有用户的结果塞进同一个共享缓存函数。缓存函数还要避免读取不可序列化的隐式全局状态。</p>\n<h2 id=\"4-旧缓存策略要能读懂\">4. 旧缓存策略要能读懂</h2>\n<p>未启用 Cache Components 时，常见控制方式包括：</p>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> revalidate = <span class=\"hljs-number\">60</span>;        <span class=\"hljs-comment\">// 路由级时间再验证</span>\n<span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> dynamic = <span class=\"hljs-string\">'force-dynamic'</span>;\n</code></pre>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">const</span> response = <span class=\"hljs-keyword\">await</span> <span class=\"hljs-title function_\">fetch</span>(url, { <span class=\"hljs-attr\">cache</span>: <span class=\"hljs-string\">'no-store'</span> });\n</code></pre>\n<pre><code class=\"hljs language-ts\"><span class=\"hljs-keyword\">export</span> <span class=\"hljs-keyword\">const</span> revalidate = <span class=\"hljs-number\">0</span>;          <span class=\"hljs-comment\">// 不缓存</span>\n</code></pre>\n<p>读取 <code>cookies()</code>、<code>headers()</code> 等请求上下文也会让页面进入动态路径。它们不是“关缓存的魔法开关”，而是在逻辑上说明页面依赖当前请求。</p>\n<p>启用 Cache Components 后，控制权更明确：动态内容仍然需要 <code>Suspense</code>，需要缓存的函数再用 <code>'use cache'</code>、<code>cacheLife</code> 和 <code>cacheTag</code> 标注。不要把旧的 route segment 配置和新的缓存模型无规则叠加。</p>\n<h2 id=\"5-revalidateexpire-与失效\">5. <code>revalidate</code>、<code>expire</code> 与失效</h2>\n<p>缓存生命周期需要区分两个动作：</p>\n<ul>\n<li>后台再验证：缓存到期后后台更新，当前用户可以继续读旧值。</li>\n<li>立即失效：缓存被清掉，下一次读取必须回源。</li>\n</ul>\n<p>不同 Next.js 版本和缓存组件 API 对应的具体参数名可能不同，使用前要对照当前版本文档。业务上应先回答三个问题：数据最多能旧多久、谁触发更新、更新失败时是否允许继续使用旧值。</p>\n<h2 id=\"6-缓存排错顺序\">6. 缓存排错顺序</h2>\n<pre><code class=\"hljs language-bash\">pnpm build\npnpm start\n</code></pre>\n<p>开发模式中的结果不能直接代表生产缓存。生产排查按这个顺序：</p>\n<ol>\n<li>看构建输出里页面是 Static 还是 Dynamic。</li>\n<li>列出页面读取的请求上下文和数据源。</li>\n<li>暂时移除缓存，确认数据源本身是否正常。</li>\n<li>恢复缓存并给动态区域补上 <code>Suspense</code>。</li>\n<li>用明确的生命周期和 tag 重新上线。</li>\n</ol>\n<p>不要为了让数据“每次都变”就永久关闭缓存。先找出静态推导和动态依赖的真实边界。</p>\n",
+  "toc": [
+    {
+      "id": "1-三种内容",
+      "level": 2,
+      "text": "1. 三种内容"
+    },
+    {
+      "id": "2-开启-cache-components",
+      "level": 2,
+      "text": "2. 开启 Cache Components"
+    },
+    {
+      "id": "3-use-cache-明确缓存函数",
+      "level": 2,
+      "text": "3. use cache 明确缓存函数"
+    },
+    {
+      "id": "4-旧缓存策略要能读懂",
+      "level": 2,
+      "text": "4. 旧缓存策略要能读懂"
+    },
+    {
+      "id": "5-revalidateexpire-与失效",
+      "level": 2,
+      "text": "5. revalidate、expire 与失效"
+    },
+    {
+      "id": "6-缓存排错顺序",
+      "level": 2,
+      "text": "6. 缓存排错顺序"
+    }
+  ]
+}
