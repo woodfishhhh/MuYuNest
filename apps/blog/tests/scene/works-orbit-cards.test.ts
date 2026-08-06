@@ -25,7 +25,7 @@ const works = [
     name: "WoodFishNest",
     description: "Three.js powered immersive blog hub.",
     kind: "Blog",
-    liveUrl: "http://36.151.148.198/newBlog/",
+    liveUrl: "https://blog.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/VueThreeBlog",
   },
   {
@@ -33,7 +33,7 @@ const works = [
     name: "WeatherDemo",
     description: "Monochrome weather workspace and forecast explorer.",
     kind: "App",
-    liveUrl: "https://woodfish.site/weather/",
+    liveUrl: "https://weather.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/WeatherDemo",
   },
 ];

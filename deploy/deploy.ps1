@@ -3,6 +3,7 @@ param(
   [string]$RemoteDir = $env:DEPLOY_DIR,
   [string]$Container = $env:DEPLOY_CONTAINER,
   [string]$BasePath = $env:VITE_BASE_PATH,
+  [string]$MountPath = $env:DEPLOY_MOUNT_PATH,
   [string]$SiteUrl = $env:DEPLOY_SITE_URL,
   [switch]$SkipBuild
 )
@@ -23,7 +24,7 @@ if ([string]::IsNullOrWhiteSpace($Container)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($BasePath)) {
-  $BasePath = "/newBlog/"
+  $BasePath = "/"
 }
 
 if (-not $BasePath.StartsWith("/")) {
@@ -34,8 +35,20 @@ if (-not $BasePath.EndsWith("/")) {
   $BasePath = "$BasePath/"
 }
 
+if ([string]::IsNullOrWhiteSpace($MountPath)) {
+  $MountPath = "/newBlog/"
+}
+
+if (-not $MountPath.StartsWith("/")) {
+  $MountPath = "/$MountPath"
+}
+
+if (-not $MountPath.EndsWith("/")) {
+  $MountPath = "$MountPath/"
+}
+
 if ([string]::IsNullOrWhiteSpace($SiteUrl)) {
-  $SiteUrl = "https://woodfish.site$BasePath"
+  $SiteUrl = "https://blog.woodfish.site/"
 }
 
 $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -107,6 +120,7 @@ try {
     "REMOTE_ARCHIVE=$(ConvertTo-BashSingleQuoted $remoteArchive)",
     "REMOTE_NGINX_CONF=$(ConvertTo-BashSingleQuoted $remoteNginxConf)",
     "BASE_PATH=$(ConvertTo-BashSingleQuoted $BasePath)",
+    "MOUNT_PATH=$(ConvertTo-BashSingleQuoted $MountPath)",
     "CONTAINER=$(ConvertTo-BashSingleQuoted $Container)"
   ) -join " "
 
@@ -147,7 +161,7 @@ test -f "$release_dir/sw.js"
 test -f "$release_dir/manifest.webmanifest"
 test -d "$release_dir/assets"
 grep -q "${BASE_PATH}assets/" "$release_dir/index.html"
-if grep -q '"/assets/' "$release_dir/index.html"; then
+if [ "$BASE_PATH" != "/" ] && grep -q '"/assets/' "$release_dir/index.html"; then
   echo "index.html contains root-scoped /assets refs" >&2
   exit 3
 fi
@@ -174,7 +188,7 @@ if ! docker exec "$CONTAINER" nginx -s reload; then
   exit 5
 fi
 
-if ! docker exec "$CONTAINER" sh -c "test -f /usr/share/nginx/html${BASE_PATH}index.html && grep -q '${BASE_PATH}assets/' /usr/share/nginx/html${BASE_PATH}index.html"; then
+if ! docker exec "$CONTAINER" sh -c "test -f /usr/share/nginx/html${MOUNT_PATH}index.html && grep -q '${BASE_PATH}assets/' /usr/share/nginx/html${MOUNT_PATH}index.html"; then
   rollback
   rm -f "$REMOTE_ARCHIVE" "$REMOTE_NGINX_CONF"
   exit 6
@@ -200,7 +214,7 @@ rm -rf "$backup_dir"
   if ($html.Content -notmatch [regex]::Escape("${BasePath}assets/")) {
     throw "live HTML does not contain ${BasePath}assets/"
   }
-  if ($html.Content -match '"/assets/') {
+  if ($BasePath -ne "/" -and $html.Content -match '"/assets/') {
     throw 'live HTML still contains root-scoped /assets refs'
   }
 

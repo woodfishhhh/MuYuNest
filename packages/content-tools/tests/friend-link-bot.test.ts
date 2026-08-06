@@ -134,7 +134,7 @@ describe("friend link bot", () => {
       "    type: item",
       "    link_list:",
       "      - name: woodfish",
-      "        link: https://woodfish.site/newBlog/",
+      "        link: https://blog.woodfish.site/",
       "        avatar: https://example.com/avatar.jpg",
       "        descr: 我喜欢你",
     ].join("\n");

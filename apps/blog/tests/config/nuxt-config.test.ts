@@ -16,7 +16,7 @@ function readNuxtConfigSource() {
 }
 
 describe("Nuxt app config", () => {
-  it("keeps the blog in SPA mode with a runtime /newBlog/-safe base URL", () => {
+  it("keeps the blog in SPA mode with a runtime-configurable base URL", () => {
     const configSource = readNuxtConfigSource();
 
     expect(configSource).toContain("ssr: false");
@@ -49,7 +49,7 @@ describe("Nuxt app config", () => {
 
     expect(packageJson.scripts.typecheck).toContain("nuxt typecheck");
     expect(packageJson.scripts.build).toBe("nuxt generate");
-    expect(packageJson.scripts["build:deploy:dist"]).toContain("NUXT_APP_BASE_URL=/newBlog/");
-    expect(packageJson.scripts["build:deploy:dist"]).toContain("verify-dist --base-path /newBlog/");
+    expect(packageJson.scripts["build:deploy:dist"]).toContain("NUXT_APP_BASE_URL=/");
+    expect(packageJson.scripts["build:deploy:dist"]).toContain("verify-dist --base-path /");
   });
 });

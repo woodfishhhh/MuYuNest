@@ -82,7 +82,7 @@ Main development branch: `main`. Feature work is done on short-lived branches or
 The blog is deployed to a VPS behind nginx. See `deploy/` for:
 
 - `deploy.sh` / `deploy.ps1` — copy dist + nginx reload
-- `nginx.conf` — serves the SPA from `/newBlog/`
+- `nginx.conf` — serves the SPA at `blog.woodfish.site` and keeps legacy redirects
 - `install-visitor-counter.sh` — systemd service for the Python visitor counter
 
 The image-bed API runs in Docker Compose on a separate subdomain (`img.woodfish.site`).

@@ -20,7 +20,7 @@ monorepo.
   the image-bed domain.
 - Shared packages: `packages/shared`, `packages/content-tools`,
   `packages/upload-cli`.
-- Deployment: VPS behind nginx, blog served at `https://woodfish.site/newBlog/`,
+- Deployment: VPS behind nginx, blog served at `https://blog.woodfish.site/`,
   image-bed served at `https://img.woodfish.site/`.
 
 The project is practical production software. Prefer boring, observable fixes
@@ -36,7 +36,9 @@ over speculative architecture.
   at `woodfishhhh/MuYuNest`.
 - User timezone for dates and deployment interpretation: Asia/Shanghai.
 - Current main deployment branch: `main`.
-- Current live blog base path: `/newBlog/`.
+- Current live blog base path: `/` on `blog.woodfish.site`.
+- The container mount remains `/usr/share/nginx/html/newBlog`; do not confuse it
+  with the public URL base.
 - Current production nginx container for blog: `blog-nginx`.
 - Default local VPS SSH target used by `deploy/deploy.ps1`:
   `root@36.151.148.198`.
@@ -183,7 +185,7 @@ Behavior:
 - Uploads archive and `deploy/nginx.conf`.
 - Atomically switches `/opt/blog-stack/sites/newBlog`.
 - Runs nginx config test and reload.
-- Smokes `https://woodfish.site/newBlog/`.
+- Smokes `https://blog.woodfish.site/`.
 
 Use this script when GitHub Actions visibility is blocked but SSH is available
 and the user explicitly wants deployment completed.
@@ -193,8 +195,9 @@ and the user explicitly wants deployment completed.
 Useful smoke checks:
 
 ```powershell
-curl.exe -I https://woodfish.site/newBlog/
-curl.exe -L https://woodfish.site/newBlog/friend/ -o NUL -w "status=%{http_code}`n"
+curl.exe -I https://blog.woodfish.site/
+curl.exe -L https://blog.woodfish.site/friend/ -o NUL -w "status=%{http_code}`n"
+curl.exe -I https://woodfish.site/newBlog/friend/
 gh run list --repo woodfishhhh/MuYuNest --branch main --limit 5 --json databaseId,name,headSha,status,conclusion,url
 ```
 
@@ -324,7 +327,8 @@ Verification that passed:
 - `powershell -ExecutionPolicy Bypass -File deploy/deploy.ps1`.
 - GitHub Actions `CI` success on `5e7e7bd`.
 - GitHub Actions `Deploy to VPS` success on `5e7e7bd`.
-- Live `https://woodfish.site/newBlog/friend/` returned 200.
+- Historical live check: `https://woodfish.site/newBlog/friend/` returned 200
+  before the subdomain migration.
 
 ### 2026-05-18 Image-Bed Deploy Stabilization
 

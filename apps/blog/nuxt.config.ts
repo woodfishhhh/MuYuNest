@@ -32,7 +32,7 @@ export default defineNuxtConfig({
   // ── Vite plugins (direct passthrough) ────────────────────────────────────
   vite: {
     define: {
-      // __APP_BASE_URL__ is the true app base URL (e.g. "/" in dev, "/newBlog/" in prod).
+      // __APP_BASE_URL__ is the true app base URL. Production now uses the blog subdomain root.
       // import.meta.env.BASE_URL is set by Nuxt to buildAssetsDir ("/assets") which is wrong
       // for content path normalisation. We expose the real base URL via this define instead.
       __APP_BASE_URL__: JSON.stringify(process.env.NUXT_APP_BASE_URL || "/"),
@@ -121,15 +121,15 @@ export default defineNuxtConfig({
           property: "og:description",
           content: "木鱼的鱼窝 | Vue-powered immersive 3D blog experience.",
         },
-        { property: "og:url", content: "https://woodfish.site/newBlog/" },
-        { property: "og:image", content: "https://woodfish.site/newBlog/favicon.png" },
+        { property: "og:url", content: "https://blog.woodfish.site/" },
+        { property: "og:image", content: "https://blog.woodfish.site/favicon.png" },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: "木鱼的鱼窝 | WoodFishNest" },
         {
           name: "twitter:description",
           content: "木鱼的鱼窝 | Vue-powered immersive 3D blog experience.",
         },
-        { name: "twitter:image", content: "https://woodfish.site/newBlog/favicon.png" },
+        { name: "twitter:image", content: "https://blog.woodfish.site/favicon.png" },
         {
           "http-equiv": "Content-Security-Policy",
           content:

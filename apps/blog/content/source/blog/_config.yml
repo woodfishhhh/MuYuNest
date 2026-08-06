@@ -5,7 +5,7 @@ keywords: woodfish的keyword
 author: woodfish
 language: zh-Hans
 timezone: Asia/Shanghai
-url: https://woodfish.site/newBlog/
+url: https://blog.woodfish.site/
 permalink: ":year/:month/:day/:title/"
 permalink_defaults: null
 pretty_urls:

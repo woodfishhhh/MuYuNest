@@ -5,7 +5,7 @@ import type { FriendLinkData } from "@/types/content";
 
 const sampleLink: FriendLinkData = {
   name: "WoodFish",
-  link: "https://woodfish.site/newBlog/",
+  link: "https://blog.woodfish.site/",
   avatar: "https://avatars.githubusercontent.com/u/1?v=4",
   descr: "用代码记录生活，用文字表达思考。",
 };

@@ -9,7 +9,7 @@ const works: WorkProjectData[] = [
     name: "WoodFishNest",
     description: "个人博客 + 图床基础设施，基于 Nuxt 5 + Three.js + Hono 构建的 Monorepo 全栈项目。",
     kind: "Web App",
-    liveUrl: "https://woodfish.site/newBlog/",
+    liveUrl: "https://blog.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/MuYuNest",
   },
   {

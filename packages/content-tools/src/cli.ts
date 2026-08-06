@@ -72,7 +72,7 @@ async function runVerifyDist(args: string[]) {
   const distDirRaw =
     getFlagValue(parsed.rest, "--dist-dir") ?? getFlagValue(parsed.rest, "--output-root");
   const distDir = distDirRaw ? resolveFromRepo(parsed.paths.repoRoot, distDirRaw) : path.join(appPaths.appRoot, "dist");
-  const basePath = getFlagValue(parsed.rest, "--base-path") ?? process.env.VITE_BASE_PATH ?? "/newBlog/";
+  const basePath = getFlagValue(parsed.rest, "--base-path") ?? process.env.VITE_BASE_PATH ?? "/";
   const result = await verifyDist(distDir, basePath);
   console.log(
     `dist ok: base=${result.basePath}, assets=${result.assetRefs.length}, manifest=${result.manifestRefs[0]}`,
@@ -332,9 +332,9 @@ function printHelp() {
   console.log(`woodfish-content
 
 commands:
-  woodfish-content generate [--reuse-assets] [--site-base-path /newBlog/] [--repo-root path] [--app-root path] [--content-root path] [--public-root path] [--generated-root path]
+  woodfish-content generate [--reuse-assets] [--site-base-path /] [--repo-root path] [--app-root path] [--content-root path] [--public-root path] [--generated-root path]
   woodfish-content optimize-images [--repo-root path] [--app-root path] [--public-root path]
-  woodfish-content verify-dist [--dist-dir path] [--base-path /newBlog/] [--repo-root path] [--app-root path]
+  woodfish-content verify-dist [--dist-dir path] [--base-path /] [--repo-root path] [--app-root path]
   woodfish-content image-report [--content-root path] [--format markdown|json|csv] [--output file] [--repo-root path]
   woodfish-content migrate-images [--dry-run|--write] [--content-root path] [--manifest file] [--endpoint url] [--token value] [--include-external] [--repo-root path]
 `);

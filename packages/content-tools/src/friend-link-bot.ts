@@ -56,7 +56,7 @@ export interface ReciprocalLinkCheckResult {
 
 export const WOODFISH_FRIEND_LINK: OwnFriendLink = {
   name: "woodfish",
-  link: "https://woodfish.site/newBlog/",
+  link: "https://blog.woodfish.site/",
   avatar: "https://pic1.imgdb.cn/item/682f3d1658cb8da5c807b704.jpg",
   descr: "我喜欢你",
 };

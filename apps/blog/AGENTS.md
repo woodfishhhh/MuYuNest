@@ -18,7 +18,7 @@ npm run optimize:images        # optimise images only (skip Markdown parse)
 
 # Build
 nuxt generate                  # static SPA → dist/
-npm run build:deploy           # prod build: base=/newBlog/, then verify-dist
+npm run build:deploy           # prod build: base=/, then verify-dist
 
 # Quality
 nuxt typecheck                 # vue-tsc type check

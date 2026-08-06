@@ -17,7 +17,7 @@ export function normalizeDeployBasePath(value: string | undefined): string {
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
-export function verifyIndexHtmlPaths(html: string, basePath = "/newBlog/"): DistPathVerification {
+export function verifyIndexHtmlPaths(html: string, basePath = "/"): DistPathVerification {
   const normalizedBase = normalizeDeployBasePath(basePath);
   const refs = Array.from(html.matchAll(/\b(?:href|src)=["']([^"']+)["']/g)).map(
     (match) => match[1] ?? "",
@@ -69,7 +69,7 @@ export function verifyIndexHtmlPaths(html: string, basePath = "/newBlog/"): Dist
   };
 }
 
-export async function verifyDist(distDir: string, basePath = "/newBlog/") {
+export async function verifyDist(distDir: string, basePath = "/") {
   await Promise.all([
     access(path.join(distDir, "index.html")),
     access(path.join(distDir, "sw.js")),

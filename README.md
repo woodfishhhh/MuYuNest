@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="https://woodfish.site/newBlog/">在线博客</a>
+  <a href="https://blog.woodfish.site/">在线博客</a>
   ·
   <a href="https://img.woodfish.site/api/health">图床状态</a>
   ·
@@ -17,7 +17,7 @@ MuYuNest（代码中的项目名为 `WoodFishNest`）把个人博客、内容构
 ## 先看成果
 
 <p align="center">
-  <a href="https://woodfish.site/newBlog/">
+  <a href="https://blog.woodfish.site/">
     <img src="./assets/readme/blog-home.png" width="100%" alt="WoodFishNest 线上博客首页，星空中的可交互蓝色超立方体">
   </a>
 </p>
@@ -31,7 +31,7 @@ MuYuNest（代码中的项目名为 `WoodFishNest`）把个人博客、内容构
 - Nuxt SPA 承载文章、作品、作者与友链内容。
 - Three.js 绘制可交互的昼夜几何场景，GSAP 负责界面与场景过渡。
 - `content-tools` 在构建前把 Markdown、图片与元数据整理为静态内容。
-- 最终产物可作为静态站点部署，线上地址为 [woodfish.site/newBlog](https://woodfish.site/newBlog/)。
+- 最终产物可作为静态站点部署，线上地址为 [blog.woodfish.site](https://blog.woodfish.site/)。
 
 ### 自托管写作基础设施
 
@@ -120,6 +120,7 @@ Nginx
 ```
 
 - [图床部署、TLS、备份与恢复](./deploy/image-bed/README.md)
+- [公共域名、兼容重定向与 TLS](./docs/domain-routing.md)
 - [Muyu 架构与权限边界](./docs/muyu-architecture.md)
 - [从 Typora 到静态博客的写作流程](./docs/muyu-writing-workflow.md)
 - [日常运维手册](./docs/muyu-ops-runbook.md)

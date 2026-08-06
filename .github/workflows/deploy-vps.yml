@@ -30,9 +30,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      VITE_BASE_PATH: /newBlog/
-      DEPLOY_URL: https://woodfish.site/newBlog/
+      VITE_BASE_PATH: /
+      DEPLOY_URL: https://blog.woodfish.site/
       DEPLOY_DIR: ${{ secrets.DEPLOY_DIR || '/opt/blog-stack/sites/newBlog' }}
+      DEPLOY_MOUNT_PATH: /newBlog/
       DEPLOY_CONTAINER: blog-nginx
 
     steps:
@@ -184,6 +185,7 @@ jobs:
 
           target_dir="${{ env.DEPLOY_DIR }}"
           base_path="${{ env.VITE_BASE_PATH }}"
+          mount_path="${{ env.DEPLOY_MOUNT_PATH }}"
           container="${{ env.DEPLOY_CONTAINER }}"
           config_path="/opt/blog-stack/nginx/conf.d/default.conf"
           config_backup="\${config_path}.bak.${{ github.run_id }}"
@@ -208,15 +210,6 @@ jobs:
             *) echo "Refusing unsafe deploy dir: \$target_dir" >&2; exit 2 ;;
           esac
 
-          cp "\$config_path" "\$config_backup"
-          cat /tmp/default.conf > "\$config_path"
-          if ! docker exec "\$container" nginx -t; then
-            cat "\$config_backup" > "\$config_path"
-            rm -f "\$config_backup"
-            docker exec "\$container" nginx -s reload || true
-            exit 1
-          fi
-
           rm -rf "\$backup_dir"
 
           test -f "\$next_dir/index.html"
@@ -224,9 +217,18 @@ jobs:
           test -f "\$next_dir/manifest.webmanifest"
           test -d "\$next_dir/assets"
           grep -q "\${base_path}assets/" "\$next_dir/index.html"
-          if grep -q '"/assets/' "\$next_dir/index.html"; then
+          if [ "\$base_path" != "/" ] && grep -q '"/assets/' "\$next_dir/index.html"; then
             echo "index.html contains root-scoped /assets refs" >&2
             exit 3
+          fi
+
+          cp "\$config_path" "\$config_backup"
+          cat /tmp/default.conf > "\$config_path"
+          if ! docker exec "\$container" nginx -t; then
+            cat "\$config_backup" > "\$config_path"
+            rm -f "\$config_backup"
+            docker exec "\$container" nginx -s reload || true
+            exit 1
           fi
 
           if [ -d "\$target_dir" ]; then
@@ -241,7 +243,7 @@ jobs:
             exit 1
           fi
 
-          if ! docker exec "\$container" sh -c "test -f /usr/share/nginx/html\${base_path}index.html && grep -q '\${base_path}assets/' /usr/share/nginx/html\${base_path}index.html"; then
+          if ! docker exec "\$container" sh -c "test -f /usr/share/nginx/html\${mount_path}index.html && grep -q '\${base_path}assets/' /usr/share/nginx/html\${mount_path}index.html"; then
             rollback
             exit 1
           fi
@@ -255,7 +257,7 @@ jobs:
         run: |
           html="$(curl -kfsSL "${{ env.DEPLOY_URL }}")"
           printf '%s' "$html" | grep -q "${{ env.VITE_BASE_PATH }}assets/"
-          if printf '%s' "$html" | grep -q '"/assets/'; then
+          if [ "${{ env.VITE_BASE_PATH }}" != "/" ] && printf '%s' "$html" | grep -q '"/assets/'; then
             echo "Live HTML still contains root-scoped /assets refs" >&2
             exit 1
           fi

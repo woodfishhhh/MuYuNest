@@ -10,7 +10,7 @@ tsx src/cli.ts generate                     # full pipeline: parse posts + optim
 tsx src/cli.ts generate --reuse-assets      # CI mode: skip image re-optimisation
 tsx src/cli.ts optimize-images              # optimise images only
 tsx src/cli.ts verify-dist                  # verify built dist has expected assets
-tsx src/cli.ts verify-dist --dist-dir dist --base-path /newBlog/  # with explicit paths
+tsx src/cli.ts verify-dist --dist-dir dist --base-path /  # with explicit paths
 
 # Build (compile TS for use as a bin)
 npm run build     # tsc → dist/

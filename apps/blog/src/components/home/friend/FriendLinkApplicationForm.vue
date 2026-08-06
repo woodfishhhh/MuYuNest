@@ -174,7 +174,7 @@ function confirmIssueRedirect() {
             </div>
             <div>
               <dt>链接</dt>
-              <dd>https://woodfish.site/newBlog/</dd>
+              <dd>https://blog.woodfish.site/</dd>
             </div>
             <div>
               <dt>头像</dt>

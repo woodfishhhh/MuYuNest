@@ -7,8 +7,9 @@ set -euo pipefail
 REMOTE="${DEPLOY_REMOTE:-root@36.151.148.198}"
 REMOTE_DIR="${DEPLOY_DIR:-/opt/blog-stack/sites/newBlog}"
 CONTAINER="${DEPLOY_CONTAINER:-blog-nginx}"
-BASE_PATH="${VITE_BASE_PATH:-/newBlog/}"
-SITE_URL="${DEPLOY_SITE_URL:-https://woodfish.site/newBlog/}"
+BASE_PATH="${VITE_BASE_PATH:-/}"
+MOUNT_PATH="${DEPLOY_MOUNT_PATH:-/newBlog/}"
+SITE_URL="${DEPLOY_SITE_URL:-https://blog.woodfish.site/}"
 APP_ROOT="${DEPLOY_APP_ROOT:-apps/blog}"
 DIST_DIR="${DEPLOY_DIST_DIR:-$APP_ROOT/dist}"
 SSH_OPTS=(-o StrictHostKeyChecking=accept-new)
@@ -23,7 +24,7 @@ trap cleanup EXIT
 
 echo "==> 1. 构建项目..."
 cd "$(dirname "$0")/.."
-VITE_BASE_PATH="$BASE_PATH" npm run build:deploy
+VITE_BASE_PATH="$BASE_PATH" pnpm build:deploy
 
 archive="$(mktemp -t woodfishnest.XXXXXX.tar.gz)"
 deploy_id="$(date +%Y%m%d%H%M%S)"
@@ -39,7 +40,7 @@ scp "${SSH_OPTS[@]}" deploy/nginx.conf "$REMOTE:$remote_nginx_conf"
 
 echo "==> 4. 原子发布..."
 ssh "${SSH_OPTS[@]}" "$REMOTE" \
-  "REMOTE_DIR='$REMOTE_DIR' REMOTE_ARCHIVE='$remote_archive' REMOTE_NGINX_CONF='$remote_nginx_conf' BASE_PATH='$BASE_PATH' CONTAINER='$CONTAINER' bash -se" <<'REMOTE_SCRIPT'
+  "REMOTE_DIR='$REMOTE_DIR' REMOTE_ARCHIVE='$remote_archive' REMOTE_NGINX_CONF='$remote_nginx_conf' BASE_PATH='$BASE_PATH' MOUNT_PATH='$MOUNT_PATH' CONTAINER='$CONTAINER' bash -se" <<'REMOTE_SCRIPT'
 set -euo pipefail
 
 case "$REMOTE_DIR" in
@@ -76,7 +77,7 @@ test -f "$release_dir/sw.js"
 test -f "$release_dir/manifest.webmanifest"
 test -d "$release_dir/assets"
 grep -q "${BASE_PATH}assets/" "$release_dir/index.html"
-if grep -q '"/assets/' "$release_dir/index.html"; then
+if [ "$BASE_PATH" != "/" ] && grep -q '"/assets/' "$release_dir/index.html"; then
   echo "index.html 仍包含根路径 /assets，停止发布" >&2
   exit 3
 fi
@@ -103,7 +104,7 @@ if ! docker exec "$CONTAINER" nginx -s reload; then
   exit 5
 fi
 
-if ! docker exec "$CONTAINER" sh -c "test -f /usr/share/nginx/html${BASE_PATH}index.html && grep -q '${BASE_PATH}assets/' /usr/share/nginx/html${BASE_PATH}index.html"; then
+if ! docker exec "$CONTAINER" sh -c "test -f /usr/share/nginx/html${MOUNT_PATH}index.html && grep -q '${BASE_PATH}assets/' /usr/share/nginx/html${MOUNT_PATH}index.html"; then
   rollback
   rm -f "$REMOTE_ARCHIVE" "$REMOTE_NGINX_CONF"
   exit 6
@@ -118,7 +119,7 @@ REMOTE_SCRIPT
 echo "==> 5. 线上验证..."
 html="$(curl -kfsSL "$SITE_URL")"
 printf '%s' "$html" | grep -q "${BASE_PATH}assets/"
-if printf '%s' "$html" | grep -q '"/assets/'; then
+if [ "$BASE_PATH" != "/" ] && printf '%s' "$html" | grep -q '"/assets/'; then
   echo "线上 HTML 仍包含根路径 /assets" >&2
   exit 4
 fi
