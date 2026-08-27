@@ -5,8 +5,13 @@ on:
     types:
       - opened
   schedule:
-    - cron: "*/15 * * * *"
+    # GitHub Actions uses UTC; 16:00 UTC is 00:00 in Asia/Shanghai.
+    - cron: "0 16 * * *"
   workflow_dispatch:
+
+concurrency:
+  group: friend-link-bot
+  cancel-in-progress: false
 
 permissions:
   actions: write

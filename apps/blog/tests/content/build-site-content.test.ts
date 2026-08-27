@@ -184,6 +184,11 @@ describe("build-site-content", () => {
           "        descr: 我的博客从这里学的",
         ].join("\n"),
       );
+      await writeFile(
+        path.join(path.dirname(linkPath), "friend-link-status.json"),
+        '{"offline":["https://fomal.cc/"]}\n',
+        "utf8",
+      );
       await writeFile(configPath, "author: woodfish\nsubtitle: HOLA,this is woodfish!\n");
 
       const targetPublicDir = path.join(tempRoot, "generated-public");
@@ -235,6 +240,7 @@ describe("build-site-content", () => {
       expect(result.friendLinks[0]?.avatar).toMatch(
         /^\/newBlog\/remote-assets\/[a-f0-9]{40}\.[a-z0-9]+$/,
       );
+      expect(result.friendLinks[0]?.offline).toBe(true);
     } finally {
       await new Promise<void>((resolve, reject) => {
         avatarServer.close((error) => {

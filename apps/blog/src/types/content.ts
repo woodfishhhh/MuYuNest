@@ -66,6 +66,7 @@ export interface FriendLinkData {
   avatar?: string;
   descr?: string;
   className?: string;
+  offline?: boolean;
 }
 
 export interface WorkProjectData {

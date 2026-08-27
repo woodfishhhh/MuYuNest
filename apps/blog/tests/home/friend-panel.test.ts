@@ -5,6 +5,7 @@ import { nextTick } from "vue";
 import FriendPanel from "@/components/home/FriendPanel.vue";
 import FriendLinkApplicationForm from "@/components/home/friend/FriendLinkApplicationForm.vue";
 import FriendLinkCard from "@/components/home/friend/FriendLinkCard.vue";
+import FriendLinkGrid from "@/components/home/friend/FriendLinkGrid.vue";
 import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const links = [
@@ -134,6 +135,43 @@ describe("FriendPanel", () => {
     await wrapper.get("[data-testid='friend-random-visit']").trigger("click");
 
     expect(openSpy).toHaveBeenCalledWith("https://blog.mohao.me/", "_blank", "noopener,noreferrer");
+    randomSpy.mockRestore();
+  });
+
+  it("shows offline links after normal links and excludes them from random visits", async () => {
+    const offlineLink = {
+      ...links[1],
+      name: "Offline Blog",
+      link: "https://offline.example/",
+      offline: true,
+    };
+    const wrapper = mount(FriendPanel, {
+      props: {
+        links: [links[0], offlineLink],
+      },
+    });
+
+    expect(wrapper.get("[data-testid='friend-offline-section']").text()).toContain("失联");
+    expect(wrapper.get("[data-testid='friend-offline-section']").findAll("[data-testid='friend-link-card']")).toHaveLength(1);
+    expect(wrapper.get("[data-testid='friend-link-offline-badge']").text()).toBe("失联");
+
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.99);
+    await wrapper.get("[data-testid='friend-random-visit']").trigger("click");
+
+    expect(openSpy).toHaveBeenCalledWith(links[0].link, "_blank", "noopener,noreferrer");
+    randomSpy.mockRestore();
+  });
+
+  it("keeps the manual friend order without sampling a random waterfall layout", () => {
+    const randomSpy = vi.spyOn(Math, "random");
+
+    mount(FriendLinkGrid, {
+      props: {
+        links,
+      },
+    });
+
+    expect(randomSpy).not.toHaveBeenCalled();
     randomSpy.mockRestore();
   });
 

@@ -23,6 +23,11 @@ import {
   toSitePublicUrl,
   rewriteMarkdownAssetPaths,
 } from "./generator-core.js";
+import {
+  getFriendLinkStatusPath,
+  normalizeFriendLinkUrl,
+  readFriendLinkStatus,
+} from "./friend-link-status.js";
 
 export interface GeneratedPostIndexEntry {
   canonicalSlug: string;
@@ -92,6 +97,7 @@ export interface GeneratedFriendLink {
   avatar?: string;
   descr?: string;
   className?: string;
+  offline?: boolean;
 }
 
 export interface SiteContentBuildResult {
@@ -146,6 +152,7 @@ export async function buildSiteContent(
     "_data",
     "link.yml",
   );
+  const statusPath = getFriendLinkStatusPath(linkPath);
   const configPath = path.join(contentRoot, "source", "blog", "_config.yml");
   const targetPublicDir = options.targetPublicDir ?? path.join(sourceProjectRoot, "public");
   const siteBasePath = options.siteBasePath;
@@ -265,6 +272,7 @@ export async function buildSiteContent(
       targetPublicDir,
       siteBasePath,
       reuseGeneratedAssets,
+      statusPath,
     ),
   };
 }
@@ -660,9 +668,11 @@ async function readFriendLinks(
   targetPublicDir: string,
   siteBasePath?: string,
   reuseGeneratedAssets?: boolean,
+  statusPath = getFriendLinkStatusPath(linkPath),
 ): Promise<GeneratedFriendLink[]> {
   const raw = await safeReadFile(linkPath);
   const data = (yaml.load(raw) as { links?: unknown } | undefined) ?? {};
+  const offlineLinks = await readFriendLinkStatus(statusPath);
   const result: GeneratedFriendLink[] = [];
   const groups = Array.isArray(data.links) ? data.links : [];
 
@@ -699,6 +709,7 @@ async function readFriendLinks(
         avatar,
         descr: readString(typedItem?.descr) || undefined,
         className: className || undefined,
+        ...(offlineLinks.has(normalizeFriendLinkUrl(link)) ? { offline: true } : {}),
       });
     }
   }

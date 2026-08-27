@@ -13,6 +13,8 @@ const props = defineProps<{
 
 const isMobileApplicationOpen = shallowRef(false);
 const mobileTriggerTilt = shallowRef(createMobileTriggerTiltState());
+const availableLinks = computed(() => props.links.filter((link) => !link.offline));
+const offlineLinks = computed(() => props.links.filter((link) => link.offline));
 
 const mobileTriggerStyle = computed<Record<string, string>>(() => ({
   "--friend-trigger-rotate-x": mobileTriggerTilt.value.rotateX,
@@ -99,11 +101,15 @@ function resetMobileTriggerTilt() {
 }
 
 function visitRandomFriend() {
-  if (props.links.length === 0) {
+  if (availableLinks.value.length === 0) {
     return;
   }
 
-  const target = props.links[Math.floor(Math.random() * props.links.length)];
+  const target = availableLinks.value[Math.floor(Math.random() * availableLinks.value.length)];
+  if (!target) {
+    return;
+  }
+
   trackAnalyticsEvent("friend-random", { site: target.name });
   window.open(target.link, "_blank", "noopener,noreferrer");
 }
@@ -148,11 +154,33 @@ function visitRandomFriend() {
           >
             开往
           </a>
-          <span class="friend-links-pane__count">{{ props.links.length }} 个站点</span>
+          <span class="friend-links-pane__count">{{ availableLinks.length }} 个正常站点</span>
         </div>
       </header>
 
-      <FriendLinkGrid :links="props.links" />
+      <FriendLinkGrid v-if="availableLinks.length > 0" :links="availableLinks" />
+      <p v-else data-testid="friend-online-empty" class="friend-links-pane__empty">
+        暂时没有可用的友链。
+      </p>
+
+      <section
+        v-if="offlineLinks.length > 0"
+        data-testid="friend-offline-section"
+        class="friend-offline-section"
+        aria-labelledby="friend-offline-title"
+      >
+        <header class="friend-offline-section__header">
+          <div>
+            <div class="text-[11px] tracking-[0.22em] text-[var(--stage-hint)]">失联坐标</div>
+            <h3 id="friend-offline-title" class="friend-offline-section__title">失联</h3>
+          </div>
+          <span class="friend-links-pane__count">{{ offlineLinks.length }} 个站点</span>
+        </header>
+        <p class="friend-offline-section__hint">
+          这些站点最近一次每日连通性检查未通过；恢复后会自动回到上面的友链区域。
+        </p>
+        <FriendLinkGrid :links="offlineLinks" />
+      </section>
     </section>
 
     <button
@@ -254,6 +282,46 @@ function visitRandomFriend() {
   gap: 1rem;
   border-bottom: 1px solid var(--border-subtle);
   padding: 1.1rem 1.15rem 0.9rem;
+}
+
+.friend-links-pane__empty {
+  margin: 1.1rem 0.9rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 8px;
+  padding: 1rem;
+  color: var(--stage-hint);
+  text-align: center;
+}
+
+.friend-offline-section {
+  flex-shrink: 0;
+  margin: 0.5rem 0.9rem 1.6rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.35rem;
+}
+
+.friend-offline-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-inline: 0.25rem;
+}
+
+.friend-offline-section__title {
+  margin-top: 0.4rem;
+  color: var(--stage-fg);
+  font-size: clamp(1.5rem, 2.5vw, 2.25rem);
+  font-weight: 300;
+  line-height: 1.1;
+}
+
+.friend-offline-section__hint {
+  max-width: 42rem;
+  padding: 0.8rem 0.25rem 0;
+  color: var(--stage-hint);
+  font-size: 0.78rem;
+  line-height: 1.8;
 }
 
 .friend-links-pane__actions {

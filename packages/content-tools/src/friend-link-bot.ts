@@ -10,6 +10,12 @@ import yaml from "js-yaml";
 import { chromium } from "playwright";
 
 import { resolveAssetReference, toSitePublicUrl } from "./content/generator-core.js";
+import {
+  getFriendLinkStatusPath,
+  normalizeFriendLinkUrl,
+  readFriendLinkStatus,
+  writeFriendLinkStatus,
+} from "./content/friend-link-status.js";
 import { resolveBlogPaths, type BlogPathOverrides } from "./paths.js";
 
 const execFileAsync = promisify(execFile);
@@ -29,6 +35,7 @@ export interface FriendLinkData {
   avatar?: string;
   descr?: string;
   className?: string;
+  offline?: boolean;
 }
 
 export interface GitHubIssue {
@@ -54,6 +61,12 @@ export interface ReciprocalLinkCheckResult {
   found: boolean;
   matchedUrl?: string;
   indeterminate?: boolean;
+}
+
+export interface FriendLinkAvailabilityResult {
+  available: boolean;
+  status?: number;
+  error?: string;
 }
 
 export const WOODFISH_FRIEND_LINK: OwnFriendLink = {
@@ -106,7 +119,7 @@ export function parseFriendLinkIssueBody(body: string): FriendLinkIssueData | nu
 export function buildInitialFriendLinkComment(ownLink: OwnFriendLink) {
   return [
     INITIAL_COMMENT_MARKER,
-    "收到友链申请啦！这个友链将会在 1 小时后被自动检验；确认没有反链会自动关闭，暂时无法访问则会等下一轮重试。",
+    "收到友链申请啦！机器人每天北京时间 00:00 检验友链；新申请至少等待 1 小时，确认没有反链会自动关闭，暂时无法访问则会等下一轮重试。",
     "",
     "请先在您的博客友链中加入 woodfish 的友链喔：",
     "",
@@ -223,6 +236,7 @@ export async function buildFriendLinksFromYaml(options: {
 }) {
   const raw = await readFile(options.linkPath, "utf8");
   const groups = readFriendGroups(raw);
+  const offlineLinks = await readFriendLinkStatus(getFriendLinkStatusPath(options.linkPath));
   const result: FriendLinkData[] = [];
 
   for (const group of groups) {
@@ -253,6 +267,7 @@ export async function buildFriendLinksFromYaml(options: {
         ...(avatar ? { avatar } : {}),
         ...(readString(record.descr) ? { descr: readString(record.descr) } : {}),
         ...(className ? { className } : {}),
+        ...(offlineLinks.has(normalizeFriendLinkUrl(link)) ? { offline: true } : {}),
       });
     }
   }
@@ -408,6 +423,92 @@ async function fetchPageText(url: string) {
   return response.text();
 }
 
+export async function checkFriendLinkAvailability(
+  linkUrl: string,
+  options: {
+    fetchStatus?: (url: string) => Promise<number>;
+    retryDelayMs?: number;
+  } = {},
+): Promise<FriendLinkAvailabilityResult> {
+  const targetUrl = normalizeFetchUrl(linkUrl);
+  if (!targetUrl) {
+    return {
+      available: false,
+      error: "Invalid or unsafe URL",
+    };
+  }
+
+  const fetchStatus = options.fetchStatus ?? fetchPageStatus;
+  const retryDelayMs = options.retryDelayMs ?? 400;
+  let lastError = "Unknown connection error";
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const status = await fetchStatus(targetUrl);
+      if (status >= 200 && status < 400) {
+        return {
+          available: true,
+          status,
+        };
+      }
+
+      lastError = `HTTP ${status}`;
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+
+    if (attempt === 0 && retryDelayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
+
+  return {
+    available: false,
+    error: lastError,
+  };
+}
+
+export async function collectOfflineFriendLinks(
+  links: Array<Pick<FriendLinkData, "link">>,
+  options: {
+    checkLink?: (url: string) => Promise<FriendLinkAvailabilityResult>;
+    excludeLinks?: string[];
+  } = {},
+) {
+  const checkLink = options.checkLink ?? checkFriendLinkAvailability;
+  const excludedLinks = new Set(
+    (options.excludeLinks ?? []).map(normalizeFriendLinkUrl).filter(Boolean),
+  );
+  const offlineLinks = new Set<string>();
+
+  for (const friend of links) {
+    const normalizedLink = normalizeFriendLinkUrl(friend.link);
+    if (!normalizedLink || excludedLinks.has(normalizedLink)) {
+      continue;
+    }
+
+    const result = await checkLink(friend.link);
+    if (!result.available) {
+      offlineLinks.add(normalizedLink);
+    }
+  }
+
+  return [...offlineLinks].sort();
+}
+
+async function fetchPageStatus(url: string) {
+  const response = await fetch(url, {
+    headers: {
+      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "user-agent": "WoodfishFriendLinkBot/1.0",
+    },
+    redirect: "follow",
+    signal: AbortSignal.timeout(15_000),
+  });
+
+  return response.status;
+}
+
 async function renderPageWithBrowser(url: string) {
   const executablePath = process.env.PLAYWRIGHT_BOT_EXECUTABLE_PATH?.trim();
   const browser = await chromium.launch({
@@ -537,6 +638,10 @@ function readString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function sameStringArray(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 function getFriendLinkYamlPath(appRoot: string) {
   return path.join(appRoot, "content/source/blog/source/_data/link.yml");
 }
@@ -644,6 +749,51 @@ async function runReviewMode() {
 
     await reviewIssue(issue, github);
   }
+
+  await auditExistingFriendLinks();
+}
+
+async function auditExistingFriendLinks() {
+  const paths = resolveBlogPaths();
+  const linkPath = getFriendLinkYamlPath(paths.appRoot);
+  const statusPath = getFriendLinkStatusPath(linkPath);
+  const rawYaml = await readFile(linkPath, "utf8");
+  const friends = readFriendLinksFromYaml(rawYaml);
+  const ownLink = await readOwnFriendLink();
+  const currentOfflineLinks = await readFriendLinkStatus(statusPath);
+  const currentLinks = new Set(friends.map((friend) => normalizeFriendLinkUrl(friend.link)));
+  const friendByLink = new Map(
+    friends.map((friend) => [normalizeFriendLinkUrl(friend.link), friend.name]),
+  );
+
+  const offlineLinks = await collectOfflineFriendLinks(friends, {
+    excludeLinks: [ownLink.link],
+    checkLink: async (url) => {
+      const result = await checkFriendLinkAvailability(url);
+      const name = friendByLink.get(normalizeFriendLinkUrl(url)) ?? url;
+      if (result.available) {
+        console.log(`Friend link available: ${name}`);
+      } else {
+        console.log(`Friend link unavailable: ${name} (${result.error ?? "unknown error"})`);
+      }
+      return result;
+    },
+  });
+  const relevantCurrentOfflineLinks = [...currentOfflineLinks]
+    .filter((link) => currentLinks.has(link))
+    .sort();
+
+  if (sameStringArray(relevantCurrentOfflineLinks, offlineLinks)) {
+    console.log(`Friend link availability unchanged (${offlineLinks.length} offline).`);
+    return;
+  }
+
+  await writeFriendLinkStatus(statusPath, offlineLinks);
+  await syncFriendLinksJson({ repoRoot: paths.repoRoot });
+  const commitSha = await commitAndPushFriendLinkStatus(paths.repoRoot);
+  console.log(
+    `Updated friend link availability: ${offlineLinks.length} offline${commitSha ? ` (${commitSha})` : ""}.`,
+  );
 }
 
 async function reviewIssue(issue: GitHubIssue, github: GitHubClient) {
@@ -750,6 +900,25 @@ async function commitAndPushFriendLink(repoRoot: string, friend: FriendLinkIssue
     "-m",
     `feat(blog): add friend link ${friend.siteName} (#${issueNumber})`,
   ]);
+  const sha = (await git(repoRoot, ["rev-parse", "--short", "HEAD"])).trim();
+  await git(repoRoot, ["push", "origin", "HEAD:main"]);
+  return sha;
+}
+
+async function commitAndPushFriendLinkStatus(repoRoot: string) {
+  await git(repoRoot, [
+    "add",
+    "apps/blog/content/source/blog/source/_data/friend-link-status.json",
+    "apps/blog/src/generated/friends.json",
+    "apps/blog/public/remote-assets",
+  ]);
+
+  const staged = await git(repoRoot, ["diff", "--cached", "--name-only"]);
+  if (!staged.trim()) {
+    return "";
+  }
+
+  await git(repoRoot, ["commit", "-m", "chore(blog): refresh friend link availability"]);
   const sha = (await git(repoRoot, ["rev-parse", "--short", "HEAD"])).trim();
   await git(repoRoot, ["push", "origin", "HEAD:main"]);
   return sha;

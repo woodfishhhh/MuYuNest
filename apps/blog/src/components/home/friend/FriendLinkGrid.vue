@@ -28,7 +28,7 @@ watch(
 );
 
 function createCardLayout(links: FriendLinkData[]) {
-  return shuffleLinks(links).map((link, index) => {
+  return links.map((link, index) => {
     const descriptionLength = link.descr?.length ?? 0;
     const estimatedDescriptionLines = Math.max(1, Math.ceil(descriptionLength / 24));
     const estimatedHeight = 124 + estimatedDescriptionLines * 28;
@@ -36,21 +36,10 @@ function createCardLayout(links: FriendLinkData[]) {
     return {
       id: `${link.name}-${link.link}-${index}`,
       link,
-      rotateDeg: Number(((Math.random() - 0.5) * 4.8).toFixed(2)),
+      rotateDeg: 0,
       weight: estimatedHeight,
     };
   });
-}
-
-function shuffleLinks(links: FriendLinkData[]) {
-  const shuffled = [...links];
-
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    const swapIndex = Math.floor(Math.random() * (index + 1));
-    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
-  }
-
-  return shuffled;
 }
 
 function splitIntoColumns(cards: FriendCardLayout[]) {

@@ -1,7 +1,14 @@
+import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
 import { describe, expect, it, vi } from "vitest";
 
 import {
   buildInitialFriendLinkComment,
+  buildFriendLinksFromYaml,
+  collectOfflineFriendLinks,
+  checkFriendLinkAvailability,
   mergeFriendLinkIntoYaml,
   parseFriendLinkIssueBody,
   shouldReviewIssue,
@@ -50,7 +57,8 @@ describe("friend link bot", () => {
   it("builds the one-hour reciprocal-link reminder comment", () => {
     const comment = buildInitialFriendLinkComment(WOODFISH_FRIEND_LINK);
 
-    expect(comment).toContain("1 小时后");
+    expect(comment).toContain("北京时间 00:00");
+    expect(comment).toContain("至少等待 1 小时");
     expect(comment).toContain("自动关闭");
     expect(comment).toContain("名字：woodfish");
     expect(comment).toContain("描述：我喜欢你");
@@ -63,6 +71,77 @@ describe("friend link bot", () => {
 
     expect(shouldReviewIssue(createdAt, new Date("2026-06-07T08:59:59.000Z"))).toBe(false);
     expect(shouldReviewIssue(createdAt, new Date("2026-06-07T09:00:00.000Z"))).toBe(true);
+  });
+
+  it("checks existing friend links and skips the site's own link", async () => {
+    const checkLink = vi.fn(async (url: string) => ({
+      available: !url.includes("offline"),
+    }));
+
+    const offlineLinks = await collectOfflineFriendLinks(
+      [
+        { link: "https://online.example/" },
+        { link: "https://offline.example/" },
+        { link: WOODFISH_FRIEND_LINK.link },
+      ],
+      {
+        checkLink,
+        excludeLinks: [WOODFISH_FRIEND_LINK.link],
+      },
+    );
+
+    expect(offlineLinks).toEqual(["https://offline.example"]);
+    expect(checkLink).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries an unavailable existing friend link before marking it offline", async () => {
+    const fetchStatus = vi.fn(async () => 503);
+
+    const result = await checkFriendLinkAvailability("https://offline.example/", {
+      fetchStatus,
+      retryDelayMs: 0,
+    });
+
+    expect(result).toEqual({
+      available: false,
+      error: "HTTP 503",
+    });
+    expect(fetchStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it("applies persisted offline status without changing link.yml order", async () => {
+    const tempRoot = await mkdtemp(path.join(os.tmpdir(), "vuecubeblog-friend-status-"));
+    const appRoot = path.join(tempRoot, "apps", "blog");
+    const linkPath = path.join(appRoot, "content/source/blog/source/_data/link.yml");
+    const statusPath = path.join(appRoot, "content/source/blog/source/_data/friend-link-status.json");
+    const publicRoot = path.join(appRoot, "public");
+
+    await mkdir(path.dirname(linkPath), { recursive: true });
+    await mkdir(publicRoot, { recursive: true });
+    await writeFile(
+      linkPath,
+      [
+        "links:",
+        "  - class_name: 友情链接",
+        "    link_list:",
+        "      - name: First",
+        "        link: https://first.example/",
+        "      - name: Second",
+        "        link: https://second.example/",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(statusPath, '{"offline":["https://second.example/"]}\n', "utf8");
+
+    const links = await buildFriendLinksFromYaml({
+      appRoot,
+      linkPath,
+      publicRoot,
+    });
+
+    expect(links.map((link) => link.name)).toEqual(["First", "Second"]);
+    expect(links[0]?.offline).toBeUndefined();
+    expect(links[1]?.offline).toBe(true);
   });
 
   it("checks only the explicit friend page URL for reciprocal links", async () => {

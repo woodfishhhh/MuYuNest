@@ -109,6 +109,7 @@ function resetTilt() {
     data-testid="friend-link-card"
     data-analytics-event="friend-outbound"
     :data-analytics-event-site="domain"
+    :class="{ 'friend-link-card--offline': props.link.offline }"
     :href="props.link.link"
     :style="cardStyle"
     :tabindex="props.focusable ? undefined : -1"
@@ -142,6 +143,13 @@ function resetTilt() {
           </h3>
           <p class="friend-link-card__domain mt-2 text-[12px] text-[var(--stage-hint-strong)]">
             {{ domain }}
+            <span
+              v-if="props.link.offline"
+              data-testid="friend-link-offline-badge"
+              class="friend-link-card__offline-badge"
+            >
+              失联
+            </span>
           </p>
         </div>
       </div>
@@ -210,6 +218,24 @@ function resetTilt() {
   --card-shadow-color: rgba(37, 28, 16, 0.22);
 }
 
+.friend-link-card--offline {
+  border-color: rgba(155, 101, 24, 0.34);
+  filter: saturate(0.72);
+}
+
+.friend-link-card__offline-badge {
+  display: inline-block;
+  margin-left: 0.55rem;
+  border: 1px solid rgba(155, 101, 24, 0.3);
+  border-radius: 999px;
+  padding: 0.15rem 0.42rem;
+  color: rgb(130, 82, 19);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  vertical-align: 0.08em;
+}
+
 .friend-link-card:focus-visible {
   border-color: rgba(53, 88, 204, 0.38);
   outline: 2px solid rgba(53, 88, 204, 0.28);
@@ -262,6 +288,15 @@ function resetTilt() {
 :root[data-theme="night"] .friend-link-card:hover {
   border-color: rgba(138, 178, 255, 0.3);
   --card-shadow-color: rgba(0, 0, 0, 0.34);
+}
+
+:root[data-theme="night"] .friend-link-card--offline {
+  border-color: rgba(225, 177, 86, 0.42);
+}
+
+:root[data-theme="night"] .friend-link-card__offline-badge {
+  border-color: rgba(225, 177, 86, 0.42);
+  color: rgb(225, 177, 86);
 }
 
 :root[data-theme="night"] .friend-link-card::before {
