@@ -88,6 +88,41 @@ describe("friend link bot", () => {
     expect(fetchText).toHaveBeenCalledTimes(1);
   });
 
+  it("renders the page when the raw HTML does not contain client-loaded links", async () => {
+    const fetchText = vi.fn(async () => '<div id="friend-links"></div>');
+    const renderPageText = vi.fn(async () =>
+      `<a href="${WOODFISH_FRIEND_LINK.link}">woodfish</a>`,
+    );
+
+    const result = await verifyReciprocalLink(
+      "https://example.com/links",
+      WOODFISH_FRIEND_LINK,
+      { fetchText, renderPageText },
+    );
+
+    expect(result.found).toBe(true);
+    expect(renderPageText).toHaveBeenCalledWith("https://example.com/links");
+  });
+
+  it("keeps a failed rendered check indeterminate instead of treating it as absent", async () => {
+    const result = await verifyReciprocalLink(
+      "https://example.com/links",
+      WOODFISH_FRIEND_LINK,
+      {
+        fetchText: async () => "",
+        renderPageText: async () => {
+          throw new Error("browser unavailable");
+        },
+      },
+    );
+
+    expect(result).toEqual({
+      checkedUrls: ["https://example.com/links"],
+      found: false,
+      indeterminate: true,
+    });
+  });
+
   it("does not follow nested friend-page candidates from the explicit friend page", async () => {
     const fetchText = vi.fn(async (url: string) => {
       if (url === "https://example.com/links") {
@@ -102,12 +137,25 @@ describe("friend link bot", () => {
     const result = await verifyReciprocalLink(
       "https://example.com/links",
       WOODFISH_FRIEND_LINK,
-      { fetchText },
+      { fetchText, renderPageText: async () => "" },
     );
 
     expect(result.found).toBe(false);
     expect(result.checkedUrls).toEqual(["https://example.com/links"]);
     expect(fetchText).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not accept an avatar URL without the reciprocal site link", async () => {
+    const result = await verifyReciprocalLink(
+      "https://example.com/links",
+      WOODFISH_FRIEND_LINK,
+      {
+        fetchText: async () => `<img src="${WOODFISH_FRIEND_LINK.avatar}">`,
+        renderPageText: async () => "",
+      },
+    );
+
+    expect(result.found).toBe(false);
   });
 
   it("does not fetch unsafe friend page URLs", async () => {

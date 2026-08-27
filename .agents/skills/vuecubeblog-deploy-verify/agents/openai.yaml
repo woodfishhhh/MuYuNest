@@ -1,0 +1,4 @@
+interface:
+  display_name: "VueCubeBlog Deploy Verify"
+  short_description: "Publish blog content with live proof"
+  default_prompt: "Use $vuecubeblog-deploy-verify to publish this content through VueCubeBlog and verify the deployed pages."

@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 import yaml from "js-yaml";
+import { chromium } from "playwright";
 
 import { resolveAssetReference, toSitePublicUrl } from "./content/generator-core.js";
 import { resolveBlogPaths, type BlogPathOverrides } from "./paths.js";
@@ -52,6 +53,7 @@ export interface ReciprocalLinkCheckResult {
   checkedUrls: string[];
   found: boolean;
   matchedUrl?: string;
+  indeterminate?: boolean;
 }
 
 export const WOODFISH_FRIEND_LINK: OwnFriendLink = {
@@ -65,6 +67,7 @@ const FRIEND_LINK_TITLE_PREFIX = "[Friend Link]";
 const INITIAL_COMMENT_MARKER = "<!-- woodfish-friend-bot:initial -->";
 const SUCCESS_COMMENT_MARKER = "<!-- woodfish-friend-bot:accepted -->";
 const REJECT_COMMENT_MARKER = "<!-- woodfish-friend-bot:rejected -->";
+const RETRY_COMMENT_MARKER = "<!-- woodfish-friend-bot:retry -->";
 const DEFAULT_WAIT_MS = 60 * 60 * 1000;
 
 export function parseFriendLinkIssueBody(body: string): FriendLinkIssueData | null {
@@ -103,7 +106,7 @@ export function parseFriendLinkIssueBody(body: string): FriendLinkIssueData | nu
 export function buildInitialFriendLinkComment(ownLink: OwnFriendLink) {
   return [
     INITIAL_COMMENT_MARKER,
-    "收到友链申请啦！这个友链将会在 1 小时后被自动检验；检测不到反链会自动关闭。",
+    "收到友链申请啦！这个友链将会在 1 小时后被自动检验；确认没有反链会自动关闭，暂时无法访问则会等下一轮重试。",
     "",
     "请先在您的博客友链中加入 woodfish 的友链喔：",
     "",
@@ -112,7 +115,7 @@ export function buildInitialFriendLinkComment(ownLink: OwnFriendLink) {
     `- 头像：${ownLink.avatar}`,
     `- 描述：${ownLink.descr}`,
     "",
-    "请确认 issue 里的友链页链接可以直接访问，并且该页面能看到 woodfish 的友链信息。",
+    "请确认 issue 里的友链页链接可以直接访问，并且该页面能看到 woodfish 的友链信息。检测会兼容客户端渲染和滚动懒加载。",
     "",
     "如果到时检测到反链，我会自动把你的站点加入这里的友链并关闭 issue。",
   ].join("\n");
@@ -132,9 +135,11 @@ export async function verifyReciprocalLink(
   ownLink: OwnFriendLink,
   options: {
     fetchText?: (url: string) => Promise<string>;
+    renderPageText?: (url: string) => Promise<string>;
   } = {},
 ): Promise<ReciprocalLinkCheckResult> {
   const fetchText = options.fetchText ?? fetchPageText;
+  const renderPageText = options.renderPageText ?? renderPageWithBrowser;
   const targetUrl = normalizeFetchUrl(friendPageUrl);
   const checkedUrls = [targetUrl ?? friendPageUrl.trim()].filter(Boolean);
 
@@ -149,13 +154,30 @@ export async function verifyReciprocalLink(
   try {
     html = await fetchText(targetUrl);
   } catch {
-    return {
-      checkedUrls,
-      found: false,
-    };
+    // A browser can still pass bot protection or execute the site's client-side
+    // data loader, so continue with the rendered check instead of rejecting yet.
   }
 
   if (containsOwnFriendLink(html, ownLink)) {
+    return {
+      checkedUrls,
+      found: true,
+      matchedUrl: targetUrl,
+    };
+  }
+
+  let renderedHtml = "";
+  try {
+    renderedHtml = await renderPageText(targetUrl);
+  } catch {
+    return {
+      checkedUrls,
+      found: false,
+      indeterminate: true,
+    };
+  }
+
+  if (containsOwnFriendLink(renderedHtml, ownLink)) {
     return {
       checkedUrls,
       found: true,
@@ -261,8 +283,6 @@ function containsOwnFriendLink(html: string, ownLink: OwnFriendLink) {
   const targetUrls = [
     ownLink.link,
     ownLink.link.replace(/\/+$/, ""),
-    ownLink.avatar,
-    ownLink.avatar.replace(/\/+$/, ""),
   ].map((item) => item.toLowerCase());
 
   if (targetUrls.some((item) => item && normalizedHtml.includes(item))) {
@@ -386,6 +406,69 @@ async function fetchPageText(url: string) {
   }
 
   return response.text();
+}
+
+async function renderPageWithBrowser(url: string) {
+  const executablePath = process.env.PLAYWRIGHT_BOT_EXECUTABLE_PATH?.trim();
+  const browser = await chromium.launch({
+    ...(executablePath ? { executablePath } : {}),
+    headless: true,
+  });
+
+  try {
+    const context = await browser.newContext({
+      serviceWorkers: "block",
+      userAgent: "WoodfishFriendLinkBot/1.0",
+      viewport: { height: 900, width: 1280 },
+    });
+    const page = await context.newPage();
+    const response = await page.goto(url, {
+      timeout: 15_000,
+      waitUntil: "domcontentloaded",
+    });
+
+    if (!response || response.status() >= 400) {
+      throw new Error(`Rendered page returned an unusable response for ${url}`);
+    }
+
+    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => undefined);
+    await page.waitForTimeout(750);
+
+    for (let pass = 0; pass < 6; pass += 1) {
+      await page.evaluate(() => {
+        window.scrollTo(0, document.documentElement.scrollHeight);
+
+        for (const element of document.querySelectorAll<HTMLElement>("*")) {
+          const style = window.getComputedStyle(element);
+          if (
+            element.scrollHeight > element.clientHeight &&
+            (style.overflowY === "auto" || style.overflowY === "scroll")
+          ) {
+            element.scrollTop = element.scrollHeight;
+          }
+        }
+      });
+      await page.waitForTimeout(500);
+    }
+
+    const renderedHtml = await page.content();
+    if (isLikelyBotChallenge(renderedHtml)) {
+      throw new Error(`Rendered page appears to be a bot challenge for ${url}`);
+    }
+
+    return renderedHtml;
+  } finally {
+    await browser.close();
+  }
+}
+
+function isLikelyBotChallenge(html: string) {
+  const normalizedHtml = normalizeHtmlForSearch(html);
+  return (
+    normalizedHtml.includes("just a moment...") ||
+    normalizedHtml.includes("enable javascript and cookies to continue") ||
+    normalizedHtml.includes("cf-chl-")
+  );
 }
 
 function readFriendLinksFromYaml(rawYaml: string) {
@@ -577,6 +660,11 @@ async function reviewIssue(issue: GitHubIssue, github: GitHubClient) {
 
   const ownLink = await readOwnFriendLink();
   const reciprocal = await verifyReciprocalLink(parsed.friendPageUrl, ownLink);
+  if (reciprocal.indeterminate) {
+    await deferIssue(github, issue.number, reciprocal.checkedUrls);
+    return;
+  }
+
   if (!reciprocal.found) {
     await rejectIssue(
       github,
@@ -586,7 +674,7 @@ async function reviewIssue(issue: GitHubIssue, github: GitHubClient) {
         "",
         `我检查过你填写的友链页链接：${reciprocal.checkedUrls.join(", ") || parsed.friendPageUrl}`,
         "",
-        "如果你的友链是客户端懒加载出来的，请确认这个链接返回的 HTML 中也能直接包含 woodfish 的友链信息，或重新提交一个可直接抓取的友链页链接。",
+        "如果你的友链依赖客户端渲染或滚动懒加载，本机器人会先抓取 HTML，再尝试用浏览器加载并滚动页面；仍检测不到时再视为没有反链。",
         "",
         "本 issue 先关闭；加好反链后欢迎重新提交。",
       ].join("\n"),
@@ -622,6 +710,26 @@ async function rejectIssue(github: GitHubClient, issueNumber: number, message: s
   await github.addComment(issueNumber, `${REJECT_COMMENT_MARKER}\n${message}`);
   await github.closeIssue(issueNumber, "not_planned");
   console.log(`Rejected friend link issue #${issueNumber}.`);
+}
+
+async function deferIssue(github: GitHubClient, issueNumber: number, checkedUrls: string[]) {
+  const comments = await github.listComments(issueNumber);
+  if (comments.some((comment) => comment.body?.includes(RETRY_COMMENT_MARKER))) {
+    console.log(`Keeping #${issueNumber} open: reciprocal-link check will be retried.`);
+    return;
+  }
+
+  await github.addComment(
+    issueNumber,
+    [
+      RETRY_COMMENT_MARKER,
+      "本轮友链检测暂时无法完成，站点可能暂时不可访问或触发了访问保护。",
+      "这个 issue 不会因为这次异常被关闭，机器人会在下一轮自动重试。",
+      "",
+      `检查地址：${checkedUrls.join(", ") || "未解析出有效地址"}`,
+    ].join("\n\n"),
+  );
+  console.log(`Deferred friend-link check for #${issueNumber}.`);
 }
 
 async function commitAndPushFriendLink(repoRoot: string, friend: FriendLinkIssueData, issueNumber: number) {

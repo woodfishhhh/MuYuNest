@@ -69,6 +69,7 @@ public/asset/image.png
 dist-manual-deploy.tar.gz
 *.uploading.cfg
 .claude/settings.local.json
+.playwright-cli/
 
 # 历史会话遗留(本地保留可,但不入仓)
 Everything_Claude_Code_使用指南.docx
