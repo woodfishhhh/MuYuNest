@@ -10,6 +10,7 @@ import gsap from "gsap";
 
 interface UseAuthorSliderOptions {
   active?: Readonly<Ref<boolean>>;
+  initialIndex?: number;
   viewportRef: Readonly<ShallowRef<HTMLElement | null>>;
   trackRef: Readonly<ShallowRef<HTMLElement | null>>;
 }
@@ -81,7 +82,12 @@ export function stepAuthorSlideIndex(currentIndex: number, direction: -1 | 1, to
   return Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
 }
 
-export function useAuthorSlider({ active, viewportRef, trackRef }: UseAuthorSliderOptions) {
+export function useAuthorSlider({
+  active,
+  initialIndex = 0,
+  viewportRef,
+  trackRef,
+}: UseAuthorSliderOptions) {
   const activeIndex = shallowRef(0);
 
   let transitionTween: gsap.core.Tween | null = null;
@@ -300,9 +306,14 @@ export function useAuthorSlider({ active, viewportRef, trackRef }: UseAuthorSlid
     }
 
     cleanup();
-    activeIndex.value = 0;
-    gsap.set(track, { yPercent: 0 });
-    animateReveal(0);
+    const initialSlides = getSlides();
+    const clampedInitialIndex = Math.max(
+      0,
+      Math.min(initialSlides.length - 1, Math.trunc(initialIndex)),
+    );
+    activeIndex.value = clampedInitialIndex;
+    gsap.set(track, { yPercent: -100 * clampedInitialIndex });
+    animateReveal(clampedInitialIndex);
 
     window.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("touchstart", handleTouchStart, { passive: true });

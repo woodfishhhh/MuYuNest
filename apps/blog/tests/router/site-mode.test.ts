@@ -7,6 +7,15 @@ describe("site-mode routing helpers", () => {
     expect(resolveSiteModeFromRoute({ name: "home" } as never)).toBe("home");
     expect(resolveSiteModeFromRoute({ name: "works" } as never)).toBe("works");
     expect(resolveSiteModeFromRoute({ name: "blog" } as never)).toBe("blog");
+    expect(resolveSiteModeFromRoute({ name: "author-page", path: "/author/2" } as never)).toBe(
+      "author",
+    );
+    expect(resolveSiteModeFromRoute({ name: "author-page-root", path: "/2" } as never)).toBe(
+      "author",
+    );
+    expect(resolveSiteModeFromRoute({ name: undefined, path: "/author/3" } as never)).toBe(
+      "author",
+    );
     expect(resolveSiteModeFromRoute({ name: "post" } as never)).toBeNull();
   });
 

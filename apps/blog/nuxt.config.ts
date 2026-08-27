@@ -258,7 +258,21 @@ export default defineNuxtConfig({
     },
     prerender: {
       // Home routes to pre-render (post routes are client-side navigated)
-      routes: ["/", "/blog", "/works", "/author", "/friend"],
+      routes: [
+        "/",
+        "/blog",
+        "/works",
+        "/author",
+        "/author/1",
+        "/author/2",
+        "/author/3",
+        "/author/4",
+        "/friend",
+        "/1",
+        "/2",
+        "/3",
+        "/4",
+      ],
     },
   },
 

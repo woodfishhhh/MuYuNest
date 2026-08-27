@@ -1,6 +1,14 @@
 import type { SiteMode } from "@/stores/site";
 
-const HOME_ROUTE_NAMES = new Set(["home", "blog", "author", "friend", "works"]);
+const HOME_ROUTE_NAMES = new Set([
+  "home",
+  "blog",
+  "author",
+  "author-page",
+  "author-page-root",
+  "friend",
+  "works",
+]);
 
 export type TransitionType =
   | "none"

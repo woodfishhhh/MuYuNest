@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from "vue";
+import { computed, onMounted, useTemplateRef, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import AuthorAboutScreen from "@/components/home/author/AuthorAboutScreen.vue";
 import AuthorCapsuleScreen from "@/components/home/author/AuthorCapsuleScreen.vue";
@@ -7,6 +8,11 @@ import AuthorHeroScreen from "@/components/home/author/AuthorHeroScreen.vue";
 import AuthorPoemScreen from "@/components/home/author/AuthorPoemScreen.vue";
 import { useAuthorSlider } from "@/composables/useAuthorSlider";
 import type { AuthorProfileData } from "@/types/content";
+import {
+  getAuthorRoutePath,
+  isAuthorRoutePath,
+  resolveAuthorPage,
+} from "@/utils/author-route";
 
 const props = withDefaults(
   defineProps<{
@@ -21,11 +27,52 @@ const props = withDefaults(
 const viewportRef = useTemplateRef<HTMLElement>("viewport");
 const trackRef = useTemplateRef<HTMLElement>("track");
 const isActive = computed(() => props.active);
+const route = useRoute();
+const router = useRouter();
+const routePath = computed(() => route?.path ?? "");
+const authorPage = computed(() => resolveAuthorPage(route?.params?.page));
 
 const { activeIndex, goToSlide } = useAuthorSlider({
   active: isActive,
+  initialIndex: authorPage.value - 1,
   viewportRef,
   trackRef,
+});
+
+watch(
+  authorPage,
+  (page) => {
+    if (activeIndex.value !== page - 1) {
+      goToSlide(page - 1);
+    }
+  },
+  { flush: "post" },
+);
+
+watch(
+  () => activeIndex.value,
+  (index) => {
+    if (!props.active || !isAuthorRoutePath(routePath.value)) {
+      return;
+    }
+
+    const nextPath = getAuthorRoutePath(index + 1, routePath.value);
+    if (routePath.value !== nextPath) {
+      void router?.replace(nextPath);
+    }
+  },
+  { flush: "post" },
+);
+
+onMounted(() => {
+  if (!props.active || !isAuthorRoutePath(routePath.value)) {
+    return;
+  }
+
+  const canonicalPath = getAuthorRoutePath(authorPage.value, routePath.value);
+  if (routePath.value !== canonicalPath) {
+    void router?.replace(canonicalPath);
+  }
 });
 
 const screens = [

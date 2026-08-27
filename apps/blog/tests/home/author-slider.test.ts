@@ -6,14 +6,14 @@ import { stepAuthorSlideIndex, useAuthorSlider } from "@/composables/useAuthorSl
 
 const mountedWrappers: VueWrapper[] = [];
 
-function mountSliderHarness(interactionActive = true) {
+function mountSliderHarness(interactionActive = true, initialIndex = 0) {
   const wrapper = mount(
     defineComponent({
       setup() {
         const active = shallowRef(interactionActive);
         const viewportRef = shallowRef<HTMLElement | null>(null);
         const trackRef = shallowRef<HTMLElement | null>(null);
-        const { activeIndex } = useAuthorSlider({ active, viewportRef, trackRef });
+        const { activeIndex } = useAuthorSlider({ active, initialIndex, viewportRef, trackRef });
 
         return { activeIndex, trackRef, viewportRef };
       },
@@ -67,6 +67,14 @@ describe("stepAuthorSlideIndex", () => {
     expect(stepAuthorSlideIndex(3, 1, 4)).toBe(3);
     expect(stepAuthorSlideIndex(2, -1, 4)).toBe(1);
     expect(stepAuthorSlideIndex(0, -1, 4)).toBe(0);
+  });
+
+  it("starts on the screen selected by the author route", async () => {
+    const wrapper = mountSliderHarness(true, 1);
+    await nextTick();
+    await nextTick();
+
+    expect(wrapper.get("[data-active-index]").text()).toBe("1");
   });
 
   it("lets an internal scroll region consume wheel input before changing slides", async () => {

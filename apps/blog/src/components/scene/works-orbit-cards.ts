@@ -844,20 +844,45 @@ interface WorksCardPalette {
 }
 
 const workAvatarCache = new Map<string, HTMLImageElement>();
+const workAvatarFailures = new Set<string>();
 
 function getWorkAvatar(avatarUrl: string, onLoad?: () => void) {
-  if (typeof Image === "undefined") return null;
+  if (typeof Image === "undefined" || workAvatarFailures.has(avatarUrl)) return null;
 
   let image = workAvatarCache.get(avatarUrl);
   if (!image) {
     image = new Image();
+    // Canvas textures must be backed by a CORS-safe image. If an external host
+    // does not opt in, the error path below keeps the card's text texture intact
+    // instead of allowing a tainted canvas to upload as a transparent card.
+    image.crossOrigin = "anonymous";
     image.decoding = "async";
     workAvatarCache.set(avatarUrl, image);
+    if (onLoad) {
+      image.addEventListener("load", onLoad, { once: true });
+      image.addEventListener(
+        "error",
+        () => {
+          workAvatarFailures.add(avatarUrl);
+          onLoad();
+        },
+        { once: true },
+      );
+    }
     image.src = avatarUrl;
+  } else if (onLoad && !image.complete) {
+    image.addEventListener("load", onLoad, { once: true });
+    image.addEventListener(
+      "error",
+      () => {
+        workAvatarFailures.add(avatarUrl);
+        onLoad();
+      },
+      { once: true },
+    );
   }
 
   if (image.complete && image.naturalWidth > 0) return image;
-  if (onLoad) image.addEventListener("load", onLoad, { once: true });
   return null;
 }
 
@@ -917,13 +942,21 @@ function drawCardTexture(
   ctx.stroke();
 
   const avatar = getWorkAvatar(presentation.avatarUrl, onAvatarLoad);
+  let didDrawAvatar = false;
   if (avatar) {
-    ctx.save();
-    roundedRect(ctx, 64, 120, 96, 96, 20);
-    ctx.clip();
-    ctx.drawImage(avatar, 64, 120, 96, 96);
-    ctx.restore();
-  } else {
+    try {
+      ctx.save();
+      roundedRect(ctx, 64, 120, 96, 96, 20);
+      ctx.clip();
+      ctx.drawImage(avatar, 64, 120, 96, 96);
+      didDrawAvatar = true;
+    } catch {
+      workAvatarFailures.add(presentation.avatarUrl);
+    } finally {
+      ctx.restore();
+    }
+  }
+  if (!didDrawAvatar) {
     ctx.fillStyle = palette.fg;
     ctx.font = '600 27px "IBM Plex Mono", "Cascadia Code", monospace';
     ctx.textAlign = "center";

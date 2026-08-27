@@ -14,7 +14,15 @@ interface Snapshot {
   activePostSlug: string | null;
 }
 
-const HOME_ROUTE_NAMES = new Set(["home", "blog", "author", "friend", "works"]);
+const HOME_ROUTE_NAMES = new Set([
+  "home",
+  "blog",
+  "author",
+  "author-page",
+  "author-page-root",
+  "friend",
+  "works",
+]);
 const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "post"]);
 
 const route = useRoute();

@@ -61,6 +61,14 @@ describe("AuthorCapsuleScreen", () => {
     const AuthorCapsuleScreen = (await import("@/components/home/author/AuthorCapsuleScreen.vue"))
       .default;
     const skills = [
+      "Hono",
+      "Zod",
+      "Drizzle ORM",
+      "Prisma",
+      "TanStack Start",
+      "Turborepo",
+      "MCP",
+      "Nginx",
       "Express",
       "Matter.js",
       "GitHub Actions",
@@ -80,7 +88,7 @@ describe("AuthorCapsuleScreen", () => {
       props: { active: true, skills },
     });
 
-    expect(wrapper.findAll(".author-capsule__icon--night-invert")).toHaveLength(6);
+    expect(wrapper.findAll(".author-capsule__icon--night-invert")).toHaveLength(14);
     expect(wrapper.find('img[alt="Vue"]')?.classes()).not.toContain(
       "author-capsule__icon--night-invert",
     );

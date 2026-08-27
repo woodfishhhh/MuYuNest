@@ -13,12 +13,20 @@ const sceneRef = useTemplateRef<HTMLElement>("scene");
 const skillsRef = shallowRef(props.skills);
 const activeRef = computed(() => props.active);
 const NIGHT_INVERTED_ICON_TITLES = new Set([
+  "Drizzle ORM",
   "Express",
   "GitHub Actions",
+  "Hono",
+  "MCP",
   "Matter.js",
+  "Nginx",
   "Next.js",
+  "Prisma",
   "shadcn/ui",
+  "TanStack Start",
   "Three.js",
+  "Turborepo",
+  "Zod",
 ]);
 
 function usesNightInvertedIcon(title: string) {
