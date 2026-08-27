@@ -1,4 +1,4 @@
-name: CI
+name: CI and deploy
 
 on:
   push:
@@ -7,8 +7,17 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: vue-three-blog-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  verify:
+  verify-and-build:
+    name: Verify and build
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -65,3 +74,200 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
+
+  deploy:
+    name: Deploy to VPS
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: verify-and-build
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      VITE_BASE_PATH: /
+      DEPLOY_URL: https://blog.woodfish.site/
+      DEPLOY_DIR: ${{ secrets.DEPLOY_DIR || '/opt/blog-stack/sites/newBlog' }}
+      DEPLOY_MOUNT_PATH: /newBlog/
+      DEPLOY_CONTAINER: blog-nginx
+      RELEASE_SHA: ${{ github.sha }}
+      REMOTE_NGINX_CONF: /tmp/woodfish-nginx-${{ github.run_id }}-${{ github.run_attempt }}.conf
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download blog dist artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: blog-dist
+          path: apps/blog/dist
+
+      - name: Verify dist artifact
+        run: |
+          test -f apps/blog/dist/index.html
+          test -f apps/blog/dist/sw.js
+          test -f apps/blog/dist/manifest.webmanifest
+          test -d apps/blog/dist/assets
+          test "$(cat apps/blog/dist/REVISION)" = "$RELEASE_SHA"
+          (cd apps/blog/dist && sha256sum --strict --check --quiet release.manifest.sha256)
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Stage site artifact incrementally
+        timeout-minutes: 20
+        env:
+          SSH_DEST: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
+        run: |
+          target_dir="$DEPLOY_DIR"
+          remote_next="${DEPLOY_DIR}.next.${{ github.run_id }}"
+          ssh_options=(
+            -o BatchMode=yes
+            -o ConnectTimeout=20
+            -o ConnectionAttempts=5
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=4
+          )
+          retry() {
+            local attempt=1
+            local max_attempts=5
+            local delay=8
+
+            until "$@"; do
+              local exit_code=$?
+              if [ "$attempt" -ge "$max_attempts" ]; then
+                return "$exit_code"
+              fi
+
+              echo "Command failed with exit code ${exit_code}; retrying in ${delay}s (${attempt}/${max_attempts})" >&2
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+
+          rsync_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+
+          # shellcheck disable=SC2029
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$SSH_DEST" "set -eu; case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; command -v rsync >/dev/null"
+
+          retry timeout 900s rsync \
+            --archive \
+            --compress \
+            --checksum \
+            --delete-delay \
+            --partial \
+            --partial-dir=.rsync-partial \
+            --safe-links \
+            --link-dest="$target_dir" \
+            --itemize-changes \
+            --stats \
+            --timeout=120 \
+            -e "$rsync_ssh" \
+            apps/blog/dist/ \
+            "$SSH_DEST:$remote_next/"
+
+          # shellcheck disable=SC2029
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$SSH_DEST" "set -eu; test -f '$remote_next/index.html'; test -d '$remote_next/assets'; test \"\$(cat '$remote_next/REVISION')\" = '$RELEASE_SHA'; cd '$remote_next'; sha256sum --strict --check --quiet release.manifest.sha256"
+
+      - name: Upload nginx config
+        run: |
+          timeout 60s scp \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=4 \
+            deploy/nginx.conf \
+            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${REMOTE_NGINX_CONF}"
+
+      - name: Activate release
+        run: |
+          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" <<EOF
+          set -eu
+
+          target_dir="${DEPLOY_DIR}"
+          base_path="${VITE_BASE_PATH}"
+          mount_path="${DEPLOY_MOUNT_PATH}"
+          container="${DEPLOY_CONTAINER}"
+          release_sha="${RELEASE_SHA}"
+          config_path="/opt/blog-stack/nginx/conf.d/default.conf"
+          remote_nginx_conf="${REMOTE_NGINX_CONF}"
+          config_backup="\${config_path}.bak.${{ github.run_id }}"
+          next_dir="\${target_dir}.next.${{ github.run_id }}"
+          backup_dir="\${target_dir}.bak.${{ github.run_id }}"
+
+          rollback() {
+            rm -rf "\$next_dir"
+            rm -rf "\$target_dir"
+            if [ -d "\$backup_dir" ]; then
+              mv "\$backup_dir" "\$target_dir"
+            fi
+            if [ -f "\$config_backup" ]; then
+              cat "\$config_backup" > "\$config_path"
+              rm -f "\$config_backup"
+            fi
+            rm -f "\$remote_nginx_conf"
+            docker exec "\$container" nginx -s reload >/dev/null 2>&1 || true
+          }
+
+          case "\$target_dir" in
+            /opt/blog-stack/sites/*) ;;
+            *) echo "Refusing unsafe deploy dir: \$target_dir" >&2; exit 2 ;;
+          esac
+
+          rm -rf "\$backup_dir"
+
+          test -f "\$next_dir/index.html"
+          test -f "\$next_dir/sw.js"
+          test -f "\$next_dir/manifest.webmanifest"
+          test -d "\$next_dir/assets"
+          test "\$(cat "\$next_dir/REVISION")" = "\$release_sha"
+          (cd "\$next_dir" && sha256sum --strict --check --quiet release.manifest.sha256)
+          grep -q "\${base_path}assets/" "\$next_dir/index.html"
+          if [ "\$base_path" != "/" ] && grep -q '"/assets/' "\$next_dir/index.html"; then
+            echo "index.html contains root-scoped /assets refs" >&2
+            exit 3
+          fi
+
+          cp "\$config_path" "\$config_backup"
+          cat "\$remote_nginx_conf" > "\$config_path"
+          if ! docker exec "\$container" nginx -t; then
+            cat "\$config_backup" > "\$config_path"
+            rm -f "\$config_backup"
+            docker exec "\$container" nginx -s reload || true
+            exit 1
+          fi
+
+          if [ -d "\$target_dir" ]; then
+            mv "\$target_dir" "\$backup_dir"
+          fi
+
+          mv "\$next_dir" "\$target_dir"
+          chmod -R a+rX "\$target_dir"
+
+          if ! docker exec "\$container" nginx -s reload; then
+            rollback
+            exit 1
+          fi
+
+          if ! docker exec "\$container" sh -c "test -f /usr/share/nginx/html\${mount_path}index.html && grep -Fxq '\${release_sha}' /usr/share/nginx/html\${mount_path}REVISION && grep -q '\${base_path}assets/' /usr/share/nginx/html\${mount_path}index.html"; then
+            rollback
+            exit 1
+          fi
+
+          rm -rf "\$backup_dir"
+          rm -f "\$config_backup"
+          rm -f "\$remote_nginx_conf"
+          EOF
+
+      - name: Smoke test live site
+        run: |
+          html="$(curl -kfsSL "$DEPLOY_URL")"
+          printf '%s' "$html" | grep -q "${VITE_BASE_PATH}assets/"
+          if [ "$VITE_BASE_PATH" != "/" ] && printf '%s' "$html" | grep -q '"/assets/'; then
+            echo "Live HTML still contains root-scoped /assets refs" >&2
+            exit 1
+          fi
+          revision="$(curl -kfsSL --retry 8 --retry-delay 3 --retry-all-errors --max-time 15 "${DEPLOY_URL}REVISION")"
+          test "$revision" = "$RELEASE_SHA"
