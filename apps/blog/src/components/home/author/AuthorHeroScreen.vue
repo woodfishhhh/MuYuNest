@@ -112,10 +112,16 @@ const props = defineProps<{
 
 .author-hero__name {
   margin: 0;
+  font-family: "Iowan Old Style", Baskerville, "Palatino Linotype", Palatino, serif;
   font-size: clamp(3.6rem, 6.5vw, 6.4rem);
-  line-height: 0.88;
-  letter-spacing: -0.025em;
+  font-style: italic;
+  font-weight: 400;
+  font-kerning: normal;
+  font-optical-sizing: auto;
+  line-height: 0.84;
+  letter-spacing: -0.055em;
   color: #f6f8ff;
+  text-shadow: 0 0.18em 0.55em rgba(0, 0, 0, 0.32);
 }
 
 .author-hero__role {
@@ -196,6 +202,7 @@ const props = defineProps<{
 
 :root[data-theme="day"] .author-hero__name {
   color: #17191f;
+  text-shadow: 0 0.16em 0.5em rgba(255, 255, 255, 0.42);
 }
 
 :root[data-theme="day"] .author-hero__role {

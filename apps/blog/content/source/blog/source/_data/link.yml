@@ -35,6 +35,10 @@ links:
         link: https://www.jxufe-cs.top/
         avatar: https://www.jxufe-cs.top/img/%E4%BC%9A%E5%BE%BD.png
         descr: 成立于1996年的江财学术社团
+      - name: 江财OFFER
+        link: https://jufe.woodfish.site/
+        avatar: https://img.woodfish.site/o/webp/2026/08/1afa9bc27dcfe503c0e0f9eb3c4c5bb29c39a193143023d815c53bd2e989dff2.webp
+        descr: 江财学生共同维护的实习、竞赛与学习资源导航
       - name: Cloud09_Space
         link: http://cloud09.space/
         avatar: https://raw.githubusercontent.com/cloud-oc/picx-images-hosting/refs/heads/master/Origin/Cloud_icon.pfpafpaii.png?spaceId=62ea150e-ff98-40ae-986e-7a386289383f&t=2e3b58d0-50e3-805b-8971-e02a5ca666a9
@@ -76,10 +80,6 @@ links:
         link: "https://chagumu.site/"
         avatar: "https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEVnPlqMYbFvQjdTPScDRQX6XGI965oYAACtyUAAjRrkVXSZSl9-t3fpTwE.jpg"
         descr: "就这样，细水长流"
-      - name: "JZY 的博客"
-        link: "https://jinzhenyi.dpdns.org/"
-        avatar: "https://jinzhenyi.dpdns.org/assets/images/tx.png"
-        descr: "jzy的博客"
       - name: "GalError"
         link: "https://www.galerror.top/"
         avatar: "https://www.galerror.top/favicon.webp"

@@ -35,6 +35,8 @@ jobs:
       DEPLOY_DIR: ${{ secrets.DEPLOY_DIR || '/opt/blog-stack/sites/newBlog' }}
       DEPLOY_MOUNT_PATH: /newBlog/
       DEPLOY_CONTAINER: blog-nginx
+      RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+      REMOTE_NGINX_CONF: /tmp/woodfish-nginx-${{ github.run_id }}-${{ github.run_attempt }}.conf
 
     steps:
       - name: Checkout
@@ -69,6 +71,10 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: pnpm -F @woodfish-nest/blog build:deploy:dist
 
+      - name: Assemble verifiable static release
+        if: github.event_name == 'workflow_dispatch'
+        run: bash deploy/assemble-static-release.sh "$RELEASE_SHA"
+
       - name: Upload blog dist artifact
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
@@ -86,6 +92,8 @@ jobs:
           test -f apps/blog/dist/sw.js
           test -f apps/blog/dist/manifest.webmanifest
           test -d apps/blog/dist/assets
+          test "$(cat apps/blog/dist/REVISION)" = "$RELEASE_SHA"
+          (cd apps/blog/dist && sha256sum --strict --check --quiet release.manifest.sha256)
 
       - name: Resolve blog dist artifact
         id: blog-artifact
@@ -151,23 +159,31 @@ jobs:
           gh run download "$ARTIFACT_RUN_ID" --name blog-dist --dir "$local_dist"
           test -f "$local_dist/index.html"
           test -d "$local_dist/assets"
+          test "$(cat "$local_dist/REVISION")" = "$RELEASE_SHA"
+          (cd "$local_dist" && sha256sum --strict --check --quiet release.manifest.sha256)
           rsync_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
           # shellcheck disable=SC2029
-          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; if [ -d '$target_dir' ]; then cp -a '$target_dir/.' '$remote_next/'; fi; command -v rsync >/dev/null"
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; command -v rsync >/dev/null"
 
           retry timeout 900s rsync \
-            -az \
-            --delete \
+            --archive \
+            --compress \
+            --checksum \
+            --delete-delay \
             --partial \
-            --delay-updates \
-            --info=stats2,progress2 \
+            --partial-dir=.rsync-partial \
+            --safe-links \
+            --link-dest="$target_dir" \
+            --itemize-changes \
+            --stats \
+            --timeout=120 \
             -e "$rsync_ssh" \
             "$local_dist/" \
             "$ssh_dest:$remote_next/"
 
           # shellcheck disable=SC2029
-          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; test -f '$remote_next/index.html' && test -d '$remote_next/assets'"
+          retry timeout 120s ssh -T "${ssh_options[@]}" "$ssh_dest" "set -eu; test -f '$remote_next/index.html'; test -d '$remote_next/assets'; test \"\$(cat '$remote_next/REVISION')\" = '$RELEASE_SHA'; cd '$remote_next'; sha256sum --strict --check --quiet release.manifest.sha256"
 
       - name: Upload nginx config
         run: |
@@ -176,7 +192,7 @@ jobs:
             -o ServerAliveInterval=15 \
             -o ServerAliveCountMax=4 \
             deploy/nginx.conf \
-            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp/default.conf"
+            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:${{ env.REMOTE_NGINX_CONF }}"
 
       - name: Activate release
         run: |
@@ -187,7 +203,9 @@ jobs:
           base_path="${{ env.VITE_BASE_PATH }}"
           mount_path="${{ env.DEPLOY_MOUNT_PATH }}"
           container="${{ env.DEPLOY_CONTAINER }}"
+          release_sha="${{ env.RELEASE_SHA }}"
           config_path="/opt/blog-stack/nginx/conf.d/default.conf"
+          remote_nginx_conf="${{ env.REMOTE_NGINX_CONF }}"
           config_backup="\${config_path}.bak.${{ github.run_id }}"
           next_dir="\${target_dir}.next.${{ github.run_id }}"
           backup_dir="\${target_dir}.bak.${{ github.run_id }}"
@@ -202,6 +220,7 @@ jobs:
               cat "\$config_backup" > "\$config_path"
               rm -f "\$config_backup"
             fi
+            rm -f "\$remote_nginx_conf"
             docker exec "\$container" nginx -s reload >/dev/null 2>&1 || true
           }
 
@@ -216,6 +235,8 @@ jobs:
           test -f "\$next_dir/sw.js"
           test -f "\$next_dir/manifest.webmanifest"
           test -d "\$next_dir/assets"
+          test "\$(cat "\$next_dir/REVISION")" = "\$release_sha"
+          (cd "\$next_dir" && sha256sum --strict --check --quiet release.manifest.sha256)
           grep -q "\${base_path}assets/" "\$next_dir/index.html"
           if [ "\$base_path" != "/" ] && grep -q '"/assets/' "\$next_dir/index.html"; then
             echo "index.html contains root-scoped /assets refs" >&2
@@ -223,7 +244,7 @@ jobs:
           fi
 
           cp "\$config_path" "\$config_backup"
-          cat /tmp/default.conf > "\$config_path"
+          cat "\$remote_nginx_conf" > "\$config_path"
           if ! docker exec "\$container" nginx -t; then
             cat "\$config_backup" > "\$config_path"
             rm -f "\$config_backup"
@@ -243,14 +264,14 @@ jobs:
             exit 1
           fi
 
-          if ! docker exec "\$container" sh -c "test -f /usr/share/nginx/html\${mount_path}index.html && grep -q '\${base_path}assets/' /usr/share/nginx/html\${mount_path}index.html"; then
+          if ! docker exec "\$container" sh -c "test -f /usr/share/nginx/html\${mount_path}index.html && grep -Fxq '\${release_sha}' /usr/share/nginx/html\${mount_path}REVISION && grep -q '\${base_path}assets/' /usr/share/nginx/html\${mount_path}index.html"; then
             rollback
             exit 1
           fi
 
           rm -rf "\$backup_dir"
           rm -f "\$config_backup"
-          rm -f /tmp/default.conf
+          rm -f "\$remote_nginx_conf"
           EOF
 
       - name: Smoke test live site
@@ -261,3 +282,5 @@ jobs:
             echo "Live HTML still contains root-scoped /assets refs" >&2
             exit 1
           fi
+          revision="$(curl -kfsSL --retry 8 --retry-delay 3 --retry-all-errors --max-time 15 "${{ env.DEPLOY_URL }}REVISION")"
+          test "$revision" = "$RELEASE_SHA"

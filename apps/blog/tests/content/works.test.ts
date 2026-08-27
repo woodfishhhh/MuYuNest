@@ -14,4 +14,17 @@ describe("works content", () => {
       githubUrl: "https://github.com/woodfishhhh/MuYuNest",
     });
   });
+
+  it("includes the JUFE Offer community project", () => {
+    expect(getWorkProjects()).toContainEqual({
+      slug: "jufe-offer",
+      name: "江财OFFER",
+      description: "由江西财经大学学生共同维护的资源导航，汇总实习校招、编程学习、竞赛活动与校内常用入口。",
+      kind: "Community",
+      avatarUrl:
+        "https://img.woodfish.site/o/webp/2026/08/1afa9bc27dcfe503c0e0f9eb3c4c5bb29c39a193143023d815c53bd2e989dff2.webp",
+      liveUrl: "https://jufe.woodfish.site/",
+      githubUrl: "https://github.com/woodfishhhh/jufe-offer",
+    });
+  });
 });

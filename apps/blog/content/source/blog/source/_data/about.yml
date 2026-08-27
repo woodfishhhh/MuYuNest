@@ -1,5 +1,5 @@
 contentinfo:
-  name: 木鱼
+  name: woodfish
   title: 是一名 学生 / ACMer / 全栈运维工程师 / 电子音乐制作人
 
 hero:
@@ -172,6 +172,38 @@ skills:
       color: "#2088FF"
       img: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg
       officialUrl: https://github.com/features/actions
+    - title: Hono
+      color: "#e36002"
+      img: https://api.iconify.design/simple-icons:hono.svg
+      officialUrl: https://hono.dev/
+    - title: Zod
+      color: "#3e67b1"
+      img: https://api.iconify.design/simple-icons:zod.svg
+      officialUrl: https://zod.dev/
+    - title: Drizzle ORM
+      color: "#c5f74f"
+      img: https://api.iconify.design/simple-icons:drizzle.svg
+      officialUrl: https://orm.drizzle.team/
+    - title: Prisma
+      color: "#2d3748"
+      img: https://api.iconify.design/simple-icons:prisma.svg
+      officialUrl: https://www.prisma.io/
+    - title: TanStack Start
+      color: "#ff4154"
+      img: https://api.iconify.design/simple-icons:tanstack.svg
+      officialUrl: https://tanstack.com/start
+    - title: Turborepo
+      color: "#ef4444"
+      img: https://api.iconify.design/simple-icons:turborepo.svg
+      officialUrl: https://turborepo.com/
+    - title: MCP
+      color: "#ffffff"
+      img: https://api.iconify.design/simple-icons:modelcontextprotocol.svg
+      officialUrl: https://modelcontextprotocol.io/
+    - title: Nginx
+      color: "#009639"
+      img: https://api.iconify.design/simple-icons:nginx.svg
+      officialUrl: https://nginx.org/
 
 oneself:
   location: 中国，南昌市

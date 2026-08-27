@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, onBeforeUnmount, ref, useTemplateRef } from "vue";
 import gsap from "gsap";
 
 import { useTheme } from "@/composables/useTheme";
@@ -105,8 +105,10 @@ const contactLinks = computed(() =>
 );
 
 const activePopup = ref<string | null>(null);
+const copyFeedback = ref<{ id: string; status: "success" | "error" } | null>(null);
 const iconRefs = useTemplateRef<HTMLImageElement[]>("icons");
 const popupRefs = useTemplateRef<HTMLElement[]>("popups");
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 function animateIcon(index: number, direction: "in" | "out") {
   const icon = iconRefs.value?.[index];
@@ -123,42 +125,55 @@ function animateIcon(index: number, direction: "in" | "out") {
   });
 }
 
-function togglePopup(id: string, index: number) {
-  if (activePopup.value === id) {
-    // Close it
-    activePopup.value = null;
-    const el = popupRefs.value?.[index];
-    if (el) {
-      gsap.to(el, {
-        opacity: 0,
-        y: 10,
-        scale: 0.9,
-        duration: 0.2,
-        onComplete: () => {
-          el.style.display = "none";
-        },
-      });
-    }
-  } else {
-    // Hide others
-    popupRefs.value?.forEach((el) => {
-      gsap.killTweensOf(el);
-      el.style.display = "none";
-      el.style.opacity = "0";
-    });
+function showPopup(id: string, index: number) {
+  popupRefs.value?.forEach((el) => {
+    gsap.killTweensOf(el);
+    el.style.display = "none";
+    el.style.opacity = "0";
+  });
 
-    activePopup.value = id;
-    const el = popupRefs.value?.[index];
-    if (el) {
-      el.style.display = "block";
-      gsap.fromTo(
-        el,
-        { opacity: 0, y: 10, scale: 0.9 },
-        { opacity: 1, y: -10, scale: 1, duration: 0.3, ease: "back.out(1.7)" },
-      );
-    }
+  activePopup.value = id;
+  const el = popupRefs.value?.[index];
+  if (el) {
+    el.style.display = "block";
+    gsap.fromTo(
+      el,
+      { opacity: 0, y: 10, scale: 0.9 },
+      { opacity: 1, y: -10, scale: 1, duration: 0.3, ease: "back.out(1.7)" },
+    );
   }
 }
+
+async function copyContact(link: ContactLink, index: number) {
+  if (!link.info) {
+    return;
+  }
+
+  showPopup(link.id, index);
+
+  try {
+    if (!navigator.clipboard?.writeText) {
+      throw new Error("Clipboard API unavailable");
+    }
+    await navigator.clipboard.writeText(link.info);
+    copyFeedback.value = { id: link.id, status: "success" };
+  } catch {
+    copyFeedback.value = { id: link.id, status: "error" };
+  }
+
+  if (feedbackTimer) {
+    clearTimeout(feedbackTimer);
+  }
+  feedbackTimer = setTimeout(() => {
+    copyFeedback.value = null;
+  }, 2200);
+}
+
+onBeforeUnmount(() => {
+  if (feedbackTimer) {
+    clearTimeout(feedbackTimer);
+  }
+});
 </script>
 
 <template>
@@ -166,26 +181,42 @@ function togglePopup(id: string, index: number) {
     <div v-for="(link, index) in contactLinks" :key="link.id" class="author-contact-links__wrapper">
       <component
         :is="link.href ? 'a' : 'button'"
-        :aria-label="link.label"
+        :aria-label="link.href ? link.label : `复制 ${link.label}`"
+        :data-contact-id="link.id"
+        :data-copy-state="copyFeedback?.id === link.id ? copyFeedback.status : undefined"
         :href="link.href"
         class="author-contact-links__item"
         :rel="link.href ? 'noopener noreferrer' : undefined"
         :target="link.href ? '_blank' : undefined"
-        :title="link.label"
+        :title="link.href ? link.label : `复制 ${link.label}`"
         @mouseenter="animateIcon(index, 'in')"
         @mouseleave="animateIcon(index, 'out')"
-        @click="!link.href ? togglePopup(link.id, index) : undefined"
+        @click="!link.href ? copyContact(link, index) : undefined"
       >
         <img ref="icons" :src="link.iconSrc" :alt="link.label" class="author-contact-links__icon" />
       </component>
 
+      <span
+        v-if="copyFeedback?.id === link.id && copyFeedback.status === 'success'"
+        aria-hidden="true"
+        class="author-contact-links__copied-mark"
+      >
+        ✓
+      </span>
+
       <div
         v-if="!link.href"
         ref="popups"
+        aria-live="polite"
         class="author-contact-links__popup"
+        role="status"
         style="display: none; opacity: 0"
       >
-        {{ link.label }}: {{ link.info }}
+        <template v-if="copyFeedback?.id === link.id">
+          {{ copyFeedback.status === "success" ? "已复制" : "复制失败，请手动复制" }}
+          {{ link.label }}：{{ link.info }}
+        </template>
+        <template v-else>{{ link.label }}：{{ link.info }}</template>
       </div>
     </div>
   </div>
@@ -229,6 +260,29 @@ function togglePopup(id: string, index: number) {
   border-color: var(--border-strong);
   background: var(--author-contact-hover-bg);
   transform: translateY(-2px);
+}
+
+.author-contact-links__item[data-copy-state="success"] {
+  border-color: color-mix(in srgb, #22c55e 72%, var(--border-strong));
+  background: color-mix(in srgb, #22c55e 14%, var(--author-contact-bg));
+}
+
+.author-contact-links__copied-mark {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.15rem;
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border: 2px solid var(--stage-bg);
+  border-radius: 999px;
+  background: #22c55e;
+  color: #07130b;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .author-contact-links__popup {
