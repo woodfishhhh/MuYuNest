@@ -32,7 +32,8 @@
     "link": "https://realfrog.top/",
     "avatar": "/remote-assets/78fc3a1187728e215c8751a18a96813e72abb0ef.jpg",
     "descr": "林酒老师",
-    "className": "友情链接"
+    "className": "友情链接",
+    "offline": true
   },
   {
     "name": "程序设计竞赛协会",
