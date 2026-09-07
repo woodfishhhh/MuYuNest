@@ -110,7 +110,8 @@
     "link": "https://qwq.sigrika.cc/",
     "avatar": "/remote-assets/a5ca97af951b72846e5020ec58971615f41a42ab.jpg",
     "descr": "记录我的二次元之旅",
-    "className": "友情链接"
+    "className": "友情链接",
+    "offline": true
   },
   {
     "name": "灵的梦境",
