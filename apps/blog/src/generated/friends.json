@@ -124,7 +124,8 @@
     "link": "https://www.maskviva.xyz/",
     "avatar": "https://www.maskviva.xyz/images/Maskviva_unbackground_compressed.png",
     "descr": "造轮子爱好者。",
-    "className": "友情链接"
+    "className": "友情链接",
+    "offline": true
   },
   {
     "name": "chagumu's blog",
