@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="650" viewBox="0 0 1120 650" role="img" aria-label="中间件的前置与后置顺序">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#3b71b8" stroke-width="1.5"/></marker></defs>
+<rect width="1120" height="650" rx="20" fill="#f4f7fc"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#1c304c">
+<text x="40" y="51" font-size="27" font-weight="700">中间件的前置与后置顺序</text>
+<text x="40" y="85" font-size="17" fill="#52677e">认证通过时执行处理器；认证拒绝后，外层的后置代码仍会继续运行。</text>
+<rect x="40" y="120" width="505" height="435" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="58" y="154" font-size="23" font-weight="700" fill="#245aa0">认证通过 → HTTP 200</text>
+<rect x="575" y="120" width="505" height="435" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="593" y="154" font-size="23" font-weight="700" fill="#245aa0">认证拒绝 → HTTP 401</text>
+<rect x="65" y="167" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="80" y="197" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">global.before</text>
+<path d="M291 219 L291 231" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="65" y="236" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="80" y="266" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">  group.before</text>
+<path d="M291 288 L291 300" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="65" y="305" width="455" height="46" rx="8" fill="#e8f4ee"/>
+<text x="80" y="335" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">    Auth 通过 → handler</text>
+<path d="M291 357 L291 369" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="65" y="374" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="80" y="404" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">  group.after status=200</text>
+<path d="M291 426 L291 438" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="65" y="443" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="80" y="473" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">global.after status=200</text>
+<rect x="600" y="167" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="615" y="197" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">global.before</text>
+<path d="M826 219 L826 231" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="600" y="236" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="615" y="266" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">  group.before</text>
+<path d="M826 288 L826 300" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="600" y="305" width="455" height="46" rx="8" fill="#fff0ee"/>
+<text x="615" y="335" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">    Auth 拒绝 → Abort + return</text>
+<path d="M826 357 L826 369" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="600" y="374" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="615" y="404" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">  group.after status=401</text>
+<path d="M826 426 L826 438" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="600" y="443" width="455" height="46" rx="8" fill="#edf2fa"/>
+<text x="615" y="473" xml:space="preserve" font-family="Consolas, Microsoft YaHei, monospace" font-size="22">global.after status=401</text>
+<text x="40" y="600" font-size="18" fill="#52677e">Abort 阻止剩余处理器；return 退出当前函数；Next 后的代码在内层返回后执行。</text>
+</g></svg>
