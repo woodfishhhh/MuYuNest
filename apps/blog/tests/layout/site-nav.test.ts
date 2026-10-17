@@ -6,7 +6,6 @@ import { beforeEach, describe, expect, it } from "vite-plus/test";
 import SiteNav from "@/components/layout/SiteNav.vue";
 import { useTheme } from "@/composables/useTheme";
 import { useSiteStore } from "@/stores/site";
-import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 
 const RouterLinkStub = defineComponent({
   name: "RouterLink",
@@ -86,15 +85,13 @@ describe("SiteNav", () => {
     expect(wrapper.find("[data-nav-theme-toggle='mobile']").exists()).toBe(true);
   });
 
-  it("renders a visible Travellings entry beside the brand", () => {
+  it("replaces the navigation Travellings link with a non-interactive scene anchor", () => {
     const wrapper = mountNav();
-    const travellings = wrapper.get("[data-testid='nav-travellings']");
-
-    expect(travellings.text()).toBe("开往");
-    expect(travellings.attributes("href")).toBe(TRAVELLINGS_URL);
-    expect(travellings.attributes("aria-label")).toBe(TRAVELLINGS_TITLE);
-    expect(travellings.attributes("target")).toBe("_blank");
-    expect(travellings.attributes("rel")).toContain("noopener");
+    expect(wrapper.find("[data-testid='nav-travellings']").exists()).toBe(false);
+    const dock = wrapper.get("[data-scene-blog-dock]");
+    expect(dock.attributes("aria-hidden")).toBe("true");
+    expect(dock.attributes("tabindex")).toBeUndefined();
+    expect(dock.attributes("href")).toBeUndefined();
   });
 
   it("clicking theme toggle changes theme without changing active nav state", async () => {

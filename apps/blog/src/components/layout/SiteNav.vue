@@ -5,7 +5,6 @@ import ThemeToggle from "@/components/layout/ThemeToggle.vue";
 import { useTheme } from "@/composables/useTheme";
 import { getRouteLocationForSiteMode } from "@/utils/site-mode";
 import { useSiteStore } from "@/stores/site";
-import { TRAVELLINGS_TITLE, TRAVELLINGS_URL } from "@/utils/travellings";
 import { trackAnalyticsEvent } from "@/utils/analytics";
 
 const siteStore = useSiteStore();
@@ -38,6 +37,7 @@ function isActive(id: (typeof navItems)[number]["id"]) {
 <template>
   <nav
     class="site-nav-gradient pointer-events-none fixed left-0 top-0 z-50 flex w-full items-center justify-between p-4 sm:p-6"
+    :class="{ 'site-nav--blog': siteStore.mode === 'blog' }"
   >
     <div class="pointer-events-auto flex items-center gap-3">
       <RouterLink
@@ -47,19 +47,7 @@ function isActive(id: (typeof navItems)[number]["id"]) {
       >
         WOODFISH
       </RouterLink>
-      <a
-        data-testid="nav-travellings"
-        class="site-nav__travellings"
-        :href="TRAVELLINGS_URL"
-        :aria-label="TRAVELLINGS_TITLE"
-        :title="TRAVELLINGS_TITLE"
-        target="_blank"
-        rel="noopener noreferrer"
-        data-analytics-event="travellings-outbound"
-        data-analytics-event-location="navigation"
-      >
-        开往
-      </a>
+      <span data-scene-blog-dock class="site-nav__scene-dock" aria-hidden="true" />
     </div>
 
     <div data-testid="site-nav-wide" class="pointer-events-auto hidden items-center gap-3 lg:flex">
@@ -156,45 +144,16 @@ function isActive(id: (typeof navItems)[number]["id"]) {
 </template>
 
 <style scoped>
-.site-nav__travellings {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+/* The scene itself supplies the brand mark; don't wash it out with the nav scrim. */
+.site-nav-gradient.site-nav--blog {
+  background: none;
+}
+
+.site-nav__scene-dock {
+  display: block;
+  flex: none;
   height: 1.75rem;
-  min-width: 3.15rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  padding: 0 0.62rem;
-  color: var(--stage-fg);
-  font-size: 0.68rem;
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  line-height: 1;
-  text-decoration: none;
-  text-transform: uppercase;
-  backdrop-filter: blur(12px);
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.site-nav__travellings:hover,
-.site-nav__travellings:focus-visible {
-  border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.22);
-  color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.site-nav__travellings:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-:global(:root[data-theme="night"]) .site-nav__travellings {
-  background: rgba(8, 12, 24, 0.34);
+  width: 3.15rem;
+  pointer-events: none;
 }
 </style>

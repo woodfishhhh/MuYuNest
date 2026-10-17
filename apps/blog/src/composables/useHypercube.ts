@@ -23,6 +23,8 @@ export interface Hypercube {
   update: (delta: number) => void;
   lerpColor: (target: THREE.Color, factor: number) => void;
   setOpacity: (alpha: number) => void;
+  setPointScale: (scale: number) => void;
+  setDockProgress: (progress: number) => void;
   setInteractionIntensity: (value: number) => void;
   dispose: () => void;
 }
@@ -167,10 +169,11 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   let betaRot = 0;
   let jitterTime = 0;
   let interactionIntensity = 0;
+  let dockProgress = 0;
 
   function update(delta: number) {
     const intensity = THREE.MathUtils.clamp(interactionIntensity, 0, 1);
-    const motion = 1 - intensity;
+    const motion = (1 - intensity) * (1 - dockProgress);
     jitterTime += delta;
     alphaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.alpha * motion;
     betaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.beta * motion;
@@ -182,9 +185,15 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
       const base = projectVertex(vertices[i], 0, 0);
       const jitter = Math.sin(jitterTime * 8 + i * 1.7) * 0.024 * intensity;
 
-      positions[i * 3] = THREE.MathUtils.lerp(dynamic.x, base.x + jitter, intensity);
-      positions[i * 3 + 1] = THREE.MathUtils.lerp(dynamic.y, base.y - jitter, intensity);
-      positions[i * 3 + 2] = THREE.MathUtils.lerp(dynamic.z, base.z + jitter, intensity);
+      positions[i * 3] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(dynamic.x, base.x + jitter, intensity), base.x, dockProgress,
+      );
+      positions[i * 3 + 1] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(dynamic.y, base.y - jitter, intensity), base.y, dockProgress,
+      );
+      positions[i * 3 + 2] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(dynamic.z, base.z + jitter, intensity), base.z, dockProgress,
+      );
       occluderPositions[i * 3] = positions[i * 3];
       occluderPositions[i * 3 + 1] = positions[i * 3 + 1];
       occluderPositions[i * 3 + 2] = positions[i * 3 + 2];
@@ -209,6 +218,15 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
     interactionIntensity = THREE.MathUtils.clamp(value, 0, 1);
   }
 
+  function setDockProgress(progress: number) {
+    dockProgress = THREE.MathUtils.clamp(progress, 0, 1);
+  }
+
+  function setPointScale(scale: number) {
+    // Point sprites do not inherit the parent group's scale.
+    pointsMaterial.size = Math.max(0.018, 0.15 * scale);
+  }
+
   function dispose() {
     hitGeom.dispose();
     hitMat.dispose();
@@ -228,6 +246,8 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
     update,
     lerpColor,
     setOpacity,
+    setPointScale,
+    setDockProgress,
     setInteractionIntensity,
     dispose,
   };
