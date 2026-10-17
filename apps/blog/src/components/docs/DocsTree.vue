@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, watch } from "vue";
+import DocsCollapse from "./DocsCollapse.vue";
 import { useRoute } from "vue-router";
 import { findDocsPlacement, type DocsTopic } from "@/content/docs-navigation";
 
@@ -41,39 +42,43 @@ function toggle(id: string) {
           >{{ topic.title }} <small>{{ topic.count }}</small></RouterLink
         >
       </div>
-      <div v-if="expanded.has(topic.id)" class="docs-tree__groups">
-        <section v-for="group in topic.groups" :key="group.id">
-          <div class="docs-tree__row docs-tree__row--group">
-            <button
-              type="button"
-              :aria-expanded="expanded.has(group.id)"
-              :aria-label="`${expanded.has(group.id) ? '收起' : '展开'}${group.title}`"
-              @click="toggle(group.id)"
+      <DocsCollapse :open="expanded.has(topic.id)"
+        ><div class="docs-tree__groups">
+          <section v-for="group in topic.groups" :key="group.id">
+            <div class="docs-tree__row docs-tree__row--group">
+              <button
+                type="button"
+                :aria-expanded="expanded.has(group.id)"
+                :aria-label="`${expanded.has(group.id) ? '收起' : '展开'}${group.title}`"
+                @click="toggle(group.id)"
+              >
+                <span :class="{ 'is-open': expanded.has(group.id) }">›</span>
+              </button>
+              <RouterLink
+                :to="{ path: '/blog', query: { topic: topic.id, series: group.id } }"
+                @click="emit('navigate')"
+                >{{ group.title }}</RouterLink
+              >
+            </div>
+            <DocsCollapse :open="expanded.has(group.id)"
+              ><div class="docs-tree__articles">
+                <RouterLink
+                  v-for="post in group.posts"
+                  :key="post.canonicalSlug"
+                  :to="{
+                    path: `/posts/${post.canonicalSlug}`,
+                    query: { ...route.query, topic: topic.id, series: group.id },
+                  }"
+                  :aria-current="currentSlug === post.canonicalSlug ? 'page' : undefined"
+                  :class="{ 'is-active': currentSlug === post.canonicalSlug }"
+                  @click="emit('navigate')"
+                  >{{ post.title }}</RouterLink
+                >
+              </div></DocsCollapse
             >
-              <span :class="{ 'is-open': expanded.has(group.id) }">›</span>
-            </button>
-            <RouterLink
-              :to="{ path: '/blog', query: { topic: topic.id, series: group.id } }"
-              @click="emit('navigate')"
-              >{{ group.title }}</RouterLink
-            >
-          </div>
-          <div v-if="expanded.has(group.id)" class="docs-tree__articles">
-            <RouterLink
-              v-for="post in group.posts"
-              :key="post.canonicalSlug"
-              :to="{
-                path: `/posts/${post.canonicalSlug}`,
-                query: { ...route.query, topic: topic.id, series: group.id },
-              }"
-              :aria-current="currentSlug === post.canonicalSlug ? 'page' : undefined"
-              :class="{ 'is-active': currentSlug === post.canonicalSlug }"
-              @click="emit('navigate')"
-              >{{ post.title }}</RouterLink
-            >
-          </div>
-        </section>
-      </div>
+          </section>
+        </div></DocsCollapse
+      >
     </section>
   </nav>
 </template>

@@ -337,6 +337,8 @@ img {
   background: transparent;
 }
 
+/* Legacy reader defaults remain below the documentation design layer. */
+@layer legacy-reader {
 .article-page {
   position: relative;
   z-index: 20;
@@ -1262,6 +1264,8 @@ img {
   .article-toc__scroll {
     max-height: calc(100dvh - 11.5rem);
   }
+}
+
 }
 
 /* Home hint / focus hint: anticipate ease (overshoot then settle) */

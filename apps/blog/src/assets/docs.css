@@ -1,7 +1,7 @@
 /* Documentation surfaces share the site's palette, with calm opaque reading areas. */
 .docs-app {
   --docs-bg: #10131f;
-  --docs-panel: rgba(18, 22, 35, 0.96);
+  --docs-panel: #10131f;
   --docs-soft: rgba(130, 160, 210, 0.065);
   --docs-text: #e3e8f3;
   --docs-muted: #9aa9c1;
@@ -22,13 +22,13 @@
   font-family: var(--font-sans);
 }
 :root[data-theme="day"] .docs-app {
-  --docs-bg: #fbfaf7;
-  --docs-panel: rgba(255, 254, 250, 0.97);
+  --docs-bg: #fafbfc;
+  --docs-panel: #fafbfc;
   --docs-soft: rgba(65, 87, 145, 0.045);
-  --docs-text: #293344;
+  --docs-text: #303747;
   --docs-muted: #657085;
   --docs-line: rgba(50, 65, 95, 0.13);
-  --docs-accent: #4167a9;
+  --docs-accent: #4263bb;
   --docs-code: #f3f4f7;
   background:
     radial-gradient(ellipse at 8% 0%, rgba(194, 180, 225, 0.2), transparent 45%),
@@ -595,7 +595,7 @@
   min-width: 0;
   border: 0;
   box-shadow: none;
-  background: var(--docs-panel);
+  background: transparent;
   border-radius: 12px;
   color: var(--docs-text);
   padding: 0;
@@ -765,6 +765,9 @@
   padding-bottom: 10px;
   border-color: var(--docs-line);
 }
+.docs-post #article-container ul { list-style: disc; }
+.docs-post #article-container ol { list-style: decimal; }
+.docs-post #article-container li::marker { color: var(--docs-muted); }
 .docs-post #article-container h3 {
   font-size: 19px;
   line-height: 1.7;
@@ -779,6 +782,8 @@
 .docs-post #article-container h2,
 .docs-post #article-container h3,
 .docs-post #article-container h4,
+.docs-post #article-container h5,
+.docs-post #article-container h6,
 .docs-post #article-container strong {
   color: var(--docs-text);
   letter-spacing: 0;
@@ -1103,7 +1108,7 @@
   box-shadow: none;
 }
 .docs-app .docs-post .article-view {
-  background: var(--docs-panel);
+  background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -1120,4 +1125,167 @@
 .docs-post .article-toc__item--level-3,
 .docs-post .article-toc__item--level-4 {
   font-size: 11px;
+}
+
+/* One continuous reading surface; decorative colour stays in the navigation. */
+.docs-main {
+  background: var(--docs-bg);
+}
+.docs-sidebar {
+  background: var(--docs-soft);
+}
+.docs-post .article-view__column {
+  padding: 12px 8px 32px;
+}
+.docs-post .article-toc__card {
+  padding-left: 16px;
+  gap: 0;
+}
+.docs-post .article-toc__scroll {
+  margin-top: 0;
+  scrollbar-color: transparent transparent;
+}
+.docs-post .article-toc__scroll:hover {
+  scrollbar-color: #78859c66 transparent;
+}
+.docs-post .article-toc__item {
+  position: relative;
+  border-radius: 0 5px 5px 0;
+  padding: 8px 10px;
+  border-left: 2px solid transparent;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+.docs-post .article-toc__item--level-3 {
+  padding-left: 20px;
+}
+.docs-post .article-toc__item--level-4 {
+  padding-left: 30px;
+}
+.docs-post .article-toc__item:hover {
+  background: var(--docs-soft);
+  color: var(--docs-text);
+}
+.docs-post .article-toc__item.is-active {
+  background: var(--docs-soft);
+  border-left-color: var(--docs-accent);
+  color: var(--docs-accent);
+  font-weight: 500;
+}
+.docs-post .article-toc__title {
+  padding: 0 10px 4px;
+  color: var(--docs-muted);
+}
+.docs-post #article-container :is(h1, h2, h3, h4, h5, h6) {
+  font-weight: 600;
+}
+.docs-post #article-container h2 {
+  border-bottom: 1px solid var(--docs-line);
+}
+.docs-post #article-container table {
+  background: transparent;
+}
+.docs-post .article-progress__bar {
+  transition: transform 160ms linear;
+  transform-origin: left;
+  width: 100%;
+}
+.docs-library-search {
+  transition:
+    border-color 160ms,
+    box-shadow 160ms;
+}
+.docs-library-search:focus-within {
+  border-color: var(--docs-accent);
+  box-shadow: 0 0 0 3px var(--docs-soft);
+}
+.docs-tree__row,
+.docs-tree__articles a {
+  transition:
+    background-color 160ms,
+    color 160ms;
+}
+.docs-tree__row:hover {
+  background: var(--docs-soft);
+  border-radius: 6px;
+}
+.docs-topic-card {
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 200ms ease;
+}
+@media (hover: hover) {
+  .docs-topic-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px #1623480b;
+  }
+}
+.docs-topic-card:active {
+  transform: translateY(0);
+}
+.docs-index-content,
+.docs-post .article-view {
+  animation: docs-arrive 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes docs-arrive {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.docs-collapse-enter-active,
+.docs-collapse-leave-active {
+  transition:
+    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease;
+  overflow: hidden;
+}
+.docs-collapse-enter-from,
+.docs-collapse-leave-to {
+  opacity: 0;
+}
+.docs-drawer {
+  opacity: 0;
+  transform: translateX(-24px);
+  transition:
+    opacity 220ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    display 220ms allow-discrete,
+    overlay 220ms allow-discrete;
+}
+.docs-drawer[open] {
+  opacity: 1;
+  transform: translateX(0);
+}
+.docs-drawer::backdrop {
+  opacity: 0;
+  transition:
+    opacity 220ms ease,
+    display 220ms allow-discrete,
+    overlay 220ms allow-discrete;
+}
+.docs-drawer[open]::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  .docs-drawer[open] {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  .docs-drawer[open]::backdrop {
+    opacity: 0;
+  }
+}
+@media (max-width: 599px) {
+  .docs-post .article-view__column {
+    padding: 4px 2px 24px;
+  }
 }

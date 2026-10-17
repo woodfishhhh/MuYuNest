@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vite-plus/test";
 
+import DocsCollapse from "@/components/docs/DocsCollapse.vue";
 import ArticleToc from "@/components/article/ArticleToc.vue";
 
 describe("ArticleToc", () => {
@@ -52,6 +53,8 @@ describe("ArticleToc", () => {
 
     await wrapper.get("[data-toc-id='overview']").trigger("click");
 
+    expect(wrapper.emitted("jump")).toBeUndefined();
+    wrapper.getComponent(DocsCollapse).vm.$emit("closed");
     expect(wrapper.emitted("jump")?.[0]).toEqual(["overview"]);
     expect(wrapper.get("[data-testid='article-toc-mobile-toggle']").attributes("aria-expanded")).toBe("false");
   });
