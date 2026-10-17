@@ -15,3 +15,12 @@
 - 最后仅修改列表与小标题样式后再次构建，并重跑 2 项视觉/交互验收通过。
 - 截图保存在工作区 .tmp/polished-{reader,day,night,mobile,index}.png。
 - 本次未改写文章源文。上次公式扫描发现的 5 处文稿命令错误仍保留原式；不属于本次样式修复。
+
+## 三栏与滚动条修正
+
+- 对照 Vue 官方主题 VPContentDoc / VPSidebar 的固定侧栏、受限正文、独立右栏结构。保留本站主题，正文最大 760px；右栏 224–288px，右侧留白 32px，不再被 1136px 外层容器挤窄。
+- 目录中的公式独立缩放、标题换行；正文长公式和代码仍可横向滚动。
+- 两侧导航使用平滑定位滚动，减少动画时恢复即时定位。Chromium 使用 6px 无箭头圆角滑块；Firefox 保留原生细滚动条。
+- 16 项浏览器回归通过，包含新增 1280 / 1651 / 1920px 的逐节点横向溢出检查；最后滚动条样式调整后重跑 3 项通过。
+- pnpm typecheck、pnpm build、git diff --check 通过。最终截图：.tmp/rails-day.png、.tmp/rails-1651.png。
+- 参考源码：https://github.com/vuejs/theme/blob/main/src/vitepress/components/VPContentDoc.vue

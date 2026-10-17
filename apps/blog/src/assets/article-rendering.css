@@ -77,10 +77,10 @@
   max-width: 100%;
 }
 .article-toc__label .render-math mjx-container {
-  max-width: none;
+  max-width: 100%;
 }
 .article-toc__label {
-  overflow-x: auto;
+  overflow-wrap: anywhere;
 }
 
 /* Long inline expressions stay scrollable inside the reading column. */
@@ -89,4 +89,15 @@
   overflow-y: hidden;
   vertical-align: middle;
   padding-block: 0.15em;
+}
+
+/* Outlines are navigation, not horizontal formula scrollers. Scale only here. */
+.article-toc__label .render-math:not(.render-math--block) > mjx-container {
+  display: inline-block;
+  max-width: 100%;
+  overflow: visible;
+}
+.article-toc__label .render-math mjx-container > svg {
+  max-width: 100%;
+  height: auto;
 }

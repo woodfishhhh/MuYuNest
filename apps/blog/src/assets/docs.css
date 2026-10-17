@@ -1,5 +1,6 @@
 /* Documentation surfaces share the site's palette, with calm opaque reading areas. */
 .docs-app {
+  --docs-outline-width: clamp(224px, 18vw, 288px);
   --docs-bg: #10131f;
   --docs-panel: #10131f;
   --docs-soft: rgba(130, 160, 210, 0.065);
@@ -68,7 +69,7 @@
 }
 .docs-app * {
   scrollbar-width: thin;
-  scrollbar-color: #78859c66 transparent;
+  scrollbar-color: #78859c55 transparent;
 }
 .docs-app ::-webkit-scrollbar {
   width: 6px;
@@ -110,11 +111,13 @@
   height: calc(100dvh - 80px);
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
-  max-width: 1680px;
-  margin: auto;
+  width: 100%;
+  margin: 0;
 }
 .docs-sidebar {
   overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
   overscroll-behavior: contain;
   border-right: 1px solid var(--docs-line);
   padding: 28px 20px 24px;
@@ -223,14 +226,17 @@
 
 .docs-index-grid {
   display: grid;
-  grid-template-columns: minmax(0, 800px) 188px;
-  gap: 44px;
-  max-width: 1136px;
+  grid-template-columns: minmax(0, 1fr) var(--docs-outline-width);
+  gap: 48px;
+  max-width: none;
   padding: 32px 40px 0;
   margin: auto;
   align-items: start;
 }
 .docs-index-content {
+  width: 100%;
+  max-width: 760px;
+  justify-self: center;
   min-width: 0;
 }
 .docs-breadcrumb {
@@ -565,13 +571,13 @@
 /* Article: reading column followed by the local outline. */
 .docs-post {
   padding: 32px 40px 0;
-  max-width: 1136px;
+  max-width: none;
   margin: auto;
 }
 .docs-post .article-shell {
   display: grid;
-  grid-template-columns: minmax(0, 800px) 188px;
-  gap: 44px;
+  grid-template-columns: minmax(0, 1fr) var(--docs-outline-width);
+  gap: 48px;
   max-width: none;
   width: 100%;
   padding: 0;
@@ -702,7 +708,10 @@
   display: none;
 }
 .docs-post .article-toc__scroll {
-  max-height: calc(100dvh - 200px);
+  max-height: calc(100dvh - 170px);
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
   padding: 0;
   overflow-y: auto;
 }
@@ -765,9 +774,15 @@
   padding-bottom: 10px;
   border-color: var(--docs-line);
 }
-.docs-post #article-container ul { list-style: disc; }
-.docs-post #article-container ol { list-style: decimal; }
-.docs-post #article-container li::marker { color: var(--docs-muted); }
+.docs-post #article-container ul {
+  list-style: disc;
+}
+.docs-post #article-container ol {
+  list-style: decimal;
+}
+.docs-post #article-container li::marker {
+  color: var(--docs-muted);
+}
 .docs-post #article-container h3 {
   font-size: 19px;
   line-height: 1.7;
@@ -884,7 +899,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin: 28px 232px 0 0;
+  margin: 28px calc(var(--docs-outline-width) + 48px) 0 0;
 }
 .docs-adjacent a {
   border: 1px solid var(--docs-line);
@@ -910,7 +925,7 @@
   text-align: right;
 }
 .docs-post .docs-footer {
-  margin-right: 232px;
+  margin-right: calc(var(--docs-outline-width) + 48px);
 }
 @media (min-width: 1500px) {
   .docs-post #article-container {
@@ -1124,7 +1139,7 @@
 }
 .docs-post .article-toc__item--level-3,
 .docs-post .article-toc__item--level-4 {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 /* One continuous reading surface; decorative colour stays in the navigation. */
@@ -1135,7 +1150,9 @@
   background: var(--docs-soft);
 }
 .docs-post .article-view__column {
-  padding: 12px 8px 32px;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: 12px 0 32px;
 }
 .docs-post .article-toc__card {
   padding-left: 16px;
@@ -1143,10 +1160,10 @@
 }
 .docs-post .article-toc__scroll {
   margin-top: 0;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: #78859c55 transparent;
 }
 .docs-post .article-toc__scroll:hover {
-  scrollbar-color: #78859c66 transparent;
+  scrollbar-color: #78859c55 transparent;
 }
 .docs-post .article-toc__item {
   position: relative;
@@ -1287,5 +1304,72 @@
 @media (max-width: 599px) {
   .docs-post .article-view__column {
     padding: 4px 2px 24px;
+  }
+}
+
+/* Independent rails, like the Vue documentation: the outline uses the right edge. */
+.docs-sidebar,
+.docs-drawer,
+.docs-post .article-toc__scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #78859c55 transparent;
+}
+.docs-sidebar:hover,
+.docs-sidebar:focus-within,
+.docs-drawer:hover,
+.docs-post .article-toc__scroll:hover,
+.docs-post .article-toc__scroll:focus-within {
+  scrollbar-color: #78859c99 transparent;
+}
+.docs-app ::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.docs-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.docs-app ::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+.docs-app ::-webkit-scrollbar-thumb:hover {
+  background-color: #78859c99;
+}
+/* Chromium's standard scrollbar properties otherwise suppress the custom thumb. */
+@supports selector(::-webkit-scrollbar) {
+  .docs-app * {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+}
+.docs-post .article-toc__item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.docs-post .article-toc__item:hover {
+  transform: none;
+}
+.docs-post .article-toc__items {
+  min-width: 0;
+}
+.docs-index-toc {
+  max-height: calc(100dvh - 150px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+@media (min-width: 1280px) {
+  .docs-post,
+  .docs-index-grid {
+    padding: 40px 32px 64px 48px;
+  }
+  .docs-post .article-toc__card {
+    width: 100%;
+  }
+}
+@media (max-width: 1279px) {
+  .docs-index-content {
+    margin-inline: auto;
   }
 }
