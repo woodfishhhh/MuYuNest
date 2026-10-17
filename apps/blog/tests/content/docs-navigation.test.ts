@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildDocsNavigation, findDocsPlacement, getDocsNeighbors } from "@/content/docs-navigation";
 import seriesConfig from "@/content/docs-series.json";
+import { visiblePostSummaries } from "@/content/post-visibility";
 import type { PostSummary } from "@/types/content";
 import { readFileSync, existsSync } from "node:fs";
 const post = (canonicalSlug: string, categories: string[] = []): PostSummary => ({
@@ -44,7 +45,7 @@ describe("documentation navigation", () => {
   });
   it("covers every loadable current article exactly once and never adds missing configured slugs", () => {
     const posts = JSON.parse(readFileSync("public/post-index.json", "utf8")) as PostSummary[];
-    const available = posts.filter((p) => existsSync(`src/generated/posts/${p.canonicalSlug}.json`));
+    const available = visiblePostSummaries(posts).filter((p) => existsSync(`src/generated/posts/${p.canonicalSlug}.json`));
     const flat = buildDocsNavigation(available).flatMap((t) =>
       t.groups.flatMap((g) => g.posts.map((p) => p.canonicalSlug)),
     );
@@ -56,5 +57,14 @@ describe("documentation navigation", () => {
   it("does not assign a canonical article to two series", () => {
     const slugs = seriesConfig.flatMap((series) => series.slugs);
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+  it("hides only the requested guides from discovery without turning them into loose notes", () => {
+    const hidden = seriesConfig.filter(s => s.id === "nestjs-guide" || s.id === "react19").flatMap(s => s.slugs);
+    const retained = seriesConfig.filter(s => s.id === "nestjs" || s.id === "react-notes").flatMap(s => s.slugs);
+    const all = [...hidden, ...retained].map(slug => post(slug));
+    expect(visiblePostSummaries(all).map(p => p.canonicalSlug)).toEqual(retained);
+    const navigation = buildDocsNavigation(all);
+    for (const slug of hidden) expect(findDocsPlacement(navigation, slug)).toBeUndefined();
+    for (const slug of retained) expect(findDocsPlacement(navigation, slug)).toBeDefined();
   });
 });

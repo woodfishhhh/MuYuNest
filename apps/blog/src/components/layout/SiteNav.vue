@@ -147,6 +147,10 @@ watch(
 </template>
 
 <style scoped>
+.site-nav-gradient {
+  font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
 .site-nav--docs {
   height: 80px;
   border-bottom: 1px solid var(--border-subtle);

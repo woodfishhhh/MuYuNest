@@ -1,4 +1,5 @@
 import seriesConfig from "./docs-series.json";
+import { visiblePostSummaries } from "./post-visibility";
 import type { PostSummary } from "@/types/content";
 
 export const docsTopics = [
@@ -43,6 +44,7 @@ function inferTopic(post: PostSummary): DocsTopicId {
 }
 
 export function buildDocsNavigation(posts: PostSummary[]): DocsTopic[] {
+  posts = visiblePostSummaries(posts);
   const bySlug = new Map(posts.map((post) => [post.canonicalSlug, post]));
   const assigned = new Set<string>();
   const topics: DocsTopic[] = docsTopics.map((topic) => ({ ...topic, groups: [], count: 0 }));

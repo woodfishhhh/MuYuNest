@@ -2,6 +2,7 @@ import type { PostArticle, PostSummary } from "@/types/content";
 import { getBaseUrl } from "@/utils/base-url";
 import { normalizeContentPayload } from "./content-url-normalizer";
 import { resolvePostSlugFromIndex } from "./post-helpers";
+import { visiblePostSummaries } from "./post-visibility";
 
 const postModules = import.meta.glob<{ default: PostArticle }>("../generated/posts/*.json");
 const articlePromiseCache = new Map<string, Promise<PostArticle>>();
@@ -54,7 +55,7 @@ async function loadPostIndex() {
 }
 
 export async function getPostSummaries() {
-  return loadPostIndex();
+  return visiblePostSummaries(await loadPostIndex());
 }
 
 export function warmPostSummaries() {
