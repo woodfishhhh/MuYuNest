@@ -111,10 +111,8 @@ export function buildLegacySlugIndex(entries: readonly LegacySlugSource[]): Map<
 export function resolveCanonicalSlug(options: CanonicalSlugOptions): CanonicalSlugResult {
   const fingerprint = buildContentFingerprint(options.title, options.date, options.rawMarkdown);
   const legacySlug = options.legacyIndex.get(fingerprint);
-  const sourceStem = path.basename(
-    options.sourceRelativePath,
-    path.extname(options.sourceRelativePath),
-  );
+  const portablePath = options.sourceRelativePath.replace(/\\/g, "/");
+  const sourceStem = path.posix.basename(portablePath, path.posix.extname(portablePath));
 
   const preferredSlug = options.preferredSlug?.trim();
 
@@ -137,11 +135,14 @@ export function resolveCanonicalSlug(options: CanonicalSlugOptions): CanonicalSl
   }
 
   const asciiStem = slugifyAsciiStem(sourceStem) || slugifyAsciiStem(options.title) || "post";
-  const shortHash = sha1(options.sourceRelativePath).slice(0, 8);
+  // Published docs navigation was authored with Windows-generated URLs. Keep
+  // those canonical IDs on every OS and retain old Linux builds as aliases.
+  const shortHash = sha1(portablePath.replace(/\//g, "\\")).slice(0, 8);
+  const posixSlug = `${asciiStem}-${sha1(portablePath).slice(0, 8)}`;
 
   return {
     canonicalSlug: `${asciiStem}-${shortHash}`,
-    aliases: uniqueStrings([sourceStem]),
+    aliases: uniqueStrings([sourceStem, posixSlug]),
   };
 }
 

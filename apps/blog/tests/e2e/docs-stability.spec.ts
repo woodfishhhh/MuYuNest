@@ -1,6 +1,18 @@
 import { expect, test } from "@playwright/test";
 test.use({ serviceWorkers: "block" });
 
+test("Linux-generated legacy URLs resolve to the same canonical articles", async ({ page }) => {
+  for (const [alias, canonical] of [
+    ["1-cc97fa54", "1-849fada0"],
+    ["07-de757c2c", "07-7c60a570"],
+    ["2-e25c70a2", "2-fab0b7c6"],
+  ]) {
+    await page.goto(`/posts/${alias}`);
+    await expect(page).toHaveURL(new RegExp(`/posts/${canonical}$`));
+    await expect(page.locator(`#article-title-${canonical}`)).toBeVisible();
+  }
+});
+
 test("article changes preserve the shell and align the active marker", async ({ page }, info) => {
   await page.setViewportSize({ width: 1651, height: 871 });
   await page.goto("/posts/1-849fada0?topic=frontend&series=react-notes");
