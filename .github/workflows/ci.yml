@@ -29,6 +29,9 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Verify deployment SSH configuration
+        run: bash deploy/test-configure-blog-ssh.sh
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -110,11 +113,10 @@ jobs:
           (cd apps/blog/dist && sha256sum --strict --check --quiet release.manifest.sha256)
 
       - name: Configure SSH
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: bash deploy/configure-blog-ssh.sh
 
       - name: Stage site artifact incrementally
         timeout-minutes: 20
@@ -126,7 +128,7 @@ jobs:
           ssh_options=(
             -o BatchMode=yes
             -o ConnectTimeout=20
-            -o ConnectionAttempts=5
+            -o ConnectionAttempts=1
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=4
           )
@@ -148,7 +150,7 @@ jobs:
             done
           }
 
-          rsync_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20 -o ConnectionAttempts=5 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
+          rsync_ssh="ssh -o BatchMode=yes -o ConnectTimeout=20 -o ConnectionAttempts=1 -o ServerAliveInterval=15 -o ServerAliveCountMax=4"
 
           # shellcheck disable=SC2029
           retry timeout 120s ssh -T "${ssh_options[@]}" "$SSH_DEST" "set -eu; case '$remote_next' in /opt/blog-stack/sites/*.next.*) ;; *) echo 'Refusing unsafe staging dir: $remote_next' >&2; exit 2 ;; esac; rm -rf '$remote_next'; mkdir -p '$remote_next'; command -v rsync >/dev/null"

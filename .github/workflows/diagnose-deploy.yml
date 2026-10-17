@@ -3,48 +3,26 @@ name: Diagnose Deploy
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: Check secrets presence
-        run: |
-          echo "=== Secret Presence Check ==="
-          if [ -n "${{ secrets.SSH_HOST }}" ]; then
-            echo "SSH_HOST: present"
-          else
-            echo "SSH_HOST: MISSING"
-          fi
-          if [ -n "${{ secrets.SSH_USERNAME }}" ]; then
-            echo "SSH_USERNAME: present"
-          else
-            echo "SSH_USERNAME: MISSING"
-          fi
-          if [ -n "${{ secrets.SSH_PRIVATE_KEY }}" ]; then
-            echo "SSH_PRIVATE_KEY: present (length=$(echo '${{ secrets.SSH_PRIVATE_KEY }}' | wc -c))"
-          else
-            echo "SSH_PRIVATE_KEY: MISSING"
-          fi
-          if [ -n "${{ secrets.DEPLOY_DIR }}" ]; then
-            echo "DEPLOY_DIR: present"
-          else
-            echo "DEPLOY_DIR: MISSING (will use default)"
-          fi
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Configure trusted SSH connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: bash deploy/configure-blog-ssh.sh
 
       - name: Test SSH connectivity
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
-          echo "=== SSH Connectivity Test ==="
-          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USERNAME" ] || [ -z "$SSH_PRIVATE_KEY" ]; then
-            echo "ERROR: Missing required secrets"
-            exit 1
-          fi
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1 || echo "keyscan failed"
-          echo "Testing connection to $SSH_USERNAME@$SSH_HOST ..."
-          ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa "$SSH_USERNAME@$SSH_HOST" "echo 'SSH OK'" 2>&1 || echo "SSH connection failed"
+          : "${SSH_USERNAME:?SSH_USERNAME is required}"
+          timeout 30s ssh -T "$SSH_USERNAME@$SSH_HOST" "echo 'SSH OK'"
