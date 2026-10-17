@@ -332,6 +332,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Keep the scene's navigation-sized geometry above the archive background. */
+.stage-panel-gradient--blog {
+  mask-image: linear-gradient(to bottom, transparent 3.75rem, #000 5rem);
+}
+
 .home-panel-cache[data-panel-active="false"] {
   content-visibility: hidden;
   pointer-events: none;
