@@ -154,7 +154,7 @@ function resetTilt() {
           <h3 class="friend-link-card__title text-xl font-semibold text-[var(--stage-fg)]">
             {{ props.link.name }}
           </h3>
-          <p class="friend-link-card__domain mt-2 text-[12px] text-[var(--stage-hint-strong)]">
+          <p class="friend-link-card__domain mt-2 text-base text-[var(--stage-hint-strong)]">
             {{ domain }}
             <span
               v-if="props.link.offline"
@@ -167,7 +167,7 @@ function resetTilt() {
         </div>
       </div>
 
-      <p class="friend-link-card__description mt-6 text-[15px] leading-7 text-[var(--stage-hint)]">
+      <p class="friend-link-card__description mt-6 text-base leading-7 text-[var(--stage-hint)]">
         {{ props.link.descr || "新的博客坐标，等待下一次相遇。" }}
       </p>
     </div>
@@ -240,7 +240,7 @@ function resetTilt() {
   border-radius: 999px;
   padding: 0.15rem 0.42rem;
   color: rgb(130, 82, 19);
-  font-size: 0.68rem;
+  font-size: 1rem;
   letter-spacing: 0.08em;
   line-height: 1.2;
   vertical-align: 0.08em;

@@ -1,6 +1,29 @@
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "block" });
+for (const width of [1413, 390]) {
+  test(`friend text is at least 16px at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 871 });
+    await page.goto("/friend");
+    const panel = page.getByTestId("friend-panel-root");
+    await expect(panel).toBeVisible();
+    await expect(page.getByTestId("friend-link-card")).toHaveCount(21);
+    const smallText = await panel.evaluate((root) =>
+      Array.from(root.querySelectorAll<HTMLElement>("*"))
+        .filter(
+          (el) =>
+            el.getClientRects().length &&
+            Array.from(el.childNodes).some((node) => node.nodeType === 3 && node.textContent?.trim()),
+        )
+        .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 16)
+        .map((el) => ({ text: el.textContent?.slice(0, 40), size: getComputedStyle(el).fontSize })),
+    );
+    expect(smallText).toEqual([]);
+    await expect(page.getByTestId("friend-application-site-name").first()).toHaveCSS("font-size", "16px");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+    await page.screenshot({ animations: "disabled", path: info.outputPath(`friend-16px-${width}.png`) });
+  });
+}
 test("friend avatars recover locally, failed hosts show initials, and requested fonts apply", async ({
   page,
 }, info) => {

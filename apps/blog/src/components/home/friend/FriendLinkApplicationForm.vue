@@ -157,17 +157,17 @@ function confirmIssueRedirect() {
     </div>
     <div class="friend-application-card__inner">
       <div class="relative max-w-3xl">
-        <div class="text-[11px] tracking-[0.18em] text-[var(--stage-hint-strong)]">提交友链</div>
+        <div class="text-base tracking-[0.18em] text-[var(--stage-hint-strong)]">提交友链</div>
         <h3 class="mt-2 text-2xl font-semibold text-[var(--stage-fg)]">投递你的站点</h3>
-        <p class="mt-2 text-sm leading-6 text-[var(--stage-hint)]">
+        <p class="mt-2 text-base leading-6 text-[var(--stage-hint)]">
           请先把 woodfish 加入你的友链页，再打开预填好的 GitHub 提交草稿。
         </p>
       </div>
 
       <form class="relative mt-5 grid gap-3 md:grid-cols-2" @submit.prevent="handleSubmit">
         <div class="friend-application-prerequisite md:col-span-2">
-          <div class="text-xs font-semibold text-[var(--stage-fg)]">先添加本站友链</div>
-          <dl class="mt-2 grid gap-1.5 text-xs text-[var(--stage-hint)] sm:grid-cols-2">
+          <div class="text-base font-semibold text-[var(--stage-fg)]">先添加本站友链</div>
+          <dl class="mt-2 grid gap-1.5 text-base text-[var(--stage-hint)] sm:grid-cols-2">
             <div>
               <dt>名称</dt>
               <dd>woodfish</dd>
@@ -188,7 +188,7 @@ function confirmIssueRedirect() {
         </div>
 
         <label class="space-y-1.5">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">站点名称</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">站点名称</span>
           <input
             v-model="draft.siteName"
             data-testid="friend-application-site-name"
@@ -200,7 +200,7 @@ function confirmIssueRedirect() {
         </label>
 
         <label class="space-y-1.5">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">站点链接</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">站点链接</span>
           <input
             v-model="draft.siteUrl"
             data-testid="friend-application-site-url"
@@ -212,7 +212,7 @@ function confirmIssueRedirect() {
         </label>
 
         <label class="space-y-1.5">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">友链页链接</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">友链页链接</span>
           <input
             v-model="draft.friendPageUrl"
             data-testid="friend-application-friend-page-url"
@@ -224,7 +224,7 @@ function confirmIssueRedirect() {
         </label>
 
         <label class="space-y-1.5">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">头像链接</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">头像链接</span>
           <input
             v-model="draft.avatarUrl"
             data-testid="friend-application-avatar-url"
@@ -236,7 +236,7 @@ function confirmIssueRedirect() {
         </label>
 
         <label class="space-y-1.5">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">称呼或联系方式</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">称呼或联系方式</span>
           <input
             v-model="draft.contact"
             data-testid="friend-application-contact"
@@ -248,7 +248,7 @@ function confirmIssueRedirect() {
         </label>
 
         <label class="space-y-1.5 md:col-span-2">
-          <span class="text-xs tracking-[0.08em] text-[var(--stage-hint)]">简短介绍</span>
+          <span class="text-base tracking-[0.08em] text-[var(--stage-hint)]">简短介绍</span>
           <textarea
             v-model="draft.description"
             data-testid="friend-application-description"
@@ -269,7 +269,7 @@ function confirmIssueRedirect() {
         </label>
 
         <div class="md:col-span-2 flex flex-col gap-3">
-          <p v-if="validationMessage" class="text-sm text-amber-500">
+          <p v-if="validationMessage" class="text-base text-amber-500">
             {{ validationMessage }}
           </p>
 
@@ -282,7 +282,7 @@ function confirmIssueRedirect() {
             >
               生成提交草稿
             </button>
-            <span class="text-xs text-[var(--stage-hint)]">仅前端生成，不需要令牌。</span>
+            <span class="text-base text-[var(--stage-hint)]">仅前端生成，不需要令牌。</span>
           </div>
         </div>
       </form>
@@ -294,8 +294,8 @@ function confirmIssueRedirect() {
         class="friend-application-reminder"
         :inert="!showReminder"
       >
-        <div class="text-[11px] tracking-[0.16em] text-[var(--stage-hint-strong)]">确认跳转</div>
-        <p class="mt-2 text-sm leading-6 text-[var(--stage-hint)]">
+        <div class="text-base tracking-[0.16em] text-[var(--stage-hint-strong)]">确认跳转</div>
+        <p class="mt-2 text-base leading-6 text-[var(--stage-hint)]">
           将打开 GitHub 提交草稿，你可以检查内容后再提交。
         </p>
         <div class="mt-4 flex flex-wrap gap-3">
@@ -435,7 +435,7 @@ function confirmIssueRedirect() {
   border-radius: 8px;
   padding: 0.22rem 0.42rem;
   color: rgba(155, 101, 24, 0.66);
-  font-size: 0.62rem;
+  font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   line-height: 1;
@@ -462,7 +462,7 @@ function confirmIssueRedirect() {
   background: rgba(255, 255, 255, 0.36);
   padding: 0.55rem 0.7rem;
   color: var(--stage-fg);
-  font-size: 0.82rem;
+  font-size: 1rem;
   outline: none;
   transition:
     background 160ms ease,
@@ -497,7 +497,7 @@ function confirmIssueRedirect() {
   gap: 0.62rem;
   align-items: flex-start;
   color: var(--stage-hint);
-  font-size: 0.82rem;
+  font-size: 1rem;
   line-height: 1.65;
 }
 
@@ -514,7 +514,7 @@ function confirmIssueRedirect() {
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
   padding: 0.58rem 0.86rem;
-  font-size: 0.82rem;
+  font-size: 1rem;
   transition:
     border-color 180ms ease,
     color 180ms ease,
