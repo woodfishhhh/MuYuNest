@@ -31,3 +31,16 @@ Run `bash deploy/test-configure-blog-ssh.sh` to verify key installation, private
 file permissions, effective SSH policy, and rejected missing/invalid inputs.
 The script uses an isolated temporary SSH directory and makes no network calls.
 The existing atomic release activation and rollback remain unchanged.
+
+## Cross-platform content verification
+
+The first successful release exposed a separate content bug during public-site
+browser checks: fallback article IDs hashed `path.relative()` verbatim, so
+Windows and Linux generated different URLs. Navigation was configured using
+the Windows IDs. Generation now uses one deterministic path representation,
+preserves those canonical IDs and includes the former Linux URLs as aliases.
+Explicit frontmatter slugs and legacy content-match slugs keep their precedence.
+
+CI now runs the content-tools regression suite and verifies that every series
+entry resolves to an actual canonical article and generated body before building
+the release. Browser coverage checks redirects from both sets of published URLs.
