@@ -47,8 +47,7 @@ const NuxtPageStub = defineComponent({
   setup() {
     return { PageStub, routeState };
   },
-  template:
-    '<div data-testid="nuxt-page-stub"><slot :Component="PageStub" :route="routeState" /></div>',
+  template: '<div data-testid="nuxt-page-stub"><slot :Component="PageStub" :route="routeState" /></div>',
 });
 
 describe("RouteTransitionShell", () => {
@@ -75,8 +74,8 @@ describe("RouteTransitionShell", () => {
   });
 
   it("keeps one HomeView instance mounted across home-family routes", async () => {
-    routeState.name = "blog";
-    routeState.fullPath = "/blog";
+    routeState.name = "works";
+    routeState.fullPath = "/works";
     const wrapper = mount(RouteTransitionShell, {
       global: {
         stubs: {
@@ -95,8 +94,16 @@ describe("RouteTransitionShell", () => {
     await flushPromises();
 
     expect(wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element).toBe(homeView);
-    expect(wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element.dataset.instanceMarker).toBe(
-      "preserved",
-    );
+    expect(wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element.dataset.instanceMarker).toBe("preserved");
+  });
+  it("renders Blog as an independent documentation page", async () => {
+    routeState.name = "blog";
+    routeState.fullPath = "/blog";
+    const wrapper = mount(RouteTransitionShell, { global: { stubs: { NuxtPage: NuxtPageStub } } });
+    await flushPromises();
+    expect(wrapper.find("[data-testid='home-view-stub']").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='page-stub']").exists()).toBe(true);
+    expect(wrapper.find("[data-scene-layer]").exists()).toBe(true);
+    wrapper.unmount();
   });
 });

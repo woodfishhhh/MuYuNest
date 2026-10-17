@@ -24,7 +24,9 @@ async function loadPostIndexFromPublicFile() {
     throw new Error(`Failed to load post index: expected JSON, got ${contentType}`);
   }
 
-  return normalizeContentPayload((await response.json()) as PostSummary[]);
+  return normalizeContentPayload((await response.json()) as PostSummary[]).filter(
+    (post) => !!postModules[`../generated/posts/${post.canonicalSlug}.json`],
+  );
 }
 
 async function loadPostIndexFromGeneratedPosts() {

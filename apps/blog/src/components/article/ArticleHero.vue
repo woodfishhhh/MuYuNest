@@ -15,8 +15,8 @@ const props = withDefaults(
 
 const eyebrowLabel = computed(() => (props.overlay ? "Immersive Reading" : "Field Notes"));
 const metadataItems = computed(() => [
-  { label: "Published", value: props.article.publishedLabel },
-  { label: "Reading", value: `${props.article.readingMinutes} min read` },
+  { label: "发布于", value: props.article.publishedAt.slice(0, 10) },
+  { label: "阅读约", value: `${props.article.readingMinutes} 分钟` },
   { label: "Category", value: props.article.categories[0] ?? "Notebook" },
   {
     label: "Tags",
@@ -32,10 +32,7 @@ const metadataItems = computed(() => [
       <span class="article-hero__read-time">{{ props.article.readingMinutes }} min read</span>
     </div>
 
-    <div
-      class="article-hero__grid"
-      :class="{ 'article-hero__grid--with-cover': !!props.article.coverImage }"
-    >
+    <div class="article-hero__grid" :class="{ 'article-hero__grid--with-cover': !!props.article.coverImage }">
       <div class="article-hero__body">
         <h1 :id="`article-title-${props.article.canonicalSlug}`" class="article-hero__title">
           {{ props.article.title }}

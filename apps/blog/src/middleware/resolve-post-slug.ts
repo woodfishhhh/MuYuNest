@@ -11,8 +11,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const incomingSlug = sanitizeSlug(String(to.params.slug ?? ""));
   if (!incomingSlug) return;
 
-  const canonicalSlug = await resolvePostSlug(incomingSlug);
+  const canonicalSlug = await resolvePostSlug(incomingSlug).catch(() => null);
   if (canonicalSlug && canonicalSlug !== incomingSlug) {
-    return navigateTo({ name: "post", params: { slug: canonicalSlug }, replace: true });
+    return navigateTo({ name: "post", params: { slug: canonicalSlug }, query: to.query, hash: to.hash, replace: true });
   }
 });

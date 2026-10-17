@@ -14,22 +14,12 @@ interface Snapshot {
   activePostSlug: string | null;
 }
 
-const HOME_ROUTE_NAMES = new Set([
-  "home",
-  "blog",
-  "author",
-  "author-page",
-  "author-page-root",
-  "friend",
-  "works",
-]);
-const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "post"]);
+const HOME_ROUTE_NAMES = new Set(["home", "author", "author-page", "author-page-root", "friend", "works"]);
+const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "blog", "post"]);
 
 const route = useRoute();
 const siteStore = useSiteStore();
-const isHomeRoute = computed(
-  () => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name),
-);
+const isHomeRoute = computed(() => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name));
 
 let initialized = false;
 let previousSnapshot: Snapshot = {
@@ -93,12 +83,7 @@ watch(
     <div data-route-stage class="route-transition-stage">
       <HomeView v-if="isHomeRoute" key="home-family" data-route-view />
       <NuxtPage v-slot="{ Component, route: routeView }">
-        <component
-          v-if="!isHomeRoute"
-          :is="Component"
-          :key="routeView.fullPath"
-          data-route-view
-        />
+        <component v-if="!isHomeRoute" :is="Component" :key="routeView.path" data-route-view />
       </NuxtPage>
     </div>
   </div>

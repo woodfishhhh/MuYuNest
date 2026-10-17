@@ -1,43 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-test("scrolling up at the top of Blog returns to Home", async ({ page }) => {
+test("scrolling up at the top of Blog stays in the knowledge base", async ({ page }) => {
   await page.goto("/blog");
-
-  const blogPanel = page.locator("[data-panel-layer='blog']");
-  await expect(blogPanel).toBeVisible();
-  await blogPanel.evaluate((element) => {
-    element.scrollTop = 0;
-  });
-
-  await blogPanel.hover({ position: { x: 320, y: 120 } });
+  const main = page.locator(".docs-main");
+  await expect(main).toBeVisible();
+  await main.hover({ position: { x: 320, y: 120 } });
   await page.mouse.wheel(0, -320);
-
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/blog\/?$/);
 });
 
-test("Blog restores its scroll position after visiting another panel", async ({ page }) => {
-  await page.goto("/blog");
-
-  const blogPanel = page.locator("[data-panel-layer='blog']");
-  await expect(blogPanel).toBeVisible();
-  await expect
-    .poll(() =>
-      blogPanel.evaluate((element) => element.scrollHeight - element.clientHeight),
-    )
-    .toBeGreaterThan(900);
-  await blogPanel.evaluate((element) => {
-    element.scrollTop = 900;
-    element.dispatchEvent(new Event("scroll"));
+test("Blog restores scroll after searching and going back", async ({ page }) => {
+  await page.goto("/blog?topic=languages&series=go-basics");
+  const main = page.locator(".docs-main");
+  await expect(page.locator(".docs-article-row").first()).toBeVisible();
+  await main.evaluate((el) => {
+    el.scrollTop = 700;
+    el.dispatchEvent(new Event("scroll"));
   });
-
-  await page.getByRole("link", { name: "Author", exact: true }).click();
-  await expect(page).toHaveURL(/\/author$/);
-  await page.getByRole("link", { name: "Blog", exact: true }).click();
-  await expect(page).toHaveURL(/\/blog$/);
-
-  await expect
-    .poll(() => blogPanel.evaluate((element) => element.scrollTop))
-    .toBeGreaterThan(800);
+  const before = await main.evaluate((el) => el.scrollTop);
+  await page.locator(".docs-header-search input").fill("channel");
+  await page.locator(".docs-header-search button").click();
+  await expect(page).toHaveURL(/q=channel/);
+  await page.goBack();
+  await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeCloseTo(before, -1);
 });
 
 test("a cached Author panel does not block Friend wheel scrolling", async ({ page }) => {

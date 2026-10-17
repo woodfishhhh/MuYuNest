@@ -42,12 +42,12 @@ function toggleMobileToc() {
     v-if="props.items.length > 0"
     :class="['article-toc', `article-toc--${props.variant}`]"
     data-testid="article-toc"
-    aria-label="Article table of contents"
+    aria-label="本页目录"
   >
     <div class="article-toc__card">
       <div class="article-toc__head" data-testid="article-toc-header">
-        <div class="article-toc__title">Table of Contents</div>
-        <div class="article-toc__meta">{{ props.items.length }} sections</div>
+        <div class="article-toc__title">本页目录</div>
+        <div class="article-toc__meta">{{ props.items.length }} 个章节</div>
         <button
           v-if="isMobile"
           class="article-toc__toggle"
@@ -56,7 +56,7 @@ function toggleMobileToc() {
           :aria-expanded="isExpanded"
           @click="toggleMobileToc"
         >
-          {{ isExpanded ? "Hide" : "Show" }}
+          {{ isExpanded ? "收起" : "展开" }}
         </button>
       </div>
       <div v-if="showItems" class="article-toc__scroll" data-testid="article-toc-scroll">
