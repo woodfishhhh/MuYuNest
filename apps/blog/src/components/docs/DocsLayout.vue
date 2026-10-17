@@ -3,9 +3,10 @@ const scrollPositions = new Map<string, number>();
 let sidebarScroll = 0;
 </script>
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, provide, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import gsap from "gsap";
+import { docsScrollKey } from "@/composables/useDocsPage";
 import { useDocsMotion } from "@/composables/useDocsMotion";
 import { reducedDocsMotion } from "@/motion/docs-motion";
 import DocsTree from "./DocsTree.vue";
@@ -32,6 +33,7 @@ const emit = defineEmits<{ scroll: [container: HTMLElement] }>();
 const route = useRoute();
 const router = useRouter();
 const scrollContainer = useTemplateRef<HTMLElement>("scrollContainer");
+provide(docsScrollKey, scrollContainer);
 const drawer = useTemplateRef<HTMLDialogElement>("drawer");
 const menuButton = useTemplateRef<HTMLButtonElement>("menuButton");
 const search = ref(String(route.query.q ?? ""));
@@ -111,7 +113,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   cancelAnimationFrame(restoreFrame);
   drawerMotion?.kill();
-  drawer.value?.close();
+  if (drawer.value?.open) drawer.value.close();
 });
 </script>
 

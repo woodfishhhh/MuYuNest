@@ -7,10 +7,20 @@ import RouteTransitionShell from "@/components/layout/RouteTransitionShell.vue";
 
 const routeState = reactive({
   name: "post",
+  query: {},
+  hash: "",
+  params: {},
+  get path() {
+    return this.fullPath.split("?")[0];
+  },
   fullPath: "/posts/orbiting-interfaces",
 });
 
-vi.stubGlobal("useRoute", () => routeState);
+vi.mock("vue-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("vue-router")>()),
+  useRoute: () => routeState,
+  useRouter: () => ({ beforeEach: () => () => {}, push: vi.fn() }),
+}));
 
 vi.mock("@/composables/useRouteTransitionOrchestrator", () => ({
   playRouteTransition: vi.fn(),

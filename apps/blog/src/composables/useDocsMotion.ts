@@ -9,10 +9,11 @@ export function useDocsMotion(root: Ref<HTMLElement | null>, ready: () => boolea
   let version = 0;
   let mounted = false;
   let entered = false;
+  let renderedPath = "";
   // Capture before the next route changes this shared arrival state.
   const brief = isDocsPath(docsArrival.fromPath);
   function enterWhenReady() {
-    if (!mounted || !ready() || entered) return;
+    if (!mounted || !ready() || (entered && renderedPath === route.path)) return;
     cancelAnimationFrame(frame);
     let attempts = 0;
     const enter = () => {
@@ -22,9 +23,11 @@ export function useDocsMotion(root: Ref<HTMLElement | null>, ready: () => boolea
         if (attempts++ < 120) frame = requestAnimationFrame(enter);
         return;
       }
+      const internal = entered;
       entered = true;
+      renderedPath = route.path;
       cleanup();
-      cleanup = enterDocs(el, brief || !!route.hash);
+      cleanup = enterDocs(el, internal || brief || !!route.hash);
     };
     frame = requestAnimationFrame(enter);
   }
@@ -32,11 +35,11 @@ export function useDocsMotion(root: Ref<HTMLElement | null>, ready: () => boolea
     mounted = true;
     enterWhenReady();
   });
-  watch(ready, enterWhenReady, { flush: "post" });
+  watch(() => [ready(), route.path], enterWhenReady, { flush: "post" });
   watch(
     () => route.query,
     async (next, previous) => {
-      if (!entered || !root.value || !ready()) return;
+      if (!entered || !root.value || !ready() || renderedPath !== route.path) return;
       const token = ++version;
       cleanup();
       const state = captureDocsLayout(root.value);

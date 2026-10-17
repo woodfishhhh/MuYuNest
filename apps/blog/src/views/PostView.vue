@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import DocsLayout from "@/components/docs/DocsLayout.vue";
+import { useDocsPage } from "@/composables/useDocsPage";
 import ArticleContent from "@/components/article/ArticleContent.vue";
 import { buildDocsNavigation, findDocsPlacement, getDocsNeighbors } from "@/content/docs-navigation";
 import { getPostSummaries, loadPostArticle, resolvePostSlug } from "@/content/posts";
@@ -18,6 +18,12 @@ const isLoading = ref(true);
 const error = ref(false);
 const resolvedSlug = ref("");
 const navigation = computed(() => buildDocsNavigation(posts.value));
+const scrollContainer = useDocsPage({
+  topics: () => navigation.value,
+  ready: () => !isLoading.value,
+  slug: () => resolvedSlug.value,
+  onScroll: trackReading,
+});
 const placement = computed(() => findDocsPlacement(navigation.value, resolvedSlug.value));
 const readingArticle = computed(() =>
   article.value
@@ -98,55 +104,47 @@ function trackReading(container: HTMLElement) {
 </script>
 
 <template>
-  <DocsLayout
-    :ready="!isLoading"
-    :topics="navigation"
-    :current-slug="resolvedSlug"
-    v-slot="{ scrollContainer }"
-    @scroll="trackReading"
-  >
-    <div data-post-page data-post-surface class="docs-post" @click="handleArticleLink">
-      <nav class="docs-breadcrumb" aria-label="面包屑">
-        <RouterLink :to="{ name: 'blog', query: backQuery }" data-testid="post-view-back-link">← 返回知识库</RouterLink>
-        <template v-if="placement"
-          ><span>/</span
-          ><RouterLink :to="{ path: '/blog', query: { topic: placement.topic.id } }">{{
-            placement.topic.title
-          }}</RouterLink
-          ><span>/</span
-          ><RouterLink :to="{ path: '/blog', query: { topic: placement.topic.id, series: placement.group.id } }">{{
-            placement.group.title
-          }}</RouterLink></template
+  <div data-post-page data-post-surface class="docs-post" @click="handleArticleLink">
+    <nav class="docs-breadcrumb" aria-label="面包屑">
+      <RouterLink :to="{ name: 'blog', query: backQuery }" data-testid="post-view-back-link">← 返回知识库</RouterLink>
+      <template v-if="placement"
+        ><span>/</span
+        ><RouterLink :to="{ path: '/blog', query: { topic: placement.topic.id } }">{{
+          placement.topic.title
+        }}</RouterLink
+        ><span>/</span
+        ><RouterLink :to="{ path: '/blog', query: { topic: placement.topic.id, series: placement.group.id } }">{{
+          placement.group.title
+        }}</RouterLink></template
+      >
+    </nav>
+    <div v-if="isLoading" class="docs-status" role="status" data-testid="post-view-loading">正在载入文章…</div>
+    <div v-else-if="error" class="docs-status" role="alert">
+      <h1>文章暂时无法加载</h1>
+      <p>请检查网络后重试。</p>
+      <button type="button" @click="load">重新加载</button>
+    </div>
+    <div v-else-if="!article" class="docs-status" data-testid="post-view-not-found">
+      <h1>文章不存在</h1>
+      <p>这篇文章可能已移动或移除，请从左侧目录重新选择。</p>
+    </div>
+    <div v-else data-testid="post-view-article">
+      <ArticleContent :key="article.canonicalSlug" :article="readingArticle!" :scroll-container="scrollContainer" />
+      <nav class="docs-adjacent" aria-label="同系列文章">
+        <RouterLink
+          v-if="neighbors.previous"
+          :to="{ path: `/posts/${neighbors.previous.canonicalSlug}`, query: backQuery }"
+          data-testid="post-view-previous-link"
+          ><small>← 上一篇</small><strong>{{ neighbors.previous.title }}</strong></RouterLink
+        >
+        <RouterLink
+          v-if="neighbors.next"
+          :to="{ path: `/posts/${neighbors.next.canonicalSlug}`, query: backQuery }"
+          data-testid="post-view-next-link"
+          class="docs-adjacent__next"
+          ><small>下一篇 →</small><strong>{{ neighbors.next.title }}</strong></RouterLink
         >
       </nav>
-      <div v-if="isLoading" class="docs-status" role="status" data-testid="post-view-loading">正在载入文章…</div>
-      <div v-else-if="error" class="docs-status" role="alert">
-        <h1>文章暂时无法加载</h1>
-        <p>请检查网络后重试。</p>
-        <button type="button" @click="load">重新加载</button>
-      </div>
-      <div v-else-if="!article" class="docs-status" data-testid="post-view-not-found">
-        <h1>文章不存在</h1>
-        <p>这篇文章可能已移动或移除，请从左侧目录重新选择。</p>
-      </div>
-      <div v-else data-testid="post-view-article">
-        <ArticleContent :key="article.canonicalSlug" :article="readingArticle!" :scroll-container="scrollContainer" />
-        <nav class="docs-adjacent" aria-label="同系列文章">
-          <RouterLink
-            v-if="neighbors.previous"
-            :to="{ path: `/posts/${neighbors.previous.canonicalSlug}`, query: backQuery }"
-            data-testid="post-view-previous-link"
-            ><small>← 上一篇</small><strong>{{ neighbors.previous.title }}</strong></RouterLink
-          >
-          <RouterLink
-            v-if="neighbors.next"
-            :to="{ path: `/posts/${neighbors.next.canonicalSlug}`, query: backQuery }"
-            data-testid="post-view-next-link"
-            class="docs-adjacent__next"
-            ><small>下一篇 →</small><strong>{{ neighbors.next.title }}</strong></RouterLink
-          >
-        </nav>
-      </div>
     </div>
-  </DocsLayout>
+  </div>
 </template>

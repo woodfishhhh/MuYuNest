@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import DocsLayout from "@/components/docs/DocsLayout.vue";
+import { useDocsPage } from "@/composables/useDocsPage";
 import { buildDocsNavigation, findDocsPlacement } from "@/content/docs-navigation";
 import { getPostSummaries } from "@/content/posts";
 import { buildBlogFacets, filterBlogPosts, sortBlogPosts } from "@/content/blog-hub";
@@ -13,6 +13,7 @@ const posts = ref<PostSummary[]>([]);
 const loading = ref(true);
 const error = ref(false);
 const navigation = computed(() => buildDocsNavigation(posts.value));
+const scrollContainer = useDocsPage({ topics: () => navigation.value, ready: () => !loading.value });
 const topic = computed(() => navigation.value.find((item) => item.id === route.query.topic));
 const group = computed(() => topic.value?.groups.find((item) => item.id === route.query.series));
 const { searchQuery, selectedType, selectedCategory, selectedTag, sortKey, filters, hasActiveFilters, clearFilters } =
@@ -68,178 +69,174 @@ onMounted(() => {
 </script>
 
 <template>
-  <DocsLayout :ready="!loading" :topics="navigation" v-slot="{ scrollContainer }">
-    <div v-if="loading" class="docs-status" role="status">正在载入知识库…</div>
-    <div v-else-if="error" class="docs-status" role="alert">
-      <h1>知识库暂时无法加载</h1>
-      <button type="button" @click="load">重新加载</button>
-    </div>
-    <div v-else class="docs-index-grid">
-      <div class="docs-index-content">
-        <nav class="docs-breadcrumb" aria-label="面包屑">
-          <RouterLink to="/blog">知识库</RouterLink
-          ><template v-if="topic"
-            ><span>/</span
-            ><RouterLink :to="{ path: '/blog', query: { topic: topic.id } }">{{ topic.title }}</RouterLink></template
-          ><template v-if="group"
-            ><span>/</span><span>{{ group.title }}</span></template
+  <div v-if="loading" class="docs-status" role="status">正在载入知识库…</div>
+  <div v-else-if="error" class="docs-status" role="alert">
+    <h1>知识库暂时无法加载</h1>
+    <button type="button" @click="load">重新加载</button>
+  </div>
+  <div v-else class="docs-index-grid">
+    <div class="docs-index-content">
+      <nav class="docs-breadcrumb" aria-label="面包屑">
+        <RouterLink to="/blog">知识库</RouterLink
+        ><template v-if="topic"
+          ><span>/</span
+          ><RouterLink :to="{ path: '/blog', query: { topic: topic.id } }">{{ topic.title }}</RouterLink></template
+        ><template v-if="group"
+          ><span>/</span><span>{{ group.title }}</span></template
+        >
+      </nav>
+      <header class="docs-intro">
+        <h1>{{ title }}</h1>
+        <div class="docs-stats">
+          <span
+            ><strong>{{ scopePosts.length }}</strong> 篇笔记</span
+          ><span
+            ><strong>{{ topic ? topic.groups.length : navigation.length }}</strong>
+            {{ topic ? "个系列" : "个主题" }}</span
           >
-        </nav>
-        <header class="docs-intro">
-          <h1>{{ title }}</h1>
-          <div class="docs-stats">
-            <span
-              ><strong>{{ scopePosts.length }}</strong> 篇笔记</span
-            ><span
-              ><strong>{{ topic ? topic.groups.length : navigation.length }}</strong>
-              {{ topic ? "个系列" : "个主题" }}</span
+        </div>
+      </header>
+      <p v-if="missingSelection" class="docs-notice">
+        这个主题或系列暂不可用，已展示现有内容。<RouterLink to="/blog">返回总览</RouterLink>
+      </p>
+      <section class="docs-search-panel" aria-label="查找文章">
+        <div class="docs-search-input">
+          <span aria-hidden="true">⌕</span
+          ><input v-model="searchQuery" type="search" aria-label="搜索文章" placeholder="搜索标题、关键词或正文…" />
+        </div>
+        <details :open="hasActiveFilters">
+          <summary>
+            筛选与排序<span v-if="hasActiveFilters"> · {{ results.length }} 个结果</span>
+          </summary>
+          <div class="docs-filters">
+            <label
+              >类型<select v-model="selectedType">
+                <option value="">全部类型</option>
+                <option v-for="item in facets.types" :key="item.value" :value="item.value">{{ item.value }}</option>
+              </select></label
             >
+            <label
+              >分类<select v-model="selectedCategory">
+                <option value="">全部分类</option>
+                <option v-for="item in facets.categories" :key="item.value" :value="item.value">
+                  {{ item.value }}
+                </option>
+              </select></label
+            >
+            <label
+              >标签<select v-model="selectedTag">
+                <option value="">全部标签</option>
+                <option v-for="item in facets.tags" :key="item.value" :value="item.value">{{ item.value }}</option>
+              </select></label
+            >
+            <label
+              >排序<select v-model="sortKey">
+                <option value="latest">最近发布</option>
+                <option value="oldest">最早发布</option>
+                <option value="alphabetical">标题顺序</option>
+                <option value="reading-time">阅读时长</option>
+              </select></label
+            >
+            <button v-if="hasActiveFilters" type="button" @click="clearFilters">清除筛选</button>
           </div>
-        </header>
-        <p v-if="missingSelection" class="docs-notice">
-          这个主题或系列暂不可用，已展示现有内容。<RouterLink to="/blog">返回总览</RouterLink>
+        </details>
+      </section>
+      <section v-if="hasActiveFilters || group" class="docs-article-list">
+        <div class="docs-section-heading">
+          <h2>{{ hasActiveFilters ? "搜索结果" : "阅读目录" }}</h2>
+          <span>{{ hasActiveFilters ? results.length : group?.posts.length }} 篇</span>
+        </div>
+        <p v-if="hasActiveFilters && !results.length" class="docs-status">
+          没有找到相关笔记，试试其他关键词或清除筛选。
         </p>
-        <section class="docs-search-panel" aria-label="查找文章">
-          <div class="docs-search-input">
-            <span aria-hidden="true">⌕</span
-            ><input v-model="searchQuery" type="search" aria-label="搜索文章" placeholder="搜索标题、关键词或正文…" />
+        <RouterLink
+          v-for="(post, index) in hasActiveFilters ? results : (group?.posts ?? [])"
+          :key="post.canonicalSlug"
+          :to="postTarget(post)"
+          class="docs-article-row"
+          :data-flip-id="post.canonicalSlug"
+          data-docs-item
+          ><span class="docs-row-number">{{ String(index + 1).padStart(2, "0") }}</span>
+          <div>
+            <small>{{ label(post) }}</small>
+            <h3>{{ post.title }}</h3>
+            <p v-if="post.excerpt && post.excerpt !== '返回课程目录'">{{ post.excerpt }}</p>
+            <span class="docs-row-meta">{{ post.readingMinutes }} 分钟阅读 · {{ post.publishedAt.slice(0, 10) }}</span>
           </div>
-          <details :open="hasActiveFilters">
-            <summary>
-              筛选与排序<span v-if="hasActiveFilters"> · {{ results.length }} 个结果</span>
-            </summary>
-            <div class="docs-filters">
-              <label
-                >类型<select v-model="selectedType">
-                  <option value="">全部类型</option>
-                  <option v-for="item in facets.types" :key="item.value" :value="item.value">{{ item.value }}</option>
-                </select></label
-              >
-              <label
-                >分类<select v-model="selectedCategory">
-                  <option value="">全部分类</option>
-                  <option v-for="item in facets.categories" :key="item.value" :value="item.value">
-                    {{ item.value }}
-                  </option>
-                </select></label
-              >
-              <label
-                >标签<select v-model="selectedTag">
-                  <option value="">全部标签</option>
-                  <option v-for="item in facets.tags" :key="item.value" :value="item.value">{{ item.value }}</option>
-                </select></label
-              >
-              <label
-                >排序<select v-model="sortKey">
-                  <option value="latest">最近发布</option>
-                  <option value="oldest">最早发布</option>
-                  <option value="alphabetical">标题顺序</option>
-                  <option value="reading-time">阅读时长</option>
-                </select></label
-              >
-              <button v-if="hasActiveFilters" type="button" @click="clearFilters">清除筛选</button>
-            </div>
-          </details>
-        </section>
-        <section v-if="hasActiveFilters || group" class="docs-article-list">
+          <span aria-hidden="true">↗</span></RouterLink
+        >
+      </section>
+      <template v-else-if="topic">
+        <section v-for="item in topic.groups" :id="`section-${item.id}`" :key="item.id" class="docs-topic-section">
           <div class="docs-section-heading">
-            <h2>{{ hasActiveFilters ? "搜索结果" : "阅读目录" }}</h2>
-            <span>{{ hasActiveFilters ? results.length : group?.posts.length }} 篇</span>
+            <h2>{{ item.title }}</h2>
+            <span>{{ item.posts.length }} 篇</span>
           </div>
-          <p v-if="hasActiveFilters && !results.length" class="docs-status">
-            没有找到相关笔记，试试其他关键词或清除筛选。
-          </p>
           <RouterLink
-            v-for="(post, index) in hasActiveFilters ? results : (group?.posts ?? [])"
+            v-for="(post, index) in item.posts"
             :key="post.canonicalSlug"
             :to="postTarget(post)"
-            class="docs-article-row"
+            class="docs-chapter-link"
             :data-flip-id="post.canonicalSlug"
             data-docs-item
-            ><span class="docs-row-number">{{ String(index + 1).padStart(2, "0") }}</span>
-            <div>
-              <small>{{ label(post) }}</small>
-              <h3>{{ post.title }}</h3>
-              <p v-if="post.excerpt && post.excerpt !== '返回课程目录'">{{ post.excerpt }}</p>
-              <span class="docs-row-meta"
-                >{{ post.readingMinutes }} 分钟阅读 · {{ post.publishedAt.slice(0, 10) }}</span
-              >
-            </div>
-            <span aria-hidden="true">↗</span></RouterLink
+            ><span>{{ String(index + 1).padStart(2, "0") }}</span
+            >{{ post.title }}<small>{{ post.readingMinutes }} 分钟</small></RouterLink
           >
         </section>
-        <template v-else-if="topic">
-          <section v-for="item in topic.groups" :id="`section-${item.id}`" :key="item.id" class="docs-topic-section">
-            <div class="docs-section-heading">
-              <h2>{{ item.title }}</h2>
-              <span>{{ item.posts.length }} 篇</span>
-            </div>
-            <RouterLink
-              v-for="(post, index) in item.posts"
-              :key="post.canonicalSlug"
-              :to="postTarget(post)"
-              class="docs-chapter-link"
-              :data-flip-id="post.canonicalSlug"
-              data-docs-item
-              ><span>{{ String(index + 1).padStart(2, "0") }}</span
-              >{{ post.title }}<small>{{ post.readingMinutes }} 分钟</small></RouterLink
-            >
-          </section>
-        </template>
-        <template v-else>
-          <section class="docs-topic-cards" aria-label="浏览主题">
-            <RouterLink
-              v-for="(item, index) in navigation"
-              :key="item.id"
-              :to="{ path: '/blog', query: { topic: item.id } }"
-              class="docs-topic-card"
-              :data-flip-id="item.id"
-              data-docs-item
-              ><span class="docs-topic-card__number">{{ String(index + 1).padStart(2, "0") }} <span>↗</span></span>
-              <h2>{{ item.title }}</h2>
-              <p>{{ item.description }}</p>
-              <small>{{ item.count }} 篇笔记 · {{ item.groups.length }} 个系列</small></RouterLink
-            >
-          </section>
-          <section v-for="item in navigation" :id="`section-${item.id}`" :key="item.id" class="docs-topic-section">
-            <div class="docs-section-heading">
-              <h2>{{ item.title }}</h2>
-              <RouterLink :to="{ path: '/blog', query: { topic: item.id } }">查看全部 ↗</RouterLink>
-            </div>
-            <div class="docs-series-list">
-              <RouterLink
-                v-for="series in item.groups"
-                :data-flip-id="series.id"
-                data-docs-item
-                :key="series.id"
-                :to="{ path: '/blog', query: { topic: item.id, series: series.id } }"
-                ><span>{{ series.title }}</span
-                ><small>{{ series.posts.length }} 篇 <span aria-hidden="true">→</span></small></RouterLink
-              >
-            </div>
-          </section>
-        </template>
-      </div>
-      <aside class="docs-index-toc" aria-label="本页导航">
-        <p class="docs-eyebrow">{{ hasActiveFilters ? "查找笔记" : "本页导航" }}</p>
-        <template v-if="!hasActiveFilters && !group"
-          ><button
-            v-for="section in overviewSections"
-            :key="section.id"
-            type="button"
-            @click="jump(section.id, scrollContainer)"
+      </template>
+      <template v-else>
+        <section class="docs-topic-cards" aria-label="浏览主题">
+          <RouterLink
+            v-for="(item, index) in navigation"
+            :key="item.id"
+            :to="{ path: '/blog', query: { topic: item.id } }"
+            class="docs-topic-card"
+            :data-flip-id="item.id"
+            data-docs-item
+            ><span class="docs-topic-card__number">{{ String(index + 1).padStart(2, "0") }} <span>↗</span></span>
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+            <small>{{ item.count }} 篇笔记 · {{ item.groups.length }} 个系列</small></RouterLink
           >
-            {{ section.title }}
-          </button></template
-        >
-        <p v-else>
-          {{
-            hasActiveFilters
-              ? "搜索覆盖标题、标签与正文。可结合分类缩小范围。"
-              : "左侧切换文章，进入正文后可在这里查看标题目录。"
-          }}
-        </p>
-      </aside>
+        </section>
+        <section v-for="item in navigation" :id="`section-${item.id}`" :key="item.id" class="docs-topic-section">
+          <div class="docs-section-heading">
+            <h2>{{ item.title }}</h2>
+            <RouterLink :to="{ path: '/blog', query: { topic: item.id } }">查看全部 ↗</RouterLink>
+          </div>
+          <div class="docs-series-list">
+            <RouterLink
+              v-for="series in item.groups"
+              :data-flip-id="series.id"
+              data-docs-item
+              :key="series.id"
+              :to="{ path: '/blog', query: { topic: item.id, series: series.id } }"
+              ><span>{{ series.title }}</span
+              ><small>{{ series.posts.length }} 篇 <span aria-hidden="true">→</span></small></RouterLink
+            >
+          </div>
+        </section>
+      </template>
     </div>
-  </DocsLayout>
+    <aside class="docs-index-toc" aria-label="本页导航">
+      <p class="docs-eyebrow">{{ hasActiveFilters ? "查找笔记" : "本页导航" }}</p>
+      <template v-if="!hasActiveFilters && !group"
+        ><button
+          v-for="section in overviewSections"
+          :key="section.id"
+          type="button"
+          @click="jump(section.id, scrollContainer)"
+        >
+          {{ section.title }}
+        </button></template
+      >
+      <p v-else>
+        {{
+          hasActiveFilters
+            ? "搜索覆盖标题、标签与正文。可结合分类缩小范围。"
+            : "左侧切换文章，进入正文后可在这里查看标题目录。"
+        }}
+      </p>
+    </aside>
+  </div>
 </template>

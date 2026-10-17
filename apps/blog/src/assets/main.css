@@ -8,6 +8,8 @@
 }
 
 :root {
+  /* YouYuan has only a regular face; synthetic bold corrupts some glyph contours. */
+  font-synthesis-weight: none;
   --background: #050510;
   --foreground: #ededed;
   --stage-bg: #050510;

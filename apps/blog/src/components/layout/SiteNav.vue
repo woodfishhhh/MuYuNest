@@ -72,7 +72,10 @@ watch(
     ref="navRoot"
     aria-label="站点导航"
     data-testid="site-nav"
-    :class="{ 'site-nav--docs': props.documentation, 'site-nav--blog': props.documentation || siteStore.mode === 'blog' }"
+    :class="{
+      'site-nav--docs': props.documentation,
+      'site-nav--blog': props.documentation || siteStore.mode === 'blog',
+    }"
     class="site-nav-gradient pointer-events-none fixed left-0 top-0 z-50 flex w-full items-center justify-between p-4 sm:p-6"
   >
     <div class="pointer-events-auto flex items-center gap-3">
@@ -180,8 +183,13 @@ watch(
 }
 
 /* Keep the scene's dock visible through the navigation surface. */
-.site-nav-gradient.site-nav--blog { background: none; backdrop-filter: none; }
-.site-nav__scene-dock { display: block; flex: none;
+.site-nav-gradient.site-nav--blog {
+  background: none;
+  backdrop-filter: none;
+}
+.site-nav__scene-dock {
+  display: block;
+  flex: none;
 
   height: 1.75rem;
   width: 3.15rem;

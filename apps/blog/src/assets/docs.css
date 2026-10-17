@@ -20,7 +20,7 @@
   box-sizing: border-box;
   overflow: hidden;
   color: var(--docs-text);
-  background:
+  --docs-backdrop:
     radial-gradient(ellipse at 10% 0%, rgba(103, 91, 180, 0.16), transparent 42%),
     radial-gradient(ellipse at 100% 100%, rgba(55, 106, 160, 0.13), transparent 45%), rgba(12, 16, 28, 0.96);
   font-family: var(--font-sans);
@@ -34,7 +34,7 @@
   --docs-line: rgba(50, 65, 95, 0.13);
   --docs-accent: #4263bb;
   --docs-code: #f3f4f7;
-  background:
+  --docs-backdrop:
     radial-gradient(ellipse at 8% 0%, rgba(194, 180, 225, 0.2), transparent 45%),
     radial-gradient(ellipse at 100% 100%, rgba(159, 195, 216, 0.19), transparent 45%), #f8f7f3;
 }
@@ -1377,4 +1377,28 @@
   border-left: 2px solid var(--docs-accent);
   border-radius: 5px;
   background: var(--docs-soft);
+}
+
+/* The document surface stays below the navbar so the scene dock remains visible. */
+.docs-app {
+  isolation: isolate;
+}
+.docs-app::before {
+  content: "";
+  position: absolute;
+  inset: 80px 0 0;
+  z-index: -1;
+  background: var(--docs-backdrop);
+  pointer-events: none;
+}
+@media (max-width: 959px) {
+  .docs-app::before {
+    top: 68px;
+  }
+}
+.docs-tree__articles a,
+.docs-tree__row a,
+.docs-index-content,
+.docs-post :is(h1, h2, h3, h4, h5, h6, strong, b) {
+  -webkit-text-stroke: 0.012em currentColor;
 }

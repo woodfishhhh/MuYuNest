@@ -1,6 +1,5 @@
 <script lang="ts">
 const expandedState = new Set<string>();
-let previousMarker: { x: number; y: number; width: number; height: number } | undefined;
 </script>
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, reactive, useTemplateRef, watch } from "vue";
@@ -19,27 +18,30 @@ const marker = useTemplateRef<HTMLElement>("marker");
 let resize: ResizeObserver | undefined;
 let markerMotion: gsap.core.Tween | undefined;
 function updateMarker() {
-  const active = tree.value?.querySelector<HTMLElement>("a[aria-current='page']");
+  const active = tree.value?.querySelector<HTMLElement>(".docs-tree__articles a.is-active");
   if (!marker.value) return;
   markerMotion?.kill();
   if (!active || !active.getClientRects().length) {
     gsap.set(marker.value, { opacity: 0 });
     return;
   }
+  const bounds = active.getBoundingClientRect();
+  const parent = tree.value!.getBoundingClientRect();
+  const scaleX = parent.width / tree.value!.offsetWidth || 1;
+  const scaleY = parent.height / tree.value!.offsetHeight || 1;
   const position = {
-    x: active.offsetLeft,
-    y: active.offsetTop,
-    width: active.offsetWidth,
-    height: active.offsetHeight,
+    x: (bounds.left - parent.left) / scaleX,
+    y: (bounds.top - parent.top) / scaleY,
+    width: bounds.width / scaleX,
+    height: bounds.height / scaleY,
   };
-  if (!marker.value.style.height && previousMarker) gsap.set(marker.value, previousMarker);
+  if (!marker.value.style.height) gsap.set(marker.value, position);
   markerMotion = gsap.to(marker.value, {
     ...position,
     opacity: 1,
     duration: reducedDocsMotion() ? 0 : 0.24,
     ease: "power3.out",
   });
-  previousMarker = position;
 }
 watch(
   () => [props.currentSlug, props.topics, [...expanded].join(",")],
@@ -54,9 +56,11 @@ onMounted(() => {
     resize = new ResizeObserver(updateMarker);
     resize.observe(tree.value);
   }
+  tree.value?.closest(".docs-app")?.addEventListener("docs-motion-settled", updateMarker);
   updateMarker();
 });
 onBeforeUnmount(() => {
+  tree.value?.closest(".docs-app")?.removeEventListener("docs-motion-settled", updateMarker);
   resize?.disconnect();
   markerMotion?.kill();
 });

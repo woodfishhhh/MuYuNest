@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, provide, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import gsap from "gsap";
 
 import { docsArrival, isDocsPath, reducedDocsMotion } from "@/motion/docs-motion";
+import DocsLayout from "@/components/docs/DocsLayout.vue";
+import { docsPageKey, type DocsPageState } from "@/composables/useDocsPage";
 import SiteNav from "@/components/layout/SiteNav.vue";
 import { resolveSiteModeFromRoute } from "@/utils/site-mode";
 
@@ -24,6 +26,9 @@ const HOME_ROUTE_NAMES = new Set(["home", "author", "author-page", "author-page-
 const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "blog", "post"]);
 
 const route = useRoute();
+const docsPage = reactive<DocsPageState>({ owner: null, topics: [], currentSlug: "", ready: false });
+provide(docsPageKey, docsPage);
+const isDocsRoute = computed(() => route.name === "blog" || route.name === "post");
 const router = useRouter();
 let finishDeparture: (() => void) | undefined;
 const removeDepartureGuard = router?.beforeEach((to, from) => {
@@ -139,7 +144,18 @@ watch(
     </div>
     <div data-route-stage class="route-transition-stage">
       <HomeView v-if="isHomeRoute" key="home-family" data-route-view />
-      <NuxtPage v-slot="{ Component, route: routeView }">
+      <DocsLayout
+        v-if="isDocsRoute"
+        :topics="docsPage.topics"
+        :current-slug="docsPage.currentSlug"
+        :ready="docsPage.ready"
+        @scroll="docsPage.onScroll?.($event)"
+      >
+        <NuxtPage v-slot="{ Component, route: routeView }">
+          <component :is="Component" :key="routeView.path" data-route-view />
+        </NuxtPage>
+      </DocsLayout>
+      <NuxtPage v-else v-slot="{ Component, route: routeView }">
         <component v-if="!isHomeRoute" :is="Component" :key="routeView.path" data-route-view />
       </NuxtPage>
     </div>

@@ -32,6 +32,7 @@ export function enterDocs(root: HTMLElement, brief: boolean) {
       onComplete: () => {
         root.dataset.docsMotion = "idle";
         context.revert();
+        root.dispatchEvent(new Event("docs-motion-settled"));
       },
     });
     if (!brief) {
