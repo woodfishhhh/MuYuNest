@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./article-rendering.css";
 
 @theme {
   --font-sans:

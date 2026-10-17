@@ -75,7 +75,8 @@ function toggleMobileToc() {
             type="button"
             @click="handleJump(item.id)"
           >
-            {{ item.text }}
+            <span v-if="item.html" class="article-toc__label" v-html="item.html" />
+            <span v-else>{{ item.text }}</span>
           </button>
         </div>
       </div>

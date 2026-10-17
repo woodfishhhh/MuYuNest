@@ -42,7 +42,7 @@ test("outline anchors, syntax colors, clipboard and curriculum neighbors", async
   );
   const colors = await code.evaluate((el) => ({
     plain: getComputedStyle(el).color,
-    keyword: getComputedStyle(el.querySelector(".hljs-keyword")!).color,
+    keyword: getComputedStyle(el.querySelector('span[style*="--shiki"]')!).color,
   }));
   expect(colors.keyword).not.toBe(colors.plain);
   await page.locator(".article-toc--desktop").getByRole("button", { name: "输出", exact: true }).click();

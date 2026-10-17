@@ -2,6 +2,7 @@ export interface TocItem {
   id: string;
   level: 2 | 3 | 4;
   text: string;
+  html?: string;
 }
 
 export interface PostSummary {

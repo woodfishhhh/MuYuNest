@@ -53,6 +53,7 @@ async function runGenerate(args: string[]) {
   const result = await generateContent(options);
   console.log(`Generated ${result.postCount} posts into ${result.generatedRoot}`);
   console.log(`public root: ${appPaths.publicRoot}`);
+  console.log(`Rendering warnings: ${result.renderWarningCount}; report: ${result.renderDiagnosticsPath}`);
   return 0;
 }
 

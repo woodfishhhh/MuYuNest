@@ -7,7 +7,8 @@ export function enhanceCodeBlocks(root: HTMLElement) {
     const toolbar = document.createElement("div");
     toolbar.className = "docs-code-toolbar";
     const language = document.createElement("span");
-    language.textContent = [...code.classList].find((name) => name.startsWith("language-"))?.slice(9) || "text";
+    language.textContent =
+      pre.dataset.language || [...code.classList].find((name) => name.startsWith("language-"))?.slice(9) || "text";
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = "复制代码";

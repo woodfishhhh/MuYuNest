@@ -1,0 +1,92 @@
+/* Build-time Shiki output: select tokens using the existing site theme. */
+#article-container pre.shiki,
+#article-container pre.shiki code,
+#article-container pre.shiki span {
+  color: var(--shiki-dark, inherit);
+  background-color: var(--shiki-dark-bg, transparent);
+  font-style: var(--shiki-dark-font-style, inherit);
+  font-weight: var(--shiki-dark-font-weight, inherit);
+  text-decoration: var(--shiki-dark-text-decoration, none);
+}
+:root[data-theme="day"] #article-container pre.shiki,
+:root[data-theme="day"] #article-container pre.shiki code,
+:root[data-theme="day"] #article-container pre.shiki span {
+  color: var(--shiki-light, inherit);
+  background-color: var(--shiki-light-bg, transparent);
+  font-style: var(--shiki-light-font-style, inherit);
+  font-weight: var(--shiki-light-font-weight, inherit);
+  text-decoration: var(--shiki-light-text-decoration, none);
+}
+#article-container pre.shiki code {
+  white-space: pre;
+}
+#article-container pre.shiki .docs-code-toolbar,
+#article-container pre.shiki .docs-code-toolbar span {
+  color: var(--docs-muted, var(--article-muted));
+  background: transparent;
+}
+.render-math {
+  display: inline;
+  font-size: 1em;
+  overflow-wrap: normal;
+}
+.render-math mjx-container {
+  display: inline-block;
+  position: relative;
+  direction: ltr;
+  max-width: 100%;
+}
+.render-math mjx-container > svg {
+  display: inline-block;
+  overflow: visible;
+  max-width: none;
+}
+.render-math--block {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 1.25em 0;
+  padding: 0.6em 0.15em;
+  text-align: center;
+}
+.render-math--block mjx-container {
+  max-width: none;
+}
+.render-math mjx-assistive-mml {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+}
+.render-math-error {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--article-accent-warm);
+}
+.article-toc__label {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.article-toc__label .render-math mjx-container {
+  max-width: none;
+}
+.article-toc__label {
+  overflow-x: auto;
+}
+
+/* Long inline expressions stay scrollable inside the reading column. */
+.render-math:not(.render-math--block) > mjx-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
+  padding-block: 0.15em;
+}

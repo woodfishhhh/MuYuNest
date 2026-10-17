@@ -13,6 +13,8 @@ export interface GenerateContentResult {
   generatedRoot: string;
   postCount: number;
   publicRoot: string;
+  renderDiagnosticsPath: string;
+  renderWarningCount: number;
 }
 
 export async function generateContent(options: GenerateContentOptions = {}): Promise<GenerateContentResult> {
@@ -37,6 +39,11 @@ export async function generateContent(options: GenerateContentOptions = {}): Pro
     reuseGeneratedAssets,
   });
 
+  const renderDiagnosticsPath = path.join(paths.generatedRoot, "render-diagnostics.json");
+  await writeJson(renderDiagnosticsPath, {
+    postCount: siteContent.postIndex.length,
+    errors: siteContent.renderDiagnostics,
+  });
   await writeJson(path.join(paths.publicRoot, "post-index.json"), siteContent.postIndex);
   await rm(path.join(paths.generatedRoot, "post-index.json"), { force: true });
   await writeJson(path.join(paths.generatedRoot, "author.json"), siteContent.author);
@@ -49,6 +56,8 @@ export async function generateContent(options: GenerateContentOptions = {}): Pro
   await pruneUnusedRemoteAssets(paths.publicRoot, siteContent);
 
   return {
+    renderDiagnosticsPath,
+    renderWarningCount: siteContent.renderDiagnostics.length,
     generatedRoot: paths.generatedRoot,
     postCount: siteContent.postIndex.length,
     publicRoot: paths.publicRoot,
