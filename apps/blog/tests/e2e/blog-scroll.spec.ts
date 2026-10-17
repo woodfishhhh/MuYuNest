@@ -18,8 +18,8 @@ test("Blog restores scroll after searching and going back", async ({ page }) => 
     el.dispatchEvent(new Event("scroll"));
   });
   const before = await main.evaluate((el) => el.scrollTop);
-  await page.locator(".docs-header-search input").fill("channel");
-  await page.locator(".docs-header-search button").click();
+  await page.locator(".docs-sidebar .docs-library-search input").fill("channel");
+  await page.locator(".docs-sidebar .docs-library-search button").click();
   await expect(page).toHaveURL(/q=channel/);
   await page.goBack();
   await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeCloseTo(before, -1);

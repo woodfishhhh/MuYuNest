@@ -22,13 +22,7 @@ const scopePosts = computed(
   () => group.value?.posts ?? topic.value?.groups.flatMap((item) => item.posts) ?? posts.value,
 );
 const results = computed(() => sortBlogPosts(filterBlogPosts(scopePosts.value, filters.value), sortKey.value));
-const title = computed(() => group.value?.title ?? topic.value?.title ?? "把知识连成自己的地图。");
-const description = computed(() =>
-  group.value
-    ? "按目录循序阅读，也可以直接跳到需要的章节。"
-    : (topic.value?.description ??
-      "这里是我的学习笔记与实践记录。从一个主题出发，找到问题的答案，也看见知识之间的联系。"),
-);
+const title = computed(() => group.value?.title ?? topic.value?.title ?? "知识库");
 const overviewSections = computed(() =>
   topic.value
     ? topic.value.groups.map((item) => ({ id: item.id, title: item.title }))
@@ -92,16 +86,14 @@ onMounted(() => {
           >
         </nav>
         <header class="docs-intro">
-          <p class="docs-eyebrow">THE KNOWLEDGE GARDEN</p>
           <h1>{{ title }}</h1>
-          <p>{{ description }}</p>
           <div class="docs-stats">
             <span
               ><strong>{{ scopePosts.length }}</strong> 篇笔记</span
             ><span
               ><strong>{{ topic ? topic.groups.length : navigation.length }}</strong>
               {{ topic ? "个系列" : "个主题" }}</span
-            ><span class="docs-stats__note">慢慢积累，常看常新</span>
+            >
           </div>
         </header>
         <p v-if="missingSelection" class="docs-notice">
@@ -219,7 +211,6 @@ onMounted(() => {
             </div>
           </section>
         </template>
-        <footer class="docs-footer">WOODFISH <span>记录理解，也记录探索。</span></footer>
       </div>
       <aside class="docs-index-toc" aria-label="本页导航">
         <p class="docs-eyebrow">{{ hasActiveFilters ? "查找笔记" : "本页导航" }}</p>
@@ -240,7 +231,6 @@ onMounted(() => {
               : "左侧切换文章，进入正文后可在这里查看标题目录。"
           }}
         </p>
-        <div class="docs-rail-note">不必一次读完。<br />从一个问题开始。</div>
       </aside>
     </div>
   </DocsLayout>

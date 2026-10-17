@@ -12,6 +12,8 @@
   z-index: 20;
   pointer-events: auto;
   height: 100dvh;
+  padding-top: 80px;
+  box-sizing: border-box;
   overflow: hidden;
   color: var(--docs-text);
   background:
@@ -76,86 +78,34 @@
   background: #78859c66;
   border-radius: 8px;
 }
-.docs-header {
-  height: 80px;
-  padding: 0 32px;
-  border-bottom: 1px solid var(--docs-line);
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  backdrop-filter: blur(20px);
-}
-.docs-brand {
-  display: flex;
-  gap: 11px;
-  align-items: center;
-  font-size: 14px;
-  letter-spacing: 2px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.docs-brand__mark {
-  width: 35px;
-  height: 35px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--docs-line);
-  border-radius: 11px;
-  background: linear-gradient(140deg, #94b0e129, #ab92bf10);
-  font-size: 18px;
-  color: var(--docs-accent);
-}
-.docs-brand small {
-  display: block;
-  color: var(--docs-muted);
-  font-size: 9px;
-  letter-spacing: 2px;
-  font-weight: 400;
-  margin-top: 2px;
-}
-.docs-site-nav {
-  display: flex;
-  gap: 26px;
-  font-size: 13px;
-  color: var(--docs-muted);
-}
-.docs-site-nav a {
-  padding: 29px 0;
-  border-bottom: 2px solid transparent;
-}
-.docs-site-nav .is-active {
-  color: var(--docs-accent);
-  border-color: var(--docs-accent);
-}
-.docs-header-search {
-  margin-left: auto;
+
+.docs-library-search {
+  margin-left: 0;
   display: flex;
   gap: 9px;
   align-items: center;
-  width: 230px;
+  width: 100%;
   border: 1px solid var(--docs-line);
   border-radius: 9px;
   padding: 8px 12px;
   background: var(--docs-soft);
 }
-.docs-header-search > span {
+.docs-library-search > span {
   font-size: 22px;
   line-height: 18px;
   color: var(--docs-muted);
 }
-.docs-header-search input {
+.docs-library-search input {
   width: 100%;
   min-width: 0;
   background: transparent;
   border: 0;
   font-size: 12px;
 }
-.docs-header-search button {
+.docs-library-search button {
   color: var(--docs-muted);
 }
-.docs-header .theme-toggle {
-  flex-shrink: 0;
-}
+
 .docs-workspace {
   height: calc(100dvh - 80px);
   display: grid;
@@ -170,7 +120,7 @@
   padding: 28px 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 20px;
 }
 .docs-main {
   overflow-y: auto;
@@ -270,19 +220,7 @@
   background: var(--docs-soft);
   box-shadow: inset 2px 0 var(--docs-accent);
 }
-.docs-sidebar-foot {
-  margin-top: auto;
-  padding: 20px 12px 0;
-  border-top: 1px solid var(--docs-line);
-  font-size: 11px;
-  color: var(--docs-muted);
-}
-.docs-sidebar-foot span {
-  display: block;
-  margin-top: 8px;
-  font-size: 8px;
-  letter-spacing: 1.8px;
-}
+
 .docs-index-grid {
   display: grid;
   grid-template-columns: minmax(0, 800px) 188px;
@@ -309,32 +247,28 @@
   color: var(--docs-accent);
 }
 .docs-intro {
-  padding: 12px 0 26px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 0 20px;
 }
-.docs-intro .docs-eyebrow {
-  color: var(--docs-accent);
-  font-size: 10px;
-}
+
 .docs-intro h1 {
-  font-size: clamp(26px, 2.4vw, 36px);
+  font-size: 24px;
   font-weight: 650;
   letter-spacing: -0.8px;
   line-height: 1.45;
-  margin: 0 0 16px;
+  margin: 0;
   text-wrap: balance;
 }
-.docs-intro > p:not(.docs-eyebrow) {
-  color: var(--docs-muted);
-  font-size: 14px;
-  line-height: 1.9;
-  max-width: 550px;
-  margin: 0;
-}
+
 .docs-stats {
   display: flex;
   gap: 23px;
   align-items: center;
-  margin-top: 23px;
+  margin-top: 0;
   color: var(--docs-muted);
   font-size: 11px;
 }
@@ -344,10 +278,7 @@
   font-weight: 500;
   margin-right: 4px;
 }
-.docs-stats__note {
-  margin-left: auto;
-  font-size: 10px;
-}
+
 .docs-search-panel {
   margin: 0 0 28px;
   border: 1px solid var(--docs-line);
@@ -526,28 +457,7 @@
   color: var(--docs-muted);
   line-height: 1.8;
 }
-.docs-rail-note {
-  margin-top: 35px;
-  padding-top: 22px;
-  border-top: 1px solid var(--docs-line);
-  color: var(--docs-muted);
-  font-size: 11px;
-  line-height: 2;
-}
-.docs-footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  border-top: 1px solid var(--docs-line);
-  padding: 25px 0 32px;
-  margin-top: 50px;
-  color: var(--docs-muted);
-  font-size: 9px;
-  letter-spacing: 1.4px;
-}
-.docs-footer span {
-  letter-spacing: 0;
-}
+
 .docs-status {
   padding: 60px 30px;
   text-align: center;
@@ -640,13 +550,7 @@
 .docs-drawer-head button {
   padding: 8px;
 }
-.docs-drawer-links {
-  display: flex;
-  gap: 22px;
-  padding-bottom: 25px;
-  font-size: 12px;
-  color: var(--docs-muted);
-}
+
 .docs-skip {
   position: absolute;
   z-index: 50;
@@ -1134,24 +1038,18 @@
   .docs-post .docs-footer {
     margin-right: 0;
   }
-  .docs-header {
-    gap: 22px;
-    padding: 0 24px;
-  }
-  .docs-site-nav {
-    gap: 18px;
-  }
 }
 @media (max-width: 959px) {
-  .docs-header {
-    height: 68px;
-    padding: 0 20px;
-    gap: 18px;
+  .docs-app {
+    padding-top: 68px;
   }
-  .docs-site-nav {
-    display: none;
+  .docs-mobile-bar .docs-library-search {
+    margin-left: auto;
+    width: min(56vw, 260px);
+    padding: 4px 8px;
   }
-  .docs-header-search {
+
+  .docs-library-search {
     max-width: 230px;
   }
   .docs-mobile-bar {
@@ -1188,33 +1086,15 @@
   }
 }
 @media (max-width: 599px) {
-  .docs-header {
-    gap: 12px;
-    padding: 0 16px;
-  }
-  .docs-brand {
-    font-size: 11px;
-    letter-spacing: 1px;
-    gap: 8px;
-  }
-  .docs-brand__mark {
-    width: 29px;
-    height: 29px;
-    font-size: 14px;
-  }
-  .docs-brand small {
-    font-size: 8px;
-    letter-spacing: 1px;
-  }
-  .docs-header-search {
+  .docs-library-search {
     padding: 7px 9px;
     width: 120px;
   }
-  .docs-header-search input {
+  .docs-library-search input {
     font-size: 11px;
   }
-  .docs-header-search > span,
-  .docs-header-search button {
+  .docs-library-search > span,
+  .docs-library-search button {
     display: none;
   }
   .docs-index-grid,
@@ -1225,21 +1105,14 @@
     font-size: 10px;
     padding-bottom: 22px;
   }
-  .docs-intro {
-    padding-top: 4px;
-  }
   .docs-intro h1 {
-    font-size: 27px;
+    font-size: 22px;
   }
-  .docs-intro > p:not(.docs-eyebrow) {
-    font-size: 13px;
-  }
+
   .docs-stats {
     gap: 20px;
   }
-  .docs-stats__note {
-    display: none;
-  }
+
   .docs-topic-cards {
     gap: 10px;
   }

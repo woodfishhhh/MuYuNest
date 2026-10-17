@@ -4,8 +4,6 @@ const scrollPositions = new Map<string, number>();
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import ThemeToggle from "@/components/layout/ThemeToggle.vue";
-import { useTheme } from "@/composables/useTheme";
 import DocsTree from "./DocsTree.vue";
 import type { DocsTopic } from "@/content/docs-navigation";
 import "@/assets/docs.css";
@@ -14,7 +12,6 @@ defineProps<{ topics: DocsTopic[]; currentSlug?: string }>();
 const emit = defineEmits<{ scroll: [container: HTMLElement] }>();
 const route = useRoute();
 const router = useRouter();
-const { theme, toggleThemeAt } = useTheme();
 const scrollContainer = useTemplateRef<HTMLElement>("scrollContainer");
 const drawer = useTemplateRef<HTMLDialogElement>("drawer");
 const menuButton = useTemplateRef<HTMLButtonElement>("menuButton");
@@ -63,34 +60,20 @@ onBeforeUnmount(() => cancelAnimationFrame(restoreFrame));
 <template>
   <div class="docs-app">
     <a class="docs-skip" href="#docs-main">跳到正文</a>
-    <header class="docs-header">
-      <RouterLink to="/" class="docs-brand"
-        ><span class="docs-brand__mark">W</span><span>WOODFISH<small>知识库 / NOTES</small></span></RouterLink
-      >
-      <nav aria-label="站点导航" class="docs-site-nav">
-        <RouterLink to="/">首页</RouterLink><RouterLink to="/blog" class="is-active">博客</RouterLink
-        ><RouterLink to="/works">作品</RouterLink><RouterLink to="/author">关于</RouterLink
-        ><RouterLink to="/friend">友链</RouterLink>
-      </nav>
-      <form class="docs-header-search" role="search" @submit.prevent="submitSearch">
-        <span aria-hidden="true">⌕</span
-        ><input v-model="search" aria-label="搜索知识库" placeholder="搜索文章…" type="search" /><button
-          type="submit"
-          aria-label="提交搜索"
-        >
-          ↵
-        </button>
-      </form>
-      <ThemeToggle :theme="theme" @toggle-theme="toggleThemeAt($event.x, $event.y)" />
-    </header>
     <div class="docs-mobile-bar">
-      <button ref="menuButton" type="button" aria-haspopup="dialog" @click="drawer?.showModal()">☰ 文档目录</button
-      ><span>WOODFISH / 知识库</span>
+      <button ref="menuButton" type="button" aria-haspopup="dialog" @click="drawer?.showModal()">☰ 文档目录</button>
+      <form class="docs-library-search" role="search" @submit.prevent="submitSearch">
+        <input v-model="search" aria-label="搜索知识库" placeholder="搜索文章…" type="search" />
+        <button type="submit" aria-label="提交搜索">↵</button>
+      </form>
     </div>
     <div class="docs-workspace">
       <aside class="docs-sidebar">
+        <form class="docs-library-search" role="search" @submit.prevent="submitSearch">
+          <input v-model="search" aria-label="搜索知识库" placeholder="搜索文章…" type="search" />
+          <button type="submit" aria-label="提交搜索">↵</button>
+        </form>
         <DocsTree :topics="topics" :current-slug="currentSlug" />
-        <div class="docs-sidebar-foot">保持好奇，持续记录。<span>LEARN · BUILD · SHARE</span></div>
       </aside>
       <main id="docs-main" ref="scrollContainer" tabindex="-1" class="docs-main" @scroll.passive="onScroll">
         <slot :scroll-container="scrollContainer" />
@@ -106,10 +89,6 @@ onBeforeUnmount(() => cancelAnimationFrame(restoreFrame));
       <div class="docs-drawer-head">
         <strong>文档目录</strong><button type="button" aria-label="关闭文档目录" @click="closeDrawer">✕</button>
       </div>
-      <nav class="docs-drawer-links" aria-label="移动端站点导航">
-        <RouterLink to="/">首页</RouterLink><RouterLink to="/works">作品</RouterLink
-        ><RouterLink to="/author">关于</RouterLink><RouterLink to="/friend">友链</RouterLink>
-      </nav>
       <DocsTree :topics="topics" :current-slug="currentSlug" @navigate="closeDrawer" />
     </dialog>
   </div>

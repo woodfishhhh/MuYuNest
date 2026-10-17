@@ -13,7 +13,6 @@ import {
 import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
 import SlideController from "@/components/home/SlideController.vue";
 import VisitorCountBadge from "@/components/home/VisitorCountBadge.vue";
-import SiteNav from "@/components/layout/SiteNav.vue";
 import { useHomePanels } from "@/composables/useHomePanels";
 import { useTheme } from "@/composables/useTheme";
 import { useVisitorCount } from "@/composables/useVisitorCount";
@@ -85,10 +84,7 @@ function finishBlogScrollRestore(container: HTMLElement, target: number) {
 }
 
 function scheduleBlogScrollRestore(target: number) {
-  if (
-    blogScrollRestoreFrame !== null ||
-    blogScrollRestoreFrameCount >= MAX_BLOG_SCROLL_RESTORE_FRAMES
-  ) {
+  if (blogScrollRestoreFrame !== null || blogScrollRestoreFrameCount >= MAX_BLOG_SCROLL_RESTORE_FRAMES) {
     return;
   }
 
@@ -197,8 +193,6 @@ onBeforeUnmount(() => {
 
 <template>
   <main data-home-stage class="relative h-dvh overflow-hidden text-[var(--stage-fg)]">
-    <SiteNav />
-
     <SlideController :blog-scroll-container="blogScrollContainerRef">
       <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
         <Transition name="home-hint" mode="out-in">

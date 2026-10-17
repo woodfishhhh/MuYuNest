@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, watch } from "vue";
 
+import SiteNav from "@/components/layout/SiteNav.vue";
+import { resolveSiteModeFromRoute } from "@/utils/site-mode";
+
 import { playRouteTransition } from "@/composables/useRouteTransitionOrchestrator";
 import { resolveTransitionIntent } from "@/motion/route-transition-intent";
 import { useSiteStore, type SiteMode } from "@/stores/site";
@@ -19,7 +22,18 @@ const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "blog", "post"]);
 
 const route = useRoute();
 const siteStore = useSiteStore();
+const activeNavPage = computed(() => (route.name === "post" ? "blog" : (resolveSiteModeFromRoute(route) ?? undefined)));
 const isHomeRoute = computed(() => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name));
+
+watch(
+  () => route.name,
+  (name) => {
+    if (typeof name === "string" && HOME_ROUTE_NAMES.has(name)) {
+      document.title = "WoodFishNest | 木鱼的鱼窝";
+    }
+  },
+  { immediate: true },
+);
 
 let initialized = false;
 let previousSnapshot: Snapshot = {
@@ -67,6 +81,11 @@ watch(
 
 <template>
   <div data-route-shell class="route-transition-shell">
+    <SiteNav
+      v-if="SCENE_ROUTE_NAMES.has(typeof route.name === 'string' ? route.name : '')"
+      :active-page="activeNavPage"
+      :documentation="route.name === 'blog' || route.name === 'post'"
+    />
     <div data-transition-scrim class="route-transition-scrim" />
     <div data-transition-blade class="route-transition-blade" />
     <!-- 3D 场景层：在首页家族与文章页持续存在，作为透明页面后的背景 -->

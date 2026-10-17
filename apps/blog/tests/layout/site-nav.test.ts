@@ -64,19 +64,9 @@ describe("SiteNav", () => {
     const wrapper = mountNav();
     const desktopLinks = wrapper.findAll("[data-nav-group='desktop'] [data-nav-item]");
 
-    expect(desktopLinks.map((link) => link.text())).toEqual([
-      "Home",
-      "Works",
-      "Blog",
-      "Author",
-      "Friend",
-    ]);
-    expect(
-      wrapper.find("[data-nav-group='desktop'] [data-nav-item='works']").attributes("aria-current"),
-    ).toBe("page");
-    expect(
-      wrapper.findAll("[data-nav-group='desktop'] [data-testid='nav-active-indicator']"),
-    ).toHaveLength(1);
+    expect(desktopLinks.map((link) => link.text())).toEqual(["Home", "Works", "Blog", "Author", "Friend"]);
+    expect(wrapper.find("[data-nav-group='desktop'] [data-nav-item='works']").attributes("aria-current")).toBe("page");
+    expect(wrapper.findAll("[data-nav-group='desktop'] [data-testid='nav-active-indicator']")).toHaveLength(1);
   });
 
   it("renders desktop and mobile theme toggles", () => {
@@ -108,5 +98,13 @@ describe("SiteNav", () => {
 
     expect(document.documentElement.dataset.theme).toBe("day");
     expect(siteStore.mode).toBe(beforeMode);
+  });
+  it("marks Blog for a direct article entry independently of the scene mode", () => {
+    const wrapper = mount(SiteNav, {
+      props: { activePage: "blog", documentation: true },
+      global: { stubs: { RouterLink: RouterLinkStub, ThemeToggle: ThemeToggleStub } },
+    });
+    expect(wrapper.get('[data-nav-group="desktop"] [data-nav-item="blog"]').attributes("aria-current")).toBe("page");
+    expect(wrapper.get('[data-testid="site-nav"]').classes()).toContain("site-nav--docs");
   });
 });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import DocsLayout from "@/components/docs/DocsLayout.vue";
 import ArticleContent from "@/components/article/ArticleContent.vue";
@@ -34,6 +34,9 @@ const backQuery = computed(() => {
   return query;
 });
 let requestToken = 0;
+onBeforeUnmount(() => {
+  requestToken++;
+});
 const trackedDepths = new Set<number>();
 async function load() {
   const token = ++requestToken;
@@ -137,7 +140,6 @@ function trackReading(container: HTMLElement) {
             ><small>下一篇 →</small><strong>{{ neighbors.next.title }}</strong></RouterLink
           >
         </nav>
-        <footer class="docs-footer">WOODFISH <span>记录理解，也记录探索。</span></footer>
       </div>
     </div>
   </DocsLayout>

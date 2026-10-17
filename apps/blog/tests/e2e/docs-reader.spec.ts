@@ -69,7 +69,7 @@ for (const width of [1440, 1024, 390]) {
       const current = await page.locator("html").getAttribute("data-theme");
       if (current !== theme)
         await page
-          .locator(".docs-header")
+          .getByTestId("site-nav")
           .getByRole("button", { name: /切换到/ })
           .click();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
@@ -107,10 +107,10 @@ test("empty search and unknown article remain navigable", async ({ page }) => {
 test("site navigation still reaches home, works, author and friends", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   for (const [name, path] of [
-    ["首页", "/"],
-    ["作品", "/works"],
-    ["关于", "/author"],
-    ["友链", "/friend"],
+    ["Home", "/"],
+    ["Works", "/works"],
+    ["Author", "/author"],
+    ["Friend", "/friend"],
   ]) {
     await page.goto("/blog");
     await page
@@ -129,4 +129,51 @@ test("course overview Markdown links open local canonical articles", async ({ pa
   await link.click();
   await expect(page).toHaveURL(/\/posts\/01-vue3-ce7a3dbf/);
   await expect(page.getByRole("heading", { level: 1 }).first()).toContainText("Vue");
+});
+
+test("one persistent site navigation connects Home, Blog and articles", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  const nav = page.getByTestId("site-nav");
+  await expect(nav).toHaveCount(1);
+  await nav.evaluate((element) => element.setAttribute("data-instance-marker", "shared"));
+  await page.getByTestId("site-nav-wide").getByRole("link", { name: "Blog", exact: true }).click();
+  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(nav).toHaveAttribute("data-instance-marker", "shared");
+  await expect(page.getByTestId("site-nav-wide").locator('[data-nav-item="blog"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(page.getByText("THE KNOWLEDGE GARDEN", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("不必一次读完。", { exact: false })).toHaveCount(0);
+  await page.locator('.docs-sidebar input[aria-label="搜索知识库"]').fill("输入与输出");
+  await page.locator('.docs-sidebar button[aria-label="提交搜索"]').click();
+  await page.locator(".docs-article-row").click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("输入与输出");
+  await expect(nav).toHaveAttribute("data-instance-marker", "shared");
+  await expect(page.getByTestId("site-nav-wide").locator('[data-nav-item="blog"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.getByTestId("site-nav-wide").getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveTitle("WoodFishNest | 木鱼的鱼窝");
+  await expect(nav).toHaveAttribute("data-instance-marker", "shared");
+  await expect(page.getByTestId("site-nav-wide").locator('[data-nav-item="home"]')).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+});
+
+test("mobile site menu keeps the original navigation on Blog and article pages", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/posts/go-basics-02-input-output");
+  await expect(page.getByTestId("site-nav")).toHaveCount(1);
+  await page.getByRole("button", { name: "Toggle Menu" }).click();
+  const menu = page.locator("#site-navigation-menu");
+  await expect(menu.locator('[data-nav-item="blog"]')).toHaveAttribute("aria-current", "page");
+  await menu.getByRole("link", { name: "Blog", exact: true }).click();
+  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "☰ 文档目录" })).toBeVisible();
 });
