@@ -1,12 +1,15 @@
 @import "tailwindcss";
+@import "./article-rendering.css";
 
 @theme {
   --font-sans:
-    "Avenir Next", "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "IBM Plex Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    Consolas, "YouYuan", "幼圆", "Microsoft YaHei", monospace;
+  --font-mono: Consolas, "YouYuan", "幼圆", monospace;
 }
 
 :root {
+  /* YouYuan has only a regular face; synthetic bold corrupts some glyph contours. */
+  font-synthesis-weight: none;
   --background: #050510;
   --foreground: #ededed;
   --stage-bg: #050510;
@@ -336,6 +339,8 @@ img {
   background: transparent;
 }
 
+/* Legacy reader defaults remain below the documentation design layer. */
+@layer legacy-reader {
 .article-page {
   position: relative;
   z-index: 20;
@@ -1261,6 +1266,8 @@ img {
   .article-toc__scroll {
     max-height: calc(100dvh - 11.5rem);
   }
+}
+
 }
 
 /* Home hint / focus hint: anticipate ease (overshoot then settle) */

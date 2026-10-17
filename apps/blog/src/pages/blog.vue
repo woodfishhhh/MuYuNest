@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import HomeView from "~/views/HomeView.vue";
+import DocsView from "~/views/DocsView.vue";
 
 definePageMeta({ name: "blog" });
 </script>
 
 <template>
-  <HomeView />
+  <DocsView />
 </template>

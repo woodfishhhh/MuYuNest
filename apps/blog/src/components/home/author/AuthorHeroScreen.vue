@@ -112,7 +112,7 @@ const props = defineProps<{
 
 .author-hero__name {
   margin: 0;
-  font-family: "Iowan Old Style", Baskerville, "Palatino Linotype", Palatino, serif;
+  font-family: var(--font-sans);
   font-size: clamp(3.6rem, 6.5vw, 6.4rem);
   font-style: italic;
   font-weight: 400;

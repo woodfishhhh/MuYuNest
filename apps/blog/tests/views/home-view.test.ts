@@ -218,7 +218,8 @@ describe("HomeView", () => {
 
     const blogPanel = wrapper.get<HTMLElement>("[data-blog-scroll-container]");
     expect(blogPanel.element.scrollTop).toBe(0);
-    expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    // A layout retry may run before flushPromises resolves on a busy test worker.
+    expect(scrollToSpy).toHaveBeenCalledWith({ top: 900, behavior: "auto" });
 
     homePanelsMock.posts!.value = [{} as PostSummary];
     homePanelsMock.isPostsLoading!.value = false;

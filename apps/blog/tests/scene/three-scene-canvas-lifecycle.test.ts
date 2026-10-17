@@ -102,6 +102,12 @@ function installSceneMocks(
       constructor(readonly value: string) {}
     },
     Euler,
+    Group: class Group {
+      position = { set: vi.fn() };
+      rotation = { set: vi.fn() };
+      scale = { setScalar: vi.fn() };
+      add() {}
+    },
     MathUtils: { degToRad: (value: number) => value },
     NormalBlending: 2,
     Raycaster: class Raycaster {
@@ -188,6 +194,8 @@ function installSceneMocks(
       hitMesh: {},
       lerpColor: vi.fn(),
       setInteractionIntensity: vi.fn(),
+      setPointScale: vi.fn(),
+      setDockProgress: vi.fn(),
       setOpacity,
       update: vi.fn(),
     };

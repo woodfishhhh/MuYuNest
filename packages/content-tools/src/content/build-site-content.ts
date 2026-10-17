@@ -1,19 +1,11 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
-import DOMPurify from "isomorphic-dompurify";
-import GithubSlugger from "github-slugger";
-import hljs from "highlight.js";
 import MarkdownIt from "markdown-it";
-import markdownItAnchor from "markdown-it-anchor";
 import matter from "gray-matter";
 import yaml from "js-yaml";
+import { renderArticleMarkdown, type RenderDiagnostic } from "./markdown-renderer.js";
 
-type MarkdownToken = {
-  content: string;
-  tag: string;
-  type: string;
-};
 
 import {
   buildLegacySlugIndex,
@@ -48,6 +40,7 @@ export interface GeneratedTocItem {
   id: string;
   level: 2 | 3 | 4;
   text: string;
+  html?: string;
 }
 
 export interface GeneratedPostArticle extends GeneratedPostIndexEntry {
@@ -101,6 +94,7 @@ export interface GeneratedFriendLink {
 }
 
 export interface SiteContentBuildResult {
+  renderDiagnostics: RenderDiagnostic[];
   postIndex: GeneratedPostIndexEntry[];
   postsBySlug: Record<string, GeneratedPostArticle>;
   author: GeneratedAuthorProfile;
@@ -124,10 +118,6 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 
 const timestampPattern = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
 
-interface RenderedArticleMarkdown {
-  html: string;
-  toc: GeneratedTocItem[];
-}
 
 export async function buildSiteContent(
   options: BuildSiteContentOptions,
@@ -157,6 +147,7 @@ export async function buildSiteContent(
   const targetPublicDir = options.targetPublicDir ?? path.join(sourceProjectRoot, "public");
   const siteBasePath = options.siteBasePath;
   const reuseGeneratedAssets = options.reuseGeneratedAssets ?? false;
+  const renderDiagnostics: RenderDiagnostic[] = [];
 
   const legacyIndex = buildLegacySlugIndex(await readLegacyEntries(legacyPostsRoot));
   const markdownFiles = await collectMarkdownFiles(myblogRoot);
@@ -187,7 +178,13 @@ export async function buildSiteContent(
       sourceProjectRoot,
       reuseGeneratedAssets,
     });
-    const renderedArticle = renderArticleMarkdown(rewritten.markdown);
+    const sourceOffset = rawMarkdown.indexOf(normalizedBody);
+    const renderedArticle = await renderArticleMarkdown(rewritten.markdown, {
+      sourceFile: path.relative(contentRoot, filePath).split(path.sep).join("/"),
+      slug: slugResult.canonicalSlug,
+      lineOffset: sourceOffset >= 0 ? rawMarkdown.slice(0, sourceOffset).split("\n").length - 1 : 0,
+    });
+    renderDiagnostics.push(...renderedArticle.diagnostics);
     await assertReferencedArticleAssetsExist({
       articleHtml: renderedArticle.html,
       coverImage: null,
@@ -233,7 +230,7 @@ export async function buildSiteContent(
       coverImage,
       categories,
       tags,
-      html: renderedArticle.html,
+      html: addLazyImageAttributes(renderedArticle.html),
       toc: renderedArticle.toc,
     };
 
@@ -257,6 +254,7 @@ export async function buildSiteContent(
   postIndex.sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
 
   return {
+    renderDiagnostics,
     postIndex,
     postsBySlug,
     author: await buildAuthorProfile({
@@ -333,80 +331,8 @@ async function collectMarkdownFiles(root: string): Promise<string[]> {
   return files;
 }
 
-function renderArticleMarkdown(markdown: string): RenderedArticleMarkdown {
-  const toc: GeneratedTocItem[] = [];
-  const slugger = new GithubSlugger();
-  const escapeCodeHtml = (value: string) =>
-    value
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  const renderer = MarkdownIt({
-    breaks: false,
-    html: true,
-    linkify: true,
-    typographer: false,
-    highlight(code: string, language: string) {
-      const normalizedLanguage = language.trim();
-
-      if (normalizedLanguage && hljs.getLanguage(normalizedLanguage)) {
-        return `<pre><code class="hljs language-${escapeHtmlAttribute(normalizedLanguage)}">${hljs.highlight(code, { language: normalizedLanguage, ignoreIllegals: true }).value}</code></pre>`;
-      }
-
-      return `<pre><code class="hljs">${escapeCodeHtml(code)}</code></pre>`;
-    },
-  }).use(markdownItAnchor, {
-    level: [2, 3, 4],
-    getTokensText: getHeadingTokensText,
-    slugify: (value: string) => slugger.slug(normalizeHeadingSlugInput(value)),
-    tabIndex: false,
-    callback(token: MarkdownToken, info: { slug: string; title: string }) {
-      const level = Number(token.tag.slice(1));
-      if (level === 2 || level === 3 || level === 4) {
-        toc.push({
-          id: info.slug,
-          level,
-          text: normalizeRenderedText(info.title),
-        });
-      }
-    },
-  });
-
-  return {
-    html: addLazyImageAttributes(sanitizeArticleHtml(renderer.render(markdown))),
-    toc,
-  };
-}
-
-function getHeadingTokensText(tokens: MarkdownToken[]) {
-  return tokens
-    .filter((token) => token.type !== "image")
-    .map((token) => stripHtml(token.content))
-    .join("");
-}
-
-function normalizeRenderedText(value: string) {
-  return stripHtml(value).replace(/\s+/g, " ").trim();
-}
-
-function normalizeHeadingSlugInput(value: string) {
-  return stripHtml(value).replace(/[&+]/g, " ").replace(/\s+/g, " ").trim();
-}
-
 function stripHtml(value: string) {
   return value.replace(/<[^>]+>/g, "");
-}
-
-function escapeHtmlAttribute(value: string) {
-  return value.replace(/[&<>"']/g, (character) => {
-    if (character === "&") return "&amp;";
-    if (character === "<") return "&lt;";
-    if (character === ">") return "&gt;";
-    if (character === '"') return "&quot;";
-    return "&#39;";
-  });
 }
 
 function stripInlineMarkdown(value: string) {
@@ -838,77 +764,6 @@ function formatPublishedDate(value: string) {
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
-}
-
-function sanitizeArticleHtml(rawHtml: string) {
-  // ─────────────────────────────────────────────────────────────────────────────
-  // XSS 防护：构建时用 DOMPurify 消毒生成的 HTML
-  //
-  // DOMPurify 配置说明：
-  //   ALLOWED_TAGS:  允许的 HTML 标签黑名单之外的标签会被删除
-  //   ALLOWED_ATTR:  允许的 HTML 属性黑名单之外的属性会被移除
-  //   ALLOW_DATA_ATTR: 允许 data-* 自定义属性（常用于组件库）
-  //
-  // 这样即使 Markdown 里有人埋了 <script> 或 <img onerror=...>
-  // 也会在构建时被清除，不会进入最终产物的 JSON 文件。
-  // ─────────────────────────────────────────────────────────────────────────────
-  return DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
-      "h1",
-      "h2",
-      "h3",
-      "h4",
-      "h5",
-      "h6",
-      "p",
-      "br",
-      "hr",
-      "ul",
-      "ol",
-      "li",
-      "blockquote",
-      "pre",
-      "code",
-      "strong",
-      "em",
-      "del",
-      "s",
-      "mark",
-      "sup",
-      "sub",
-      "a",
-      "img",
-      "figure",
-      "figcaption",
-      "table",
-      "thead",
-      "tbody",
-      "tr",
-      "th",
-      "td",
-      "div",
-      "span",
-      "details",
-      "summary",
-    ],
-    ALLOWED_ATTR: [
-      "href",
-      "src",
-      "alt",
-      "title",
-      "class",
-      "id",
-      "loading",
-      "decoding",
-      "target",
-      "rel",
-      "width",
-      "height",
-      "colspan",
-      "rowspan",
-    ],
-    ALLOW_DATA_ATTR: false,
-  });
 }
 
 function addLazyImageAttributes(html: string) {

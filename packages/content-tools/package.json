@@ -12,20 +12,23 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@shikijs/markdown-it": "^4.5.0",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
-    "highlight.js": "^11.11.1",
     "isomorphic-dompurify": "^3.9.0",
     "js-yaml": "^4.1.1",
     "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
+    "markdown-it-cjk-friendly": "^3.0.0",
+    "markdown-it-mathjax3": "^4.3.2",
     "playwright": "^1.60.0",
     "sharp": "^0.34.5",
+    "shiki": "^4.5.0",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
-    "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^25.5.2",
     "typescript": "~5.9.3",
     "vitest": "^3.0.0"

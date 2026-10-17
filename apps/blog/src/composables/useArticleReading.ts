@@ -1,4 +1,4 @@
-import { nextTick, onBeforeUnmount, shallowRef, watch, type Ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, shallowRef, watch, type Ref } from "vue";
 
 import type { TocItem } from "@/types/content";
 
@@ -105,9 +105,9 @@ export function useArticleReading(options: UseArticleReadingOptions) {
 
     return {
       fallbackId: tocItems[0]?.id ?? "",
-      headings: Array.from(
-        contentRoot.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]"),
-      ).filter((heading) => validIds.has(heading.id)),
+      headings: Array.from(contentRoot.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]")).filter((heading) =>
+        validIds.has(heading.id),
+      ),
       validIds,
     };
   }
@@ -191,16 +191,65 @@ export function useArticleReading(options: UseArticleReadingOptions) {
     headings.forEach((heading) => observer?.observe(heading));
   }
 
+  let appliedHash = "";
+  let initialFrame = 0;
+  // Cached article chunks can mount inside Nuxt's detached Suspense tree.
+  // Wait for the real reading surface before measuring its initial anchor.
+  onMounted(() => {
+    let attempts = 0;
+    const settle = () => {
+      const root = options.contentRoot.value;
+      const container = options.scrollContainer.value;
+      if (root?.isConnected && root.getClientRects().length && (!container || container.isConnected)) {
+        setupHeadingObserver();
+        updateReadProgress();
+        if (restoreHash()) return;
+      }
+      if (attempts++ < 120) initialFrame = requestAnimationFrame(settle);
+    };
+    initialFrame = requestAnimationFrame(settle);
+  });
+  function restoreHash(): boolean {
+    let id = "";
+    try {
+      id = decodeURIComponent(window.location.hash.slice(1));
+    } catch {
+      return true;
+    }
+    if (!id || !options.tocItems.value.some((item) => item.id === id)) return true;
+    const root = options.contentRoot.value;
+    const target = document.getElementById(id);
+    if (
+      !root?.isConnected ||
+      !target ||
+      !root.contains(target) ||
+      !target.getClientRects().length ||
+      !options.scrollContainer.value?.isConnected
+    )
+      return false;
+    jumpToHeading(id, false);
+    appliedHash = id;
+    return true;
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("hashchange", restoreHash);
+    window.addEventListener("popstate", restoreHash);
+  }
+
   async function refresh() {
     await nextTick();
     setupHeadingObserver();
     updateReadProgress();
+    if (!appliedHash && typeof window !== "undefined" && options.contentRoot.value) restoreHash();
   }
 
-  function jumpToHeading(id: string) {
+  function jumpToHeading(id: string, updateHash = true) {
     const target = document.getElementById(id);
-    if (!target) {
-      return;
+    if (!target) return;
+    if (updateHash && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.hash = id;
+      window.history.replaceState(window.history.state, "", url);
     }
 
     activeId.value = id;
@@ -208,7 +257,10 @@ export function useArticleReading(options: UseArticleReadingOptions) {
     const container = options.scrollContainer.value;
     if (!container) {
       startPendingJump(id, null);
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      target.scrollIntoView({
+        behavior: !updateHash || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
       return;
     }
 
@@ -223,7 +275,7 @@ export function useArticleReading(options: UseArticleReadingOptions) {
 
     container.scrollTo({
       top: nextTop,
-      behavior: "smooth",
+      behavior: !updateHash || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
     });
   }
 
@@ -239,10 +291,7 @@ export function useArticleReading(options: UseArticleReadingOptions) {
   watch(
     () => options.tocItems.value.map((item) => item.id).join("|"),
     () => {
-      keepActiveIdIfValid(
-        options.tocItems.value[0]?.id ?? "",
-        new Set(options.tocItems.value.map((item) => item.id)),
-      );
+      keepActiveIdIfValid(options.tocItems.value[0]?.id ?? "", new Set(options.tocItems.value.map((item) => item.id)));
       void refresh();
     },
     { flush: "post", immediate: true },
@@ -257,6 +306,9 @@ export function useArticleReading(options: UseArticleReadingOptions) {
   );
 
   onBeforeUnmount(() => {
+    cancelAnimationFrame(initialFrame);
+    window.removeEventListener("hashchange", restoreHash);
+    window.removeEventListener("popstate", restoreHash);
     boundScrollContainer?.removeEventListener("scroll", updateReadProgress);
     clearPendingJumpTimer();
     disconnectObserver();

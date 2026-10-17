@@ -71,9 +71,7 @@ describe("ArticleContent", () => {
     expect(wrapper.get("[data-testid='article-toc-mobile']")).toBeTruthy();
     expect(wrapper.get("[data-testid='article-toc-scroll']")).toBeTruthy();
     expect(wrapper.findAll("[data-testid='article-toc-item']")).toHaveLength(2);
-    expect(wrapper.get("[data-testid='article-progress-bar']").attributes("style")).toContain(
-      "width: 50%",
-    );
+    expect(wrapper.get("[data-testid='article-progress-bar']").attributes("style")).toContain("transform: scaleX(0.5)");
 
     wrapper.unmount();
     scrollContainer.remove();
@@ -110,9 +108,7 @@ describe("ArticleContent", () => {
     scrollContainer.dispatchEvent(new Event("scroll"));
     await nextTick();
 
-    expect(wrapper.get("[data-testid='article-progress-bar']").attributes("style")).toContain(
-      "width: 50%",
-    );
+    expect(wrapper.get("[data-testid='article-progress-bar']").attributes("style")).toContain("transform: scaleX(0.5)");
 
     wrapper.unmount();
     scrollContainer.remove();

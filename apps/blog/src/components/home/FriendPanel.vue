@@ -127,7 +127,7 @@ function visitRandomFriend() {
     <section id="friend-links-container" data-testid="friend-panel-grid" class="friend-links-pane">
       <header data-testid="friend-panel-hero" class="friend-links-pane__header">
         <div>
-          <div class="text-[11px] tracking-[0.22em] text-[var(--stage-hint)]">邻居星球</div>
+          <div class="text-base tracking-[0.22em] text-[var(--stage-hint)]">邻居星球</div>
           <h2 class="mt-2 text-3xl sm:text-4xl font-light text-[var(--stage-fg)] md:text-5xl">
             友链
           </h2>
@@ -171,7 +171,7 @@ function visitRandomFriend() {
       >
         <header class="friend-offline-section__header">
           <div>
-            <div class="text-[11px] tracking-[0.22em] text-[var(--stage-hint)]">失联坐标</div>
+            <div class="text-base tracking-[0.22em] text-[var(--stage-hint)]">失联坐标</div>
             <h3 id="friend-offline-title" class="friend-offline-section__title">失联</h3>
           </div>
           <span class="friend-links-pane__count">{{ offlineLinks.length }} 个站点</span>
@@ -213,7 +213,7 @@ function visitRandomFriend() {
         />
         <section class="friend-mobile-drawer__sheet" aria-label="提交友链">
           <div class="mb-4 flex items-center justify-between gap-4">
-            <div class="text-[11px] tracking-[0.18em] text-[var(--stage-hint)]">提交友链</div>
+            <div class="text-base tracking-[0.18em] text-[var(--stage-hint)]">提交友链</div>
             <button
               data-testid="friend-mobile-drawer-close"
               class="friend-mobile-drawer__close"
@@ -320,7 +320,7 @@ function visitRandomFriend() {
   max-width: 42rem;
   padding: 0.8rem 0.25rem 0;
   color: var(--stage-hint);
-  font-size: 0.78rem;
+  font-size: 1rem;
   line-height: 1.8;
 }
 
@@ -339,7 +339,7 @@ function visitRandomFriend() {
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
   padding: 0.45rem 0.7rem;
-  font-size: 0.72rem;
+  font-size: 1rem;
   letter-spacing: 0.08em;
   color: var(--stage-hint-strong);
 }

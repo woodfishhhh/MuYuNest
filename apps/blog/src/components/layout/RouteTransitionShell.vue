@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, watch } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, provide, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import gsap from "gsap";
+
+import { docsArrival, isDocsPath, reducedDocsMotion } from "@/motion/docs-motion";
+import DocsLayout from "@/components/docs/DocsLayout.vue";
+import { docsPageKey, type DocsPageState } from "@/composables/useDocsPage";
+import SiteNav from "@/components/layout/SiteNav.vue";
+import { resolveSiteModeFromRoute } from "@/utils/site-mode";
 
 import { playRouteTransition } from "@/composables/useRouteTransitionOrchestrator";
 import { resolveTransitionIntent } from "@/motion/route-transition-intent";
@@ -14,21 +22,60 @@ interface Snapshot {
   activePostSlug: string | null;
 }
 
-const HOME_ROUTE_NAMES = new Set([
-  "home",
-  "blog",
-  "author",
-  "author-page",
-  "author-page-root",
-  "friend",
-  "works",
-]);
-const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "post"]);
+const HOME_ROUTE_NAMES = new Set(["home", "author", "author-page", "author-page-root", "friend", "works"]);
+const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "blog", "post"]);
 
 const route = useRoute();
+const docsPage = reactive<DocsPageState>({ owner: null, topics: [], currentSlug: "", ready: false });
+provide(docsPageKey, docsPage);
+const isDocsRoute = computed(() => route.name === "blog" || route.name === "post");
+const router = useRouter();
+let finishDeparture: (() => void) | undefined;
+const removeDepartureGuard = router?.beforeEach((to, from) => {
+  finishDeparture?.();
+  if (!isDocsPath(to.path) || isDocsPath(from.path) || !from.name || reducedDocsMotion()) return;
+  const stage = document.querySelector<HTMLElement>("[data-route-stage]");
+  if (!stage) return;
+  return new Promise<void>((resolve) => {
+    const context = gsap.context(() => {
+      gsap.to(stage, {
+        scale: 0.985,
+        opacity: 0.18,
+        duration: 0.16,
+        ease: "power2.in",
+        onComplete: () => finishDeparture?.(),
+      });
+    });
+    finishDeparture = () => {
+      context.revert();
+      finishDeparture = undefined;
+      resolve();
+    };
+  });
+});
+onBeforeUnmount(() => {
+  removeDepartureGuard?.();
+  finishDeparture?.();
+});
+watch(
+  () => route.path,
+  (_to, from) => {
+    docsArrival.fromPath = from;
+  },
+  { flush: "sync" },
+);
 const siteStore = useSiteStore();
-const isHomeRoute = computed(
-  () => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name),
+const activeNavPage = computed(() => (route.name === "post" ? "blog" : (resolveSiteModeFromRoute(route) ?? undefined)));
+const isHomeRoute = computed(() => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name));
+
+watch(
+  () => route.name,
+  (name) => {
+    if (typeof name === "string" && HOME_ROUTE_NAMES.has(name)) {
+      document.title = "WoodFishNest | 木鱼的鱼窝";
+    }
+  },
+  { immediate: true },
 );
 
 let initialized = false;
@@ -68,7 +115,7 @@ watch(
     previousSnapshot = nextSnapshot;
     initialized = true;
 
-    if (intent.type === "none") return;
+    if (intent.type === "none" || routeName === "blog" || routeName === "post") return;
     void playRouteTransition({ kind: intent.type, directEntry: intent.directEntry });
   },
   { flush: "post" },
@@ -77,6 +124,11 @@ watch(
 
 <template>
   <div data-route-shell class="route-transition-shell">
+    <SiteNav
+      v-if="SCENE_ROUTE_NAMES.has(typeof route.name === 'string' ? route.name : '')"
+      :active-page="activeNavPage"
+      :documentation="route.name === 'blog' || route.name === 'post'"
+    />
     <div data-transition-scrim class="route-transition-scrim" />
     <div data-transition-blade class="route-transition-blade" />
     <!-- 3D 场景层：在首页家族与文章页持续存在，作为透明页面后的背景 -->
@@ -92,13 +144,19 @@ watch(
     </div>
     <div data-route-stage class="route-transition-stage">
       <HomeView v-if="isHomeRoute" key="home-family" data-route-view />
-      <NuxtPage v-slot="{ Component, route: routeView }">
-        <component
-          v-if="!isHomeRoute"
-          :is="Component"
-          :key="routeView.fullPath"
-          data-route-view
-        />
+      <DocsLayout
+        v-if="isDocsRoute"
+        :topics="docsPage.topics"
+        :current-slug="docsPage.currentSlug"
+        :ready="docsPage.ready"
+        @scroll="docsPage.onScroll?.($event)"
+      >
+        <NuxtPage v-slot="{ Component, route: routeView }">
+          <component :is="Component" :key="routeView.path" data-route-view />
+        </NuxtPage>
+      </DocsLayout>
+      <NuxtPage v-else v-slot="{ Component, route: routeView }">
+        <component v-if="!isHomeRoute" :is="Component" :key="routeView.path" data-route-view />
       </NuxtPage>
     </div>
   </div>

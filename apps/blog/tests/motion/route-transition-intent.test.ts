@@ -7,9 +7,9 @@ describe("route transition intent", () => {
     expect(
       resolveTransitionIntent({
         fromRouteName: "home",
-        toRouteName: "blog",
+        toRouteName: "works",
         fromSiteMode: "home",
-        toSiteMode: "blog",
+        toSiteMode: "works",
       }).type,
     ).toBe("panelTransition");
 
@@ -26,10 +26,10 @@ describe("route transition intent", () => {
   it("resolves page/article transitions", () => {
     expect(
       resolveTransitionIntent({
-        fromRouteName: "blog",
+        fromRouteName: "works",
         toRouteName: "post",
-        fromSiteMode: "blog",
-        toSiteMode: "blog",
+        fromSiteMode: "works",
+        toSiteMode: "works",
       }).type,
     ).toBe("pageToPost");
 
@@ -37,7 +37,7 @@ describe("route transition intent", () => {
       resolveTransitionIntent({
         fromRouteName: "post",
         toRouteName: "home",
-        fromSiteMode: "blog",
+        fromSiteMode: "works",
         toSiteMode: "home",
       }).type,
     ).toBe("postToPage");
@@ -46,9 +46,9 @@ describe("route transition intent", () => {
   it("resolves overlay transitions from reading state changes", () => {
     expect(
       resolveTransitionIntent({
-        fromRouteName: "blog",
-        toRouteName: "blog",
-        fromSiteMode: "blog",
+        fromRouteName: "works",
+        toRouteName: "works",
+        fromSiteMode: "works",
         toSiteMode: "reading",
         fromActivePostSlug: null,
         toActivePostSlug: "ajax-basics-intro",
@@ -57,10 +57,10 @@ describe("route transition intent", () => {
 
     expect(
       resolveTransitionIntent({
-        fromRouteName: "blog",
-        toRouteName: "blog",
+        fromRouteName: "works",
+        toRouteName: "works",
         fromSiteMode: "reading",
-        toSiteMode: "blog",
+        toSiteMode: "works",
         fromActivePostSlug: "ajax-basics-intro",
         toActivePostSlug: null,
       }).type,
@@ -72,7 +72,7 @@ describe("route transition intent", () => {
       fromRouteName: null,
       toRouteName: "post",
       fromSiteMode: "home",
-      toSiteMode: "blog",
+      toSiteMode: "works",
       isInitialNavigation: true,
     });
 
@@ -88,6 +88,16 @@ describe("route transition intent", () => {
         fromSiteMode: "home",
         toSiteMode: "home",
       }).type,
+    ).toBe("none");
+  });
+  it("does not run homepage panel transitions for documentation navigation", () => {
+    expect(
+      resolveTransitionIntent({ fromRouteName: "home", toRouteName: "blog", fromSiteMode: "home", toSiteMode: "blog" })
+        .type,
+    ).toBe("none");
+    expect(
+      resolveTransitionIntent({ fromRouteName: "blog", toRouteName: "post", fromSiteMode: "blog", toSiteMode: "blog" })
+        .type,
     ).toBe("none");
   });
 });

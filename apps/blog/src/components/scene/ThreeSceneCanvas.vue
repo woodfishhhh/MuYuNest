@@ -10,6 +10,7 @@ import {
   setSceneMagneticPointerTarget,
 } from "@/utils/magnetic-pointer";
 import { createCircleTexture } from "@/components/scene/circle-texture";
+import { getBlogDockTransform, type DockRect } from "@/components/scene/blog-dock";
 import {
   getGeometryTransformTarget,
   hasEquivalentGeometryTransformMode,
@@ -141,6 +142,10 @@ let sceneTimer: THREE.Timer | null = null;
 let circleTexture: THREE.CanvasTexture | null = null;
 let reducedMotionQuery: MediaQueryList | null = null;
 let prefersReducedMotion = false;
+let geometryRoot: THREE.Group | null = null;
+let blogDockAnchor: DockRect | null = null;
+let blogDockViewport: DockRect | null = null;
+const blogDock = { progress: 0 };
 let pointerInsideCanvas = false;
 let suppressNextCanvasClick = false;
 let sceneDisposed = false;
@@ -164,6 +169,53 @@ let rotationTweenDay: gsap.core.Tween | null = null;
 function getActiveGeometry() {
   if (theme.value === "day") return mobius;
   return hypercube;
+}
+
+function measureBlogDock() {
+  const anchor = document.querySelector<HTMLElement>("[data-scene-blog-dock]");
+  if (!anchor || !container.value) return;
+  blogDockAnchor = anchor.getBoundingClientRect();
+  blogDockViewport = container.value.getBoundingClientRect();
+}
+
+function updateBlogDock(immediate = false) {
+  measureBlogDock();
+  gsap.killTweensOf(blogDock);
+  const progress = store.mode === "blog" && !store.isFocusing ? 1 : 0;
+  if (immediate || prefersReducedMotion) {
+    blogDock.progress = progress;
+  } else {
+    gsap.to(blogDock, { progress, duration: 0.8, ease: "power2.inOut" });
+  }
+}
+
+function applyBlogDock() {
+  if (!geometryRoot || !threeScene) return;
+  const progress = blogDock.progress;
+  if (progress === 0) {
+    geometryRoot.matrixAutoUpdate = true;
+    geometryRoot.position.set(0, 0, 0);
+    geometryRoot.rotation.set(0, 0, 0);
+    geometryRoot.scale.setScalar(1);
+    hypercube?.setPointScale(hypercube.group.scale.x);
+    return;
+  }
+  if (!blogDockAnchor || !blogDockViewport) measureBlogDock();
+  if (!blogDockAnchor || !blogDockViewport) return;
+  const geometry = getActiveGeometry();
+  if (!geometry) return;
+  threeScene.camera.updateMatrixWorld();
+  const diameter = (theme.value === "day" ? 6 : 10) * geometry.group.scale.x;
+  const target = getBlogDockTransform(threeScene.camera, blogDockViewport, blogDockAnchor, diameter, progress);
+  geometryRoot.position.copy(target.position).multiplyScalar(progress);
+  geometryRoot.scale.setScalar(1 + (target.scale - 1) * progress);
+  geometryRoot.quaternion.identity().slerp(threeScene.camera.quaternion, progress);
+  // A uniform scale/rotation alone cannot undo the perspective skew at a
+  // screen corner. Keep the correction in the matrix instead of decomposing it.
+  geometryRoot.matrixAutoUpdate = false;
+  geometryRoot.updateMatrix();
+  geometryRoot.matrix.multiply(target.projectionCorrection);
+  if (hypercube) hypercube.setPointScale(geometryRoot.scale.x * hypercube.group.scale.x);
 }
 
 function getGeometryByTheme(nextTheme: ThemeMode): ActiveGeometry | null {
@@ -284,6 +336,7 @@ function applyThemeImmediate(nextTheme: ThemeMode) {
 
 function updateGeometryTransform(immediate = false) {
   if (!threeScene || !hypercube || !mobius || !container.value) return;
+  immediate ||= prefersReducedMotion;
 
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
@@ -359,6 +412,7 @@ function handleResize() {
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
   isMobile.value = !supportsContentLayout(width);
+  measureBlogDock();
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   applyThemeGeometryState(theme.value);
 
@@ -372,6 +426,8 @@ function handleResize() {
 
 function handleReducedMotionChange(event: MediaQueryListEvent) {
   prefersReducedMotion = event.matches;
+  updateBlogDock(true);
+  updateGeometryTransform(true);
   updateWorksOrbitCards();
 }
 
@@ -622,10 +678,10 @@ onMounted(async () => {
   threeScene.scene.add(starField.group);
 
   hypercube = useHypercube(circleTexture);
-  threeScene.scene.add(hypercube.group);
-
   mobius = useMobiusStrip();
-  threeScene.scene.add(mobius.group);
+  geometryRoot = new THREE.Group();
+  geometryRoot.add(hypercube.group, mobius.group);
+  threeScene.scene.add(geometryRoot);
 
   worksOrbitCards = createWorksOrbitCards({
     theme: theme.value,
@@ -676,6 +732,10 @@ onMounted(async () => {
     }
   }
 
+  updateBlogDock(true);
+  void document.fonts?.ready.then(() => {
+    if (!sceneDisposed) measureBlogDock();
+  });
   sceneTimer = new THREE.Timer();
   sceneTimer.connect(document);
 
@@ -688,11 +748,13 @@ onMounted(async () => {
 
     starField.update(delta);
     const activeGeometry = getActiveGeometry();
-    activeGeometry?.update(delta);
+    hypercube.setDockProgress(blogDock.progress);
+    activeGeometry?.update(prefersReducedMotion ? 0 : delta);
 
     if (
       activeGeometry &&
       !store.isFocusing &&
+      !prefersReducedMotion &&
       !worksOrbitCards?.isInteracting() &&
       !rotationTweenNight &&
       !rotationTweenDay
@@ -717,7 +779,11 @@ onMounted(async () => {
         cameraTargetPosition.set(0, 0, 15);
       }
 
-      if (!introCompleted && introStartTime !== null) {
+      if (prefersReducedMotion) {
+        introCompleted = true;
+        threeScene.camera.position.copy(cameraTargetPosition);
+        threeScene.camera.lookAt(cameraTargetLook);
+      } else if (!introCompleted && introStartTime !== null) {
         const introProgress = (elapsed - introStartTime) / CAMERA_INTRO_DURATION;
         const normalizedProgress = Math.min(Math.max(introProgress, 0), 1);
         const easedProgress = 1 - Math.pow(1 - normalizedProgress, 4);
@@ -741,6 +807,7 @@ onMounted(async () => {
       }
     }
 
+    applyBlogDock();
     updateWorksOrbitCards(elapsed, delta);
 
     const activeRaycastGeometry = getActiveGeometry();
@@ -805,6 +872,7 @@ onMounted(async () => {
 watch(
   () => store.mode,
   (mode, previousMode) => {
+    updateBlogDock();
     clearSceneMagneticPointerTarget();
     geometryHovered.value = false;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
@@ -831,6 +899,7 @@ watch(
 watch(
   () => store.isFocusing,
   (focusing) => {
+    updateBlogDock();
     if (controls) controls.enabled = focusing;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
     applyThemeGeometryState(theme.value);
@@ -858,6 +927,7 @@ watch(theme, (nextTheme) => {
 
 onBeforeUnmount(() => {
   sceneDisposed = true;
+  gsap.killTweensOf(blogDock);
   clearSceneMagneticPointerTarget();
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
@@ -909,6 +979,7 @@ onBeforeUnmount(() => {
   starField = null;
   hypercube = null;
   mobius = null;
+  geometryRoot = null;
   // homeBackdropGlyph = null;
   worksOrbitCards = null;
   circleTexture = null;

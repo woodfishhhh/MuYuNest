@@ -1,22 +1,8 @@
 import type { SiteMode } from "@/stores/site";
 
-const HOME_ROUTE_NAMES = new Set([
-  "home",
-  "blog",
-  "author",
-  "author-page",
-  "author-page-root",
-  "friend",
-  "works",
-]);
+const HOME_ROUTE_NAMES = new Set(["home", "blog", "author", "author-page", "author-page-root", "friend", "works"]);
 
-export type TransitionType =
-  | "none"
-  | "panelTransition"
-  | "overlayOpen"
-  | "overlayClose"
-  | "pageToPost"
-  | "postToPage";
+export type TransitionType = "none" | "panelTransition" | "overlayOpen" | "overlayClose" | "pageToPost" | "postToPage";
 
 export interface TransitionIntentInput {
   fromRouteName: string | null;
@@ -44,24 +30,18 @@ export function resolveTransitionIntent(input: TransitionIntentInput): Transitio
     isInitialNavigation = false,
   } = input;
 
+  if (fromRouteName === "blog" || toRouteName === "blog") {
+    return { type: "none", directEntry: false };
+  }
+
   const fromHomeRoute = !!fromRouteName && HOME_ROUTE_NAMES.has(fromRouteName);
   const toHomeRoute = !!toRouteName && HOME_ROUTE_NAMES.has(toRouteName);
 
-  if (
-    fromSiteMode !== "reading" &&
-    toSiteMode === "reading" &&
-    !fromActivePostSlug &&
-    !!toActivePostSlug
-  ) {
+  if (fromSiteMode !== "reading" && toSiteMode === "reading" && !fromActivePostSlug && !!toActivePostSlug) {
     return { type: "overlayOpen", directEntry: false };
   }
 
-  if (
-    fromSiteMode === "reading" &&
-    toSiteMode !== "reading" &&
-    !!fromActivePostSlug &&
-    !toActivePostSlug
-  ) {
+  if (fromSiteMode === "reading" && toSiteMode !== "reading" && !!fromActivePostSlug && !toActivePostSlug) {
     return { type: "overlayClose", directEntry: false };
   }
 

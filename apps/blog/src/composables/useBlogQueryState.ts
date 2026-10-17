@@ -1,11 +1,5 @@
 import { computed } from "vue";
-import {
-  useRoute,
-  useRouter,
-  type LocationQuery,
-  type LocationQueryRaw,
-  type LocationQueryValue,
-} from "vue-router";
+import { useRoute, useRouter, type LocationQuery, type LocationQueryRaw, type LocationQueryValue } from "vue-router";
 
 import { sanitizeFilterValue, sanitizeSearchQuery } from "@/utils/input-validator";
 import type { BlogFilters, BlogSortKey } from "@/content/blog-hub";
@@ -82,7 +76,7 @@ export function useBlogQueryState() {
     await router.replace({
       name: getRouteName(),
       params: route.params,
-      query: {},
+      query: { topic: route.query.topic, series: route.query.series },
       hash: route.hash,
     });
   }
@@ -115,10 +109,7 @@ export function useBlogQueryState() {
   };
 }
 
-function buildNextQuery(
-  currentQuery: LocationQuery,
-  updates: Partial<Record<BlogQueryKey, string>>,
-): LocationQueryRaw {
+function buildNextQuery(currentQuery: LocationQuery, updates: Partial<Record<BlogQueryKey, string>>): LocationQueryRaw {
   const nextQuery: LocationQueryRaw = {
     ...currentQuery,
   };
@@ -160,7 +151,5 @@ function readAndSanitizeQueryValue(
 }
 
 function isBlogSortKey(value: string): value is BlogSortKey {
-  return (
-    value === "latest" || value === "oldest" || value === "reading-time" || value === "alphabetical"
-  );
+  return value === "latest" || value === "oldest" || value === "reading-time" || value === "alphabetical";
 }

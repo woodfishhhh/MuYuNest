@@ -1,7 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 
 const mocks = vi.hoisted(() => ({
   getPostSummaries: vi.fn(),
@@ -14,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("vue-router", () => ({
+  useRouter: () => ({ push: vi.fn() }),
   useRoute: () => ({
     params: {
       slug: mocks.routeState.slug,
@@ -112,169 +112,72 @@ const postSummaries = [
   },
 ];
 
-describe("PostView", () => {
+const DocsLayoutStub = defineComponent({
+  name: "DocsLayout",
+  props: ["topics", "currentSlug"],
+  template: '<main><slot :scroll-container="null" /></main>',
+});
+function render() {
+  return mount(PostView, {
+    global: { stubs: { DocsLayout: DocsLayoutStub, ArticleContent: ArticleContentStub, RouterLink: RouterLinkStub } },
+  });
+}
+describe("PostView documentation reader", () => {
   beforeEach(() => {
     mocks.routeState.slug = "orbiting-interfaces";
     mocks.routeState.query = {};
-    mocks.getPostSummaries.mockReset();
-    mocks.loadPostArticle.mockReset();
-    mocks.resolvePostSlug.mockReset();
-    mocks.getPostSummaries.mockResolvedValue(postSummaries);
-    mocks.resolvePostSlug.mockImplementation(async (slug: string) => slug);
-    document.title = "WOODFISH";
+    mocks.getPostSummaries.mockReset().mockResolvedValue(postSummaries);
+    mocks.loadPostArticle.mockReset().mockResolvedValue(article);
+    mocks.resolvePostSlug.mockReset().mockImplementation(async (slug: string) => slug);
   });
-
-  it("shows a loading state while the article request is still pending", async () => {
-    let resolveArticle: ((value: typeof article | null) => void) | undefined;
-
-    mocks.loadPostArticle.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveArticle = resolve;
-        }),
+  it("shows loading while an article is pending", async () => {
+    let finish: (value: typeof article) => void = () => {};
+    mocks.loadPostArticle.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
     );
-
-    const wrapper = mount(PostView, {
-      global: {
-        stubs: {
-          ArticleContent: ArticleContentStub,
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-
-    expect(wrapper.get("[data-testid='post-view-loading']")).toBeTruthy();
-
-    if (resolveArticle) {
-      resolveArticle(article);
-    }
+    const wrapper = render();
+    expect(wrapper.find('[data-testid="post-view-loading"]').exists()).toBe(true);
+    finish(article);
     await flushPromises();
-
-    expect(wrapper.get("[data-testid='post-view-article']")).toBeTruthy();
+    expect(wrapper.find('[data-testid="post-view-article"]').exists()).toBe(true);
+    wrapper.unmount();
   });
-
-  it("renders a premium empty state when the article cannot be found", async () => {
-    mocks.loadPostArticle.mockResolvedValue(null);
-
-    const wrapper = mount(PostView, {
-      global: {
-        stubs: {
-          ArticleContent: ArticleContentStub,
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-
+  it("renders the article and neighbors inside its topic", async () => {
+    const wrapper = render();
     await flushPromises();
-
-    expect(wrapper.get("[data-testid='post-view-not-found']").text()).toContain(
-      "Article not found",
-    );
-    expect(document.title).toBe("Article not found | WOODFISH");
-  });
-
-  it("renders the article shell and resolved slug metadata after loading succeeds", async () => {
-    mocks.loadPostArticle.mockResolvedValue(article);
-
-    const wrapper = mount(PostView, {
-      global: {
-        stubs: {
-          ArticleContent: ArticleContentStub,
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-
-    await flushPromises();
-
-    expect(wrapper.get("[data-testid='post-view-article']")).toBeTruthy();
-    expect(wrapper.get("[data-testid='article-content-stub']").text()).toContain(
-      "Orbiting Interfaces",
-    );
-    expect(wrapper.text()).toContain("/ posts / orbiting-interfaces");
-    expect(wrapper.get("[data-testid='post-view-back-link']").attributes("aria-label")).toBe(
-      "Back Home",
-    );
-    expect(wrapper.get("[data-testid='post-view-back-link']").find("span").exists()).toBe(false);
-    expect(wrapper.get("[data-testid='post-view-previous-link']").text()).toContain("Vector Notes");
-    expect(wrapper.get("[data-testid='post-view-next-link']").text()).toContain("Signal Objects");
+    expect(wrapper.get('[data-testid="article-content-stub"]').text()).toBe(article.title);
+    expect(wrapper.get('[data-testid="post-view-previous-link"]').text()).toContain("Vector Notes");
+    expect(wrapper.get('[data-testid="post-view-next-link"]').text()).toContain("Signal Objects");
     expect(document.title).toBe("Orbiting Interfaces | WOODFISH");
+    wrapper.unmount();
   });
-
-  it("keeps the post scroll surface interactive inside the route transition stage", () => {
-    const css = readFileSync("src/assets/main.css", "utf8");
-
-    expect(css).toMatch(/\.article-page\s*{[^}]*pointer-events:\s*auto;/s);
-  });
-
-  it("keeps article reading locked to vertical page scrolling on narrow screens", () => {
-    const css = readFileSync("src/assets/main.css", "utf8");
-
-    expect(css).toMatch(/\.article-page\s*{[^}]*overflow-x:\s*hidden;/s);
-  });
-
-  it("reuses the friend page low-opacity background without an opaque article override", () => {
-    mocks.loadPostArticle.mockResolvedValue(article);
-
-    const wrapper = mount(PostView, {
-      global: {
-        stubs: {
-          ArticleContent: ArticleContentStub,
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-    const page = wrapper.get("[data-post-page]");
-    const css = readFileSync("src/assets/main.css", "utf8");
-    const articlePageRule = css.match(/\.article-page\s*{([^}]*)}/s)?.[1] ?? "";
-
-    expect(page.classes()).toEqual(
-      expect.arrayContaining(["stage-panel-gradient", "stage-panel-gradient--friend"]),
-    );
-    expect(articlePageRule).not.toMatch(/\bbackground(?:-color|-image)?\s*:/);
-    expect(css).not.toMatch(/:root\[data-theme="day"\]\s+\.article-page\s*{/);
-  });
-
-  it("keeps the article shell translucent enough for the Three.js geometry to remain visible", () => {
-    const css = readFileSync("src/assets/main.css", "utf8");
-    const nightShellRule = css.match(/\.article-view\s*{([^}]*)}/s)?.[1] ?? "";
-    const dayShellRule =
-      css.match(/:root\[data-theme="day"\]\s+\.article-view\s*{([^}]*)}/s)?.[1] ?? "";
-
-    expect(nightShellRule).toContain("rgba(12, 16, 32, 0.58)");
-    expect(nightShellRule).toContain("rgba(8, 12, 24, 0.42)");
-    expect(dayShellRule).toContain("rgba(255, 251, 241, 0.72)");
-    expect(dayShellRule).toContain("rgba(255, 255, 255, 0.48)");
-  });
-
-  it("preserves the originating blog query in the back link", async () => {
-    mocks.routeState.query = {
-      q: "ajax",
-      type: "Tutorial",
-    };
-    mocks.loadPostArticle.mockResolvedValue(article);
-
-    const wrapper = mount(PostView, {
-      global: {
-        stubs: {
-          ArticleContent: ArticleContentStub,
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-
+  it("returns to the knowledge base with search and series context", async () => {
+    mocks.routeState.query = { q: "ajax", type: "Tutorial", topic: "frontend", series: "javascript" };
+    const wrapper = render();
     await flushPromises();
-
-    expect(wrapper.getComponent(RouterLinkStub).props("to")).toEqual({
-      name: "blog",
-      query: {
-        q: "ajax",
-        type: "Tutorial",
-      },
-    });
-    expect(wrapper.get("[data-testid='post-view-back-link']").attributes("aria-label")).toBe(
-      "Back to Blog",
-    );
-    expect(wrapper.get("[data-testid='post-view-back-link']").find("span").exists()).toBe(false);
+    expect(wrapper.findComponent(RouterLinkStub).props("to")).toEqual({ name: "blog", query: mocks.routeState.query });
+    expect(wrapper.get('[data-testid="post-view-back-link"]').text()).toBe("← 返回知识库");
+    wrapper.unmount();
+  });
+  it("offers navigation for an unknown article", async () => {
+    mocks.loadPostArticle.mockResolvedValue(null);
+    const wrapper = render();
+    await flushPromises();
+    expect(wrapper.get('[data-testid="post-view-not-found"]').text()).toContain("文章不存在");
+    expect(wrapper.find('[data-testid="post-view-back-link"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+  it("distinguishes a failed request from a missing article and retries", async () => {
+    mocks.loadPostArticle.mockRejectedValueOnce(new Error("offline"));
+    const wrapper = render();
+    await flushPromises();
+    expect(wrapper.get('[role="alert"]').text()).toContain("暂时无法加载");
+    expect(wrapper.find('[data-testid="post-view-not-found"]').exists()).toBe(false);
+    await wrapper.get('[role="alert"] button').trigger("click");
+    await flushPromises();
+    expect(wrapper.find('[data-testid="post-view-article"]').exists()).toBe(true);
+    wrapper.unmount();
   });
 });

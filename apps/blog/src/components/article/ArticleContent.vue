@@ -21,9 +21,7 @@ const props = withDefaults(
 
 const contentRoot = useTemplateRef<HTMLElement>("contentRoot");
 const fallbackScrollContainer = shallowRef<HTMLElement | null>(null);
-const resolvedScrollContainer = computed(
-  () => props.scrollContainer ?? fallbackScrollContainer.value,
-);
+const resolvedScrollContainer = computed(() => props.scrollContainer ?? fallbackScrollContainer.value);
 const tocItems = computed(() => props.article.toc);
 const { activeId, jumpToHeading, readProgress } = useArticleReading({
   contentRoot,
@@ -31,7 +29,7 @@ const { activeId, jumpToHeading, readProgress } = useArticleReading({
   tocItems,
 });
 const progressStyle = computed(() => ({
-  width: `${Math.round(Math.max(0, Math.min(100, readProgress.value)))}%`,
+  transform: `scaleX(${Math.max(0, Math.min(100, readProgress.value)) / 100})`,
 }));
 
 watch(
@@ -60,17 +58,8 @@ watch(
       <div class="article-view__column">
         <ArticleHero :article="props.article" :overlay="props.overlay" />
 
-        <div
-          v-if="tocItems.length > 0"
-          class="article-view__mobile-toc"
-          data-testid="article-toc-mobile"
-        >
-          <ArticleToc
-            :items="tocItems"
-            :active-id="activeId"
-            variant="mobile"
-            @jump="jumpToHeading"
-          />
+        <div v-if="tocItems.length > 0" class="article-view__mobile-toc" data-testid="article-toc-mobile">
+          <ArticleToc :items="tocItems" :active-id="activeId" variant="mobile" @jump="jumpToHeading" />
         </div>
 
         <div ref="contentRoot" class="article-view__content">
