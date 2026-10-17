@@ -137,6 +137,8 @@
   scroll-padding-top: 24px;
 }
 .docs-tree {
+  position: relative;
+  isolation: isolate;
   font-size: 16px;
   font-weight: 600;
 }
@@ -224,8 +226,7 @@
 }
 .docs-tree__articles a.is-active {
   color: var(--docs-accent);
-  background: var(--docs-soft);
-  box-shadow: inset 2px 0 var(--docs-accent);
+  background: transparent;
 }
 
 .docs-index-grid {
@@ -1249,61 +1250,48 @@
 .docs-topic-card:active {
   transform: translateY(0);
 }
-.docs-index-content,
-.docs-post .article-view {
-  animation: docs-arrive 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* GSAP owns document entry, accordion and drawer motion. */
+.docs-collapse {
+  display: flow-root;
 }
-@keyframes docs-arrive {
-  from {
-    opacity: 0;
-    translate: 0 8px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
+.docs-app[data-docs-motion="entering"] [data-docs-item],
+.docs-app[data-docs-motion="switching"] [data-docs-item] {
+  transition: none;
 }
-.docs-collapse-enter-active,
-.docs-collapse-leave-active {
-  transition:
-    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 180ms ease;
-  overflow: hidden;
+.docs-motion-pending:not(.docs-motion-brief) .docs-sidebar,
+.docs-motion-pending .docs-main {
+  visibility: hidden;
 }
-.docs-collapse-enter-from,
-.docs-collapse-leave-to {
+.docs-motion-pending .docs-status {
+  visibility: visible;
+}
+.docs-entry-light {
+  position: absolute;
+  z-index: 2;
+  left: 270px;
+  top: 80px;
+  bottom: 0;
+  width: 2px;
   opacity: 0;
+  transform-origin: center top;
+  background: linear-gradient(transparent, var(--docs-accent), transparent);
+  box-shadow: 0 0 24px 4px color-mix(in srgb, var(--docs-accent) 30%, transparent);
+  pointer-events: none;
 }
 .docs-drawer {
-  opacity: 0;
-  transform: translateX(-24px);
-  transition:
-    opacity 220ms ease,
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    display 220ms allow-discrete,
-    overlay 220ms allow-discrete;
-}
-.docs-drawer[open] {
-  opacity: 1;
-  transform: translateX(0);
+  --drawer-backdrop: 1;
 }
 .docs-drawer::backdrop {
-  opacity: 0;
-  transition:
-    opacity 220ms ease,
-    display 220ms allow-discrete,
-    overlay 220ms allow-discrete;
+  opacity: var(--drawer-backdrop);
 }
-.docs-drawer[open]::backdrop {
-  opacity: 1;
-}
-@starting-style {
-  .docs-drawer[open] {
-    opacity: 0;
-    transform: translateX(-24px);
+@media (max-width: 1279px) {
+  .docs-entry-light {
+    left: 246px;
   }
-  .docs-drawer[open]::backdrop {
-    opacity: 0;
+}
+@media (max-width: 959px) {
+  .docs-entry-light {
+    display: none;
   }
 }
 @media (max-width: 599px) {
@@ -1377,4 +1365,16 @@
   .docs-index-content {
     margin-inline: auto;
   }
+}
+
+.docs-tree__active-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-left: 2px solid var(--docs-accent);
+  border-radius: 5px;
+  background: var(--docs-soft);
 }

@@ -1,5 +1,11 @@
+<script lang="ts">
+const expandedState = new Set<string>();
+let previousMarker: { x: number; y: number; width: number; height: number } | undefined;
+</script>
 <script setup lang="ts">
-import { reactive, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, reactive, useTemplateRef, watch } from "vue";
+import gsap from "gsap";
+import { reducedDocsMotion } from "@/motion/docs-motion";
 import DocsCollapse from "./DocsCollapse.vue";
 import { useRoute } from "vue-router";
 import { findDocsPlacement, type DocsTopic } from "@/content/docs-navigation";
@@ -7,7 +13,53 @@ import { findDocsPlacement, type DocsTopic } from "@/content/docs-navigation";
 const props = defineProps<{ topics: DocsTopic[]; currentSlug?: string }>();
 const emit = defineEmits<{ navigate: [] }>();
 const route = useRoute();
-const expanded = reactive(new Set<string>());
+const expanded = reactive(expandedState);
+const tree = useTemplateRef<HTMLElement>("tree");
+const marker = useTemplateRef<HTMLElement>("marker");
+let resize: ResizeObserver | undefined;
+let markerMotion: gsap.core.Tween | undefined;
+function updateMarker() {
+  const active = tree.value?.querySelector<HTMLElement>("a[aria-current='page']");
+  if (!marker.value) return;
+  markerMotion?.kill();
+  if (!active || !active.getClientRects().length) {
+    gsap.set(marker.value, { opacity: 0 });
+    return;
+  }
+  const position = {
+    x: active.offsetLeft,
+    y: active.offsetTop,
+    width: active.offsetWidth,
+    height: active.offsetHeight,
+  };
+  if (!marker.value.style.height && previousMarker) gsap.set(marker.value, previousMarker);
+  markerMotion = gsap.to(marker.value, {
+    ...position,
+    opacity: 1,
+    duration: reducedDocsMotion() ? 0 : 0.24,
+    ease: "power3.out",
+  });
+  previousMarker = position;
+}
+watch(
+  () => [props.currentSlug, props.topics, [...expanded].join(",")],
+  async () => {
+    await nextTick();
+    updateMarker();
+  },
+  { flush: "post" },
+);
+onMounted(() => {
+  if (typeof ResizeObserver !== "undefined" && tree.value) {
+    resize = new ResizeObserver(updateMarker);
+    resize.observe(tree.value);
+  }
+  updateMarker();
+});
+onBeforeUnmount(() => {
+  resize?.disconnect();
+  markerMotion?.kill();
+});
 watch(
   () => [props.currentSlug, route.query.topic, route.query.series, props.topics] as const,
   () => {
@@ -25,7 +77,8 @@ function toggle(id: string) {
 </script>
 
 <template>
-  <nav class="docs-tree" aria-label="文档目录">
+  <nav ref="tree" class="docs-tree" aria-label="文档目录">
+    <span ref="marker" class="docs-tree__active-marker" aria-hidden="true" />
     <RouterLink class="docs-tree__home" to="/blog" @click="emit('navigate')">知识库总览 <span>↗</span></RouterLink>
     <p class="docs-eyebrow">按主题阅读</p>
     <section v-for="topic in topics" :key="topic.id" class="docs-tree__topic">

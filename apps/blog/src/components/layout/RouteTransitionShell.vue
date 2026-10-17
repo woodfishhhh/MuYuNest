@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, watch } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import gsap from "gsap";
 
+import { docsArrival, isDocsPath, reducedDocsMotion } from "@/motion/docs-motion";
 import SiteNav from "@/components/layout/SiteNav.vue";
 import { resolveSiteModeFromRoute } from "@/utils/site-mode";
 
@@ -21,6 +24,41 @@ const HOME_ROUTE_NAMES = new Set(["home", "author", "author-page", "author-page-
 const SCENE_ROUTE_NAMES = new Set([...HOME_ROUTE_NAMES, "blog", "post"]);
 
 const route = useRoute();
+const router = useRouter();
+let finishDeparture: (() => void) | undefined;
+const removeDepartureGuard = router?.beforeEach((to, from) => {
+  finishDeparture?.();
+  if (!isDocsPath(to.path) || isDocsPath(from.path) || !from.name || reducedDocsMotion()) return;
+  const stage = document.querySelector<HTMLElement>("[data-route-stage]");
+  if (!stage) return;
+  return new Promise<void>((resolve) => {
+    const context = gsap.context(() => {
+      gsap.to(stage, {
+        scale: 0.985,
+        opacity: 0.18,
+        duration: 0.16,
+        ease: "power2.in",
+        onComplete: () => finishDeparture?.(),
+      });
+    });
+    finishDeparture = () => {
+      context.revert();
+      finishDeparture = undefined;
+      resolve();
+    };
+  });
+});
+onBeforeUnmount(() => {
+  removeDepartureGuard?.();
+  finishDeparture?.();
+});
+watch(
+  () => route.path,
+  (_to, from) => {
+    docsArrival.fromPath = from;
+  },
+  { flush: "sync" },
+);
 const siteStore = useSiteStore();
 const activeNavPage = computed(() => (route.name === "post" ? "blog" : (resolveSiteModeFromRoute(route) ?? undefined)));
 const isHomeRoute = computed(() => typeof route.name === "string" && HOME_ROUTE_NAMES.has(route.name));
@@ -72,7 +110,7 @@ watch(
     previousSnapshot = nextSnapshot;
     initialized = true;
 
-    if (intent.type === "none") return;
+    if (intent.type === "none" || routeName === "blog" || routeName === "post") return;
     void playRouteTransition({ kind: intent.type, directEntry: intent.directEntry });
   },
   { flush: "post" },

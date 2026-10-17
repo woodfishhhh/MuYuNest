@@ -98,7 +98,13 @@ function trackReading(container: HTMLElement) {
 </script>
 
 <template>
-  <DocsLayout :topics="navigation" :current-slug="resolvedSlug" v-slot="{ scrollContainer }" @scroll="trackReading">
+  <DocsLayout
+    :ready="!isLoading"
+    :topics="navigation"
+    :current-slug="resolvedSlug"
+    v-slot="{ scrollContainer }"
+    @scroll="trackReading"
+  >
     <div data-post-page data-post-surface class="docs-post" @click="handleArticleLink">
       <nav class="docs-breadcrumb" aria-label="面包屑">
         <RouterLink :to="{ name: 'blog', query: backQuery }" data-testid="post-view-back-link">← 返回知识库</RouterLink>

@@ -1,14 +1,33 @@
 <script lang="ts">
 const scrollPositions = new Map<string, number>();
+let sidebarScroll = 0;
 </script>
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import gsap from "gsap";
+import { useDocsMotion } from "@/composables/useDocsMotion";
+import { reducedDocsMotion } from "@/motion/docs-motion";
 import DocsTree from "./DocsTree.vue";
 import type { DocsTopic } from "@/content/docs-navigation";
 import "@/assets/docs.css";
 
-defineProps<{ topics: DocsTopic[]; currentSlug?: string }>();
+const props = withDefaults(defineProps<{ topics: DocsTopic[]; currentSlug?: string; ready?: boolean }>(), {
+  ready: true,
+});
+const root = useTemplateRef<HTMLElement>("root");
+const sidebar = useTemplateRef<HTMLElement>("sidebar");
+const { brief } = useDocsMotion(root, () => props.ready);
+watch(
+  () => props.ready,
+  async (ready) => {
+    if (ready && brief) {
+      await nextTick();
+      if (sidebar.value) sidebar.value.scrollTo({ top: sidebarScroll, behavior: "instant" });
+    }
+  },
+  { flush: "post" },
+);
 const emit = defineEmits<{ scroll: [container: HTMLElement] }>();
 const route = useRoute();
 const router = useRouter();
@@ -34,8 +53,43 @@ function restoreScroll() {
   };
   restoreFrame = requestAnimationFrame(restore);
 }
-function closeDrawer() {
-  drawer.value?.close();
+let drawerMotion: gsap.core.Timeline | null = null;
+function openDrawer() {
+  const el = drawer.value;
+  if (!el) return;
+  drawerMotion?.kill();
+  const reopening = el.open;
+  if (!reopening) el.showModal();
+  if (reducedDocsMotion()) {
+    gsap.set([el, ...el.querySelectorAll(".docs-tree__topic")], { clearProps: "all" });
+    return;
+  }
+  if (!reopening) gsap.set(el, { xPercent: -100, opacity: 1, "--drawer-backdrop": 0 });
+  drawerMotion = gsap
+    .timeline()
+    .to(el, { xPercent: 0, "--drawer-backdrop": 1, duration: 0.48, ease: "back.out(0.35)" })
+    .fromTo(
+      el.querySelectorAll(".docs-tree__topic"),
+      { x: -18, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.3, stagger: 0.025, clearProps: "opacity,transform" },
+      0.1,
+    );
+}
+function closeDrawer(immediate = false) {
+  const el = drawer.value;
+  if (!el?.open) return;
+  drawerMotion?.kill();
+  const finish = () => {
+    el.close();
+    gsap.set([el, ...el.querySelectorAll(".docs-tree__topic")], { clearProps: "all" });
+  };
+  if (immediate || reducedDocsMotion()) {
+    finish();
+    return;
+  }
+  drawerMotion = gsap
+    .timeline({ onComplete: finish })
+    .to(el, { xPercent: -100, "--drawer-backdrop": 0, duration: 0.24, ease: "power3.in" });
 }
 function submitSearch() {
   void router.push({ path: "/blog", query: search.value.trim() ? { q: search.value.trim() } : {} });
@@ -44,7 +98,7 @@ watch(
   () => route.fullPath,
   async () => {
     cancelAnimationFrame(restoreFrame);
-    closeDrawer();
+    closeDrawer(true);
     search.value = String(route.query.q ?? "");
     initialKey = route.fullPath;
     await nextTick();
@@ -54,21 +108,26 @@ watch(
 onMounted(() => {
   if (!route.hash) restoreScroll();
 });
-onBeforeUnmount(() => cancelAnimationFrame(restoreFrame));
+onBeforeUnmount(() => {
+  cancelAnimationFrame(restoreFrame);
+  drawerMotion?.kill();
+  drawer.value?.close();
+});
 </script>
 
 <template>
-  <div class="docs-app">
+  <div ref="root" class="docs-app docs-motion-pending" :class="{ 'docs-motion-brief': brief }">
+    <div class="docs-entry-light" aria-hidden="true" />
     <a class="docs-skip" href="#docs-main">跳到正文</a>
     <div class="docs-mobile-bar">
-      <button ref="menuButton" type="button" aria-haspopup="dialog" @click="drawer?.showModal()">☰ 文档目录</button>
+      <button ref="menuButton" type="button" aria-haspopup="dialog" @click="openDrawer">☰ 文档目录</button>
       <form class="docs-library-search" role="search" @submit.prevent="submitSearch">
         <input v-model="search" aria-label="搜索知识库" placeholder="搜索文章…" type="search" />
         <button type="submit" aria-label="提交搜索">↵</button>
       </form>
     </div>
     <div class="docs-workspace">
-      <aside class="docs-sidebar">
+      <aside ref="sidebar" class="docs-sidebar" @scroll.passive="sidebarScroll = sidebar?.scrollTop ?? 0">
         <form class="docs-library-search" role="search" @submit.prevent="submitSearch">
           <input v-model="search" aria-label="搜索知识库" placeholder="搜索文章…" type="search" />
           <button type="submit" aria-label="提交搜索">↵</button>
@@ -84,12 +143,13 @@ onBeforeUnmount(() => cancelAnimationFrame(restoreFrame));
       class="docs-drawer"
       aria-label="文档目录"
       @close="menuButton?.focus()"
+      @cancel.prevent="closeDrawer()"
       @click="$event.target === drawer && closeDrawer()"
     >
       <div class="docs-drawer-head">
-        <strong>文档目录</strong><button type="button" aria-label="关闭文档目录" @click="closeDrawer">✕</button>
+        <strong>文档目录</strong><button type="button" aria-label="关闭文档目录" @click="closeDrawer()">✕</button>
       </div>
-      <DocsTree :topics="topics" :current-slug="currentSlug" @navigate="closeDrawer" />
+      <DocsTree :topics="topics" :current-slug="currentSlug" @navigate="closeDrawer()" />
     </dialog>
   </div>
 </template>

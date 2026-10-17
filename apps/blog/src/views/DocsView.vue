@@ -68,7 +68,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <DocsLayout :topics="navigation" v-slot="{ scrollContainer }">
+  <DocsLayout :ready="!loading" :topics="navigation" v-slot="{ scrollContainer }">
     <div v-if="loading" class="docs-status" role="status">正在载入知识库…</div>
     <div v-else-if="error" class="docs-status" role="alert">
       <h1>知识库暂时无法加载</h1>
@@ -154,6 +154,8 @@ onMounted(() => {
             :key="post.canonicalSlug"
             :to="postTarget(post)"
             class="docs-article-row"
+            :data-flip-id="post.canonicalSlug"
+            data-docs-item
             ><span class="docs-row-number">{{ String(index + 1).padStart(2, "0") }}</span>
             <div>
               <small>{{ label(post) }}</small>
@@ -177,6 +179,8 @@ onMounted(() => {
               :key="post.canonicalSlug"
               :to="postTarget(post)"
               class="docs-chapter-link"
+              :data-flip-id="post.canonicalSlug"
+              data-docs-item
               ><span>{{ String(index + 1).padStart(2, "0") }}</span
               >{{ post.title }}<small>{{ post.readingMinutes }} 分钟</small></RouterLink
             >
@@ -189,6 +193,8 @@ onMounted(() => {
               :key="item.id"
               :to="{ path: '/blog', query: { topic: item.id } }"
               class="docs-topic-card"
+              :data-flip-id="item.id"
+              data-docs-item
               ><span class="docs-topic-card__number">{{ String(index + 1).padStart(2, "0") }} <span>↗</span></span>
               <h2>{{ item.title }}</h2>
               <p>{{ item.description }}</p>
@@ -203,6 +209,8 @@ onMounted(() => {
             <div class="docs-series-list">
               <RouterLink
                 v-for="series in item.groups"
+                :data-flip-id="series.id"
+                data-docs-item
                 :key="series.id"
                 :to="{ path: '/blog', query: { topic: item.id, series: series.id } }"
                 ><span>{{ series.title }}</span

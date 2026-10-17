@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { shallowRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, shallowRef, useTemplateRef, watch } from "vue";
+import gsap from "gsap";
+import { Flip } from "gsap/Flip";
 
 import ThemeToggle from "@/components/layout/ThemeToggle.vue";
 import { useTheme } from "@/composables/useTheme";
@@ -12,6 +14,30 @@ const props = defineProps<{ activePage?: string; documentation?: boolean }>();
 const siteStore = useSiteStore();
 const { theme, toggleThemeAt } = useTheme();
 const isOpen = shallowRef(false);
+const navRoot = useTemplateRef<HTMLElement>("navRoot");
+gsap.registerPlugin(Flip);
+let indicatorMotion: gsap.core.Timeline | null = null;
+let indicatorVersion = 0;
+watch(
+  () => props.activePage ?? siteStore.mode,
+  async () => {
+    const version = ++indicatorVersion;
+    indicatorMotion?.progress(1).kill();
+    const old = navRoot.value?.querySelector<HTMLElement>("[data-testid='nav-active-indicator']");
+    if (!old || !old.getBoundingClientRect().width || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      return;
+    const state = Flip.getState(old);
+    await nextTick();
+    if (version !== indicatorVersion) return;
+    const next = navRoot.value?.querySelector<HTMLElement>("[data-testid='nav-active-indicator']");
+    if (next) indicatorMotion = Flip.from(state, { targets: next, duration: 0.4, ease: "power3.out", scale: true });
+  },
+  { flush: "pre" },
+);
+onBeforeUnmount(() => {
+  indicatorVersion++;
+  indicatorMotion?.kill();
+});
 
 const navItems = [
   { id: "home", label: "Home", to: getRouteLocationForSiteMode("home") },
@@ -44,6 +70,7 @@ watch(
 
 <template>
   <nav
+    ref="navRoot"
     aria-label="站点导航"
     data-testid="site-nav"
     :class="{ 'site-nav--docs': props.documentation }"
@@ -88,6 +115,7 @@ watch(
           <span
             v-if="isActive(item.id)"
             data-testid="nav-active-indicator"
+            data-flip-id="site-navigation-indicator"
             class="absolute -bottom-2 left-0 h-px w-full bg-[var(--accent)]"
           />
         </RouterLink>
