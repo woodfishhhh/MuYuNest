@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef } from "vue";
+import { computed, shallowRef, watch } from "vue";
 
 import type { FriendLinkData } from "@/types/content";
 
@@ -16,6 +16,13 @@ const props = withDefaults(
 );
 
 const avatarBroken = shallowRef(false);
+const avatarInitials = computed(() => Array.from(props.link.name.trim()).slice(0, 2).join("").toUpperCase());
+watch(
+  () => props.link.avatar,
+  () => {
+    avatarBroken.value = false;
+  },
+);
 const tilt = shallowRef(createTiltState());
 
 const domain = computed(() => {
@@ -130,12 +137,18 @@ function resetTilt() {
           :src="props.link.avatar"
           class="friend-link-card__avatar h-16 w-16 shrink-0 rounded-[8px] border border-[var(--border-subtle)] object-cover shadow-[0_10px_28px_rgba(34,24,12,0.2)]"
           loading="lazy"
+          referrerpolicy="no-referrer"
           @error="avatarBroken = true"
         />
         <div
           v-else
-          class="friend-link-card__avatar h-16 w-16 shrink-0 rounded-[8px] border border-[var(--border-subtle)] bg-[var(--surface-soft)]"
-        />
+          data-testid="friend-avatar-fallback"
+          role="img"
+          :aria-label="`${props.link.name}的默认头像`"
+          class="friend-link-card__avatar friend-link-card__avatar--fallback h-16 w-16 shrink-0 rounded-[8px] border border-[var(--border-subtle)]"
+        >
+          {{ avatarInitials }}
+        </div>
 
         <div class="min-w-0 flex-1">
           <h3 class="friend-link-card__title text-xl font-semibold text-[var(--stage-fg)]">
@@ -168,14 +181,12 @@ function resetTilt() {
   overflow: hidden;
   border: 1px solid rgba(76, 61, 43, 0.16);
   border-radius: 8px;
-  background:
-    linear-gradient(135deg, rgba(255, 253, 246, 0.85), rgba(250, 245, 232, 0.72)),
-    var(--surface-soft);
+  background: linear-gradient(135deg, rgba(255, 253, 246, 0.85), rgba(250, 245, 232, 0.72)), var(--surface-soft);
   color: var(--stage-fg);
   --card-shadow-color: rgba(37, 28, 16, 0.16);
   box-shadow: 0 var(--card-shadow-y) var(--card-shadow-blur) var(--card-shadow-color);
-  transform: perspective(920px) translateY(var(--card-lift)) rotateX(var(--tilt-rotate-x))
-    rotateY(var(--tilt-rotate-y)) rotateZ(var(--card-rotate));
+  transform: perspective(920px) translateY(var(--card-lift)) rotateX(var(--tilt-rotate-x)) rotateY(var(--tilt-rotate-y))
+    rotateZ(var(--card-rotate));
   transform-style: preserve-3d;
   transition:
     transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -190,13 +201,12 @@ function resetTilt() {
   inset: 0;
   z-index: 1;
   border-radius: inherit;
-  background:
-    radial-gradient(
-      circle at var(--tilt-glare-x) var(--tilt-glare-y),
-      rgba(255, 255, 255, 0.58),
-      rgba(255, 255, 255, 0.16) 28%,
-      transparent 58%
-    );
+  background: radial-gradient(
+    circle at var(--tilt-glare-x) var(--tilt-glare-y),
+    rgba(255, 255, 255, 0.58),
+    rgba(255, 255, 255, 0.16) 28%,
+    transparent 58%
+  );
   content: "";
   opacity: var(--tilt-glare-opacity);
   pointer-events: none;
@@ -254,6 +264,15 @@ function resetTilt() {
 .friend-link-card__avatar {
   transform: translateZ(18px);
 }
+.friend-link-card__avatar--fallback {
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-soft));
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+}
 
 .friend-link-card__description,
 .friend-link-card__title,
@@ -281,8 +300,7 @@ function resetTilt() {
 :root[data-theme="night"] .friend-link-card {
   border-color: var(--border-subtle);
   --card-shadow-color: rgba(0, 0, 0, 0.28);
-  background:
-    linear-gradient(135deg, rgba(22, 28, 48, 0.72), rgba(12, 16, 32, 0.58)), var(--surface-soft);
+  background: linear-gradient(135deg, rgba(22, 28, 48, 0.72), rgba(12, 16, 32, 0.58)), var(--surface-soft);
 }
 
 :root[data-theme="night"] .friend-link-card:hover {
@@ -300,13 +318,12 @@ function resetTilt() {
 }
 
 :root[data-theme="night"] .friend-link-card::before {
-  background:
-    radial-gradient(
-      circle at var(--tilt-glare-x) var(--tilt-glare-y),
-      rgba(138, 178, 255, 0.34),
-      rgba(255, 255, 255, 0.1) 30%,
-      transparent 60%
-    );
+  background: radial-gradient(
+    circle at var(--tilt-glare-x) var(--tilt-glare-y),
+    rgba(138, 178, 255, 0.34),
+    rgba(255, 255, 255, 0.1) 30%,
+    transparent 60%
+  );
 }
 
 :root[data-theme="night"] .friend-link-card__pin {

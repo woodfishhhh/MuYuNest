@@ -342,7 +342,13 @@ export async function resolveAssetReference(
   }
 
   if (!options.canonicalSlug) {
-    return null;
+    // Site metadata (for example friend avatars) has no article slug.
+    return copyAbsoluteAsset(
+      resolvedPath,
+      options.publicDir,
+      options.siteBasePath,
+      options.reuseGeneratedAssets,
+    );
   }
 
   return copyRelativeAsset(

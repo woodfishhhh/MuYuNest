@@ -24,3 +24,12 @@
 - 16 项浏览器回归通过，包含新增 1280 / 1651 / 1920px 的逐节点横向溢出检查；最后滚动条样式调整后重跑 3 项通过。
 - pnpm typecheck、pnpm build、git diff --check 通过。最终截图：.tmp/rails-day.png、.tmp/rails-1651.png。
 - 参考源码：https://github.com/vuejs/theme/blob/main/src/vitepress/components/VPContentDoc.vue
+
+## 友链头像与字体（2026-10-17）
+
+- D-blog 的旧 logo.png 返回 HTML；计算机协会旧会徽地址返回 404。已从对应站点确认当前图片，保存到内容源 _data/avatars，并通过生成器复制为本站资源。来源见该目录 SOURCES.md。
+- 修复没有文章 slug 的站点元数据无法生成相对图片路径的问题；新增回归测试。
+- 失效头像显示站点名称缩写；图片地址更新后可重试。maskviva 当前无法连接，实际页面显示 MA 默认头像，未声称原图已恢复。
+- 全站字体顺序改为 Consolas、YouYuan（幼圆），英文和中文分别使用对应字体；代码保持等宽，数学公式保持原有 SVG 字形。使用本地系统字体，未安装时使用备用字体。
+- 已确认本机两种字体安装，浏览器核对友链实际效果。16 项友链单测、2 项内容工具测试、11 项浏览器回归通过；博客和内容工具 typecheck/build 通过；重新生成 246 篇内容，无手改生成文件。
+- 预览：http://127.0.0.1:3108/friend；截图 .tmp/friends-fonts-fixed.png。未部署线上。

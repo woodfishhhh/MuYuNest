@@ -33,7 +33,7 @@ links:
         descr: 江西财经大学网络安全协会
       - name: 江西财经大学计算机协会
         link: https://www.jxufe-cs.top/
-        avatar: https://www.jxufe-cs.top/img/%E4%BC%9A%E5%BE%BD.png
+        avatar: avatars/jxufe-cs.png
         descr: 成立于1996年的江财学术社团
       - name: 江财OFFER
         link: https://jufe.woodfish.site/
@@ -86,5 +86,5 @@ links:
         descr: "Galgame报错解决百科"
       - name: "D-blog"
         link: "https://blog.pldduck.com"
-        avatar: "https://blog.pldduck.com/logo.png"
+        avatar: "avatars/dblog.jpg"
         descr: "跑路的duck的技术分享和生活随笔"

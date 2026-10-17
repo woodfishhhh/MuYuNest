@@ -3,8 +3,8 @@
 
 @theme {
   --font-sans:
-    "Avenir Next", "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "IBM Plex Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    Consolas, "YouYuan", "幼圆", "Microsoft YaHei", monospace;
+  --font-mono: Consolas, "YouYuan", "幼圆", monospace;
 }
 
 :root {
