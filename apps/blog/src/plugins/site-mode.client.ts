@@ -23,8 +23,8 @@ export default defineNuxtPlugin(() => {
   // Sync on first load
   syncSiteMode();
 
-  // Sync on every navigation
-  router.afterEach(() => {
-    syncSiteMode();
+  // An aborted or duplicate navigation must preserve the current panel's state.
+  router.afterEach((_to, _from, failure) => {
+    if (!failure) syncSiteMode();
   });
 });

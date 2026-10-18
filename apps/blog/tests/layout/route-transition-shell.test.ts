@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RouteTransitionShell from "@/components/layout/RouteTransitionShell.vue";
 
+const navigation = vi.hoisted(() => ({
+  guard: null as null | ((to: { name: string; path: string }, from: { name: string; path: string }) => unknown),
+}));
+
 const routeState = reactive({
   name: "post",
   query: {},
@@ -19,7 +23,13 @@ const routeState = reactive({
 vi.mock("vue-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("vue-router")>()),
   useRoute: () => routeState,
-  useRouter: () => ({ beforeEach: () => () => {}, push: vi.fn() }),
+  useRouter: () => ({
+    beforeEach: (guard: typeof navigation.guard) => {
+      navigation.guard = guard;
+      return () => {};
+    },
+    push: vi.fn(),
+  }),
 }));
 
 vi.mock("@/composables/useRouteTransitionOrchestrator", () => ({
@@ -62,9 +72,24 @@ const NuxtPageStub = defineComponent({
 
 describe("RouteTransitionShell", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     routeState.name = "post";
     routeState.fullPath = "/posts/orbiting-interfaces";
     setActivePinia(createPinia());
+  });
+
+  it("does not delay Blog navigation for the scene animation", async () => {
+    routeState.name = "home";
+    routeState.fullPath = "/";
+    const wrapper = mount(RouteTransitionShell, { global: { stubs: { NuxtPage: NuxtPageStub } } });
+    await flushPromises();
+    expect(navigation.guard!({ name: "blog", path: "/blog" }, { name: "home", path: "/" })).toBeUndefined();
+    routeState.name = "blog";
+    routeState.fullPath = "/blog";
+    await flushPromises();
+    expect(wrapper.find(".docs-app").exists()).toBe(true);
+    expect(wrapper.find("[data-scene-layer]").exists()).toBe(true);
+    wrapper.unmount();
   });
 
   it("keeps the Three.js scene mounted behind article routes", async () => {

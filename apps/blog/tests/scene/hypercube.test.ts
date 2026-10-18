@@ -8,6 +8,24 @@ import {
 } from "@/composables/useHypercube";
 
 describe("useHypercube", () => {
+  it("reuses the GPU position buffer and stops uploads while docked", () => {
+    const texture = new THREE.CanvasTexture(document.createElement("canvas"));
+    const cube = useHypercube(texture);
+    const position = cube.line.geometry.getAttribute("position") as THREE.BufferAttribute;
+    expect(cube.occluder.geometry.getAttribute("position")).toBe(position);
+    cube.update(1);
+    cube.setDockProgress(1);
+    cube.update(1);
+    const dockedVersion = position.version;
+    cube.update(1);
+    expect(position.version).toBe(dockedVersion);
+    cube.setDockProgress(0);
+    cube.update(0);
+    expect(position.version).toBe(dockedVersion + 1);
+    cube.dispose();
+    texture.dispose();
+  });
+
   it("shrinks docked vertex sprites and restores their original size", () => {
     const texture = new THREE.CanvasTexture(document.createElement("canvas"));
     const cube = useHypercube(texture);

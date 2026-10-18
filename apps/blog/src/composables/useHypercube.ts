@@ -104,28 +104,12 @@ function createDepthOnlyMaterial() {
   });
 }
 
-function projectVertex(vertex: number[], alphaRot: number, betaRot: number) {
-  const [x, y, z, w] = vertex;
-  const cosA = Math.cos(alphaRot);
-  const sinA = Math.sin(alphaRot);
-  const cosB = Math.cos(betaRot);
-  const sinB = Math.sin(betaRot);
-  const x1 = x * cosA - w * sinA;
-  const w1 = x * sinA + w * cosA;
-  const z1 = z * cosB - w1 * sinB;
-  const w2 = z * sinB + w1 * cosB;
-  const distance = 2.5;
-  const wZ = 1 / (distance - w2);
-
-  return {
-    x: x1 * wZ * 4,
-    y: y * wZ * 4,
-    z: z1 * wZ * 4,
-  };
-}
-
 export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   const { vertices, edges } = generateHypercubeData();
+  const basePositions = vertices.flatMap(([x, y, z, w]) => {
+    const scale = 4 / (2.5 - w);
+    return [x * scale, y * scale, z * scale];
+  });
   const group = new THREE.Group();
 
   const hitGeom = new THREE.SphereGeometry(3.1, 16, 16);
@@ -134,11 +118,13 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   group.add(hitMesh);
 
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+  const positions = new Float32Array(basePositions);
+  const positionAttribute = new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage);
+  geometry.setAttribute("position", positionAttribute);
   geometry.setIndex(edges);
 
   const occluderGeometry = new THREE.BufferGeometry();
-  occluderGeometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array(16 * 3), 3));
+  occluderGeometry.setAttribute("position", positionAttribute);
   occluderGeometry.setIndex(generateHypercubeSurfaceIndices(vertices));
 
   const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
@@ -170,36 +156,42 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   let jitterTime = 0;
   let interactionIntensity = 0;
   let dockProgress = 0;
+  let projectionDirty = false;
 
   function update(delta: number) {
-    const intensity = THREE.MathUtils.clamp(interactionIntensity, 0, 1);
+    const intensity = interactionIntensity;
     const motion = (1 - intensity) * (1 - dockProgress);
     jitterTime += delta;
     alphaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.alpha * motion;
     betaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.beta * motion;
-    const positions = geometry.attributes.position.array as Float32Array;
-    const occluderPositions = occluderGeometry.attributes.position.array as Float32Array;
+    if (!projectionDirty && (delta === 0 || dockProgress === 1)) return;
+    projectionDirty = false;
+    const cosA = Math.cos(alphaRot);
+    const sinA = Math.sin(alphaRot);
+    const cosB = Math.cos(betaRot);
+    const sinB = Math.sin(betaRot);
 
     for (let i = 0; i < 16; i++) {
-      const dynamic = projectVertex(vertices[i], alphaRot, betaRot);
-      const base = projectVertex(vertices[i], 0, 0);
+      const [x, y, z, w] = vertices[i];
+      const x1 = x * cosA - w * sinA;
+      const w1 = x * sinA + w * cosA;
+      const z1 = z * cosB - w1 * sinB;
+      const w2 = z * sinB + w1 * cosB;
+      const scale = 4 / (2.5 - w2);
+      const offset = i * 3;
       const jitter = Math.sin(jitterTime * 8 + i * 1.7) * 0.024 * intensity;
 
-      positions[i * 3] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(dynamic.x, base.x + jitter, intensity), base.x, dockProgress,
+      positions[offset] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(x1 * scale, basePositions[offset] + jitter, intensity), basePositions[offset], dockProgress,
       );
-      positions[i * 3 + 1] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(dynamic.y, base.y - jitter, intensity), base.y, dockProgress,
+      positions[offset + 1] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(y * scale, basePositions[offset + 1] - jitter, intensity), basePositions[offset + 1], dockProgress,
       );
-      positions[i * 3 + 2] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(dynamic.z, base.z + jitter, intensity), base.z, dockProgress,
+      positions[offset + 2] = THREE.MathUtils.lerp(
+        THREE.MathUtils.lerp(z1 * scale, basePositions[offset + 2] + jitter, intensity), basePositions[offset + 2], dockProgress,
       );
-      occluderPositions[i * 3] = positions[i * 3];
-      occluderPositions[i * 3 + 1] = positions[i * 3 + 1];
-      occluderPositions[i * 3 + 2] = positions[i * 3 + 2];
     }
-    geometry.attributes.position.needsUpdate = true;
-    occluderGeometry.attributes.position.needsUpdate = true;
+    positionAttribute.needsUpdate = true;
   }
 
   function lerpColor(target: THREE.Color, factor: number) {
@@ -215,11 +207,15 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   }
 
   function setInteractionIntensity(value: number) {
-    interactionIntensity = THREE.MathUtils.clamp(value, 0, 1);
+    const next = THREE.MathUtils.clamp(value, 0, 1);
+    projectionDirty ||= next !== interactionIntensity;
+    interactionIntensity = next;
   }
 
   function setDockProgress(progress: number) {
-    dockProgress = THREE.MathUtils.clamp(progress, 0, 1);
+    const next = THREE.MathUtils.clamp(progress, 0, 1);
+    projectionDirty ||= next !== dockProgress;
+    dockProgress = next;
   }
 
   function setPointScale(scale: number) {

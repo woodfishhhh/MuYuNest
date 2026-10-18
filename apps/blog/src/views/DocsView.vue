@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
 import { useRoute } from "vue-router";
 import { useDocsPage } from "@/composables/useDocsPage";
 import { buildDocsNavigation, findDocsPlacement } from "@/content/docs-navigation";
@@ -9,7 +9,7 @@ import { useBlogQueryState } from "@/composables/useBlogQueryState";
 import type { PostSummary } from "@/types/content";
 
 const route = useRoute();
-const posts = ref<PostSummary[]>([]);
+const posts = shallowRef<PostSummary[]>([]);
 const loading = ref(true);
 const error = ref(false);
 const navigation = computed(() => buildDocsNavigation(posts.value));
@@ -22,7 +22,8 @@ const facets = computed(() => buildBlogFacets(posts.value));
 const scopePosts = computed(
   () => group.value?.posts ?? topic.value?.groups.flatMap((item) => item.posts) ?? posts.value,
 );
-const results = computed(() => sortBlogPosts(filterBlogPosts(scopePosts.value, filters.value), sortKey.value));
+const orderedPosts = computed(() => sortBlogPosts(scopePosts.value, sortKey.value));
+const results = computed(() => filterBlogPosts(orderedPosts.value, filters.value));
 const title = computed(() => group.value?.title ?? topic.value?.title ?? "知识库");
 const overviewSections = computed(() =>
   topic.value

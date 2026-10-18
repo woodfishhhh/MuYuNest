@@ -1,96 +1,64 @@
 import type { PostArticle, PostSummary } from "@/types/content";
 import { getBaseUrl } from "@/utils/base-url";
 import { normalizeContentPayload } from "./content-url-normalizer";
-import { resolvePostSlugFromIndex } from "./post-helpers";
 import { visiblePostSummaries } from "./post-visibility";
 
-const postModules = import.meta.glob<{ default: PostArticle }>("../generated/posts/*.json");
 const articlePromiseCache = new Map<string, Promise<PostArticle>>();
 let postIndexPromise: Promise<PostSummary[]> | null = null;
+let visibleIndexPromise: Promise<PostSummary[]> | null = null;
+let slugIndexPromise: Promise<Map<string, string>> | null = null;
 
-function toPostSummary(article: PostArticle): PostSummary {
-  const { html: _html, toc: _toc, ...summary } = article;
-  return summary;
+async function fetchContent<T>(path: string): Promise<T> {
+  const response = await fetch(`${getBaseUrl()}${path}`, { credentials: "same-origin" });
+  if (!response.ok) throw new Error(`Failed to load ${path}: ${response.status}`);
+  return normalizeContentPayload((await response.json()) as T);
 }
 
-async function loadPostIndexFromPublicFile() {
-  const indexUrl = `${getBaseUrl()}post-index.json`;
-  const response = await fetch(indexUrl, { credentials: "same-origin" });
-  if (!response.ok) {
-    throw new Error(`Failed to load post index: ${response.status}`);
-  }
-
-  const contentType = response.headers.get("content-type") ?? "";
-  if (contentType && !contentType.includes("application/json")) {
-    throw new Error(`Failed to load post index: expected JSON, got ${contentType}`);
-  }
-
-  return normalizeContentPayload((await response.json()) as PostSummary[]).filter(
-    (post) => !!postModules[`../generated/posts/${post.canonicalSlug}.json`],
-  );
-}
-
-async function loadPostIndexFromGeneratedPosts() {
-  const posts = await Promise.all(
-    Object.values(postModules).map(async (loadPost) => {
-      const module = await loadPost();
-      return toPostSummary(normalizeContentPayload(module.default));
-    }),
-  );
-
-  return posts.sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
-}
-
-async function loadPostIndex() {
-  if (!postIndexPromise) {
-    postIndexPromise = loadPostIndexFromPublicFile()
-      .catch(() => loadPostIndexFromGeneratedPosts())
-      .catch((error) => {
-        postIndexPromise = null;
-        throw error;
-      });
-  }
-
+function loadPostIndex(): Promise<PostSummary[]> {
+  postIndexPromise ??= fetchContent<PostSummary[]>("post-index.json").catch((error) => {
+    postIndexPromise = null;
+    throw error;
+  });
   return postIndexPromise;
 }
 
-export async function getPostSummaries() {
-  return visiblePostSummaries(await loadPostIndex());
+export function getPostSummaries(): Promise<PostSummary[]> {
+  visibleIndexPromise ??= loadPostIndex().then(visiblePostSummaries).catch((error) => {
+    visibleIndexPromise = null;
+    throw error;
+  });
+  return visibleIndexPromise;
 }
 
-export function warmPostSummaries() {
-  void loadPostIndex();
-}
-
-export async function resolvePostSlug(slug: string) {
-  const postIndex = await loadPostIndex();
-  return resolvePostSlugFromIndex(postIndex, decodeURIComponent(slug));
+export async function resolvePostSlug(slug: string): Promise<string | null> {
+  slugIndexPromise ??= loadPostIndex().then((posts) => {
+    const index = new Map<string, string>();
+    for (const post of posts) {
+      for (const alias of post.aliases) {
+        if (!index.has(alias)) index.set(alias, post.canonicalSlug);
+      }
+    }
+    for (const post of posts) index.set(post.canonicalSlug, post.canonicalSlug);
+    return index;
+  }).catch((error) => {
+    slugIndexPromise = null;
+    throw error;
+  });
+  return (await slugIndexPromise).get(decodeURIComponent(slug).trim()) ?? null;
 }
 
 export async function loadPostArticle(slug: string): Promise<PostArticle | null> {
   const canonicalSlug = await resolvePostSlug(slug);
+  if (!canonicalSlug) return null;
 
-  if (!canonicalSlug) {
-    return null;
+  let article = articlePromiseCache.get(canonicalSlug);
+  if (!article) {
+    article = fetchContent<PostArticle>(`articles/${encodeURIComponent(canonicalSlug)}.json`)
+      .catch((error) => {
+        articlePromiseCache.delete(canonicalSlug);
+        throw error;
+      });
+    articlePromiseCache.set(canonicalSlug, article);
   }
-
-  const loader = postModules[`../generated/posts/${canonicalSlug}.json`];
-  if (!loader) {
-    return null;
-  }
-
-  const cachedPromise = articlePromiseCache.get(canonicalSlug);
-  if (cachedPromise) {
-    return cachedPromise;
-  }
-
-  const nextPromise = loader()
-    .then((module) => normalizeContentPayload(module.default))
-    .catch((error) => {
-      articlePromiseCache.delete(canonicalSlug);
-      throw error;
-    });
-
-  articlePromiseCache.set(canonicalSlug, nextPromise);
-  return nextPromise;
+  return article;
 }

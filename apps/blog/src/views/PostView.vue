@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useDocsPage } from "@/composables/useDocsPage";
 import ArticleContent from "@/components/article/ArticleContent.vue";
@@ -12,8 +12,8 @@ import type { PostArticle, PostSummary } from "@/types/content";
 
 const route = useRoute();
 const router = useRouter();
-const article = ref<PostArticle | null>(null);
-const posts = ref<PostSummary[]>([]);
+const article = shallowRef<PostArticle | null>(null);
+const posts = shallowRef<PostSummary[]>([]);
 const isLoading = ref(true);
 const error = ref(false);
 const resolvedSlug = ref("");

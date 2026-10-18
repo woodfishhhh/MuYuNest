@@ -29,7 +29,7 @@ const currentMode = computed(() => siteStore.mode);
 type CachedPanelMode = Exclude<SiteMode, "home" | "reading">;
 const cachedPanelModes = reactive(new Set<CachedPanelMode>());
 const blogScrollContainerRef = useTemplateRef<HTMLElement>("blogScrollContainer");
-const { posts, author, friendLinks, works, isPostsLoading, isAuthorLoading, isFriendLinksLoading } =
+const { posts, author, friendLinks, works, isPostsLoading, postsLoadFailed, retryPosts, isAuthorLoading, isFriendLinksLoading } =
   useHomePanels(currentMode);
 
 const homeHint = computed(() => siteStore.mode === "home" && !siteStore.isFocusing);
@@ -250,15 +250,18 @@ onBeforeUnmount(() => {
               class="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-6 py-7 text-[var(--stage-hint)]"
             >
               <div class="text-[11px] uppercase tracking-[0.36em] text-[var(--stage-hint)]">
-                {{ isPostsLoading ? "Loading archive" : "Archive standby" }}
+                {{ postsLoadFailed ? "Archive unavailable" : "Loading archive" }}
               </div>
               <p class="mt-4 w-full text-xs sm:text-sm max-w-md leading-7 text-[var(--stage-hint)]">
                 {{
-                  isPostsLoading
-                    ? "正在按需装载文章目录，马上就能进入阅读。"
-                    : "文章目录会在你进入 Blog 面板时即时载入。"
+                  postsLoadFailed
+                    ? "文章目录加载失败，请重试。"
+                    : "正在装载文章目录，马上就能进入阅读。"
                 }}
               </p>
+              <button v-if="postsLoadFailed" type="button" class="mt-4 text-[var(--accent)]" @click="retryPosts">
+                重新加载
+              </button>
             </div>
           </div>
         </div>

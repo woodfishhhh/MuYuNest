@@ -1,8 +1,8 @@
-import { onBeforeUnmount, onMounted, shallowRef, watch, type Ref } from "vue";
+import { shallowRef, watch, type Ref } from "vue";
 
 import { loadAuthorProfile } from "@/content/author";
 import { loadFriendLinks } from "@/content/friends";
-import { getPostSummaries, warmPostSummaries } from "@/content/posts";
+import { getPostSummaries } from "@/content/posts";
 import { getWorkProjects } from "@/content/works";
 import type {
   AuthorProfileData,
@@ -12,18 +12,15 @@ import type {
 } from "@/types/content";
 import type { SiteMode } from "@/stores/site";
 
-const BLOG_WARMUP_DELAY_MS = 1200;
-
 export function useHomePanels(mode: Ref<SiteMode>) {
   const posts = shallowRef<PostSummary[]>([]);
   const author = shallowRef<AuthorProfileData | null>(null);
   const friendLinks = shallowRef<FriendLinkData[]>([]);
   const works = shallowRef<WorkProjectData[]>(getWorkProjects());
   const isPostsLoading = shallowRef(false);
+  const postsLoadFailed = shallowRef(false);
   const isAuthorLoading = shallowRef(false);
   const isFriendLinksLoading = shallowRef(false);
-
-  let warmupTimer: number | null = null;
 
   async function ensurePostsLoaded() {
     if (posts.value.length > 0 || isPostsLoading.value) {
@@ -31,8 +28,11 @@ export function useHomePanels(mode: Ref<SiteMode>) {
     }
 
     isPostsLoading.value = true;
+    postsLoadFailed.value = false;
     try {
       posts.value = await getPostSummaries();
+    } catch {
+      postsLoadFailed.value = true;
     } finally {
       isPostsLoading.value = false;
     }
@@ -82,26 +82,14 @@ export function useHomePanels(mode: Ref<SiteMode>) {
     { immediate: true },
   );
 
-  onMounted(() => {
-    warmupTimer = window.setTimeout(() => {
-      if (mode.value === "home" || mode.value === "blog") {
-        warmPostSummaries();
-      }
-    }, BLOG_WARMUP_DELAY_MS);
-  });
-
-  onBeforeUnmount(() => {
-    if (warmupTimer !== null) {
-      window.clearTimeout(warmupTimer);
-    }
-  });
-
   return {
     posts,
     author,
     friendLinks,
     works,
     isPostsLoading,
+    postsLoadFailed,
+    retryPosts: ensurePostsLoaded,
     isAuthorLoading,
     isFriendLinksLoading,
   };

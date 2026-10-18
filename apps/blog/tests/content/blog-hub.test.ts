@@ -35,6 +35,14 @@ const posts: PostSummary[] = [
 ];
 
 describe("blog-hub", () => {
+  it("uses fresh search data when a generated summary is replaced", () => {
+    const before = { ...posts[0], title: "Old heading", searchText: "old corpus" };
+    expect(filterBlogPosts([before], { query: "old corpus" })).toEqual([before]);
+    const after = { ...before, title: "New heading", searchText: "new corpus" };
+    expect(filterBlogPosts([after], { query: "old corpus" })).toEqual([]);
+    expect(filterBlogPosts([after], { query: "NEW   CORPUS" })).toEqual([after]);
+  });
+
   it("keeps short queries on summary metadata instead of scanning the full search corpus", () => {
     expect(filterBlogPosts(posts, { query: "retry" })).toEqual([]);
     expect(filterBlogPosts(posts, { query: "AJAX" }).map((post) => post.canonicalSlug)).toEqual([

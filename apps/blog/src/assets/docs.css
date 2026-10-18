@@ -1402,3 +1402,18 @@
 .docs-post :is(h1, h2, h3, h4, h5, h6, strong, b) {
   -webkit-text-stroke: 0.012em currentColor;
 }
+
+/* Library and article rails share the live scene. */
+.docs-app::before {
+  display: none;
+}
+.docs-app .docs-sidebar {
+  background: transparent;
+}
+.docs-app :is(.docs-sidebar, .docs-index-toc, .article-shell__rail) {
+  text-shadow: 0 1px 4px var(--stage-bg);
+}
+/* Both the library overview and articles expose the scene beneath their content. */
+.docs-app .docs-main {
+  background: transparent;
+}

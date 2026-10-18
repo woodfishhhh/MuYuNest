@@ -103,8 +103,8 @@ export default defineNuxtConfig({
       link: [
         {
           rel: "icon",
-          type: "image/svg+xml",
-          href: `${process.env.NUXT_APP_BASE_URL || "/"}site-icons/woodfish.svg`,
+          type: "image/png",
+          href: `${process.env.NUXT_APP_BASE_URL || "/"}favicon.png`,
         },
         {
           rel: "apple-touch-icon",
@@ -182,21 +182,22 @@ export default defineNuxtConfig({
       start_url: process.env.NUXT_APP_BASE_URL || "/",
       scope: process.env.NUXT_APP_BASE_URL || "/",
       display: "standalone",
-      icons: [{ src: "site-icons/woodfish.svg", sizes: "any", type: "image/svg+xml" }],
+      icons: [{ src: "favicon.png", sizes: "256x256", type: "image/png" }],
     },
     workbox: {
       cleanupOutdatedCaches: true,
       clientsClaim: true,
       skipWaiting: true,
-      navigateFallback: "index.html",
-      globPatterns: ["**/*.{js,css,svg,png,jpg,webp,ico,woff,woff2}"],
+      // The Nuxt PWA module maps generated index.html to the app's base URL.
+      navigateFallback: process.env.NUXT_APP_BASE_URL || "/",
+      globPatterns: ["index.html", "**/*.{js,css,svg,png,jpg,webp,ico,woff,woff2}"],
       globIgnores: [
         "content/**/*",
         "content-assets/**/*",
         "imported-assets/**/*",
         "remote-assets/**/*",
       ],
-      navigateFallbackDenylist: [/^\/api\//i],
+      navigateFallbackDenylist: [/\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
       runtimeCaching: [
         {
           // Workbox generateSW must serialize this into sw.js; regex matchers are stable here.
@@ -233,6 +234,14 @@ export default defineNuxtConfig({
           },
         },
         {
+          urlPattern: /\/articles\/[^/]+\.json$/i,
+          handler: "NetworkFirst" as const,
+          options: {
+            cacheName: "article-content-cache",
+            expiration: { maxEntries: 30, maxAgeSeconds: 604800 },
+          },
+        },
+        {
           urlPattern: /\/post-index.*\.json/i,
           handler: "NetworkFirst" as const,
           options: {
@@ -246,6 +255,10 @@ export default defineNuxtConfig({
 
   // ── Nitro (static generation output) ────────────────────────────────────
   nitro: {
+    // Articles are requested as data, outside JS bundles and the PWA precache.
+    publicAssets: [
+      { dir: fileURLToPath(new URL("src/generated/posts", import.meta.url)), baseURL: "/articles", maxAge: 0 },
+    ],
     // Output to dist/ to keep compatibility with content-tools verify-dist scripts
     output: {
       publicDir: "dist",
@@ -255,6 +268,10 @@ export default defineNuxtConfig({
       "internal:nuxt:prerender": {
         driver: "memory",
       },
+    },
+    devStorage: {
+      // This nightly references cache-driver.js, but ships cache-driver.mjs.
+      "cache:nuxt:payload": { driver: "memory" },
     },
     prerender: {
       // Home routes to pre-render (post routes are client-side navigated)

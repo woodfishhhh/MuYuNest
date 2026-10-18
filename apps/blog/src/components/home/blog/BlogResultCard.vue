@@ -10,15 +10,9 @@ const props = defineProps<{
   blogQuery: LocationQueryRaw;
 }>();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 文章 Prefetch（鼠标悬停预加载）
-//
-// 原理：当鼠标悬停在文章卡片上时，悄悄下载这篇文章的完整 JSON。
-// 等用户点击时，内容已经在浏览器缓存里了，实现"瞬时打开"效果。
-// 这是 Google Chrome 推荐的性能优化模式，叫 "Signed Exchange" 或简单版 Prefetch。
-// ─────────────────────────────────────────────────────────────────────────────
+// A failed speculative request leaves navigation free to retry and show its error.
 function prefetchArticle() {
-  void loadPostArticle(props.post.canonicalSlug);
+  void loadPostArticle(props.post.canonicalSlug).catch(() => {});
 }
 </script>
 

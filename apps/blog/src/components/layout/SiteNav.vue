@@ -8,11 +8,13 @@ import { useTheme } from "@/composables/useTheme";
 import { getRouteLocationForSiteMode } from "@/utils/site-mode";
 import { useSiteStore } from "@/stores/site";
 import { trackAnalyticsEvent } from "@/utils/analytics";
+import { getBaseUrl } from "@/utils/base-url";
 
 const props = defineProps<{ activePage?: string; documentation?: boolean }>();
 const siteStore = useSiteStore();
 const { theme, toggleThemeAt } = useTheme();
 const isOpen = shallowRef(false);
+const avatarUrl = `${getBaseUrl()}favicon.png`;
 const navRoot = useTemplateRef<HTMLElement>("navRoot");
 gsap.registerPlugin(Flip);
 let indicatorMotion: gsap.core.Timeline | null = null;
@@ -81,10 +83,12 @@ watch(
     <div class="pointer-events-auto flex items-center gap-3">
       <RouterLink
         :to="getRouteLocationForSiteMode('home')"
-        class="cursor-pointer text-lg sm:text-xl font-bold tracking-widest text-[var(--stage-fg)] mix-blend-difference"
+        aria-label="WOODFISH"
+        class="inline-flex items-center gap-2 cursor-pointer text-lg sm:text-xl font-bold tracking-widest text-[var(--stage-fg)]"
         @click="handleNav()"
       >
-        WOODFISH
+        <img :src="avatarUrl" alt="木鱼的头像" width="32" height="32" class="rounded-full" />
+        <span>WOODFISH</span>
       </RouterLink>
       <span data-scene-blog-dock class="site-nav__scene-dock" aria-hidden="true" />
     </div>

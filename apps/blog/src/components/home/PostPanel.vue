@@ -25,8 +25,8 @@ const {
 } = useBlogQueryState();
 
 const facets = computed(() => buildBlogFacets(props.posts));
-const filteredPosts = computed(() => filterBlogPosts(props.posts, filters.value));
-const sortedPosts = computed(() => sortBlogPosts(filteredPosts.value, sortKey.value));
+const orderedPosts = computed(() => sortBlogPosts(props.posts, sortKey.value));
+const sortedPosts = computed(() => filterBlogPosts(orderedPosts.value, filters.value));
 
 function toggleType(value: string) {
   selectedType.value = selectedType.value === value ? "" : value;

@@ -34,6 +34,7 @@ let finishDeparture: (() => void) | undefined;
 const removeDepartureGuard = router?.beforeEach((to, from) => {
   finishDeparture?.();
   if (!isDocsPath(to.path) || isDocsPath(from.path) || !from.name || reducedDocsMotion()) return;
+  if (to.name === "blog") return;
   const stage = document.querySelector<HTMLElement>("[data-route-stage]");
   if (!stage) return;
   return new Promise<void>((resolve) => {

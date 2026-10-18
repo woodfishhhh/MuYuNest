@@ -20,11 +20,39 @@ export interface BlogFilters {
   tag?: string;
 }
 
+// Generated summaries are immutable. Cache normalization per object, not per keystroke.
+const searchDocuments = new WeakMap<PostSummary, { summary: string; full: string }>();
+const publishedTimes = new WeakMap<PostSummary, number>();
+const titleCollator = new Intl.Collator("zh-Hans-CN");
+
+function searchDocument(post: PostSummary) {
+  let document = searchDocuments.get(post);
+  if (!document) {
+    const summary = normalizeQuery(
+      [post.title, post.excerpt, post.type, ...post.categories, ...post.tags].join(" "),
+    );
+    document = { summary, full: `${summary} ${normalizeQuery(post.searchText)}` };
+    searchDocuments.set(post, document);
+  }
+  return document;
+}
+
+function publishedTime(post: PostSummary) {
+  let time = publishedTimes.get(post);
+  if (time === undefined) {
+    time = Date.parse(post.publishedAt);
+    publishedTimes.set(post, time);
+  }
+  return time;
+}
+
 export function filterBlogPosts(posts: PostSummary[], filters: BlogFilters = {}) {
   const query = normalizeQuery(filters.query);
   const selectedType = normalizeFilterValue(filters.type);
   const selectedCategory = normalizeFilterValue(filters.category);
   const selectedTag = normalizeFilterValue(filters.tag);
+  const terms = query.split(" ");
+  const useFullText = query.length >= 8 || terms.length >= 2;
 
   return posts.filter((post) => {
     if (selectedType && post.type !== selectedType) {
@@ -43,15 +71,8 @@ export function filterBlogPosts(posts: PostSummary[], filters: BlogFilters = {})
       return true;
     }
 
-    const terms = query.split(" ");
-    const summaryHaystack = normalizeQuery(
-      [post.title, post.excerpt, post.type, post.categories.join(" "), post.tags.join(" ")].join(
-        " ",
-      ),
-    );
-    const fullHaystack = shouldUseSearchCorpus(query)
-      ? normalizeQuery(`${summaryHaystack} ${post.searchText}`)
-      : summaryHaystack;
+    const document = searchDocument(post);
+    const fullHaystack = useFullText ? document.full : document.summary;
 
     return terms.every((term) => fullHaystack.includes(term));
   });
@@ -62,21 +83,21 @@ export function sortBlogPosts(posts: PostSummary[], sortKey: BlogSortKey = "late
 
   sortedPosts.sort((left, right) => {
     if (sortKey === "oldest") {
-      return Date.parse(left.publishedAt) - Date.parse(right.publishedAt);
+      return publishedTime(left) - publishedTime(right);
     }
 
     if (sortKey === "reading-time") {
       return (
         right.readingMinutes - left.readingMinutes ||
-        Date.parse(right.publishedAt) - Date.parse(left.publishedAt)
+        publishedTime(right) - publishedTime(left)
       );
     }
 
     if (sortKey === "alphabetical") {
-      return left.title.localeCompare(right.title, "zh-Hans-CN");
+      return titleCollator.compare(left.title, right.title);
     }
 
-    return Date.parse(right.publishedAt) - Date.parse(left.publishedAt);
+    return publishedTime(right) - publishedTime(left);
   });
 
   return sortedPosts;
@@ -105,10 +126,6 @@ function toFacets(values: string[]) {
   return [...counts.entries()]
     .map(([value, count]) => ({ value, count }))
     .sort((left, right) => right.count - left.count);
-}
-
-function shouldUseSearchCorpus(query: string) {
-  return query.length >= 8 || query.split(" ").length >= 2;
 }
 
 function normalizeFilterValue(value: string | undefined) {

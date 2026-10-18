@@ -146,6 +146,7 @@ let geometryRoot: THREE.Group | null = null;
 let blogDockAnchor: DockRect | null = null;
 let blogDockViewport: DockRect | null = null;
 const blogDock = { progress: 0 };
+const isBlogDocking = ref(false);
 let pointerInsideCanvas = false;
 let suppressNextCanvasClick = false;
 let sceneDisposed = false;
@@ -181,11 +182,18 @@ function measureBlogDock() {
 function updateBlogDock(immediate = false) {
   measureBlogDock();
   gsap.killTweensOf(blogDock);
+  isBlogDocking.value = false;
   const progress = store.mode === "blog" && !store.isFocusing ? 1 : 0;
   if (immediate || prefersReducedMotion) {
     blogDock.progress = progress;
-  } else {
-    gsap.to(blogDock, { progress, duration: 0.8, ease: "power2.inOut" });
+  } else if (blogDock.progress !== progress) {
+    isBlogDocking.value = progress === 1;
+    gsap.to(blogDock, {
+      progress,
+      duration: 0.85,
+      ease: "power2.inOut",
+      onComplete: () => { isBlogDocking.value = false; },
+    });
   }
 }
 
@@ -411,6 +419,8 @@ function handleResize() {
   if (!container.value || !threeScene) return;
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
+  worksViewport.width = width;
+  worksViewport.height = height;
   isMobile.value = !supportsContentLayout(width);
   measureBlogDock();
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
@@ -432,18 +442,23 @@ function handleReducedMotionChange(event: MediaQueryListEvent) {
 }
 
 function updateWorksOrbitCards(elapsed = 0, delta = 0) {
-  if (!container.value || !threeScene || !worksOrbitCards) return;
+  if (!container.value || !threeScene) return;
   const activeGeometry = getActiveGeometry();
   const visible =
     store.mode === "works" &&
+    blogDock.progress === 0 &&
     supportsWorksOrbit.value &&
     !store.isFocusing &&
     !!activeGeometry;
 
-  if (!visible && !worksOrbitCards.group.visible) return;
+  // Cards belong to the Works orbit, not the geometry's journey into the navbar.
+  if (!worksOrbitCards) {
+    if (!visible) return;
+    worksOrbitCards = createWorksOrbitCards({ theme: theme.value, works: getWorkProjects() });
+    threeScene.scene.add(worksOrbitCards.group);
+  }
 
-  worksViewport.width = container.value.clientWidth;
-  worksViewport.height = container.value.clientHeight;
+  if (!visible && !worksOrbitCards.group.visible) return;
 
   if (activeGeometry) {
     activeGeometry.group.getWorldPosition(geometryWorldCenter);
@@ -646,6 +661,8 @@ onMounted(async () => {
   const height = container.value.clientHeight;
   isMobile.value = !supportsContentLayout(width);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
+  worksViewport.width = width;
+  worksViewport.height = height;
 
   threeScene = useThreeScene({
     canvas: canvasRef.value,
@@ -682,12 +699,6 @@ onMounted(async () => {
   geometryRoot = new THREE.Group();
   geometryRoot.add(hypercube.group, mobius.group);
   threeScene.scene.add(geometryRoot);
-
-  worksOrbitCards = createWorksOrbitCards({
-    theme: theme.value,
-    works: getWorkProjects(),
-  });
-  threeScene.scene.add(worksOrbitCards.group);
 
   const mountedScene = threeScene;
   const { TrackballControls } = await import("three/examples/jsm/controls/TrackballControls.js");
@@ -746,7 +757,7 @@ onMounted(async () => {
     const delta = sceneTimer.getDelta();
     const elapsed = sceneTimer.getElapsed();
 
-    starField.update(delta);
+    starField.update(prefersReducedMotion ? 0 : delta);
     const activeGeometry = getActiveGeometry();
     hypercube.setDockProgress(blogDock.progress);
     activeGeometry?.update(prefersReducedMotion ? 0 : delta);
@@ -816,7 +827,7 @@ onMounted(async () => {
       !store.isFocusing &&
       store.mode === "works" &&
       supportsWorksOrbit.value &&
-      worksOrbitCards
+      worksOrbitCards?.group.visible
     ) {
       raycaster.setFromCamera(pointer, threeScene.camera);
       worksHit = worksOrbitCards.pick(raycaster, pointer);
@@ -993,8 +1004,10 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="container"
+    :data-blog-entry="isBlogDocking ? 'shrinking' : 'idle'"
     class="absolute inset-0 z-0 h-[100dvh]"
     :class="{
+      'pointer-events-none': isBlogDocking,
       'cursor-grab': (store.isFocusing && !isDragging) || hasWorkCardGrabHover,
       'cursor-grabbing': (store.isFocusing && isDragging) || cardGrabActive,
       'cursor-pointer': (geometryHovered && !store.isFocusing) || hasWorkActionHover,

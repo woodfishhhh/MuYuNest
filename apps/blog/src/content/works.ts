@@ -6,7 +6,7 @@ const workProjects: WorkProjectData[] = [
     name: "WoodFishNest",
     description: "三维博客主站，用超立方体把文章、作者和作品入口组织在同一个空间里。",
     kind: "Blog",
-    avatarUrl: "/site-icons/woodfish.svg",
+    avatarUrl: "/favicon.png",
     liveUrl: "https://blog.woodfish.site/",
     githubUrl: "https://github.com/woodfishhhh/VueThreeBlog",
   },

@@ -118,7 +118,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="root" class="docs-app docs-motion-pending" :class="{ 'docs-motion-brief': brief }">
+  <div ref="root" class="docs-app docs-motion-pending" :class="{ 'docs-motion-brief': brief, 'docs-app--library': route.name === 'blog' }">
     <div class="docs-entry-light" aria-hidden="true" />
     <a class="docs-skip" href="#docs-main">跳到正文</a>
     <div class="docs-mobile-bar">

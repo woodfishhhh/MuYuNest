@@ -16,6 +16,7 @@ function deferred<T>(): Deferred<T> {
 }
 
 const sceneState = {
+  createWorksCards: vi.fn(),
   controlDispose: vi.fn(),
   hypercubeGroup: null as ReturnType<typeof createTransformGroup> | null,
   hypercubeSetOpacity: null as ReturnType<typeof vi.fn> | null,
@@ -229,7 +230,7 @@ function installSceneMocks(
   }));
   vi.doMock("@/components/scene/works-orbit-cards", () => ({
     WORKS_ORBIT_CARD_RENDER_LAYER: 1,
-    createWorksOrbitCards: () => ({
+    createWorksOrbitCards: sceneState.createWorksCards.mockImplementation(() => ({
       beginDrag: vi.fn(),
       clearInteraction: vi.fn(),
       dispose: vi.fn(),
@@ -243,7 +244,7 @@ function installSceneMocks(
       setHovered: vi.fn(),
       setTheme: vi.fn(),
       update: vi.fn(),
-    }),
+    })),
     getWorksCenterMagnetStrength: () => 0,
   }));
   vi.doMock("@/components/scene/geometry-transform", () => ({
@@ -296,6 +297,54 @@ describe("ThreeSceneCanvas lifecycle", () => {
     sceneState.mobiusGroup = null;
     sceneState.mobiusSetOpacity = null;
     sceneState.onControlConstruct = null;
+  });
+
+  it("hides Works cards when Blog opens and restores them only after undocking", async () => {
+    const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
+    const { store } = installSceneMocks(controlsModule);
+    store.mode = "works";
+    const ThreeSceneCanvas = (await import("@/components/scene/ThreeSceneCanvas.vue")).default;
+    const { default: gsap } = await import("gsap");
+    const wrapper = mount(ThreeSceneCanvas);
+    controlsModule.resolve({ TrackballControls: MockTrackballControls });
+    await flushPromises();
+    const cards = sceneState.createWorksCards.mock.results[0].value;
+    cards.group.visible = true;
+    cards.update.mockImplementation(({ visible }: { visible: boolean }) => { cards.group.visible = visible; });
+    store.mode = "blog";
+    await nextTick();
+    expect(cards.update).toHaveBeenLastCalledWith(expect.objectContaining({ visible: false }));
+    expect(cards.clearInteraction).toHaveBeenCalled();
+    const dockTween = vi.mocked(gsap.to).mock.calls.find(([, vars]) => vars.progress === 1)!;
+    const dock = dockTween[0] as { progress: number };
+    dock.progress = 0.5;
+    store.mode = "works";
+    await nextTick();
+    expect(cards.group.visible).toBe(false);
+    dock.progress = 0;
+    window.dispatchEvent(new Event("resize"));
+    expect(cards.update).toHaveBeenLastCalledWith(expect.objectContaining({ visible: true }));
+    expect(sceneState.createWorksCards).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+
+  it("allocates Works textures only on the first Works visit and reuses them", async () => {
+    const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
+    const { store } = installSceneMocks(controlsModule);
+    const ThreeSceneCanvas = (await import("@/components/scene/ThreeSceneCanvas.vue")).default;
+    const wrapper = mount(ThreeSceneCanvas);
+    controlsModule.resolve({ TrackballControls: MockTrackballControls });
+    await flushPromises();
+    expect(sceneState.createWorksCards).not.toHaveBeenCalled();
+    store.mode = "works";
+    await nextTick();
+    expect(sceneState.createWorksCards).toHaveBeenCalledTimes(1);
+    store.mode = "home";
+    await nextTick();
+    store.mode = "works";
+    await nextTick();
+    expect(sceneState.createWorksCards).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
   });
 
   it("keeps the themed geometry visible behind the Works Case layout", async () => {
