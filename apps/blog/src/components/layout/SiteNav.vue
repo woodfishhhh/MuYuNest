@@ -173,7 +173,6 @@ watch(
   font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   height: 80px;
   padding-block: 20px;
-  border-bottom: 1px solid transparent;
 }
 
 .site-nav--docs {
