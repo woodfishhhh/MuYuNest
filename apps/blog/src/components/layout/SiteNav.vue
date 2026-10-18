@@ -171,16 +171,18 @@ watch(
 <style scoped>
 .site-nav-gradient {
   font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  height: 80px;
+  padding-block: 20px;
+  border-bottom: 1px solid transparent;
 }
 
 .site-nav--docs {
-  height: 80px;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom-color: var(--border-subtle);
   background: color-mix(in srgb, var(--background) 92%, transparent);
   backdrop-filter: blur(20px);
 }
 @media (max-width: 959px) {
-  .site-nav--docs {
+  .site-nav-gradient {
     height: 68px;
     padding-block: 14px;
   }
