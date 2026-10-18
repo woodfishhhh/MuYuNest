@@ -177,7 +177,6 @@ watch(
 }
 
 .site-nav--docs {
-  border-bottom-color: var(--border-subtle);
   background: color-mix(in srgb, var(--background) 92%, transparent);
   backdrop-filter: blur(20px);
 }
