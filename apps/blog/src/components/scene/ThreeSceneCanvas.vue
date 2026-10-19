@@ -9,6 +9,8 @@ import {
   projectNdcBoundsToPointerTarget,
   setSceneMagneticPointerTarget,
 } from "@/utils/magnetic-pointer";
+import type { HomeCardFlight } from "@/components/scene/home-card-flight";
+import { getHomeGeometryAnchor, blendDockAnchors } from "@/components/scene/home-card-flight/layout";
 import { createCircleTexture } from "@/components/scene/circle-texture";
 import { getBlogDockTransform, type DockRect } from "@/components/scene/blog-dock";
 import {
@@ -62,6 +64,10 @@ const store = useSiteStore();
 const router = useRouter();
 const { theme } = useTheme();
 
+const homeFlightVisible = computed(() => store.mode === "home" && !store.isFocusing && store.homeExperience === "collect");
+const homeFlightReady = ref(false);
+const homeCardHovered = ref(false);
+const homeCardGrabActive = ref(false);
 const isDragging = ref(false);
 const cardHovered = ref(false);
 const cardActionHovered = ref(false);
@@ -91,7 +97,7 @@ const onPointerLeave = () => {
   isDragging.value = false;
   pointerInsideCanvas = false;
   clearSceneMagneticPointerTarget();
-  if (!worksOrbitCards?.isInteracting()) pointer.set(0, 0);
+  if (!worksOrbitCards?.isInteracting() && !homeCardFlight?.isInteracting()) pointer.set(0, 0);
 };
 const onClickBackground = (event: MouseEvent) => {
   if (suppressNextCanvasClick) {
@@ -100,7 +106,7 @@ const onClickBackground = (event: MouseEvent) => {
     return;
   }
 
-  if (event.target === canvasRef.value) {
+  if (event.target === canvasRef.value && !homeFlightVisible.value) {
     store.triggerStep();
   }
 };
@@ -132,10 +138,14 @@ const savedFocusRotations = {
 
 let threeScene: ThreeScene | null = null;
 let starField: StarField | null = null;
+const sceneViewport = { width: 1, height: 1 };
 let hypercube: Hypercube | null = null;
 let mobius: MobiusStrip | null = null;
 // let homeBackdropGlyph: HomeBackdropGlyph | null = null;
 let worksOrbitCards: WorksOrbitCards | null = null;
+let homeCardFlight: HomeCardFlight | null = null;
+let homeFlightLoading = false;
+const homeDock = { progress: 0 };
 let controls: TrackballControls | null = null;
 let animationFrameId: number | null = null;
 let sceneTimer: THREE.Timer | null = null;
@@ -182,6 +192,10 @@ function measureBlogDock() {
 function updateBlogDock(immediate = false) {
   measureBlogDock();
   gsap.killTweensOf(blogDock);
+  gsap.killTweensOf(homeDock);
+  const homeProgress = homeFlightVisible.value ? 1 : 0;
+  if (immediate || prefersReducedMotion) homeDock.progress = homeProgress;
+  else gsap.to(homeDock, { progress: homeProgress, duration: 0.8, ease: "power2.inOut" });
   isBlogDocking.value = false;
   const progress = store.mode === "blog" && !store.isFocusing ? 1 : 0;
   if (immediate || prefersReducedMotion) {
@@ -199,7 +213,7 @@ function updateBlogDock(immediate = false) {
 
 function applyBlogDock() {
   if (!geometryRoot || !threeScene) return;
-  const progress = blogDock.progress;
+  const progress = Math.min(1, blogDock.progress + homeDock.progress);
   if (progress === 0) {
     geometryRoot.matrixAutoUpdate = true;
     geometryRoot.position.set(0, 0, 0);
@@ -209,12 +223,15 @@ function applyBlogDock() {
     return;
   }
   if (!blogDockAnchor || !blogDockViewport) measureBlogDock();
-  if (!blogDockAnchor || !blogDockViewport) return;
+  const viewport = container.value?.getBoundingClientRect();
+  if (!viewport || viewport.width <= 0 || viewport.height <= 0) return;
+  const homeAnchor = getHomeGeometryAnchor(viewport);
+  const anchor = blendDockAnchors(homeAnchor, blogDockAnchor ?? homeAnchor, homeDock.progress, blogDock.progress);
   const geometry = getActiveGeometry();
   if (!geometry) return;
   threeScene.camera.updateMatrixWorld();
   const diameter = (theme.value === "day" ? 6 : 10) * geometry.group.scale.x;
-  const target = getBlogDockTransform(threeScene.camera, blogDockViewport, blogDockAnchor, diameter, progress);
+  const target = getBlogDockTransform(threeScene.camera, viewport, anchor, diameter, progress);
   geometryRoot.position.copy(target.position).multiplyScalar(progress);
   geometryRoot.scale.setScalar(1 + (target.scale - 1) * progress);
   geometryRoot.quaternion.identity().slerp(threeScene.camera.quaternion, progress);
@@ -421,8 +438,12 @@ function handleResize() {
   const height = container.value.clientHeight;
   worksViewport.width = width;
   worksViewport.height = height;
+  sceneViewport.width = width;
+  sceneViewport.height = height;
+  store.syncHomeExperience(width);
   isMobile.value = !supportsContentLayout(width);
   measureBlogDock();
+  homeCardFlight?.resize(width, height);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   applyThemeGeometryState(theme.value);
 
@@ -493,6 +514,35 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
   starField?.setWarpIntensity(ritualIntensity);
 }
 
+async function ensureHomeCardFlight() {
+  if (homeCardFlight || homeFlightLoading || !threeScene || !container.value || !homeFlightVisible.value) return;
+  homeFlightLoading = true;
+  const mountedScene = threeScene;
+  try {
+    const { createHomeCardFlight } = await import("@/components/scene/home-card-flight");
+    if (sceneDisposed || threeScene !== mountedScene || !container.value || !homeFlightVisible.value) return;
+    homeCardFlight = createHomeCardFlight({
+      renderer: mountedScene.renderer,
+      width: Math.max(container.value.clientWidth, 1),
+      height: Math.max(container.value.clientHeight, 1),
+      theme: theme.value,
+      onReady: () => {
+        if (sceneDisposed) return;
+        homeCardFlight?.update(0, homeFlightVisible.value, prefersReducedMotion);
+        homeFlightReady.value = true;
+      },
+      onError: (error) => { console.error("Home card assets failed to load", error); },
+    });
+  } finally { homeFlightLoading = false; }
+}
+
+function handleHomeTouchMove(event: TouchEvent) {
+  if (homeCardFlight?.isInteracting()) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+}
+
 function renderSceneFrame() {
   if (!threeScene) return;
 
@@ -500,6 +550,7 @@ function renderSceneFrame() {
   if (!worksOrbitCards?.group.visible) {
     camera.layers.set(0);
     threeScene.render();
+    homeCardFlight?.render();
     return;
   }
 
@@ -532,6 +583,13 @@ function updatePointerFromEvent(event: PointerEvent | MouseEvent) {
 function handlePointerMove(event: PointerEvent) {
   pointerInsideCanvas = true;
   updatePointerFromEvent(event);
+  if (homeFlightVisible.value && homeCardFlight) {
+    if (homeCardFlight.isInteracting()) {
+      event.stopPropagation();
+      homeCardFlight.drag(pointer);
+    }
+    homeCardHovered.value = !!homeCardFlight.pick(pointer);
+  }
   if (worksOrbitCards?.isInteracting()) {
     event.stopPropagation();
     worksOrbitCards.drag(pointer);
@@ -562,6 +620,16 @@ function syncWorksMagneticPointerTarget(hit: ReturnType<WorksOrbitCards["pick"]>
 }
 
 function releaseCardInteraction(event?: PointerEvent) {
+  if (homeCardFlight?.isInteracting()) {
+    event?.stopPropagation();
+    suppressNextCanvasClick = true;
+    homeCardFlight.release();
+    homeCardGrabActive.value = false;
+    if (event?.currentTarget instanceof HTMLElement && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    return;
+  }
   if (!worksOrbitCards?.isInteracting()) return;
 
   if (event) {
@@ -586,6 +654,14 @@ function releaseCardInteraction(event?: PointerEvent) {
 function handleCanvasPointerDown(event: PointerEvent) {
   if (store.isFocusing || !threeScene) return;
   updatePointerFromEvent(event);
+  if (homeFlightVisible.value && event.button === 0 && homeCardFlight?.beginDrag(pointer)) {
+    event.preventDefault();
+    event.stopPropagation();
+    suppressNextCanvasClick = true;
+    homeCardGrabActive.value = true;
+    if (event.currentTarget instanceof HTMLCanvasElement) event.currentTarget.setPointerCapture(event.pointerId);
+    return;
+  }
   raycaster.setFromCamera(pointer, threeScene.camera);
 
   if (store.mode === "works" && supportsWorksOrbit.value) {
@@ -623,7 +699,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     return;
   }
 
-  if (!shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value)) {
+  if (!shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, store.homeExperience)) {
     return;
   }
 
@@ -639,6 +715,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     hasWorksActionHit: false,
     hasWorksCardHit: false,
     hasGeometryHit: intersects.length > 0,
+    homeExperience: store.homeExperience,
   });
 
   if (action !== "focus-geometry") return;
@@ -659,6 +736,9 @@ onMounted(async () => {
 
   const width = container.value.clientWidth;
   const height = container.value.clientHeight;
+  sceneViewport.width = width;
+  sceneViewport.height = height;
+  store.syncHomeExperience(width);
   isMobile.value = !supportsContentLayout(width);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   worksViewport.width = width;
@@ -731,6 +811,8 @@ onMounted(async () => {
   canvasRef.value.addEventListener("pointerup", releaseCardInteraction);
   canvasRef.value.addEventListener("pointercancel", releaseCardInteraction);
   canvasRef.value.addEventListener("lostpointercapture", releaseCardInteraction);
+  canvasRef.value.addEventListener("touchmove", handleHomeTouchMove, { passive: false });
+  void ensureHomeCardFlight();
 
   if (typeof window.matchMedia === "function") {
     reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -757,7 +839,6 @@ onMounted(async () => {
     const delta = sceneTimer.getDelta();
     const elapsed = sceneTimer.getElapsed();
 
-    starField.update(prefersReducedMotion ? 0 : delta);
     const activeGeometry = getActiveGeometry();
     hypercube.setDockProgress(blogDock.progress);
     activeGeometry?.update(prefersReducedMotion ? 0 : delta);
@@ -818,7 +899,14 @@ onMounted(async () => {
       }
     }
 
+    starField.setCollectMode(homeFlightVisible.value, prefersReducedMotion);
+    starField.update(prefersReducedMotion ? 0 : delta, { camera: threeScene.camera, ...sceneViewport, pointer: smoothedPointer });
     applyBlogDock();
+    homeCardFlight?.update(delta, homeFlightVisible.value, prefersReducedMotion);
+    if (!homeFlightVisible.value) {
+      homeCardHovered.value = false;
+      homeCardGrabActive.value = false;
+    }
     updateWorksOrbitCards(elapsed, delta);
 
     const activeRaycastGeometry = getActiveGeometry();
@@ -847,7 +935,7 @@ onMounted(async () => {
 
     const canRaycastSceneGeometry =
       activeRaycastGeometry &&
-      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value);
+      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, store.homeExperience);
     if (
       canRaycastSceneGeometry &&
       shouldRunSceneHoverRaycast(elapsed, lastGeometryHoverRaycastAt)
@@ -884,6 +972,8 @@ watch(
   () => store.mode,
   (mode, previousMode) => {
     updateBlogDock();
+    void ensureHomeCardFlight();
+    homeCardFlight?.update(0, homeFlightVisible.value, prefersReducedMotion);
     clearSceneMagneticPointerTarget();
     geometryHovered.value = false;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
@@ -892,6 +982,18 @@ watch(
     }
     applyThemeGeometryState(theme.value);
     updateWorksOrbitCards();
+  },
+);
+watch(
+  () => store.homeExperience,
+  () => {
+    updateBlogDock();
+    void ensureHomeCardFlight();
+    homeCardFlight?.update(0, homeFlightVisible.value, prefersReducedMotion);
+    homeCardHovered.value = false;
+    homeCardGrabActive.value = false;
+    geometryHovered.value = false;
+    clearSceneMagneticPointerTarget();
   },
 );
 watch(
@@ -911,6 +1013,8 @@ watch(
   () => store.isFocusing,
   (focusing) => {
     updateBlogDock();
+    void ensureHomeCardFlight();
+    homeCardFlight?.update(0, homeFlightVisible.value, prefersReducedMotion);
     if (controls) controls.enabled = focusing;
     lastGeometryHoverRaycastAt = Number.NEGATIVE_INFINITY;
     applyThemeGeometryState(theme.value);
@@ -919,6 +1023,7 @@ watch(
   },
 );
 watch(theme, (nextTheme) => {
+  homeCardFlight?.setTheme(nextTheme);
   // homeBackdropGlyph?.setTheme(nextTheme);
   const geometry = getGeometryByTheme(nextTheme);
   if (store.isFocusing && geometry) {
@@ -939,6 +1044,9 @@ watch(theme, (nextTheme) => {
 onBeforeUnmount(() => {
   sceneDisposed = true;
   gsap.killTweensOf(blogDock);
+  gsap.killTweensOf(homeDock);
+  homeCardFlight?.dispose();
+  homeCardFlight = null;
   clearSceneMagneticPointerTarget();
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
@@ -948,6 +1056,7 @@ onBeforeUnmount(() => {
     canvasRef.value.removeEventListener("pointerup", releaseCardInteraction);
     canvasRef.value.removeEventListener("pointercancel", releaseCardInteraction);
     canvasRef.value.removeEventListener("lostpointercapture", releaseCardInteraction);
+    canvasRef.value.removeEventListener("touchmove", handleHomeTouchMove);
   }
   if (reducedMotionQuery) {
     if (typeof reducedMotionQuery.removeEventListener === "function") {
@@ -1005,11 +1114,16 @@ onBeforeUnmount(() => {
   <div
     ref="container"
     :data-blog-entry="isBlogDocking ? 'shrinking' : 'idle'"
+    :data-home-experience="store.homeExperience"
+    :data-star-clock="homeFlightVisible ? 'collect' : 'roam'"
+    :data-home-flight="homeFlightVisible ? 'active' : 'inactive'"
+    :data-home-flight-ready="homeFlightReady"
+    :data-home-card-dragging="homeCardGrabActive"
     class="absolute inset-0 z-0 h-[100dvh]"
     :class="{
       'pointer-events-none': isBlogDocking,
-      'cursor-grab': (store.isFocusing && !isDragging) || hasWorkCardGrabHover,
-      'cursor-grabbing': (store.isFocusing && isDragging) || cardGrabActive,
+      'cursor-grab': (store.isFocusing && !isDragging) || hasWorkCardGrabHover || homeCardHovered,
+      'cursor-grabbing': (store.isFocusing && isDragging) || cardGrabActive || homeCardGrabActive,
       'cursor-pointer': (geometryHovered && !store.isFocusing) || hasWorkActionHover,
     }"
     @pointerdown="onPointerDown"
@@ -1019,7 +1133,8 @@ onBeforeUnmount(() => {
   >
     <canvas
       ref="canvasRef"
-      class="h-full w-full outline-none"
+      class="relative h-full w-full outline-none"
+      :style="{ touchAction: homeFlightVisible ? 'none' : undefined }"
       data-liquid-gl-snapshot
     ></canvas>
   </div>

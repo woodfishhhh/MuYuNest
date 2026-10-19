@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
+import { supportsContentLayout } from "@/utils/responsive";
 
 export type SiteMode = "home" | "blog" | "author" | "friend" | "works" | "reading";
 export type SitePanelMode = Exclude<SiteMode, "reading">;
 export type WorksViewMode = "orbit" | "case";
+export type HomeExperience = "collect" | "roam";
 
 interface SiteState {
   mode: SiteMode;
@@ -11,6 +13,8 @@ interface SiteState {
   blogScrollTop: number;
   cubeStep: number;
   worksViewMode: WorksViewMode;
+  homeExperience: HomeExperience;
+  hasHomeExperienceChoice: boolean;
 }
 
 export const useSiteStore = defineStore("site", {
@@ -21,8 +25,19 @@ export const useSiteStore = defineStore("site", {
     blogScrollTop: 0,
     cubeStep: 0,
     worksViewMode: "orbit",
+    homeExperience: "roam",
+    hasHomeExperienceChoice: false,
   }),
   actions: {
+    syncHomeExperience(width: number) {
+      if (!this.hasHomeExperienceChoice) {
+        this.homeExperience = supportsContentLayout(width) ? "collect" : "roam";
+      }
+    },
+    setHomeExperience(experience: HomeExperience) {
+      this.homeExperience = experience;
+      this.hasHomeExperienceChoice = true;
+    },
     setPanelMode(mode: SitePanelMode) {
       this.mode = mode;
       this.isFocusing = false;

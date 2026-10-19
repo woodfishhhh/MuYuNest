@@ -1,4 +1,4 @@
-import type { SiteMode, WorksViewMode } from "@/stores/site";
+import type { HomeExperience, SiteMode, WorksViewMode } from "@/stores/site";
 import { supportsWideLayout } from "@/utils/responsive";
 
 export const SCENE_HOVER_RAYCAST_INTERVAL = 1 / 30;
@@ -13,6 +13,7 @@ export interface ScenePointerDownActionOptions {
   hasWorksActionHit: boolean;
   hasWorksCardHit: boolean;
   hasGeometryHit: boolean;
+  homeExperience?: HomeExperience;
 }
 
 export function isDesktopWorksOrbitMode(
@@ -32,8 +33,9 @@ export function shouldRaycastSceneGeometry(
   _worksViewMode: WorksViewMode,
   isFocusing: boolean,
   _isMobile: boolean,
+  homeExperience: HomeExperience = "roam",
 ) {
-  return mode === "home" && !isFocusing;
+  return mode === "home" && !isFocusing && homeExperience === "roam";
 }
 
 export function shouldRunSceneHoverRaycast(elapsed: number, lastRunAt: number) {
@@ -52,6 +54,7 @@ export function resolveScenePointerDownAction({
   hasWorksActionHit,
   hasWorksCardHit,
   hasGeometryHit,
+  homeExperience = "roam",
 }: ScenePointerDownActionOptions): ScenePointerDownAction {
   if (isFocusing) return "none";
   if (mode === "works" && !isMobile) {
@@ -60,7 +63,7 @@ export function resolveScenePointerDownAction({
     return "none";
   }
 
-  if (!shouldRaycastSceneGeometry(mode, worksViewMode, isFocusing, isMobile)) {
+  if (!shouldRaycastSceneGeometry(mode, worksViewMode, isFocusing, isMobile, homeExperience)) {
     return "none";
   }
 

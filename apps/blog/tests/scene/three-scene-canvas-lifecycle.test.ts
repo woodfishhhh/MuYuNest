@@ -147,6 +147,8 @@ function installSceneMocks(
     isFocusing: false,
     mode: "home",
     worksViewMode: "orbit",
+    homeExperience: "roam",
+    syncHomeExperience: vi.fn(),
     enterFocus: vi.fn(),
     goHome: vi.fn(),
     triggerStep: vi.fn(),
@@ -222,6 +224,7 @@ function installSceneMocks(
       setColor: vi.fn(),
       setOpacity: vi.fn(),
       setWarpIntensity: vi.fn(),
+      setCollectMode: vi.fn(),
       update: vi.fn(),
     }),
   }));

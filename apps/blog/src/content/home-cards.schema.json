@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "拾光卡片配置",
+  "type": "object",
+  "required": [
+    "version",
+    "cards"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/textCard"
+          },
+          {
+            "$ref": "#/$defs/imageCard"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "textCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "text"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "唯一标识；同日多首请使用不同 id"
+        },
+        "title": {
+          "type": "string",
+          "default": "无题"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "type": {
+          "const": "text"
+        },
+        "text": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "每行一个字符串；空字符串表示空行。长诗自动分卡，不截断原文。"
+        },
+        "paper": {
+          "enum": [
+            "warm",
+            "white",
+            "dark"
+          ],
+          "default": "warm"
+        },
+        "align": {
+          "enum": [
+            "center",
+            "left"
+          ],
+          "default": "center"
+        }
+      }
+    },
+    "imageCard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "src"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "唯一标识；同日多首请使用不同 id"
+        },
+        "title": {
+          "type": "string",
+          "default": "无题"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "YYYY-MM-DD"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "type": {
+          "const": "image"
+        },
+        "src": {
+          "type": "string",
+          "description": "图床 http(s) URL、已有站内 /路径，或 local:文件名（放在 src/assets/home-flight/photos）"
+        },
+        "alt": {
+          "type": "string"
+        },
+        "caption": {
+          "type": "string",
+          "description": "可省略；省略时只有相框和图片"
+        },
+        "frame": {
+          "enum": [
+            "white",
+            "black",
+            "wood"
+          ],
+          "default": "white"
+        },
+        "fit": {
+          "enum": [
+            "contain",
+            "cover"
+          ],
+          "default": "contain"
+        },
+        "aspectRatio": {
+          "type": "number",
+          "minimum": 0.4,
+          "maximum": 2.5,
+          "description": "可省略，默认按原图比例显示"
+        }
+      }
+    }
+  }
+}

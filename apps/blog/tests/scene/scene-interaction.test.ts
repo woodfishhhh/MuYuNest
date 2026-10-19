@@ -74,6 +74,15 @@ describe("scene interaction routing", () => {
     expect(shouldRaycastSceneGeometry("home", "orbit", false, false)).toBe(true);
   });
 
+  it.each([false, true])("disables collect geometry focus on mobile=%s while retaining roam", (isMobile) => {
+    for (const homeExperience of ["collect", "roam"] as const) {
+      expect(shouldRaycastSceneGeometry("home", "orbit", false, isMobile, homeExperience)).toBe(homeExperience === "roam");
+      expect(resolveScenePointerDownAction({ mode: "home", worksViewMode: "orbit", isFocusing: false,
+        isMobile, homeExperience, hasWorksActionHit: false, hasWorksCardHit: false, hasGeometryHit: true,
+      })).toBe(homeExperience === "collect" ? "none" : "focus-geometry");
+    }
+  });
+
   it("blocks geometry focus and hover raycast on every non-home panel", () => {
     for (const mode of ["blog", "author", "friend", "reading"] as const) {
       expect(

@@ -33,6 +33,29 @@ describe("site store", () => {
     expect(store.worksViewMode).toBe("case");
   });
 
+  it("defaults to collection on desktop and roaming on phones", () => {
+    const store = useSiteStore();
+    store.syncHomeExperience(390);
+    expect(store.homeExperience).toBe("roam");
+    store.syncHomeExperience(1280);
+    expect(store.homeExperience).toBe("collect");
+    store.syncHomeExperience(767);
+    expect(store.homeExperience).toBe("roam");
+  });
+
+  it("keeps a manual Home choice across navigation and resizing", () => {
+    const store = useSiteStore();
+    store.syncHomeExperience(1440);
+    store.setHomeExperience("roam");
+    store.goBlog();
+    store.goHome();
+    store.syncHomeExperience(1440);
+    expect(store.homeExperience).toBe("roam");
+    store.setHomeExperience("collect");
+    store.syncHomeExperience(390);
+    expect(store.homeExperience).toBe("collect");
+  });
+
   it("keeps the Blog scroll position while navigating through other modes", () => {
     const store = useSiteStore();
 

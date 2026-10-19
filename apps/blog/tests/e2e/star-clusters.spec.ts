@@ -1,0 +1,70 @@
+import { expect, test } from "@playwright/test";
+
+const evidence = "../../experiments/wodniack-cards/evidence/star-clusters";
+test("star cluster presets, sliders, export and persistence work on desktop", async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  await page.goto("/playground/star-clusters");
+  await expect(page.getByRole("heading", { name: "沿着星线，自然聚散。" })).toBeVisible();
+  await expect(page.locator("canvas.cluster-canvas")).toBeVisible();
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: `${evidence}/selected.png` });
+  for (const [name, file] of [["沿线成簇", "bunched"], ["柔和星束", "soft"]]) {
+    await page.getByRole("button", { name, exact: true }).click();
+    await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await page.waitForTimeout(1800);
+    await page.screenshot({ path: `${evidence}/${file}.png` });
+  }
+  const count = page.getByLabel("每条线的星簇", { exact: false });
+  await count.focus(); await count.press("Home"); await count.press("ArrowRight");
+  await expect(count).toHaveValue("2");
+  await page.getByLabel("星束宽度", { exact: false }).press("End");
+  await page.getByRole("button", { name: "对照原版", exact: true }).click();
+  await expect(page.locator("[data-cluster-reference]")).toHaveAttribute("data-cluster-reference", "true");
+  await page.getByRole("button", { name: "返回调节效果", exact: true }).click();
+  await expect(count).toHaveValue("2");
+  await page.getByRole("button", { name: "漫游星空", exact: true }).click();
+  await expect(page.locator("[data-cluster-mode]")).toHaveAttribute("data-cluster-mode", "roam");
+  await page.getByRole("button", { name: "重播聚拢" }).click();
+  await expect(page.locator("[data-cluster-mode]")).toHaveAttribute("data-cluster-mode", "collect");
+  await page.getByLabel("中心几何体").selectOption("mobius");
+  await page.getByLabel("一起看看诗卡").check();
+  await page.getByRole("button", { name: "切到白天" }).click();
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: `${evidence}/day-cards.png` });
+  await page.getByRole("button", { name: "暂停画面" }).click();
+  await expect(page.getByRole("button", { name: "继续流动" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: /复制这组参数/ }).click();
+  await expect(page.locator("p[role=status]")).toContainText("已复制");
+  const copied = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
+  expect(copied.settings).toMatchObject({ bunches: 2, spread: 1, curvature: 0.28 });
+  expect(copied).toMatchObject({ geometry: "mobius", cards: true, theme: "day" });
+  await page.reload();
+  await expect(count).toHaveValue("2");
+  await expect(page.getByLabel("中心几何体")).toHaveValue("mobius");
+  await page.getByRole("button", { name: "重置", exact: true }).click();
+  await expect(count).toHaveValue("8");
+  await page.getByRole("link", { name: "回到首页" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect(errors).toEqual([]);
+});
+
+test("mobile starts with an unobstructed preview and an operable settings drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/playground/star-clusters");
+  const drawer = page.getByRole("button", { name: /调节星线/ });
+  await expect(drawer).toHaveAttribute("aria-expanded", "false");
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: `${evidence}/mobile.png` });
+  await drawer.click();
+  await expect(drawer).toHaveAttribute("aria-expanded", "true");
+  await page.getByRole("button", { name: "沿线成簇", exact: true }).click();
+  await page.getByLabel("每条线的星簇", { exact: false }).press("Home");
+  await expect(page.getByLabel("每条线的星簇", { exact: false })).toHaveValue("1");
+  await page.screenshot({ path: `${evidence}/mobile-controls.png` });
+  await drawer.click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+});

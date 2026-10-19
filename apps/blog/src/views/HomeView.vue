@@ -10,6 +10,7 @@ import {
   watch,
 } from "vue";
 
+import HomeModeToggle from "@/components/home/HomeModeToggle.vue";
 import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
 import SlideController from "@/components/home/SlideController.vue";
 import VisitorCountBadge from "@/components/home/VisitorCountBadge.vue";
@@ -193,12 +194,19 @@ onBeforeUnmount(() => {
 
 <template>
   <main data-home-stage class="relative h-dvh overflow-hidden text-[var(--stage-fg)]">
+    <HomeModeToggle
+      v-if="homeHint"
+      :model-value="siteStore.homeExperience"
+      @update:model-value="siteStore.setHomeExperience"
+    />
+
     <SlideController :blog-scroll-container="blogScrollContainerRef">
       <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
         <Transition name="home-hint" mode="out-in">
-          <div v-if="homeHint" class="pointer-events-auto absolute bottom-8 flex w-full justify-center">
+          <div v-if="homeHint" class="pointer-events-auto absolute bottom-24 flex w-full justify-center sm:bottom-8">
             <div class="animate-bounce text-sm tracking-widest text-[var(--stage-hint)] opacity-70">
-              点击{{ focusHintTarget }}进行探索
+              <template v-if="siteStore.homeExperience === 'collect'">抓住一张卡片，读一段时光</template>
+              <template v-else>点击{{ focusHintTarget }}进行探索</template>
             </div>
           </div>
         </Transition>

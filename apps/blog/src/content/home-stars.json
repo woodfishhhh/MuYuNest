@@ -1,0 +1,11 @@
+{
+  "seed": 716,
+  "settings": {
+    "bunches": 8,
+    "spread": 1,
+    "clumping": 0.05,
+    "curvature": 1,
+    "flow": 0.25,
+    "parallax": 1
+  }
+}
