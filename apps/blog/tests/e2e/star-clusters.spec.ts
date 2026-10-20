@@ -1,70 +1,144 @@
 import { expect, test } from "@playwright/test";
+import selectedPlayground from "../../src/content/star-playground.json" with { type: "json" };
 
-const evidence = "../../experiments/wodniack-cards/evidence/star-clusters";
-test("star cluster presets, sliders, export and persistence work on desktop", async ({ page, context }) => {
+const evidence = "../../experiments/star-motion-playground/evidence";
+const route = "/playground/star-clusters";
+
+test("desktop modes retain independent parameters, export and restore them", async ({ page, context }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  await page.goto("/playground/star-clusters");
-  await expect(page.getByRole("heading", { name: "沿着星线，自然聚散。" })).toBeVisible();
-  await expect(page.locator("canvas.cluster-canvas")).toBeVisible();
-  await page.waitForTimeout(2500);
-  await page.screenshot({ path: `${evidence}/selected.png` });
-  for (const [name, file] of [["沿线成簇", "bunched"], ["柔和星束", "soft"]]) {
-    await page.getByRole("button", { name, exact: true }).click();
-    await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
-    await page.waitForTimeout(1800);
-    await page.screenshot({ path: `${evidence}/${file}.png` });
-  }
-  const count = page.getByLabel("每条线的星簇", { exact: false });
-  await count.focus(); await count.press("Home"); await count.press("ArrowRight");
-  await expect(count).toHaveValue("2");
-  await page.getByLabel("星束宽度", { exact: false }).press("End");
+  await page.goto(route);
+  await expect(page.getByRole("heading", { name: "射线模式", exact: true })).toBeVisible();
+  const canvas = page.locator("canvas.cluster-canvas");
+  await expect(canvas).toBeVisible();
+  await page.getByRole("button", { name: "复制这组参数" }).click();
+  expect(JSON.parse(await page.evaluate(() => navigator.clipboard.readText()))).toEqual(selectedPlayground);
+  const preview = await page.locator(".lab-preview").boundingBox();
+  const panel = await page.locator(".lab-panel").boundingBox();
+  expect(panel!.width).toBe(400);
+  expect(preview!.x + preview!.width).toBeLessThanOrEqual(panel!.x);
+  await page.getByRole("slider", { name: "射线数量", exact: true }).press("End");
+  await expect(page.getByRole("slider", { name: "射线数量", exact: true })).toHaveValue("36");
+  await page.getByRole("spinbutton", { name: "射线数量数值", exact: true }).fill("20");
+  await page.getByRole("spinbutton", { name: "射线数量数值", exact: true }).press("Tab");
+  await expect(page.getByRole("slider", { name: "射线数量", exact: true })).toHaveValue("20");
   await page.getByRole("button", { name: "对照原版", exact: true }).click();
-  await expect(page.locator("[data-cluster-reference]")).toHaveAttribute("data-cluster-reference", "true");
-  await page.getByRole("button", { name: "返回调节效果", exact: true }).click();
-  await expect(count).toHaveValue("2");
-  await page.getByRole("button", { name: "漫游星空", exact: true }).click();
-  await expect(page.locator("[data-cluster-mode]")).toHaveAttribute("data-cluster-mode", "roam");
-  await page.getByRole("button", { name: "重播聚拢" }).click();
-  await expect(page.locator("[data-cluster-mode]")).toHaveAttribute("data-cluster-mode", "collect");
-  await page.getByLabel("中心几何体").selectOption("mobius");
-  await page.getByLabel("一起看看诗卡").check();
-  await page.getByRole("button", { name: "切到白天" }).click();
-  await page.waitForTimeout(2200);
-  await page.screenshot({ path: `${evidence}/day-cards.png` });
-  await page.getByRole("button", { name: "暂停画面" }).click();
-  await expect(page.getByRole("button", { name: "继续流动" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: /复制这组参数/ }).click();
-  await expect(page.locator("p[role=status]")).toContainText("已复制");
+  await expect(canvas).toHaveAttribute("data-motion-mode", "reference");
+  await page.getByRole("spinbutton", { name: "流动速度数值", exact: true }).fill("6.5");
+  await page.getByRole("spinbutton", { name: "流动速度数值", exact: true }).press("Tab");
+  await expect(canvas).toHaveAttribute("data-motion-mode", "rays");
+  await page.getByRole("button", { name: /彗星模式/ }).click();
+  await expect(canvas).toHaveAttribute("data-motion-mode", "comet");
+  await page.getByRole("spinbutton", { name: "尾迹长度数值", exact: true }).fill("2.4");
+  await page.getByRole("spinbutton", { name: "尾迹长度数值", exact: true }).press("Tab");
+  await page.getByRole("button", { name: /射线模式/ }).first().click();
+  await expect(page.getByRole("slider", { name: "射线数量", exact: true })).toHaveValue("20");
+  await expect(page.getByRole("slider", { name: "流动速度", exact: true })).toHaveValue("6.5");
+  await page.getByRole("button", { name: /彗星模式/ }).first().click();
+  await expect(page.getByRole("slider", { name: "尾迹长度", exact: true })).toHaveValue("2.4");
+  await page.getByLabel("中心几何体", { exact: true }).selectOption("none");
+  await page.getByRole("button", { name: "复制这组参数" }).click();
+  await expect(page.getByRole("status")).toContainText("已复制");
   const copied = JSON.parse(await page.evaluate(() => navigator.clipboard.readText()));
-  expect(copied.settings).toMatchObject({ bunches: 2, spread: 1, curvature: 0.28 });
-  expect(copied).toMatchObject({ geometry: "mobius", cards: true, theme: "day" });
+  expect(copied).toMatchObject({ version: 3, mode: "comet", geometry: "none", settings: { trail: 2.4 }, modes: { rays: { count: 20, flow: 6.5 } } });
   await page.reload();
-  await expect(count).toHaveValue("2");
-  await expect(page.getByLabel("中心几何体")).toHaveValue("mobius");
-  await page.getByRole("button", { name: "重置", exact: true }).click();
-  await expect(count).toHaveValue("8");
-  await page.getByRole("link", { name: "回到首页" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(canvas).toHaveAttribute("data-motion-mode", "comet");
+  await expect(page.getByRole("slider", { name: "尾迹长度", exact: true })).toHaveValue("2.4");
+  await page.getByRole("button", { name: "漫游星空", exact: true }).click();
+  await expect(page.locator(".star-lab")).toHaveAttribute("data-cluster-mode", "roam");
+  await page.getByRole("button", { name: "重新播放", exact: true }).click();
+  await expect(page.locator(".star-lab")).toHaveAttribute("data-cluster-mode", "collect");
+  await page.getByRole("button", { name: "恢复默认", exact: true }).click();
+  await expect(page.getByRole("slider", { name: "尾迹长度", exact: true })).toHaveValue("2.7");
+  await page.getByRole("button", { name: /射线模式/ }).first().click();
+  await expect(page.getByRole("slider", { name: "流动速度", exact: true })).toHaveValue("6.5");
   expect(errors).toEqual([]);
 });
 
-test("mobile starts with an unobstructed preview and an operable settings drawer", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/playground/star-clusters");
-  const drawer = page.getByRole("button", { name: /调节星线/ });
-  await expect(drawer).toHaveAttribute("aria-expanded", "false");
-  await page.waitForTimeout(2200);
-  await page.screenshot({ path: `${evidence}/mobile.png` });
-  await drawer.click();
-  await expect(drawer).toHaveAttribute("aria-expanded", "true");
-  await page.getByRole("button", { name: "沿线成簇", exact: true }).click();
-  await page.getByLabel("每条线的星簇", { exact: false }).press("Home");
-  await expect(page.getByLabel("每条线的星簇", { exact: false })).toHaveValue("1");
-  await page.screenshot({ path: `${evidence}/mobile-controls.png` });
-  await drawer.click();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+test("all motion presets render, pause freezes the canvas, and daytime cards remain usable", async ({ page }) => {
+  await page.setViewportSize({ width: 1651, height: 1000 });
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto(route);
+  const canvas = page.locator("canvas.cluster-canvas");
+  const modes = [
+    { name: "射线模式", id: "rays", presets: ["舒展星线", "宽幅爆发", "旋转星束"] },
+    { name: "彗星模式", id: "comet", presets: ["远行彗星", "彗星群", "长尾掠影"] },
+    { name: "星团掉落", id: "fall", presets: ["迎面星团", "密集冲刺", "缓慢靠近"] },
+  ];
+  for (const mode of modes) {
+    await page.locator(".motion-modes").getByRole("button", { name: new RegExp(mode.name) }).click();
+    await expect(canvas).toHaveAttribute("data-motion-mode", mode.id);
+    for (const preset of mode.presets) {
+      await page.getByRole("button", { name: preset, exact: true }).click();
+      await expect(page.getByRole("button", { name: preset, exact: true })).toHaveAttribute("aria-pressed", "true");
+      await page.waitForTimeout(900);
+      await page.screenshot({ path: `${evidence}/${mode.id}-${preset}.png` });
+    }
+  }
+  await page.getByRole("button", { name: "暂停", exact: true }).click();
+  const frozen = await canvas.screenshot();
+  await page.waitForTimeout(200);
+  expect((await canvas.screenshot()).equals(frozen)).toBe(true);
+  await page.getByRole("button", { name: "继续", exact: true }).click();
+  await page.getByRole("button", { name: "切到白天", exact: true }).click();
+  await page.getByLabel("中心几何体", { exact: true }).selectOption("mobius");
+  await page.getByLabel("一起看看诗卡", { exact: true }).check();
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: `${evidence}/day-cards.png` });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+for (const width of [320, 390]) {
+  test(`mobile ${width}px supports all modes and a usable settings drawer`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto(route);
+    const drawer = page.getByRole("button", { name: /调节参数/ });
+    await expect(drawer).toHaveAttribute("aria-expanded", "false");
+    for (const name of ["彗星模式", "星团掉落", "射线模式"]) {
+      await page.locator(".motion-modes").getByRole("button", { name: new RegExp(name) }).click();
+      await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+    }
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${evidence}/mobile-${width}.png` });
+    await drawer.click();
+    await expect(drawer).toHaveAttribute("aria-expanded", "true");
+    await page.getByRole("spinbutton", { name: "流动速度数值", exact: true }).fill("99");
+    await page.getByRole("spinbutton", { name: "流动速度数值", exact: true }).press("Tab");
+    await expect(page.getByRole("slider", { name: "流动速度", exact: true })).toHaveValue("8");
+    await page.getByRole("slider", { name: "射线数量", exact: true }).press("End");
+    await expect(page.getByRole("slider", { name: "射线数量", exact: true })).toHaveValue("36");
+    await page.screenshot({ path: `${evidence}/mobile-${width}-controls.png` });
+    await drawer.click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    const modeButtons = await page.locator(".motion-modes button").all();
+    for (const button of modeButtons) {
+      const box = await button.boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    }
+  });
+}
+
+test("saved v2 parameters migrate and reduced motion stays static", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(() => localStorage.setItem("woodfish-star-lines-playground-v2", JSON.stringify({ version: 2, seed: 123, settings: { bunches: 7, spread: 0.8, flow: 1.4 }, theme: "day", geometry: "mobius" })));
+  await page.goto(route);
+  await expect(page.getByRole("slider", { name: "每条线的星簇", exact: true })).toHaveValue("7");
+  await expect(page.locator(".star-lab")).toHaveClass(/is-day/);
+  const canvas = page.locator("canvas.cluster-canvas");
+  await page.waitForTimeout(400);
+  const frozen = await canvas.screenshot();
+  await page.waitForTimeout(200);
+  expect((await canvas.screenshot()).equals(frozen)).toBe(true);
+  await page.locator(".motion-modes").getByRole("button", { name: /彗星模式/ }).click();
+  await expect(canvas).toHaveAttribute("data-motion-mode", "comet");
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const comet = await canvas.screenshot({ path: `${evidence}/reduced-comet-before.png` });
+  expect(comet.equals(frozen)).toBe(false);
+  await page.waitForTimeout(200);
+  expect((await canvas.screenshot({ path: `${evidence}/reduced-comet-after.png` })).equals(comet)).toBe(true);
 });
