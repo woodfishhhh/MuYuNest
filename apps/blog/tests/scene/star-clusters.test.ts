@@ -42,7 +42,7 @@ describe("star line playground", () => {
 
   it("validates saved parameters and retains the original speed as the default", () => {
     expect(normalizeClusterSettings({ bunches: 100, spread: NaN, clumping: -1, flow: Infinity }))
-      .toMatchObject({ bunches: 8, spread: 0, clumping: 0, flow: 1 });
+      .toMatchObject({ bunches: 24, spread: 0, clumping: 0, flow: 1 });
   });
 
   it.each(CLUSTER_PRESETS)("keeps $name finite and restores the underlying field", ({ settings }) => {

@@ -9,9 +9,10 @@ import { createCircleTexture } from "@/components/scene/circle-texture";
 import { getBlogDockTransform } from "@/components/scene/blog-dock";
 import { getHomeGeometryAnchor } from "@/components/scene/home-card-flight/layout";
 import type { HomeCardFlight } from "@/components/scene/home-card-flight";
-import { createStarClusters, type ClusterSettings } from "./star-clusters";
+import { createStarClusters, CLUSTER_PRESETS, type PlaygroundSettings, type StarMode } from "./star-clusters";
+import { createStarMotion } from "./star-motion";
 
-const props = defineProps<{ settings: ClusterSettings; collect: boolean; paused: boolean; theme: "day" | "night"; geometry: "cube" | "mobius"; cards: boolean; seed: number }>();
+const props = defineProps<{ settings: PlaygroundSettings; mode: StarMode; reference: boolean; collect: boolean; paused: boolean; theme: "day" | "night"; geometry: "cube" | "mobius" | "none"; cards: boolean; seed: number }>();
 const emit = defineEmits<{ error: [message: string] }>();
 const canvas = ref<HTMLCanvasElement>();
 const dragging = ref(false);
@@ -21,7 +22,10 @@ let stars: StarField | undefined;
 let cube: Hypercube | undefined;
 let mobius: MobiusStrip | undefined;
 let texture: THREE.CanvasTexture | undefined;
-let motion: ReturnType<typeof createStarClusters> | undefined;
+let motion: ReturnType<typeof createStarMotion> | undefined;
+let referenceMotion: ReturnType<typeof createStarClusters> | undefined;
+let points: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial> | undefined;
+let source: Float32Array | undefined;
 let cards: HomeCardFlight | undefined;
 let loadingCards = false;
 let disposed = false;
@@ -87,10 +91,21 @@ function down(event: PointerEvent) {
 function release() { cards?.release(); dragging.value = false; }
 function leave() { if (!dragging.value) { pointer.set(0, 0); hovered.value = false; } }
 function setReduced(event: MediaQueryListEvent) { reduced = event.matches; }
-function replay() { motion?.replay(); }
+function replay() { motion?.replay(); referenceMotion?.replay(); }
 defineExpose({ replay });
 
-watch(() => [props.settings, props.seed] as const, () => motion?.configure(props.settings, props.seed), { deep: true });
+function resetMotion() {
+  if (!points || !source) return;
+  const positions = points.geometry.attributes.position.array as Float32Array;
+  const alpha = points.geometry.attributes.starOpacity.array as Float32Array;
+  const sizes = points.geometry.attributes.starSize.array as Float32Array;
+  positions.set(source); alpha.fill(1); sizes.fill(1);
+  motion = props.reference ? undefined : createStarMotion(positions, alpha, sizes, props.seed, props.settings, props.mode);
+  referenceMotion = props.reference ? createStarClusters(positions, alpha, sizes, props.seed, CLUSTER_PRESETS[0].settings) : undefined;
+}
+
+watch(() => [props.settings, props.mode, props.seed] as const, () => motion?.configure(props.settings, props.mode, props.seed), { deep: true });
+watch(() => props.reference, resetMotion);
 watch(() => [props.theme, props.geometry], () => { styleScene(); resize(); });
 watch(() => props.cards, () => { if (!props.cards) release(); void ensureCards(); });
 watch(() => props.collect, value => { if (!value) release(); });
@@ -100,11 +115,9 @@ onMounted(() => {
     scene = useThreeScene({ canvas: canvas.value!, width: 1, height: 1 });
     scene.camera.position.set(0, 0, 10); scene.camera.lookAt(0, 0, 0);
     texture = createCircleTexture(); stars = useStarField(texture, 5000, null);
-    const points = stars.group.children[0] as THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
+    points = stars.group.children[0] as THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
     const positions = points.geometry.attributes.position.array as Float32Array;
-    const alpha = points.geometry.attributes.starOpacity.array as Float32Array;
-    const sizes = points.geometry.attributes.starSize.array as Float32Array;
-    motion = createStarClusters(positions, alpha, sizes, props.seed, props.settings);
+    source = positions.slice(); resetMotion();
     cube = useHypercube(texture); mobius = useMobiusStrip();
     root.add(cube.group, mobius.group); scene.scene.add(stars.group, root);
     styleScene(); resize(); void ensureCards();
@@ -113,12 +126,14 @@ onMounted(() => {
     reduceQuery.addEventListener("change", setReduced);
 
     function tick(now: number) {
-      if (!scene || !stars || !cube || !mobius || !motion) return;
+      if (!scene || !stars || !cube || !mobius || !points) return;
       const rawDelta = Math.min((now - (previous || now)) / 1000, 0.05); previous = now;
       const delta = props.paused || reduced || document.hidden ? 0 : rawDelta;
       if (!props.paused && !reduced) smoothPointer.lerp(pointer, 1 - Math.exp(-rawDelta * 3));
       stars.setCollectMode(false, reduced || props.paused); stars.update(delta);
-      motion.update(delta, props.collect, stars.group, { camera: scene.camera, width, height, pointer: smoothPointer }, reduced || props.paused);
+      const view = { camera: scene.camera, width, height, pointer: smoothPointer };
+      motion?.update(delta, props.collect, stars.group, view, reduced);
+      referenceMotion?.update(delta, props.collect, stars.group, view, reduced);
       points.geometry.attributes.position.needsUpdate = true;
       points.geometry.attributes.starOpacity.needsUpdate = true;
       points.geometry.attributes.starSize.needsUpdate = true;
@@ -140,7 +155,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <canvas ref="canvas" class="cluster-canvas" :class="{ grabbing: dragging, grab: hovered }" aria-label="可调节的星簇效果预览"
+  <canvas ref="canvas" class="cluster-canvas" :class="{ grabbing: dragging, grab: hovered }" :data-motion-mode="reference ? 'reference' : mode" aria-label="可调节的星光运动预览"
     @pointermove="move" @pointerdown="down" @pointerup="release" @pointercancel="release" @lostpointercapture="release" @pointerleave="leave" />
 </template>
 
