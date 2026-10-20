@@ -71,6 +71,48 @@ describe("star motion playground", () => {
     expect(f.positions).not.toEqual(comet);
   });
 
+  it.each(["comet", "fall", "roam"] as const)("hands over to %s without moving visible stars across the viewport", next => {
+    const f = fixture(); const modes = createModeSettings();
+    const motion = createStarMotion(f.positions, f.opacity, f.sizes, 716, { ...modes.rays, flow: 0 }, "rays");
+    motion.update(0, true, f.group, f.view, true);
+    if (next !== "roam") motion.configure({ ...modes[next], flow: 0 }, next);
+    const projected = new THREE.Vector3();
+    function screen() {
+      return Array.from(f.opacity, (alpha, index) => {
+        projected.fromArray(f.positions, index * 3).applyMatrix4(f.group.matrixWorld).project(f.view.camera);
+        const x = (projected.x + 1) * f.view.width / 2;
+        const y = (1 - projected.y) * f.view.height / 2;
+        return { x, y, visible: alpha >= 0.1 && projected.z >= -1 && projected.z <= 1 && x >= 0 && x <= f.view.width && y >= 0 && y <= f.view.height };
+      });
+    }
+    motion.update(0, next !== "roam", f.group, f.view);
+    let before = screen(); let checked = 0;
+    for (let frame = 0; frame < 47; frame++) {
+      motion.update(1 / 60, next !== "roam", f.group, f.view);
+      const after = screen();
+      for (let i = 0; i < after.length; i++) {
+        if (!before[i].visible || !after[i].visible) continue;
+        expect(Math.hypot(after[i].x - before[i].x, after[i].y - before[i].y)).toBeLessThan(8);
+        checked++;
+      }
+      before = after;
+    }
+    expect(checked).toBeGreaterThan(100);
+    motion.update(1 / 60, next !== "roam", f.group, f.view);
+    expect(f.positions.every(Number.isFinite)).toBe(true);
+  });
+
+  it("can reverse a partially completed entry without dropping the exit animation", () => {
+    const f = fixture(); const original = f.positions.slice(); const modes = createModeSettings();
+    const motion = createStarMotion(f.positions, f.opacity, f.sizes, 716, modes.rays, "rays");
+    motion.update(0.1, true, f.group, f.view);
+    motion.update(0.1, false, f.group, f.view);
+    expect(motion.isActive()).toBe(true);
+    for (let frame = 0; frame < 60; frame++) motion.update(1 / 60, false, f.group, f.view);
+    expect(motion.isActive()).toBe(false);
+    expect(f.positions).toEqual(original);
+  });
+
   it("normalizes saved data, preserves generous values, and gives every mode independent settings", () => {
     expect(normalizePlaygroundSettings({ count: 99, flow: 6.5, curvature: -3, starSize: NaN, density: Infinity, spread: 3.2 }, "rays"))
       .toMatchObject({ count: 36, flow: 6.5, curvature: -3, starSize: 1.2, density: 0.48, spread: 3.2 });
