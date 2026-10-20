@@ -14,6 +14,7 @@ export interface ImageCard extends CardBase {
   src: string;
   alt: string;
   caption: string;
+  description?: string;
   frame: "white" | "black" | "wood";
   fit: "contain" | "cover";
   aspectRatio?: number;
@@ -65,10 +66,10 @@ export function parseCardConfig(input: unknown): { cards: ContentCard[]; issues:
           align: choice("align", ["left", "center"], "center") });
       } else if (item.type === "image") {
         if (typeof item.src !== "string" || !isImageSource(item.src)) throw new Error("图片 src 需要 local:文件名、站内 /路径或 http(s) 地址");
-        for (const key of ["alt", "caption"]) if (item[key] !== undefined && typeof item[key] !== "string") throw new Error(`${key} 必须是文字`);
+        for (const key of ["alt", "caption", "description"]) if (item[key] !== undefined && typeof item[key] !== "string") throw new Error(`${key} 必须是文字`);
         if (item.aspectRatio !== undefined && (typeof item.aspectRatio !== "number" || !Number.isFinite(item.aspectRatio) || item.aspectRatio < 0.4 || item.aspectRatio > 2.5)) throw new Error("aspectRatio 范围为 0.4～2.5");
         cards.push({ ...base, type: "image", src: item.src, alt: (item.alt as string) ?? title,
-          caption: (item.caption as string) ?? "", frame: choice("frame", ["white", "black", "wood"], "white"),
+          caption: (item.caption as string) ?? "", description: (item.description as string) ?? (item.caption as string) ?? "", frame: choice("frame", ["white", "black", "wood"], "white"),
           fit: choice("fit", ["contain", "cover"], "contain"), ...(item.aspectRatio ? { aspectRatio: item.aspectRatio as number } : {}) });
       } else throw new Error("type 必须是 text 或 image");
     } catch (error) {

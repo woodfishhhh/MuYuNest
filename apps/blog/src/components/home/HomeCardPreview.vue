@@ -35,11 +35,11 @@ onBeforeUnmount(() => { disposed = true; observer?.disconnect(); });
 </script>
 
 <template>
-  <figure ref="host">
+  <figure ref="host" :data-card-type="card.type" :data-card-id="card.id">
     <div ref="sheets" class="sheets" />
     <p v-if="error" role="alert">{{ error }}</p>
     <figcaption>{{ formatCardHeading(card) }}</figcaption>
-    <p class="sr-only">{{ card.type === 'text' ? card.text : card.alt }}</p>
+    <p class="sr-only">{{ card.type === 'text' ? card.text : [card.alt, card.description].filter(Boolean).join(' · ') }}</p>
   </figure>
 </template>
 

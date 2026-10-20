@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { catalog, catalogIssues, resolveImageSource } from "./catalog";
+import { createDropSchedule, type DropKind } from "./drop-schedule";
+import { createFallingStar } from "./falling-star";
 import type { ContentCard } from "./card-config";
 import { loadCardImage, renderTextCard, renderImageCard, renderCardReverse, type CardSurface } from "./card-surface";
 import { Flight, layoutFor, STEP, PERSPECTIVE, MAX_ACTIVE } from "./motion";
@@ -12,6 +14,7 @@ export interface HomeCardFlightOptions {
   theme: "day" | "night";
   cards?: ContentCard[];
   onReady?: () => void;
+  onDrop?: (drop: { kind: DropKind; id?: string }) => void;
   onError?: (error: unknown) => void;
 }
 
@@ -25,6 +28,8 @@ type Entry = {
   front: THREE.MeshBasicMaterial;
   mask: THREE.Texture;
   liveTexture?: THREE.CanvasTexture;
+  wasThrown: boolean;
+  disposeImage?: () => void;
   vanish: {
     enabled: { value: number };
     shift: { value: number };
@@ -53,6 +58,14 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   let dragged: Entry | undefined;
   const pointer = { x: layout.smileX, y: layout.smileY };
   const entries: Entry[] = [];
+  const schedule = createDropSchedule(random);
+  const images = definitions.filter(card => card.type === "image");
+  const failedImages = new Set<string>();
+  let maskBase: THREE.Texture | undefined;
+  let pendingDrop = false;
+  let nextEntryIndex = 0;
+  const star = createFallingStar(definitions.length + 1);
+  scene.add(star.mesh);
   const reverse = new THREE.CanvasTexture(renderCardReverse());
   reverse.colorSpace = THREE.SRGBColorSpace;
   const backMaterial = new THREE.MeshBasicMaterial({ map: reverse });
@@ -61,7 +74,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   const blank = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   blank.colorSpace = THREE.SRGBColorSpace;
   blank.needsUpdate = true;
-  const resources: { dispose(): void }[] = [reverse, blank, backMaterial, sideMaterial, hiddenMaterial];
+  const resources: { dispose(): void }[] = [reverse, blank, backMaterial, sideMaterial, hiddenMaterial, star];
 
   function makeMask(image: HTMLImageElement) {
     const canvas = document.createElement("canvas");
@@ -78,13 +91,13 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   }
 
   function addFrame(surface: CardSurface, maskBase: THREE.Texture) {
-    const index = entries.length;
+    const index = nextEntryIndex++;
     const height = layout.cardWidth * surface.height / surface.width;
     // Clones share the mask image/GPU source; only their UV offsets differ.
     const mask = maskBase.clone();
     const front = new THREE.MeshBasicMaterial({ map: blank, alphaMap: mask, alphaTest: 0.5 });
     const vanish = { enabled: { value: 0 }, shift: { value: 0 },
-      size: { value: new THREE.Vector2(layout.cardWidth, height) }, paper: { value: new THREE.Color("#fafaf7") } };
+      size: { value: new THREE.Vector2(layout.cardWidth, height) }, paper: { value: new THREE.Color(theme === "day" ? "#fafaf7" : "#050510") } };
     // Original release effect: the photograph erodes first, exposing a paper grid;
     // the same 30-frame mask erodes the grid 105 ms later.
     front.onBeforeCompile = shader => {
@@ -111,10 +124,13 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     const mesh = new THREE.Mesh(geometry, materials);
     mesh.visible = false;
     mesh.userData.cardId = surface.card.id;
+    mesh.userData.kind = surface.card.type;
     mesh.userData.page = surface.page;
     scene.add(mesh);
-    entries.push({ flight: new Flight(index), surface, mesh, width: layout.cardWidth, height, materials, front, mask, vanish });
+    const entry: Entry = { flight: new Flight(index), surface, mesh, width: layout.cardWidth, height, materials, front, mask, vanish, wasThrown: false };
+    entries.push(entry);
     resources.push(mask, front, geometry);
+    return entry;
   }
 
   function releaseTexture(entry: Entry) {
@@ -150,10 +166,73 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       : entry.materials;
   }
 
-  function throwOne(warm = false) {
-    if (entries.filter(entry => entry.flight.state !== "waiting").length >= MAX_ACTIVE) return;
-    const available = entries.filter(entry => entry.flight.state === "waiting");
-    if (available.length) available[Math.floor(random() * available.length)].flight.reset(layout, random, warm);
+  function forgetResource(resource: { dispose(): void }) {
+    resource.dispose();
+    const index = resources.indexOf(resource);
+    if (index >= 0) resources.splice(index, 1);
+  }
+
+  function syncEntries() {
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      if (entry.surface.card.type === "image" && entry.wasThrown && entry.flight.state === "waiting") {
+        // Drop the decoded image and its closure as soon as it leaves the scene.
+        releaseTexture(entry); entry.disposeImage?.();
+        forgetResource(entry.mesh.geometry); forgetResource(entry.front); forgetResource(entry.mask);
+        scene.remove(entry.mesh); entries.splice(i, 1);
+      } else syncEntry(entry);
+    }
+    star.sync(layout);
+  }
+
+  function activeCount() {
+    return entries.filter(entry => entry.flight.state !== "waiting").length + Number(star.flight.state !== "waiting");
+  }
+
+  async function throwOne(warm = false) {
+    if (disposed || !maskBase || pendingDrop || activeCount() >= MAX_ACTIVE) return;
+    const usableImages = images.filter(card => !failedImages.has(card.id));
+    const hasText = entries.some(entry => entry.surface.card.type === "text");
+    const kind = schedule.next(hasText, usableImages.length > 0);
+    if (!kind) return;
+    if (kind === "star") {
+      if (star.flight.state !== "waiting") return;
+      star.flight.reset(layout, random, warm); star.sync(layout);
+      schedule.record(kind); options.onDrop?.({ kind }); return;
+    }
+    pendingDrop = true;
+    try {
+      let entry: Entry | undefined;
+      if (kind === "text") {
+        const available = entries.filter(entry => entry.surface.card.type === "text" && entry.flight.state === "waiting");
+        if (!available.length) return;
+        entry = available[Math.floor(random() * available.length)];
+      } else {
+        const available = usableImages.filter(card => !entries.some(entry => entry.surface.card.id === card.id && entry.flight.state !== "waiting"));
+        if (!available.length) return;
+        const card = available[Math.floor(random() * available.length)];
+        entry = entries.find(entry => entry.surface.card.id === card.id);
+        if (!entry) {
+          try {
+            const image = await loadCardImage(resolveImageSource(card.src));
+            if (disposed || (!active && !warm)) { image.src = ""; return; }
+            entry = addFrame(renderImageCard(card, image)[0], maskBase);
+            entry.disposeImage = () => { image.src = ""; };
+          } catch {
+            if (!disposed) {
+              failedImages.add(card.id);
+              options.onError?.(new Error(`卡片 ${card.id} 的图片加载失败`));
+            }
+            return;
+          }
+        }
+      }
+      if (disposed || (!active && !warm)) return;
+      entry.wasThrown = true;
+      entry.flight.reset(layout, random, warm);
+      schedule.record(kind); syncEntry(entry);
+      options.onDrop?.({ kind, id: entry.surface.card.id });
+    } finally { pendingDrop = false; }
   }
 
   function resize(width: number, height: number) {
@@ -170,7 +249,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       resources.push(entry.mesh.geometry);
       entry.vanish.size.value.set(entry.width, entry.height);
     }
-    entries.forEach(syncEntry);
+    syncEntries();
   }
 
   function setTheme(value: "day" | "night") {
@@ -216,11 +295,12 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
           entry.flight.tick({ x: pointer.x - layout.smileX, y: pointer.y - layout.originY }, flightSpeed);
         }
       }
+      if (!reducedMotion) star.flight.tick(undefined, flightSpeed);
       if (!reducedMotion && simTime >= nextThrow) {
-        throwOne(); nextThrow = simTime + (0.5 + random() * 0.5) * (layout.width > 767 ? 1.25 : 2) / flightSpeed;
+        void throwOne(); nextThrow = simTime + (0.5 + random() * 0.5) * (layout.width > 767 ? 1.25 : 2) / flightSpeed;
       }
     }
-    entries.forEach(syncEntry);
+    syncEntries();
   }
 
   function render() {
@@ -228,14 +308,6 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     const previous = renderer.autoClear;
     try { renderer.autoClear = false; renderer.clearDepth(); renderer.render(scene, camera); }
     finally { renderer.autoClear = previous; }
-  }
-
-  function refreshReady() {
-    if (disposed) return;
-    setTheme(theme);
-    for (let i = 0; i < MAX_ACTIVE; i++) throwOne(true);
-    entries.forEach(syncEntry);
-    if (!ready) { ready = true; options.onReady?.(); }
   }
 
   async function initialize() {
@@ -249,36 +321,32 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       const ctx = maskCanvas.getContext("2d")!; ctx.fillStyle = "white"; ctx.fillRect(0, 0, 30, 1);
     }
     if (disposed) return;
-    const maskBase = new THREE.CanvasTexture(maskCanvas);
+    maskBase = new THREE.CanvasTexture(maskCanvas);
     maskBase.repeat.set(1 / 30, 1); maskBase.minFilter = THREE.LinearFilter;
     maskBase.magFilter = THREE.LinearFilter; maskBase.generateMipmaps = false;
     resources.push(maskBase);
-    for (const card of definitions) if (card.type === "text") renderTextCard(card).forEach(page => addFrame(page, maskBase));
-    const images = definitions.filter(card => card.type === "image");
-    if (entries.length || !images.length) refreshReady();
-    // Broken/CORS-blocked images do not block poetry or other images.
-    await Promise.all(images.map(async card => {
-      try {
-        const image = await loadCardImage(resolveImageSource(card.src));
-        if (disposed) return;
-        renderImageCard(card, image).forEach(page => addFrame(page, maskBase)); refreshReady();
-      } catch (error) {
-        if (!disposed) options.onError?.(new Error(`卡片 ${card.id} 的图片加载失败：${String(error)}`));
-      }
-    }));
-    if (!ready) refreshReady();
+    for (const card of definitions) {
+      if (card.type === "text") for (const page of renderTextCard(card)) addFrame(page, maskBase);
+    }
+    setTheme(theme);
+    await throwOne(true);
+    if (disposed) return;
+    ready = true; options.onReady?.();
+    // Warm the first text/photo pair only. Later photos decode on demand.
+    void throwOne(true);
   }
 
   function dispose() {
     if (disposed) return;
     disposed = true; dragged = undefined;
+    entries.forEach(entry => entry.disposeImage?.());
     resources.forEach(resource => resource.dispose()); resources.length = 0;
     entries.length = 0; scene.clear();
   }
 
   resize(options.width, options.height);
   void initialize().catch(error => { if (!disposed) options.onError?.(error); });
-  return { resize, setTheme, update, render, pick, beginDrag, drag, release, isInteracting: () => !!dragged, dispose };
+  return { resize, setTheme, update, render, pick, beginDrag, drag, release, isInteracting: () => !!dragged, isStarVisible: () => star.mesh.visible, dispose };
 }
 
 export type HomeCardFlight = ReturnType<typeof createHomeCardFlight>;

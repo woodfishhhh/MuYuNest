@@ -48,10 +48,11 @@ describe("home flight integration", () => {
     expect(blendDockAnchors(home, blog, 0.5, 0.5).left).toBeCloseTo((home.left + blog.left) / 2);
   });
 
-  function mockAssets(decode = () => Promise.resolve()) {
+  function mockAssets(decode = (_src: string) => Promise.resolve()) {
+    const requests: string[] = [];
     vi.stubGlobal("Image", class {
       src = ""; naturalWidth = 32; naturalHeight = 32;
-      decode = decode;
+      decode() { requests.push(this.src); return decode(this.src); }
     });
     vi.stubGlobal("FontFace", class { load() { return Promise.resolve(this); } });
     const fonts = { add: vi.fn(), delete: vi.fn() };
@@ -63,7 +64,7 @@ describe("home flight integration", () => {
       measureText: (text: string) => ({ width: text.length * 7 }),
       getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, 255]) }),
     } as unknown as CanvasRenderingContext2D);
-    return { fonts, restore: () => {
+    return { fonts, requests, restore: () => {
       if (previous) Object.defineProperty(document, "fonts", previous);
       else Reflect.deleteProperty(document, "fonts");
     } };
@@ -103,6 +104,73 @@ describe("home flight integration", () => {
       expect(scene.children).toHaveLength(0);
       expect(textureDispose).toHaveBeenCalled();
       expect(renderer.dispose).not.toHaveBeenCalled();
+    } finally { cards.dispose(); assets.restore(); }
+  });
+
+  it("alternates content, inserts sparse 3D stars, and only decodes photos on demand", async () => {
+    const assets = mockAssets();
+    const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
+    const definitions = parseCardConfig({ version: 1, cards: [
+      ...Array.from({ length: 4 }, (_, i) => ({ id: `text-${i}`, type: "text", text: "一首小诗。" })),
+      ...Array.from({ length: 6 }, (_, i) => ({ id: `photo-${i}`, type: "image", src: `https://example.com/photo-${i}.webp`, description: `我的镜头下${i + 1}` })),
+    ] }).cards;
+    const renderer = mockRenderer(); const onReady = vi.fn();
+    const drops: string[] = [];
+    const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
+      width: 1651, height: 871, theme: "day", cards: definitions, onReady, onDrop: drop => drops.push(drop.kind) });
+    try {
+      await vi.waitFor(() => expect(drops).toHaveLength(2));
+      expect(drops).toEqual(["text", "image"]);
+      expect(assets.requests.filter(url => url.startsWith("https://example.com/photo-"))).toHaveLength(1);
+      cards.update(0, true, false); cards.render();
+      const scene = renderer.render.mock.calls[0][0] as THREE.Scene;
+      for (let i = 0; i < 700; i++) {
+        cards.update(0.1, true, false);
+        await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+        expect(scene.children.filter(child => child.visible).length).toBeLessThanOrEqual(2);
+        expect(scene.children.filter(child => child.userData.kind === "image").length).toBeLessThanOrEqual(2);
+      }
+      const content = drops.filter(kind => kind !== "star");
+      expect(content.length).toBeGreaterThan(20);
+      content.forEach((kind, i) => expect(kind).toBe(i % 2 ? "image" : "text"));
+      let gap = 0; let stars = 0;
+      for (const kind of drops) {
+        if (kind === "star") { expect(gap).toBeGreaterThanOrEqual(3); expect(gap).toBeLessThanOrEqual(6); gap = 0; stars++; }
+        else gap++;
+      }
+      expect(stars).toBeGreaterThan(2);
+      const star = scene.children.find(child => child.userData.kind === "star") as THREE.Mesh;
+      expect(star.geometry.type).toBe("ExtrudeGeometry");
+    } finally { cards.dispose(); assets.restore(); }
+  });
+
+  it.each(["inactive", "disposed"])("discards a pending photo when the scene becomes %s", async state => {
+    let resolve!: () => void;
+    const pending = new Promise<void>(done => { resolve = done; });
+    let photoLoads = 0;
+    const assets = mockAssets(src => src.startsWith("https://example.com/") && ++photoLoads > 1 ? pending : Promise.resolve());
+    const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
+    const fixture = parseCardConfig({ version: 1, cards: [
+      { id: "poem", type: "text", text: "一首小诗。" },
+      { id: "photo", type: "image", src: "https://example.com/photo.webp" },
+    ] }).cards;
+    const renderer = mockRenderer(); const onDrop = vi.fn();
+    const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
+      width: 1440, height: 900, theme: "night", cards: fixture, onDrop });
+    try {
+      await vi.waitFor(() => expect(onDrop).toHaveBeenCalledTimes(2));
+      cards.update(0, true, false); cards.render();
+      const scene = renderer.render.mock.calls[0][0] as THREE.Scene;
+      for (let i = 0; i < 150 && photoLoads < 2; i++) {
+        cards.update(0.1, true, false);
+        await Promise.resolve();
+      }
+      expect(photoLoads).toBe(2);
+      if (state === "disposed") cards.dispose(); else cards.update(0, false, false);
+      const emitted = onDrop.mock.calls.length;
+      resolve(); await pending; await Promise.resolve(); await Promise.resolve();
+      expect(onDrop).toHaveBeenCalledTimes(emitted);
+      expect(scene.children.filter(child => child.userData.kind === "image")).toHaveLength(0);
     } finally { cards.dispose(); assets.restore(); }
   });
 

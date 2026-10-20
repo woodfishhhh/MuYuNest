@@ -33,6 +33,7 @@
   "date": "2024-10-17",
   "src": "local:14.jpg",
   "alt": "十月的一张照片",
+  "description": "我的镜头下1",
   "frame": "white",
   "fit": "contain"
 }
@@ -40,7 +41,7 @@
 
 图片文件放在 `apps/blog/src/assets/home-flight/photos/`，通过 `local:文件名` 引用；也可以直接把 `src` 换成上传图床后得到的 HTTPS 图片地址，或已有的站内 `/asset/文件名` 地址。外部图床必须允许跨域读取图片（CORS），否则该图片跳过，不影响诗卡。
 
-相框只有图片和边框，默认无字。可选 `caption` 添加一句图注；`title` 和 `date` 用于预览目录，不会强行印到相框上。`frame` 支持 `white`、`black`、`wood`；`fit: contain` 保留整张图片，`cover` 填满裁切。默认跟随图片比例，`aspectRatio` 可以固定画框宽高比（0.4～2.5，例如 `1` 为正方形）。
+相框保留完整图片与边框，可选 `description` 添加下方描述，例如“我的镜头下1”或“love CS”；旧字段 `caption` 仍兼容，`description` 优先。`title` 和 `date` 用于预览目录，不会强行印到相框上。`frame` 支持 `white`、`black`、`wood`；`fit: contain` 保留整张图片，`cover` 填满裁切。默认跟随图片比例，`aspectRatio` 可以固定画框宽高比（0.4～2.5，例如 `1` 为正方形）。
 
 ## 日常维护
 
@@ -48,6 +49,8 @@
 - 修改：直接改标题、日期、正文或图片地址。
 - 暂时隐藏：加 `"enabled": false`。重新启用改为 `true` 或删除该字段。
 - 删除：移除整个对象，注意 JSON 逗号。
-- 查看全部排版：打开 `/playground/home-cards`。首页拾光随机抽取卡片，同一时间最多两张。
+- 查看全部排版：打开 `/playground/home-cards`。首页按文字卡 → 图片卡交替抽取；每隔随机 3～6 次内容掉落插入一颗四角立体星星，星星不打断文字/图片交替顺序。卡片和星星合计同屏最多两个。
 
 JSON 关联了 `home-cards.schema.json`，支持的编辑器会提示字段和格式错误。开发预览会热更新；生产站点修改配置或新增本地图片后需要重新构建部署。修改这些卡片不需要运行 Markdown 文章内容生成器。
+
+当前收录的 16 张图片已优化为 WebP，最长边不超过 1600px；“love CS”截图使用无损 WebP。原始上传文件保持原样。首页按需解码当前要出现的图片，离场后释放图片和纹理。WebP 不进入离线预缓存，实际访问后才缓存，避免首次打开网站就下载整个相册。

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import HomeCardPreview from "@/components/home/HomeCardPreview.vue";
+import { interleaveCards } from "@/components/scene/home-card-flight/drop-schedule";
 import { catalog, catalogIssues } from "@/components/scene/home-card-flight/catalog";
+const orderedCards = interleaveCards(catalog);
 </script>
 
 <template>
@@ -13,7 +15,7 @@ import { catalog, catalogIssues } from "@/components/scene/home-card-flight/cata
     </header>
     <p v-for="issue in catalogIssues" :key="issue" role="alert">{{ issue }}</p>
     <div class="card-collection__grid">
-      <HomeCardPreview v-for="card in catalog" :key="card.id" :card="card" />
+      <HomeCardPreview v-for="card in orderedCards" :key="card.id" :card="card" />
     </div>
   </main>
 </template>

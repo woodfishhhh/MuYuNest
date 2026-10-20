@@ -97,7 +97,8 @@ export function renderImageCard(card: ImageCard, image: HTMLImageElement): CardS
   const inset = 38;
   const imageWidth = WIDTH - inset * 2;
   const imageHeight = imageWidth / ratio;
-  const captionHeight = card.caption ? 42 : 0;
+  const description = card.description ?? card.caption;
+  const captionHeight = description ? 42 : 0;
   const height = imageHeight + inset * 2 + captionHeight;
   return [{ card, page: 0, pageCount: 1, width: WIDTH, height, render: () => {
     const { canvas, ctx } = surface(WIDTH, height);
@@ -108,10 +109,10 @@ export function renderImageCard(card: ImageCard, image: HTMLImageElement): CardS
     const fitted = imageFitRect(image.naturalWidth, image.naturalHeight, imageWidth, imageHeight, card.fit);
     ctx.save(); ctx.beginPath(); ctx.rect(inset, inset, imageWidth, imageHeight); ctx.clip();
     ctx.drawImage(image, inset + fitted.x, inset + fitted.y, fitted.width, fitted.height); ctx.restore();
-    if (card.caption) {
+    if (description) {
       ctx.fillStyle = card.frame === "black" ? "#e9e5dd" : "#5b554e";
       ctx.textAlign = "center"; ctx.font = `14px ${SERIF}`;
-      ctx.fillText(card.caption, WIDTH / 2, height - 28, WIDTH - inset * 2);
+      ctx.fillText(description, WIDTH / 2, height - 28, WIDTH - inset * 2);
     }
     return canvas;
   } }];

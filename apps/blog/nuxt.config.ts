@@ -196,6 +196,8 @@ export default defineNuxtConfig({
         "content-assets/**/*",
         "imported-assets/**/*",
         "remote-assets/**/*",
+        // Photo cards load on demand, including during service-worker installation.
+        "**/*.webp",
       ],
       navigateFallbackDenylist: [/\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
       runtimeCaching: [
@@ -223,6 +225,14 @@ export default defineNuxtConfig({
           options: {
             cacheName: "gstatic-fonts-cache",
             expiration: { maxEntries: 20, maxAgeSeconds: 31536000 },
+          },
+        },
+        {
+          urlPattern: /\/assets\/.*\.webp$/i,
+          handler: "CacheFirst" as const,
+          options: {
+            cacheName: "home-photos-cache",
+            expiration: { maxEntries: 64, maxAgeSeconds: 2592000 },
           },
         },
         {

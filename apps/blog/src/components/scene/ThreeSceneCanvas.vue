@@ -66,6 +66,7 @@ const { theme } = useTheme();
 
 const homeFlightVisible = computed(() => store.mode === "home" && !store.isFocusing && store.homeExperience === "collect");
 const homeFlightReady = ref(false);
+const homeStarVisible = ref(false);
 const homeCardHovered = ref(false);
 const homeCardGrabActive = ref(false);
 const isDragging = ref(false);
@@ -903,6 +904,7 @@ onMounted(async () => {
     starField.update(prefersReducedMotion ? 0 : delta, { camera: threeScene.camera, ...sceneViewport, pointer: smoothedPointer });
     applyBlogDock();
     homeCardFlight?.update(delta, homeFlightVisible.value, prefersReducedMotion);
+    homeStarVisible.value = homeFlightVisible.value && !!homeCardFlight?.isStarVisible();
     if (!homeFlightVisible.value) {
       homeCardHovered.value = false;
       homeCardGrabActive.value = false;
@@ -1118,6 +1120,7 @@ onBeforeUnmount(() => {
     :data-star-clock="homeFlightVisible ? 'collect' : 'roam'"
     :data-home-flight="homeFlightVisible ? 'active' : 'inactive'"
     :data-home-flight-ready="homeFlightReady"
+    :data-home-falling-star="homeStarVisible"
     :data-home-card-dragging="homeCardGrabActive"
     class="absolute inset-0 z-0 h-[100dvh]"
     :class="{

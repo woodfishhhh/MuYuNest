@@ -131,7 +131,7 @@
         },
         "caption": {
           "type": "string",
-          "description": "可省略；省略时只有相框和图片"
+          "description": "兼容旧配置；新卡片使用 description。"
         },
         "frame": {
           "enum": [
@@ -153,6 +153,10 @@
           "minimum": 0.4,
           "maximum": 2.5,
           "description": "可省略，默认按原图比例显示"
+        },
+        "description": {
+          "type": "string",
+          "description": "相框下方的描述，例如“我的镜头下1”。可省略。"
         }
       }
     }
