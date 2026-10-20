@@ -6,11 +6,13 @@ import json
 import mimetypes
 import os
 import re
+import secrets
 import sqlite3
 import threading
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -18,6 +20,8 @@ from urllib.parse import parse_qs, urlparse
 
 MAX_BODY_BYTES = 16 * 1024
 RAW_EVENT_RETENTION_DAYS = 180
+VISITOR_COOKIE = "woodfish_visitor"
+VISITOR_ID_PATTERN = re.compile(r"[a-f0-9]{32}")
 BOT_PATTERN = re.compile(
     r"bot|crawler|spider|slurp|headless|lighthouse|pagespeed|preview|facebookexternalhit",
     re.IGNORECASE,
@@ -95,12 +99,17 @@ class JsonCounterStore:
         with self._lock:
             return self._read_payload()["total"]
 
-    def increment(self):
+    def register(self, visitor_id, already_counted=False):
         with self._lock:
             payload = self._read_payload()
-            payload["total"] += 1
+            visitors = payload.setdefault("visitors", [])
+            if visitor_id in visitors:
+                return payload["total"], False
+            visitors.append(visitor_id)
+            if not already_counted:
+                payload["total"] += 1
             self._write_payload(payload)
-            return payload["total"]
+            return payload["total"], not already_counted
 
     def _ensure_file(self):
         self.data_file.parent.mkdir(parents=True, exist_ok=True)
@@ -418,8 +427,7 @@ class VisitorCounterHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         if parsed.path == "/api/visitor-count/visit":
-            total = self.server.counter_store.increment()
-            self._send_json(HTTPStatus.OK, {"total": total, "counted": True})
+            self._register_visitor()
             return
         if parsed.path == "/api/visitor-count":
             self._send_json(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "method not allowed"})
@@ -463,6 +471,37 @@ class VisitorCounterHandler(BaseHTTPRequestHandler):
             return
         self._send_json(HTTPStatus.ACCEPTED, {"accepted": counted})
 
+    def _register_visitor(self):
+        origin = self.headers.get("Origin", "")
+        if origin and self.server.allowed_origin and origin != self.server.allowed_origin:
+            self._send_json(HTTPStatus.FORBIDDEN, {"error": "origin not allowed"})
+            return
+        cookie = SimpleCookie()
+        try:
+            cookie.load(self.headers.get("Cookie", ""))
+        except CookieError:
+            pass
+        candidate = cookie[VISITOR_COOKIE].value if VISITOR_COOKIE in cookie else ""
+        header_id = self.headers.get("X-Visitor-ID", "")
+        if header_id and not VISITOR_ID_PATTERN.fullmatch(header_id):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "invalid visitor id"})
+            return
+        visitor_id = candidate if VISITOR_ID_PATTERN.fullmatch(candidate) else header_id or secrets.token_hex(16)
+        # Persist only an opaque digest, never an address or browser fingerprint.
+        digest = hashlib.sha256(visitor_id.encode()).hexdigest()
+        total, counted = self.server.counter_store.register(
+            digest, already_counted=self.headers.get("X-Visitor-Counted") == "1",
+        )
+        cookie = SimpleCookie()
+        cookie[VISITOR_COOKIE] = visitor_id
+        cookie[VISITOR_COOKIE]["path"] = "/"
+        cookie[VISITOR_COOKIE]["max-age"] = 31536000
+        cookie[VISITOR_COOKIE]["httponly"] = True
+        cookie[VISITOR_COOKIE]["samesite"] = "Lax"
+        if self.headers.get("X-Forwarded-Proto") == "https":
+            cookie[VISITOR_COOKIE]["secure"] = True
+        self._send_json(HTTPStatus.OK, {"total": total, "counted": counted}, {"Set-Cookie": cookie[VISITOR_COOKIE].OutputString()})
+
     def _serve_dashboard(self, request_path):
         dashboard_dir = self.server.dashboard_dir
         if not dashboard_dir:
@@ -489,12 +528,14 @@ class VisitorCounterHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         return
 
-    def _send_json(self, status, payload):
+    def _send_json(self, status, payload, headers=None):
         body = json.dumps(payload, ensure_ascii=True).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 

@@ -36,6 +36,21 @@ Tracking is limited to `blog.woodfish.site`, respects browser Do Not Track, and
 uses a random tab-session identifier in `sessionStorage`. No analytics cookies
 or cross-site identifiers are used.
 
+The cumulative `Visitors` badge uses a separate random browser ID in
+`localStorage` and a first-party HttpOnly `woodfish_visitor` cookie (one year,
+SameSite=Lax). The counter stores only its SHA-256 digest alongside `total` in
+`visitor-count.json`. Registration and increment share one lock and atomic file
+replacement, so concurrent requests and retries count the ID once, including
+after service restarts. Web Locks serialize first registration across tabs.
+An existing `vuecubeblog:visitor-counted:v1` marker registers the browser without
+incrementing the historical total. Blocked storage stays read-only. Different
+browser profiles or clearing both the cookie and local storage create a new ID.
+
+The PWA excludes `/analytics` and its descendants from navigation fallback and
+uses NetworkOnly for the dashboard and APIs. These requests always reach nginx
+authentication and the metrics service, even when a service worker controls the
+blog; they never use the public SPA shell or cached authenticated responses.
+
 Raw events are retained for 180 days. Cleanup runs at most once per UTC day when
 new data arrives.
 

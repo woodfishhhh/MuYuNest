@@ -23,7 +23,12 @@ describe("useVisitorCount", () => {
     await visitorCount.hydrate();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(fetchMock).toHaveBeenCalledWith("/api/visitor-count/visit", { method: "POST" });
+    const id = window.localStorage.getItem("vuecubeblog:visitor-id:v1");
+    expect(id).toMatch(/^[a-f0-9]{32}$/);
+    expect(fetchMock).toHaveBeenCalledWith("/api/visitor-count/visit", {
+      method: "POST", headers: { "X-Visitor-ID": id, "X-Visitor-Counted": "0" },
+    });
+    expect(window.localStorage.getItem("vuecubeblog:visitor-registered:v2")).toBe(id);
     expect(window.localStorage.getItem("vuecubeblog:visitor-counted:v1")).toBe("1");
     expect(visitorCount.total.value).toBe(12);
     expect(visitorCount.hasError.value).toBe(false);
@@ -31,7 +36,8 @@ describe("useVisitorCount", () => {
   });
 
   it("reads the current total without posting when the browser is already counted", async () => {
-    window.localStorage.setItem("vuecubeblog:visitor-counted:v1", "1");
+    window.localStorage.setItem("vuecubeblog:visitor-id:v1", "a".repeat(32));
+    window.localStorage.setItem("vuecubeblog:visitor-registered:v2", "a".repeat(32));
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ total: 44 }),
@@ -68,6 +74,47 @@ describe("useVisitorCount", () => {
     expect(setSpy).not.toHaveBeenCalled();
     expect(visitorCount.total.value).toBe(6);
     expect(visitorCount.hasError.value).toBe(false);
+  });
+
+  it("registers the old counted marker without counting it again", async () => {
+    window.localStorage.setItem("vuecubeblog:visitor-counted:v1", "1");
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ total: 44, counted: false }) });
+    await useVisitorCount().hydrate();
+    expect(fetchMock).toHaveBeenCalledWith("/api/visitor-count/visit", {
+      method: "POST", headers: { "X-Visitor-ID": expect.any(String), "X-Visitor-Counted": "1" },
+    });
+  });
+
+  it("shares an in-flight request and reuses its ID when retrying a failed response", async () => {
+    let reject!: (error: Error) => void;
+    fetchMock.mockReturnValueOnce(new Promise((_resolve, fail) => { reject = fail; }));
+    const first = useVisitorCount().hydrate();
+    const second = useVisitorCount().hydrate();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const id = window.localStorage.getItem("vuecubeblog:visitor-id:v1");
+    reject(new Error("response lost after server committed"));
+    await Promise.all([first, second]);
+    expect(window.localStorage.getItem("vuecubeblog:visitor-registered:v2")).toBeNull();
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ total: 12, counted: false }) });
+    await useVisitorCount().hydrate();
+    expect(fetchMock.mock.calls[1][1].headers["X-Visitor-ID"]).toBe(id);
+    expect(window.localStorage.getItem("vuecubeblog:visitor-registered:v2")).toBe(id);
+  });
+
+  it("re-reads shared storage after obtaining the cross-tab lock", async () => {
+    const id = "b".repeat(32);
+    const request = vi.fn(async (_name: string, work: () => Promise<void>) => {
+      window.localStorage.setItem("vuecubeblog:visitor-id:v1", id);
+      window.localStorage.setItem("vuecubeblog:visitor-registered:v2", id);
+      return work();
+    });
+    vi.stubGlobal("navigator", { locks: { request } });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ total: 12 }) });
+    try {
+      await useVisitorCount().hydrate();
+      expect(request).toHaveBeenCalledOnce();
+      expect(fetchMock).toHaveBeenCalledWith("/api/visitor-count", undefined);
+    } finally { vi.unstubAllGlobals(); }
   });
 
   it("marks an error state when the api request fails", async () => {

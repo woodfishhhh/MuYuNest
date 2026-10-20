@@ -1,4 +1,5 @@
 import importlib.util
+import concurrent.futures
 import json
 import sqlite3
 import tempfile
@@ -70,7 +71,57 @@ class VisitorCounterServerTests(unittest.TestCase):
         response = self.request_json("/api/visitor-count/visit", method="POST")
 
         self.assertEqual(response, {"total": 10, "counted": True})
-        self.assertEqual(json.loads(self.data_file.read_text(encoding="utf-8")), {"total": 10})
+        stored = json.loads(self.data_file.read_text(encoding="utf-8"))
+        self.assertEqual(stored["total"], 10)
+        self.assertEqual(len(stored["visitors"]), 1)
+
+    def test_counts_concurrent_retries_once_and_preserves_registration_after_restart(self):
+        headers = {"X-Visitor-ID": "a" * 32}
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+            results = list(executor.map(
+                lambda _: self.request_json("/api/visitor-count/visit", method="POST", headers=headers),
+                range(16),
+            ))
+        self.assertEqual(sum(result["counted"] for result in results), 1)
+        self.assertEqual(self.request_json("/api/visitor-count"), {"total": 1})
+        self.server.counter_store = self.module.JsonCounterStore(self.data_file)
+        self.assertEqual(self.request_json("/api/visitor-count/visit", method="POST", headers=headers),
+                         {"total": 1, "counted": False})
+        stored = self.data_file.read_text()
+        self.assertNotIn("a" * 32, stored)
+        self.assertEqual(len(json.loads(stored)["visitors"]), 1)
+
+    def test_migrates_an_existing_browser_without_resetting_or_incrementing_the_total(self):
+        self.data_file.write_text(json.dumps({"total": 1429}), encoding="utf-8")
+        headers = {"X-Visitor-ID": "b" * 32, "X-Visitor-Counted": "1"}
+        self.assertEqual(self.request_json("/api/visitor-count/visit", method="POST", headers=headers),
+                         {"total": 1429, "counted": False})
+        del headers["X-Visitor-Counted"]
+        self.assertEqual(self.request_json("/api/visitor-count/visit", method="POST", headers=headers),
+                         {"total": 1429, "counted": False})
+
+    def test_cookie_prevents_recounting_when_local_storage_is_cleared_or_client_is_old(self):
+        request = urllib.request.Request(self.base_url + "/api/visitor-count/visit", method="POST",
+                                         headers={"X-Forwarded-Proto": "https"})
+        with urllib.request.urlopen(request, timeout=5) as response:
+            cookie = response.headers["Set-Cookie"]
+            self.assertEqual(json.loads(response.read()), {"total": 1, "counted": True})
+        for flag in ("HttpOnly", "SameSite=Lax", "Secure", "Max-Age=31536000"):
+            self.assertIn(flag, cookie)
+        headers = {"Cookie": cookie.split(";", 1)[0], "X-Visitor-ID": "c" * 32}
+        self.assertEqual(self.request_json("/api/visitor-count/visit", method="POST", headers=headers),
+                         {"total": 1, "counted": False})
+
+    def test_distinguishes_new_browsers_and_rejects_invalid_ids_and_foreign_origins(self):
+        for value in ("a", "b"):
+            self.request_json("/api/visitor-count/visit", method="POST", headers={"X-Visitor-ID": value * 32})
+        self.assertEqual(self.request_json("/api/visitor-count"), {"total": 2})
+        for headers, status in (({"X-Visitor-ID": "broken"}, 400), ({"Origin": "https://evil.example"}, 403)):
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.request_json("/api/visitor-count/visit", method="POST", headers=headers)
+            self.assertEqual(error.exception.code, status)
+            error.exception.close()
+        self.assertEqual(self.request_json("/api/visitor-count"), {"total": 2})
 
     def test_returns_404_for_unknown_paths(self):
         with self.assertRaises(urllib.error.HTTPError) as error_context:

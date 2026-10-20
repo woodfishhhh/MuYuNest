@@ -1,87 +1,75 @@
 import { shallowRef } from "vue";
 import { getBaseUrl } from "@/utils/base-url";
 
-const VISITOR_COUNT_STORAGE_KEY = "vuecubeblog:visitor-counted:v1";
-const VISITOR_COUNT_API_PATH = "api/visitor-count";
+const COUNTED_KEY = "vuecubeblog:visitor-counted:v1";
+const VISITOR_ID_KEY = "vuecubeblog:visitor-id:v1";
+const REGISTERED_KEY = "vuecubeblog:visitor-registered:v2";
+const API_PATH = "api/visitor-count";
+const LOCK_NAME = "vuecubeblog:visitor-count";
 
 const total = shallowRef<number | null>(null);
 const isLoading = shallowRef(false);
 const hasError = shallowRef(false);
+let pending: Promise<void> | undefined;
 
-type VisitorCountResponse = {
-  total?: number;
-};
-
-function getApiUrl(path: string) {
-  return `${getBaseUrl()}${path}`;
-}
-
-function readCountedMarker() {
+function readVisitor() {
   try {
-    if (typeof window === "undefined") {
-      return { storageAvailable: false, counted: false };
+    let id = window.localStorage.getItem(VISITOR_ID_KEY);
+    if (!id || !/^[a-f0-9]{32}$/.test(id)) {
+      id = crypto.randomUUID().replace(/-/g, "");
+      // Persist before posting: retries must reuse the same identifier.
+      window.localStorage.setItem(VISITOR_ID_KEY, id);
     }
-
     return {
-      storageAvailable: true,
-      counted: window.localStorage.getItem(VISITOR_COUNT_STORAGE_KEY) === "1",
+      id,
+      registered: window.localStorage.getItem(REGISTERED_KEY) === id,
+      counted: window.localStorage.getItem(COUNTED_KEY) === "1",
     };
   } catch {
-    return { storageAvailable: false, counted: false };
+    // Without persistent storage, read the total without creating repeat visitors.
+    return undefined;
   }
 }
 
-function writeCountedMarker() {
-  try {
-    if (typeof window === "undefined") {
-      return;
+async function loadCount() {
+  const visitor = readVisitor();
+  const shouldRegister = visitor && !visitor.registered;
+  const response = await fetch(`${getBaseUrl()}${API_PATH}${shouldRegister ? "/visit" : ""}`, shouldRegister ? {
+    method: "POST",
+    headers: { "X-Visitor-ID": visitor.id, "X-Visitor-Counted": visitor.counted ? "1" : "0" },
+  } : undefined);
+  if (!response.ok) throw new Error(`Visitor count request failed: ${response.status}`);
+  const payload = await response.json() as { total?: number };
+  if (typeof payload.total !== "number" || !Number.isFinite(payload.total)) throw new Error("Invalid visitor count");
+  total.value = payload.total;
+  if (shouldRegister) {
+    try {
+      window.localStorage.setItem(COUNTED_KEY, "1");
+      window.localStorage.setItem(REGISTERED_KEY, visitor.id);
+    } catch {
+      // The server already registered this ID, so retrying cannot increment again.
     }
-
-    window.localStorage.setItem(VISITOR_COUNT_STORAGE_KEY, "1");
-  } catch {
-    // Ignore storage errors and keep the UI usable.
   }
 }
 
-async function requestCount(url: string, init?: RequestInit) {
-  const response = await fetch(getApiUrl(url), init);
-
-  if (!response.ok) {
-    throw new Error(`Visitor count request failed: ${response.status}`);
-  }
-
-  return (await response.json()) as VisitorCountResponse;
-}
-
-async function hydrate() {
+function hydrate() {
+  if (pending) return pending;
   isLoading.value = true;
   hasError.value = false;
-
-  try {
-    const marker = readCountedMarker();
-    const shouldCountVisit = marker.storageAvailable && !marker.counted;
-    const payload = shouldCountVisit
-      ? await requestCount(`${VISITOR_COUNT_API_PATH}/visit`, { method: "POST" })
-      : await requestCount(VISITOR_COUNT_API_PATH);
-
-    total.value = typeof payload.total === "number" ? payload.total : null;
-
-    if (shouldCountVisit) {
-      writeCountedMarker();
-    }
-  } catch {
+  const operation = typeof navigator !== "undefined" && navigator.locks
+    // Other tabs re-read the registration marker after acquiring the same lock.
+    ? navigator.locks.request(LOCK_NAME, loadCount)
+    : loadCount();
+  pending = Promise.resolve(operation).catch(() => {
     total.value = null;
     hasError.value = true;
-  } finally {
+  }).finally(() => {
     isLoading.value = false;
-  }
+    pending = undefined;
+  });
+  return pending;
 }
 
 export function useVisitorCount() {
-  return {
-    total,
-    isLoading,
-    hasError,
-    hydrate,
-  };
+  return { total, isLoading, hasError, hydrate };
 }

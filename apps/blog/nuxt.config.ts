@@ -199,8 +199,13 @@ export default defineNuxtConfig({
         // Photo cards load on demand, including during service-worker installation.
         "**/*.webp",
       ],
-      navigateFallbackDenylist: [/\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
+      navigateFallbackDenylist: [/\/analytics(?:[/?]|$)/i, /\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
       runtimeCaching: [
+        {
+          // The private dashboard and APIs must never use the public SPA shell or cache.
+          urlPattern: /\/(?:analytics(?:[/?]|$)|api\/)/i,
+          handler: "NetworkOnly" as const,
+        },
         {
           // Workbox generateSW must serialize this into sw.js; regex matchers are stable here.
           urlPattern: /\/($|index\.html$|blog\/?$|works\/?$|author\/?$|friend\/?$|posts\/.*)/i,

@@ -44,6 +44,9 @@ jobs:
       - name: Test content tools
         run: pnpm content-tools:test
 
+      - name: Test visitor counter and analytics
+        run: python3 -m unittest discover -s tests/server -p 'test_*.py'
+
       - name: Restore generated content cache
         id: content-cache
         uses: actions/cache@v5
