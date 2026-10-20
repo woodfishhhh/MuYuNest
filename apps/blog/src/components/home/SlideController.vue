@@ -40,7 +40,7 @@ function scrollElement(element: HTMLElement, top: number, behavior: ScrollBehavi
 }
 
 function handleWheel(event: WheelEvent) {
-  if (siteStore.isFocusing || siteStore.mode === "reading") {
+  if (siteStore.isFocusing || siteStore.mode === "reading" || siteStore.mode === "home") {
     return;
   }
 
@@ -68,9 +68,6 @@ function handleWheel(event: WheelEvent) {
     return;
   }
 
-  if (event.deltaY > 0 && siteStore.mode === "home") {
-    setModeWithLock("author");
-  }
 }
 
 function handleTouchStart(event: TouchEvent) {

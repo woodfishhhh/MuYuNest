@@ -29,6 +29,8 @@ type Entry = {
   mask: THREE.Texture;
   liveTexture?: THREE.CanvasTexture;
   wasThrown: boolean;
+  zoom: number;
+  targetZoom: number;
   disposeImage?: () => void;
   vanish: {
     enabled: { value: number };
@@ -131,7 +133,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     mesh.userData.kind = surface.card.type;
     mesh.userData.page = surface.page;
     scene.add(mesh);
-    const entry: Entry = { flight: new Flight(index), surface, mesh, width, height, materials, front, mask, vanish, wasThrown: false };
+    const entry: Entry = { flight: new Flight(index), surface, mesh, width, height, materials, front, mask, vanish, wasThrown: false, zoom: 1, targetZoom: 1 };
     entries.push(entry);
     resources.push(mask, front, geometry);
     return entry;
@@ -159,7 +161,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     }
     mesh.position.set(f.x, layout.perspectiveY - layout.originY - f.y, f.z);
     mesh.rotation.set(-f.rx * Math.PI / 180, f.ry * Math.PI / 180, -f.rz * Math.PI / 180, "XYZ");
-    mesh.scale.setScalar(f.s);
+    mesh.scale.setScalar(f.s * entry.zoom);
     const frame = f.state === "vanishing" ? Math.min(29, Math.floor(f.vanishAge / 0.75 * 29)) : 0;
     entry.mask.offset.x = frame / 30;
     entry.vanish.enabled.value = f.state === "vanishing" ? 1 : 0;
@@ -232,6 +234,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       }
       if (disposed || (!active && !warm)) return;
       entry.wasThrown = true;
+      entry.zoom = entry.targetZoom = 1;
       entry.flight.reset(layout, random, warm);
       // Advance only after an actual drop; loading failures and pauses keep the
       // next slot. Each category completes its list before wrapping to the start.
@@ -282,6 +285,12 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     dragged.flight.state = "vanishing"; dragged.flight.vanishAge = 0; dragged = undefined;
   }
 
+  function zoomHeld(deltaPixels: number) {
+    if (!dragged) return undefined;
+    dragged.targetZoom = THREE.MathUtils.clamp(dragged.targetZoom * Math.exp(-deltaPixels * 0.0015), 0.5, 3);
+    return dragged.targetZoom;
+  }
+
   function pick(ndc: THREE.Vector2) {
     if (!active || !ready) return undefined;
     raycaster.setFromCamera(ndc, camera); scene.updateMatrixWorld(true);
@@ -308,6 +317,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       for (const entry of entries) {
         if (!reducedMotion || entry.flight.state === "dragging" || entry.flight.state === "vanishing") {
           entry.flight.tick({ x: pointer.x - layout.smileX, y: pointer.y - layout.originY }, flightSpeed);
+          entry.zoom += (entry.targetZoom - entry.zoom) * 0.25;
         }
       }
       if (!reducedMotion) star.flight.tick(undefined, flightSpeed);
@@ -361,7 +371,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
 
   resize(options.width, options.height);
   void initialize().catch(error => { if (!disposed) options.onError?.(error); });
-  return { resize, setTheme, update, render, pick, beginDrag, drag, release, isInteracting: () => !!dragged, isStarVisible: () => star.mesh.visible, dispose };
+  return { resize, setTheme, update, render, pick, beginDrag, drag, release, zoomHeld, isInteracting: () => !!dragged, isStarVisible: () => star.mesh.visible, dispose };
 }
 
 export type HomeCardFlight = ReturnType<typeof createHomeCardFlight>;

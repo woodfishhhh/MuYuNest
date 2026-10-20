@@ -203,6 +203,43 @@ describe("home flight integration", () => {
     } finally { cards.dispose(); assets.restore(); }
   });
 
+  it("zooms only a held card, clamps its size and resets it on the next loop", async () => {
+    const assets = mockAssets();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
+    const fixture = parseCardConfig({ version: 1, cards: [{ id: "poem", type: "text", text: "一首小诗。" }] }).cards;
+    const renderer = mockRenderer(); const onReady = vi.fn();
+    const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
+      width: 1651, height: 871, theme: "night", cards: fixture, onReady });
+    try {
+      await vi.waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+      cards.update(0, true, true); cards.render();
+      const [scene, camera] = renderer.render.mock.calls[0] as [THREE.Scene, THREE.PerspectiveCamera];
+      const mesh = scene.children.find(child => child.userData.cardId === "poem")!;
+      scene.updateMatrixWorld(true);
+      const center = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
+      const pointer = new THREE.Vector2(center.x, center.y);
+      const picked = cards.pick(pointer)!;
+      expect(cards.zoomHeld(-120)).toBeUndefined();
+      expect(cards.beginDrag(pointer)).toBe(true);
+      expect(cards.zoomHeld(-Math.log(2) / 0.0015)).toBeCloseTo(2);
+      for (let i = 0; i < 60; i++) cards.update(1 / 60, true, true);
+      expect(mesh.scale.x).toBeCloseTo(2);
+      expect(cards.zoomHeld(1e6)).toBe(0.5);
+      for (let i = 0; i < 60; i++) cards.update(1 / 60, true, true);
+      expect(mesh.scale.x).toBeCloseTo(0.5);
+      expect(cards.zoomHeld(-1e6)).toBe(3);
+      for (let i = 0; i < 60; i++) cards.update(1 / 60, true, true);
+      expect(mesh.scale.x).toBeCloseTo(3);
+      cards.release();
+      expect(cards.zoomHeld(-120)).toBeUndefined();
+      expect(picked.targetZoom).toBe(3);
+      for (let i = 0; i < 30 && picked.flight.state !== "flying"; i++) cards.update(0.1, true, false);
+      expect(picked.flight.state).toBe("flying");
+      expect(picked.targetZoom).toBe(1);
+    } finally { cards.dispose(); assets.restore(); }
+  });
+
   it("keeps poems ready when a photo fails, and tolerates an empty collection", async () => {
     const assets = mockAssets();
     const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");

@@ -205,7 +205,10 @@ onBeforeUnmount(() => {
         <Transition name="home-hint" mode="out-in">
           <div v-if="homeHint" class="pointer-events-auto absolute bottom-24 flex w-full justify-center sm:bottom-8">
             <div class="animate-bounce text-sm tracking-widest text-[var(--stage-hint)] opacity-70">
-              <template v-if="siteStore.homeExperience === 'collect'">抓住一张卡片，读一段时光</template>
+              <div v-if="siteStore.homeExperience === 'collect'" class="text-center">
+                <p>抓住一张卡片，读一段时光</p>
+                <p class="mt-1 text-xs tracking-wide">鼠标滚轮调整卡片大小</p>
+              </div>
               <template v-else>点击{{ focusHintTarget }}进行探索</template>
             </div>
           </div>

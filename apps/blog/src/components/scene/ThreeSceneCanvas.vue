@@ -69,6 +69,7 @@ const homeFlightReady = ref(false);
 const homeStarVisible = ref(false);
 const homeCardHovered = ref(false);
 const homeCardGrabActive = ref(false);
+const homeCardScale = ref(1);
 const isDragging = ref(false);
 const cardHovered = ref(false);
 const cardActionHovered = ref(false);
@@ -652,6 +653,17 @@ function releaseCardInteraction(event?: PointerEvent) {
   }
 }
 
+function handleHomeWheel(event: WheelEvent) {
+  if (!homeFlightVisible.value || !homeCardFlight?.isInteracting() || event.ctrlKey) return;
+  const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
+    : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? (container.value?.clientHeight ?? window.innerHeight) : 1;
+  const scale = homeCardFlight.zoomHeld(event.deltaY * unit);
+  if (scale === undefined) return;
+  event.preventDefault();
+  event.stopPropagation();
+  homeCardScale.value = Number(scale.toFixed(3));
+}
+
 function handleCanvasPointerDown(event: PointerEvent) {
   if (store.isFocusing || !threeScene) return;
   updatePointerFromEvent(event);
@@ -660,6 +672,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     event.stopPropagation();
     suppressNextCanvasClick = true;
     homeCardGrabActive.value = true;
+    homeCardScale.value = 1;
     if (event.currentTarget instanceof HTMLCanvasElement) event.currentTarget.setPointerCapture(event.pointerId);
     return;
   }
@@ -807,6 +820,7 @@ onMounted(async () => {
   updateGeometryTransform(true);
 
   window.addEventListener("resize", handleResize);
+  window.addEventListener("wheel", handleHomeWheel, { passive: false });
   container.value.addEventListener("pointermove", handlePointerMove);
   canvasRef.value.addEventListener("pointerdown", handleCanvasPointerDown);
   canvasRef.value.addEventListener("pointerup", releaseCardInteraction);
@@ -1052,6 +1066,7 @@ onBeforeUnmount(() => {
   clearSceneMagneticPointerTarget();
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
+  window.removeEventListener("wheel", handleHomeWheel);
   if (container.value) container.value.removeEventListener("pointermove", handlePointerMove);
   if (canvasRef.value) canvasRef.value.removeEventListener("pointerdown", handleCanvasPointerDown);
   if (canvasRef.value) {
@@ -1122,6 +1137,7 @@ onBeforeUnmount(() => {
     :data-home-flight-ready="homeFlightReady"
     :data-home-falling-star="homeStarVisible"
     :data-home-card-dragging="homeCardGrabActive"
+    :data-home-card-scale="homeCardScale"
     class="absolute inset-0 z-0 h-[100dvh]"
     :class="{
       'pointer-events-none': isBlogDocking,

@@ -24,6 +24,24 @@ describe("SlideController", () => {
     document.body.innerHTML = "";
   });
 
+  it.each(["collect", "roam"] as const)("leaves Home wheel input available in %s mode", async experience => {
+    const router = createTestRouter();
+    await router.push({ name: "home" }); await router.isReady();
+    const siteStore = useSiteStore();
+    siteStore.goHome(); siteStore.setHomeExperience(experience);
+    const push = vi.spyOn(router, "push");
+    const wrapper = mount(SlideController, { global: { plugins: [router] } });
+    try {
+      for (const deltaY of [-500, 500]) {
+        const event = new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true });
+        window.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+      }
+      expect(push).not.toHaveBeenCalled();
+      expect(router.currentRoute.value.name).toBe("home");
+    } finally { wrapper.unmount(); }
+  });
+
   it("does not hijack author wheel scrolling once GSAP owns the author surface", async () => {
     const router = createTestRouter();
     await router.push({ name: "author" });
