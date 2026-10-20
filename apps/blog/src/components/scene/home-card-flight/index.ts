@@ -165,7 +165,8 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     entry.vanish.enabled.value = f.state === "vanishing" ? 1 : 0;
     const outerFrame = Math.min(29, Math.floor(Math.max(0, f.vanishAge - 0.105) / 0.75 * 29));
     entry.vanish.shift.value = (outerFrame - frame) / 30;
-    mesh.material = f.state === "dragging" || f.state === "vanishing"
+    // Keep the card's thickness visible while it is picked up and turned over.
+    mesh.material = f.state === "vanishing"
       ? [hiddenMaterial, hiddenMaterial, hiddenMaterial, hiddenMaterial, entry.front, hiddenMaterial]
       : entry.materials;
   }
@@ -299,7 +300,9 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   function beginDrag(ndc: THREE.Vector2) {
     const entry = pick(ndc);
     if (!entry) return false;
-    drag(ndc); dragged = entry; entry.flight.state = "dragging"; return true;
+    drag(ndc); dragged = entry;
+    entry.flight.beginPickup(layout.perspectiveY - layout.originY);
+    return true;
   }
 
   function update(delta: number, visible: boolean, reducedMotion: boolean) {
@@ -313,7 +316,10 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       if (!reducedMotion) simTime += STEP;
       for (const entry of entries) {
         if (!reducedMotion || entry.flight.state === "dragging" || entry.flight.state === "vanishing") {
-          entry.flight.tick({ x: pointer.x - layout.smileX, y: pointer.y - layout.originY }, flightSpeed);
+          entry.flight.tick({
+            x: pointer.x - layout.smileX,
+            y: pointer.y - layout.originY,
+          }, flightSpeed);
           entry.zoom += (entry.targetZoom - entry.zoom) * 0.25;
         }
       }

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { seededRandom } from "@/components/scene/home-card-flight/motion";
 import type { StarClockView } from "@/composables/star-clock";
 import { bunchRadius, type ClusterSettings } from "./star-clusters";
+import { matchNearbyStars } from "./star-transition";
 
 export type StarMode = "rays" | "comet" | "fall";
 export interface StarMotionSettings extends ClusterSettings {
@@ -33,12 +34,23 @@ export function createStarMotion(
   const transitionSizes = sizes.slice();
   const originalAlpha = opacity.slice();
   const originalSizes = sizes.slice();
+  const targets = positions.slice();
+  const targetAlpha = opacity.slice();
+  const targetSizes = sizes.slice();
+  const fromScreen = new Float32Array(opacity.length * 2);
+  const toScreen = new Float32Array(opacity.length * 2);
+  const fromDepth = new Float32Array(opacity.length);
   const point = new THREE.Vector3();
+  const projected = new THREE.Vector3();
   const cameraToLocal = new THREE.Matrix4();
+  const localToCamera = new THREE.Matrix4();
   let settings = { ...initial };
   let mode = initialMode;
-  let progress = 0;
+  let activeState = false;
   let transition = 1;
+  let pendingMatch = false;
+  let assignment: Int32Array = Int32Array.from({ length: opacity.length }, (_, index) => index);
+  let nearby: Uint8Array = new Uint8Array(opacity.length).fill(1);
   let time = 0;
   let particles: { phase: number; width: number; radius: number; angle: number; size: number }[] = [];
   let groups: { phase: number; lane: number; depth: number }[] = [];
@@ -53,24 +65,29 @@ export function createStarMotion(
   }
   reseed();
 
+  function beginTransition() {
+    transitionFrom.set(positions); transitionAlpha.set(opacity); transitionSizes.set(sizes);
+    transition = 0; pendingMatch = true;
+  }
+
   function configure(next: StarMotionSettings, nextMode = mode, nextSeed = seed) {
-    if (nextMode !== mode) {
-      transitionFrom.set(positions); transitionAlpha.set(opacity); transitionSizes.set(sizes);
-      transition = 0;
-    }
+    if (nextMode !== mode || nextSeed !== seed || next.count !== settings.count || next.density !== settings.density) beginTransition();
     mode = nextMode; settings = { ...next };
     if (nextSeed !== seed) { seed = nextSeed; reseed(); }
   }
 
   function update(delta: number, active: boolean, group: THREE.Group, view: StarClockView, immediate = false) {
     const dt = Math.min(delta, 0.1);
-    if (!immediate) time += dt * settings.flow;
-    progress = immediate ? Number(active) : THREE.MathUtils.clamp(progress + (active ? dt : -dt) / 0.8, 0, 1);
-    transition = immediate ? 1 : Math.min(1, transition + dt / 0.7);
-    const blend = THREE.MathUtils.smoothstep(progress, 0, 1);
-    const morph = THREE.MathUtils.smoothstep(transition, 0, 1);
+    if (active !== activeState) { beginTransition(); activeState = active; }
+    // Let the local handover finish before starting the new mode's depth motion.
+    if (!immediate && transition === 1 && active) time += dt * settings.flow;
+    if (immediate) {
+      transition = 1; pendingMatch = false;
+      for (let index = 0; index < assignment.length; index++) assignment[index] = index;
+    }
     view.camera.updateMatrixWorld(); group.updateMatrixWorld(true);
     cameraToLocal.copy(group.matrixWorld).invert().multiply(view.camera.matrixWorld);
+    localToCamera.copy(view.camera.matrixWorldInverse).multiply(group.matrixWorld);
     const tan = Math.tan(THREE.MathUtils.degToRad(view.camera.fov / 2));
     const { width, height } = view;
     const scale = Math.min(width, height) / 800;
@@ -83,7 +100,7 @@ export function createStarMotion(
       let size = originalSizes[index];
       point.fromArray(original, offset);
       // Spread selected points throughout the source field, so density changes keep its balance.
-      if (Math.floor(index * selected / opacity.length) !== Math.floor((index + 1) * selected / opacity.length)) {
+      if (active && Math.floor(index * selected / opacity.length) !== Math.floor((index + 1) * selected / opacity.length)) {
         const p = particles[index];
         const lane = Math.floor(index * selected / opacity.length) % settings.count;
         const g = groups[lane];
@@ -152,27 +169,80 @@ export function createStarMotion(
           point.set(x, y - 0.024 * tan * depth, -depth);
         }
         point.applyMatrix4(cameraToLocal);
-        point.x = THREE.MathUtils.lerp(original[offset], point.x, blend);
-        point.y = THREE.MathUtils.lerp(original[offset + 1], point.y, blend);
-        point.z = THREE.MathUtils.lerp(original[offset + 2], point.z, blend);
-        alpha = THREE.MathUtils.lerp(alpha, brightness, blend);
-        size = THREE.MathUtils.lerp(size, pointSize * settings.starSize, blend);
-      } else {
-        alpha = THREE.MathUtils.lerp(alpha, 0.22, blend);
-        size = THREE.MathUtils.lerp(size, 0.75, blend);
+        alpha = brightness;
+        size = pointSize * settings.starSize;
+      } else if (active) {
+        alpha = 0.22;
+        size = 0.75;
       }
-      positions[offset] = THREE.MathUtils.lerp(transitionFrom[offset], point.x, morph);
-      positions[offset + 1] = THREE.MathUtils.lerp(transitionFrom[offset + 1], point.y, morph);
-      positions[offset + 2] = THREE.MathUtils.lerp(transitionFrom[offset + 2], point.z, morph);
-      opacity[index] = THREE.MathUtils.lerp(transitionAlpha[index], alpha, morph);
-      sizes[index] = THREE.MathUtils.lerp(transitionSizes[index], size, morph);
+      targets[offset] = point.x; targets[offset + 1] = point.y; targets[offset + 2] = point.z;
+      targetAlpha[index] = alpha; targetSizes[index] = size;
+    }
+
+    if (pendingMatch) {
+      for (const [array, alpha, screen] of [[transitionFrom, transitionAlpha, fromScreen], [targets, targetAlpha, toScreen]] as const) {
+        screen.fill(NaN);
+        for (let index = 0; index < alpha.length; index++) {
+          if (alpha[index] < 0.1) continue;
+          projected.fromArray(array, index * 3).applyMatrix4(localToCamera);
+          if (projected.z >= -0.25) continue;
+          if (array === transitionFrom) fromDepth[index] = -projected.z;
+          const x = projected.x / (-projected.z * tan * view.camera.aspect) * width / 2 + width / 2;
+          const y = (1 - projected.y / (-projected.z * tan)) * height / 2;
+          if (x < -32 || x > width + 32 || y < -32 || y > height + 32) continue;
+          screen[index * 2] = x; screen[index * 2 + 1] = y;
+        }
+      }
+      const match = matchNearbyStars(fromScreen, toScreen, Math.max(48, Math.min(110, Math.min(width, height) * 0.13)));
+      assignment = match.targetForSource; nearby = match.nearby; pendingMatch = false;
+    }
+    transition = immediate ? 1 : Math.min(1, transition + dt / 0.8);
+    const morph = THREE.MathUtils.smoothstep(transition, 0, 1);
+    if (morph === 0) {
+      positions.set(transitionFrom); opacity.set(transitionAlpha); sizes.set(transitionSizes);
+      return true;
+    }
+    for (let index = 0; index < opacity.length; index++) {
+      const offset = index * 3;
+      const target = assignment[index]; const destination = target * 3;
+      if (transition === 1) {
+        positions[offset] = targets[destination];
+        positions[offset + 1] = targets[destination + 1];
+        positions[offset + 2] = targets[destination + 2];
+        opacity[index] = targetAlpha[target];
+      } else if (nearby[index]) {
+        projected.fromArray(targets, destination).applyMatrix4(localToCamera);
+        const targetDepth = -projected.z;
+        const x = projected.x / (targetDepth * tan * view.camera.aspect) * width / 2 + width / 2;
+        const y = (1 - projected.y / (targetDepth * tan)) * height / 2;
+        const screenX = THREE.MathUtils.lerp(fromScreen[index * 2], x, morph);
+        const screenY = THREE.MathUtils.lerp(fromScreen[index * 2 + 1], y, morph);
+        const depth = 1 / THREE.MathUtils.lerp(1 / fromDepth[index], 1 / targetDepth, morph);
+        point.set((screenX * 2 / width - 1) * tan * depth * view.camera.aspect,
+          (1 - screenY * 2 / height) * tan * depth, -depth).applyMatrix4(cameraToLocal);
+        positions[offset] = point.x; positions[offset + 1] = point.y; positions[offset + 2] = point.z;
+        opacity[index] = THREE.MathUtils.lerp(transitionAlpha[index], targetAlpha[target], morph);
+      } else {
+        const before = transition < 0.5;
+        const array = before ? transitionFrom : targets;
+        const source = before ? offset : destination;
+        positions[offset] = array[source]; positions[offset + 1] = array[source + 1]; positions[offset + 2] = array[source + 2];
+        opacity[index] = before
+          ? transitionAlpha[index] * (1 - THREE.MathUtils.smoothstep(transition, 0, 0.5))
+          : targetAlpha[target] * THREE.MathUtils.smoothstep(transition, 0.5, 1);
+      }
+      sizes[index] = THREE.MathUtils.lerp(transitionSizes[index], targetSizes[target], morph);
+    }
+    if (!active && transition === 1) {
+      // Reindex the same final point cloud without changing its visible layout.
+      positions.set(original); opacity.set(originalAlpha); sizes.set(originalSizes);
     }
     return true;
   }
 
   function replay() {
-    time = 0; progress = 0; transition = 1;
+    time = 0; activeState = false; transition = 1; pendingMatch = false;
     positions.set(original); opacity.set(originalAlpha); sizes.set(originalSizes);
   }
-  return { configure, update, replay, sourceFor: (_index: number) => original, isActive: () => progress > 0 };
+  return { configure, update, replay, sourceFor: (_index: number) => original, isActive: () => activeState || transition < 1 };
 }
