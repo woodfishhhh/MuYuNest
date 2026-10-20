@@ -12,12 +12,13 @@ test("photo descriptions, WebP assets and the alternating gallery render correct
   types.slice(0, 30).forEach((type, i) => expect(type).toBe(i % 2 ? "image" : "text"));
   const first = page.locator('[data-card-id="photo-lens-01"]');
   await expect(first.locator("canvas")).toHaveCount(1);
-  await expect(first).toContainText("我的镜头下1");
+  await expect(first.locator("figcaption")).toHaveText("我");
   await page.screenshot({ path: `${evidence}/gallery.png` });
   for (let i = 1; i <= 15; i++) {
     const photo = page.locator(`[data-card-id="photo-lens-${String(i).padStart(2, "0")}"]`);
     await photo.scrollIntoViewIfNeeded(); await expect(photo.locator("canvas")).toHaveCount(1);
-    await expect(photo.locator("figcaption")).toContainText(`我的镜头下${i}`);
+    const description = i <= 6 ? ["我", "生日派对", "niko", "爱情公寓", "橘子洲头", "我的衣服"][i - 1] : `我的镜头下${i - 6}`;
+    await expect(photo.locator("figcaption")).toHaveText(description);
   }
   const cs = page.locator('[data-card-id="photo-love-cs"]');
   await cs.scrollIntoViewIfNeeded(); await expect(cs.locator("canvas")).toHaveCount(1);

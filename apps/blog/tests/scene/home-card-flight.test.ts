@@ -140,6 +140,15 @@ describe("home flight integration", () => {
       expect(assets.requests.filter(url => url.startsWith("https://example.com/photo-"))).toHaveLength(1);
       cards.update(0, true, false); cards.render();
       const scene = renderer.render.mock.calls[0][0] as THREE.Scene;
+      const text = scene.children.find(child => child.userData.kind === "text") as THREE.Mesh<THREE.BoxGeometry>;
+      const photo = scene.children.find(child => child.userData.kind === "image") as THREE.Mesh<THREE.BoxGeometry>;
+      expect(text.geometry.parameters.width).toBe(500);
+      expect(photo.geometry.parameters.width).toBe(250);
+      expect(photo.geometry.parameters.depth).toBe(8);
+      cards.resize(390, 844);
+      expect(text.geometry.parameters.width).toBe(300);
+      expect(photo.geometry.parameters.width).toBe(150);
+      cards.resize(1651, 871);
       for (let i = 0; i < 700; i++) {
         cards.update(0.1, true, false);
         await Promise.resolve(); await Promise.resolve(); await Promise.resolve();

@@ -94,12 +94,14 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
 
   function addFrame(surface: CardSurface, maskBase: THREE.Texture) {
     const index = nextEntryIndex++;
-    const height = layout.cardWidth * surface.height / surface.width;
+    const width = layout.cardWidth * (surface.card.type === "image" ? 0.5 : 1);
+    const height = width * surface.height / surface.width;
+    const depth = surface.card.type === "image" ? 8 : 16;
     // Clones share the mask image/GPU source; only their UV offsets differ.
     const mask = maskBase.clone();
     const front = new THREE.MeshBasicMaterial({ map: blank, alphaMap: mask, alphaTest: 0.5 });
     const vanish = { enabled: { value: 0 }, shift: { value: 0 },
-      size: { value: new THREE.Vector2(layout.cardWidth, height) }, paper: { value: new THREE.Color(theme === "day" ? "#fafaf7" : "#050510") } };
+      size: { value: new THREE.Vector2(width, height) }, paper: { value: new THREE.Color(theme === "day" ? "#fafaf7" : "#050510") } };
     // Original release effect: the photograph erodes first, exposing a paper grid;
     // the same 30-frame mask erodes the grid 105 ms later.
     front.onBeforeCompile = shader => {
@@ -122,14 +124,14 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       `);
     };
     const materials = [sideMaterial, sideMaterial, sideMaterial, sideMaterial, front, backMaterial];
-    const geometry = new THREE.BoxGeometry(layout.cardWidth, height, 16).translate(0, 0, -8);
+    const geometry = new THREE.BoxGeometry(width, height, depth).translate(0, 0, -depth / 2);
     const mesh = new THREE.Mesh(geometry, materials);
     mesh.visible = false;
     mesh.userData.cardId = surface.card.id;
     mesh.userData.kind = surface.card.type;
     mesh.userData.page = surface.page;
     scene.add(mesh);
-    const entry: Entry = { flight: new Flight(index), surface, mesh, width: layout.cardWidth, height, materials, front, mask, vanish, wasThrown: false };
+    const entry: Entry = { flight: new Flight(index), surface, mesh, width, height, materials, front, mask, vanish, wasThrown: false };
     entries.push(entry);
     resources.push(mask, front, geometry);
     return entry;
@@ -245,11 +247,13 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     camera.setViewOffset(width, height, 0, height / 2 - layout.perspectiveY, width, height);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     for (const entry of entries) {
-      if (entry.width === layout.cardWidth) continue;
+      const width = layout.cardWidth * (entry.surface.card.type === "image" ? 0.5 : 1);
+      if (entry.width === width) continue;
       const geometry = entry.mesh.geometry;
       geometry.dispose(); resources.splice(resources.indexOf(geometry), 1);
-      entry.width = layout.cardWidth; entry.height = layout.cardWidth * entry.surface.height / entry.surface.width;
-      entry.mesh.geometry = new THREE.BoxGeometry(entry.width, entry.height, 16).translate(0, 0, -8);
+      entry.width = width; entry.height = width * entry.surface.height / entry.surface.width;
+      const depth = entry.surface.card.type === "image" ? 8 : 16;
+      entry.mesh.geometry = new THREE.BoxGeometry(entry.width, entry.height, depth).translate(0, 0, -depth / 2);
       resources.push(entry.mesh.geometry);
       entry.vanish.size.value.set(entry.width, entry.height);
     }
