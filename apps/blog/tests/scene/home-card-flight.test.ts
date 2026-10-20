@@ -203,6 +203,46 @@ describe("home flight integration", () => {
     } finally { cards.dispose(); assets.restore(); }
   });
 
+  it.each(["text", "image"] as const)("exposes the mirrored %s front through the open back, including while held and fading", async kind => {
+    const assets = mockAssets();
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
+    const fixture = parseCardConfig({ version: 1, cards: [kind === "text"
+      ? { id: "card", type: "text", text: "一首小诗。" }
+      : { id: "card", type: "image", src: "https://example.com/photo.webp" }] }).cards;
+    const renderer = mockRenderer(); const onReady = vi.fn();
+    const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
+      width: 1651, height: 871, theme: "night", cards: fixture, onReady });
+    try {
+      await vi.waitFor(() => expect(onReady).toHaveBeenCalledOnce());
+      cards.update(0, true, true); cards.render();
+      const [scene, camera] = renderer.render.mock.calls[0] as [THREE.Scene, THREE.PerspectiveCamera];
+      const mesh = scene.children.find(child => child.userData.cardId === "card") as THREE.Mesh;
+      scene.updateMatrixWorld(true);
+      const center = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
+      const pointer = new THREE.Vector2(center.x, center.y);
+      const entry = cards.pick(pointer)!;
+      expect(entry).toBeDefined();
+      for (const state of ["flying", "dragging", "vanishing"] as const) {
+        entry.flight.state = state;
+        cards.update(0, true, true);
+        // Inspect the rendered surfaces from opposite sides of the same card.
+        mesh.position.set(0, 0, 0); mesh.rotation.set(0, 0, 0); mesh.scale.setScalar(1);
+        mesh.updateMatrixWorld(true);
+        const hit = (back: boolean) => {
+          const ray = new THREE.Raycaster(new THREE.Vector3(back ? -100 : 100, 0, back ? -1000 : 1000), new THREE.Vector3(0, 0, back ? 1 : -1));
+          return ray.intersectObject(mesh).find(hit => (mesh.material as THREE.Material[])[hit.face!.materialIndex].visible)!;
+        };
+        const front = hit(false); const back = hit(true);
+        expect(front.face!.materialIndex).toBe(4);
+        expect(back.face!.materialIndex).toBe(4);
+        expect(front.point.z).toBeCloseTo(back.point.z);
+        expect(front.uv!.x).toBeCloseTo(1 - back.uv!.x);
+        expect(front.uv!.x).toBeGreaterThan(back.uv!.x);
+      }
+    } finally { cards.dispose(); assets.restore(); }
+  });
+
   it("zooms only a held card, clamps its size and resets it on the next loop", async () => {
     const assets = mockAssets();
     vi.spyOn(Math, "random").mockReturnValue(0.5);

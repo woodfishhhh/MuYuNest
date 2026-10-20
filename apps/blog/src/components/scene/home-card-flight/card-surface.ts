@@ -126,14 +126,6 @@ export function renderImageCard(card: ImageCard, image: HTMLImageElement): CardS
   } }];
 }
 
-export function renderCardReverse(theme: CardTheme = "day") {
-  const { canvas, ctx } = surface(WIDTH, HEIGHT);
-  ctx.fillStyle = theme === "night" ? "#181b20" : "#e6e1d7"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
-  ctx.fillStyle = theme === "night" ? "#737c8a" : "#a69d8e"; ctx.textAlign = "center"; ctx.font = `18px ${SERIF}`;
-  ctx.fillText("拾 光", WIDTH / 2, HEIGHT / 2);
-  return canvas;
-}
-
 export function loadCardImage(src: string, timeoutMs = 8000): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();

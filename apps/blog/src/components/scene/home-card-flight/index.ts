@@ -3,7 +3,7 @@ import { catalog, catalogIssues, resolveImageSource } from "./catalog";
 import { createDropSchedule, type DropKind } from "./drop-schedule";
 import { createFallingStar } from "./falling-star";
 import type { ContentCard } from "./card-config";
-import { loadCardImage, renderTextCard, renderImageCard, renderCardReverse, type CardSurface } from "./card-surface";
+import { loadCardImage, renderTextCard, renderImageCard, type CardSurface } from "./card-surface";
 import { Flight, layoutFor, STEP, PERSPECTIVE, MAX_ACTIVE } from "./motion";
 import maskUrl from "../../../assets/home-flight/sprite-vanish.png?url";
 
@@ -70,15 +70,12 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   let nextImageIndex = 0;
   const star = createFallingStar(definitions.length + 1);
   scene.add(star.mesh);
-  const reverse = new THREE.CanvasTexture(renderCardReverse(theme));
-  reverse.colorSpace = THREE.SRGBColorSpace;
-  const backMaterial = new THREE.MeshBasicMaterial({ map: reverse });
   const sideMaterial = new THREE.MeshBasicMaterial({ color: theme === "night" ? "#242830" : "#c8c0b2" });
   const hiddenMaterial = new THREE.MeshBasicMaterial({ visible: false });
   const blank = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   blank.colorSpace = THREE.SRGBColorSpace;
   blank.needsUpdate = true;
-  const resources: { dispose(): void }[] = [reverse, blank, backMaterial, sideMaterial, hiddenMaterial, star];
+  const resources: { dispose(): void }[] = [blank, sideMaterial, hiddenMaterial, star];
 
   function makeMask(image: HTMLImageElement) {
     const canvas = document.createElement("canvas");
@@ -101,7 +98,8 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     const depth = 16;
     // Clones share the mask image/GPU source; only their UV offsets differ.
     const mask = maskBase.clone();
-    const front = new THREE.MeshBasicMaterial({ map: blank, alphaMap: mask, alphaTest: 0.5 });
+    // The open back exposes this same surface in reverse, including its erosion mask.
+    const front = new THREE.MeshBasicMaterial({ map: blank, alphaMap: mask, alphaTest: 0.5, side: THREE.DoubleSide });
     const vanish = { enabled: { value: 0 }, shift: { value: 0 },
       size: { value: new THREE.Vector2(width, height) }, paper: { value: new THREE.Color(theme === "day" ? "#fafaf7" : "#050510") } };
     // Original release effect: the photograph erodes first, exposing a paper grid;
@@ -125,7 +123,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
         #endif
       `);
     };
-    const materials = [sideMaterial, sideMaterial, sideMaterial, sideMaterial, front, backMaterial];
+    const materials = [sideMaterial, sideMaterial, sideMaterial, sideMaterial, front, hiddenMaterial];
     const geometry = new THREE.BoxGeometry(width, height, depth).translate(0, 0, -depth / 2);
     const mesh = new THREE.Mesh(geometry, materials);
     mesh.visible = false;
@@ -266,7 +264,6 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   function setTheme(value: "day" | "night") {
     if (theme === value) return;
     theme = value;
-    reverse.image = renderCardReverse(theme); reverse.needsUpdate = true;
     sideMaterial.color.set(theme === "night" ? "#242830" : "#c8c0b2");
     entries.forEach(entry => {
       entry.vanish.paper.value.set(theme === "day" ? "#fafaf7" : "#050510");
