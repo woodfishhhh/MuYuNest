@@ -8,6 +8,7 @@ test("Home wheel stays on the page and smoothly resizes the held card", async ({
   await page.goto("/");
   const flight = page.locator("[data-home-flight]");
   await expect(flight).toHaveAttribute("data-home-flight-ready", "true");
+  await expect(page.locator("[data-magnetic-pointer-overlay]")).toHaveCount(0);
   await expect(page.getByText("抓住一张卡片，读一段时光", { exact: true })).toBeVisible();
   await expect(page.getByText("鼠标滚轮调整卡片大小", { exact: true })).toBeVisible();
   await page.mouse.move(700, 300);

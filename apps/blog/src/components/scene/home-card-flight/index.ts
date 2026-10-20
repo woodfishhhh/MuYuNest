@@ -96,9 +96,9 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
 
   function addFrame(surface: CardSurface, maskBase: THREE.Texture) {
     const index = nextEntryIndex++;
-    const width = layout.cardWidth * (surface.card.type === "image" ? 0.5 : 1);
+    const width = layout.cardWidth;
     const height = width * surface.height / surface.width;
-    const depth = surface.card.type === "image" ? 8 : 16;
+    const depth = 16;
     // Clones share the mask image/GPU source; only their UV offsets differ.
     const mask = maskBase.clone();
     const front = new THREE.MeshBasicMaterial({ map: blank, alphaMap: mask, alphaTest: 0.5 });
@@ -250,12 +250,12 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     camera.setViewOffset(width, height, 0, height / 2 - layout.perspectiveY, width, height);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld();
     for (const entry of entries) {
-      const width = layout.cardWidth * (entry.surface.card.type === "image" ? 0.5 : 1);
+      const width = layout.cardWidth;
       if (entry.width === width) continue;
       const geometry = entry.mesh.geometry;
       geometry.dispose(); resources.splice(resources.indexOf(geometry), 1);
       entry.width = width; entry.height = width * entry.surface.height / entry.surface.width;
-      const depth = entry.surface.card.type === "image" ? 8 : 16;
+      const depth = 16;
       entry.mesh.geometry = new THREE.BoxGeometry(entry.width, entry.height, depth).translate(0, 0, -depth / 2);
       resources.push(entry.mesh.geometry);
       entry.vanish.size.value.set(entry.width, entry.height);

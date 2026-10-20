@@ -143,11 +143,11 @@ describe("home flight integration", () => {
       const text = scene.children.find(child => child.userData.kind === "text") as THREE.Mesh<THREE.BoxGeometry>;
       const photo = scene.children.find(child => child.userData.kind === "image") as THREE.Mesh<THREE.BoxGeometry>;
       expect(text.geometry.parameters.width).toBe(500);
-      expect(photo.geometry.parameters.width).toBe(250);
-      expect(photo.geometry.parameters.depth).toBe(8);
+      expect(photo.geometry.parameters.width).toBe(500);
+      expect(photo.geometry.parameters.depth).toBe(16);
       cards.resize(390, 844);
       expect(text.geometry.parameters.width).toBe(300);
-      expect(photo.geometry.parameters.width).toBe(150);
+      expect(photo.geometry.parameters.width).toBe(300);
       cards.resize(1651, 871);
       for (let i = 0; i < 700; i++) {
         cards.update(0.1, true, false);
