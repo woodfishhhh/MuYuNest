@@ -64,12 +64,14 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   let maskBase: THREE.Texture | undefined;
   let pendingDrop = false;
   let nextEntryIndex = 0;
+  let nextTextIndex = 0;
+  let nextImageIndex = 0;
   const star = createFallingStar(definitions.length + 1);
   scene.add(star.mesh);
-  const reverse = new THREE.CanvasTexture(renderCardReverse());
+  const reverse = new THREE.CanvasTexture(renderCardReverse(theme));
   reverse.colorSpace = THREE.SRGBColorSpace;
   const backMaterial = new THREE.MeshBasicMaterial({ map: reverse });
-  const sideMaterial = new THREE.MeshBasicMaterial({ color: "#c8c0b2" });
+  const sideMaterial = new THREE.MeshBasicMaterial({ color: theme === "night" ? "#242830" : "#c8c0b2" });
   const hiddenMaterial = new THREE.MeshBasicMaterial({ visible: false });
   const blank = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
   blank.colorSpace = THREE.SRGBColorSpace;
@@ -148,7 +150,7 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     if (!mesh.visible) { releaseTexture(entry); return; }
     // Rasterize only the two active pages, instead of allocating the entire poetry collection on the GPU.
     if (!entry.liveTexture) {
-      const texture = new THREE.CanvasTexture(entry.surface.render());
+      const texture = new THREE.CanvasTexture(entry.surface.render(theme));
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
       entry.liveTexture = texture; entry.front.map = texture; resources.push(texture);
@@ -204,14 +206,13 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
     try {
       let entry: Entry | undefined;
       if (kind === "text") {
-        const available = entries.filter(entry => entry.surface.card.type === "text" && entry.flight.state === "waiting");
-        if (!available.length) return;
-        entry = available[Math.floor(random() * available.length)];
+        const textPages = entries.filter(entry => entry.surface.card.type === "text");
+        entry = textPages[nextTextIndex % textPages.length];
+        if (entry.flight.state !== "waiting") return;
       } else {
-        const available = usableImages.filter(card => !entries.some(entry => entry.surface.card.id === card.id && entry.flight.state !== "waiting"));
-        if (!available.length) return;
-        const card = available[Math.floor(random() * available.length)];
+        const card = usableImages[nextImageIndex % usableImages.length];
         entry = entries.find(entry => entry.surface.card.id === card.id);
+        if (entry && entry.flight.state !== "waiting") return;
         if (!entry) {
           try {
             const image = await loadCardImage(resolveImageSource(card.src));
@@ -230,6 +231,9 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
       if (disposed || (!active && !warm)) return;
       entry.wasThrown = true;
       entry.flight.reset(layout, random, warm);
+      // Advance only after an actual drop; loading failures and pauses keep the
+      // next slot. Each category completes its list before wrapping to the start.
+      if (kind === "text") nextTextIndex++; else nextImageIndex++;
       schedule.record(kind); syncEntry(entry);
       options.onDrop?.({ kind, id: entry.surface.card.id });
     } finally { pendingDrop = false; }
@@ -253,8 +257,15 @@ export function createHomeCardFlight(options: HomeCardFlightOptions) {
   }
 
   function setTheme(value: "day" | "night") {
+    if (theme === value) return;
     theme = value;
-    entries.forEach(entry => entry.vanish.paper.value.set(theme === "day" ? "#fafaf7" : "#050510"));
+    reverse.image = renderCardReverse(theme); reverse.needsUpdate = true;
+    sideMaterial.color.set(theme === "night" ? "#242830" : "#c8c0b2");
+    entries.forEach(entry => {
+      entry.vanish.paper.value.set(theme === "day" ? "#fafaf7" : "#050510");
+      releaseTexture(entry);
+    });
+    syncEntries();
   }
 
   function drag(ndc: THREE.Vector2) {

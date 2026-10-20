@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
-import { createStarMotion } from "@/components/playground/star-motion";
+import { createStarMotion } from "@/composables/star-motion";
 import { STAR_MODES, COMMON_CONTROLS, MODE_CONTROLS, createModeSettings, normalizePlaygroundSettings } from "@/components/playground/star-clusters";
 
 function fixture() {

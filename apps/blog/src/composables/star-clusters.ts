@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import homeStars from "@/content/home-stars.json";
 import { seededRandom } from "@/components/scene/home-card-flight/motion";
 import { createStarClock, type StarClockView } from "./star-clock";
 
@@ -12,8 +11,7 @@ export interface ClusterSettings {
   parallax: number;
 }
 
-export const HOME_STAR_SETTINGS: ClusterSettings = homeStars.settings;
-export const HOME_STAR_SEED = homeStars.seed;
+export const LEGACY_STAR_SETTINGS: ClusterSettings = { bunches: 8, spread: 1, clumping: 0.05, curvature: 1, flow: 0.25, parallax: 1 };
 export const ORIGINAL_STAR_SETTINGS: ClusterSettings = { bunches: 4, spread: 0, clumping: 0, curvature: 0, flow: 1, parallax: 1 };
 
 // Compress spacing along an existing line, preserving endpoints and star order.

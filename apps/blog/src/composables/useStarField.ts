@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import type { StarClockView } from "./star-clock";
-import { createStarClusters, HOME_STAR_SETTINGS, HOME_STAR_SEED, type ClusterSettings } from "./star-clusters";
+import { createStarClusters, type ClusterSettings } from "./star-clusters";
+import { createHomeStarMotion, HOME_STAR_SETTINGS, HOME_STAR_SEED } from "./home-star-motion";
+import type { StarMotionSettings } from "./star-motion";
 
 export const STAR_FIELD_BACK_Z = -40;
 export const STAR_FIELD_FRONT_Z = 8;
@@ -27,7 +29,7 @@ export interface StarField {
   dispose: () => void;
 }
 
-export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, settings: ClusterSettings | null = HOME_STAR_SETTINGS): StarField {
+export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, settings: StarMotionSettings | ClusterSettings | null = HOME_STAR_SETTINGS): StarField {
   const group = new THREE.Group();
   group.rotation.set(0, 0, Math.PI / 4);
 
@@ -47,7 +49,11 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, s
   geometry.setAttribute("starOpacity", new THREE.BufferAttribute(starOpacity, 1).setUsage(THREE.DynamicDrawUsage));
   const starSizes = new Float32Array(count).fill(1);
   geometry.setAttribute("starSize", new THREE.BufferAttribute(starSizes, 1).setUsage(THREE.DynamicDrawUsage));
-  const clusters = settings ? createStarClusters(positions, starOpacity, starSizes, HOME_STAR_SEED, settings) : null;
+  const clusters = settings
+    ? "count" in settings
+      ? createHomeStarMotion(positions, starOpacity, starSizes, settings)
+      : createStarClusters(positions, starOpacity, starSizes, HOME_STAR_SEED, settings)
+    : null;
   let collectActive = false;
   let reducedMotion = false;
 

@@ -2,13 +2,16 @@
 import HomeCardPreview from "@/components/home/HomeCardPreview.vue";
 import { interleaveCards } from "@/components/scene/home-card-flight/drop-schedule";
 import { catalog, catalogIssues } from "@/components/scene/home-card-flight/catalog";
+import { useTheme } from "@/composables/useTheme";
 const orderedCards = interleaveCards(catalog);
+const { theme, toggleThemeSync } = useTheme();
 </script>
 
 <template>
   <main class="card-collection">
     <header>
       <NuxtLink to="/">← 返回首页</NuxtLink>
+      <button type="button" @click="toggleThemeSync">{{ theme === 'night' ? '切到白天' : '切到夜晚' }}</button>
       <p>拾光</p>
       <h1>诗句与相片</h1>
       <span>{{ catalog.length }} 则时光，慢慢读。</span>
@@ -24,6 +27,7 @@ const orderedCards = interleaveCards(catalog);
 .card-collection { min-height: 100dvh; background: var(--stage-bg); color: var(--stage-fg); padding: 48px max(24px, calc((100vw - 1220px) / 2)); pointer-events: auto; }
 header { margin-bottom: 48px; }
 header a { font-size: 13px; color: var(--stage-hint); }
+header button { float: right; padding: 8px 14px; border: 1px solid var(--border-subtle); border-radius: 999px; font-size: 13px; cursor: pointer; }
 header p { margin-top: 56px; font-size: 11px; letter-spacing: .18em; color: var(--stage-hint); }
 header h1 { margin: 12px 0; font-size: clamp(32px, 5vw, 56px); font-weight: 600; letter-spacing: -.04em; }
 header > span { font-size: 14px; color: var(--stage-hint); }

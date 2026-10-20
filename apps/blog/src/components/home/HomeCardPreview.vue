@@ -1,28 +1,34 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useTheme } from "@/composables/useTheme";
 import type { ContentCard } from "@/components/scene/home-card-flight/card-config";
 import { formatCardHeading } from "@/components/scene/home-card-flight/card-config";
 import { resolveImageSource } from "@/components/scene/home-card-flight/catalog";
-import { loadCardImage, renderImageCard, renderTextCard } from "@/components/scene/home-card-flight/card-surface";
+import { loadCardImage, renderImageCard, renderTextCard, type CardSurface } from "@/components/scene/home-card-flight/card-surface";
 
 const props = defineProps<{ card: ContentCard }>();
 const host = ref<HTMLElement>();
 const sheets = ref<HTMLElement>();
 const error = ref("");
+const { theme } = useTheme();
+let surfaces: CardSurface[] | undefined;
 let observer: IntersectionObserver | undefined;
 let disposed = false;
+function repaint() {
+  sheets.value?.replaceChildren(...(surfaces ?? []).map(surface => {
+    const canvas = surface.render(theme.value);
+    canvas.setAttribute("aria-hidden", "true");
+    return canvas;
+  }));
+}
 async function paint() {
   observer?.disconnect();
   try {
     const card = props.card;
-    const surfaces = card.type === "text" ? renderTextCard(card)
+    const loaded = card.type === "text" ? renderTextCard(card)
       : renderImageCard(card, await loadCardImage(resolveImageSource(card.src)));
     if (disposed) return;
-    sheets.value?.replaceChildren(...surfaces.map(surface => {
-      const canvas = surface.render();
-      canvas.setAttribute("aria-hidden", "true");
-      return canvas;
-    }));
+    surfaces = loaded; repaint();
   } catch { if (!disposed) error.value = "这张图片暂时无法加载。"; }
 }
 onMounted(() => {
@@ -31,7 +37,8 @@ onMounted(() => {
   }, { rootMargin: "240px" });
   if (host.value) observer.observe(host.value);
 });
-onBeforeUnmount(() => { disposed = true; observer?.disconnect(); });
+watch(theme, () => { if (surfaces) repaint(); });
+onBeforeUnmount(() => { disposed = true; surfaces = undefined; observer?.disconnect(); });
 </script>
 
 <template>

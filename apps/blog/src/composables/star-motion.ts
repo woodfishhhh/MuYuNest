@@ -1,18 +1,30 @@
 import * as THREE from "three";
 import { seededRandom } from "@/components/scene/home-card-flight/motion";
 import type { StarClockView } from "@/composables/star-clock";
-import { bunchRadius, type PlaygroundSettings, type StarMode } from "./star-clusters";
+import { bunchRadius, type ClusterSettings } from "./star-clusters";
+
+export type StarMode = "rays" | "comet" | "fall";
+export interface StarMotionSettings extends ClusterSettings {
+  count: number;
+  density: number;
+  starSize: number;
+  reach: number;
+  trail: number;
+  angle: number;
+  gravity: number;
+  turbulence: number;
+}
 
 const TAU = Math.PI * 2;
 const fract = (value: number) => THREE.MathUtils.euclideanModulo(value, 1);
 
-// Only the playground uses these motions; Home keeps its selected star-clock settings.
+// Home and the playground share the same projection, timing and particle selection.
 export function createStarMotion(
   positions: Float32Array,
   opacity: Float32Array,
   sizes: Float32Array,
   seed: number,
-  initial: PlaygroundSettings,
+  initial: StarMotionSettings,
   initialMode: StarMode,
 ) {
   const original = positions.slice();
@@ -41,7 +53,7 @@ export function createStarMotion(
   }
   reseed();
 
-  function configure(next: PlaygroundSettings, nextMode = mode, nextSeed = seed) {
+  function configure(next: StarMotionSettings, nextMode = mode, nextSeed = seed) {
     if (nextMode !== mode) {
       transitionFrom.set(positions); transitionAlpha.set(opacity); transitionSizes.set(sizes);
       transition = 0;
@@ -162,5 +174,5 @@ export function createStarMotion(
     time = 0; progress = 0; transition = 1;
     positions.set(original); opacity.set(originalAlpha); sizes.set(originalSizes);
   }
-  return { configure, update, replay };
+  return { configure, update, replay, sourceFor: (_index: number) => original, isActive: () => progress > 0 };
 }

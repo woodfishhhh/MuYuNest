@@ -1,11 +1,12 @@
 import type { ContentCard, ImageCard, TextCard } from "./card-config";
 import { formatCardHeading } from "./card-config";
 
+export type CardTheme = "day" | "night";
 export interface CardSurface {
   card: ContentCard;
   width: number;
   height: number;
-  render: () => HTMLCanvasElement;
+  render: (theme?: CardTheme) => HTMLCanvasElement;
   page: number;
   pageCount: number;
 }
@@ -52,16 +53,16 @@ export function renderTextCard(card: TextCard): CardSurface[] {
   const measure = document.createElement("canvas").getContext("2d")!;
   measure.font = `${BODY_SIZE}px ${SERIF}`;
   const pages = paginateLines(wrapCardText(card.text, text => measure.measureText(text).width, WIDTH - MARGIN * 2));
-  const paper = { warm: "#f5f1e8", white: "#fafaf8", dark: "#25282c" }[card.paper];
-  const ink = card.paper === "dark" ? "#eeebe4" : "#35322e";
   return pages.map((lines, page) => ({
     card, page, pageCount: pages.length, width: WIDTH, height: HEIGHT,
-    render: () => {
+    render: (theme = "day") => {
       const { canvas, ctx } = surface(WIDTH, HEIGHT);
-      ctx.fillStyle = paper; ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      ctx.strokeStyle = card.paper === "dark" ? "#44474a" : "#e4ded3";
+      const dark = theme === "night" || card.paper === "dark";
+      ctx.fillStyle = dark ? "#1b1e24" : { warm: "#eeeae2", white: "#f0f0ec", dark: "#1b1e24" }[card.paper];
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      ctx.strokeStyle = dark ? "#323740" : "#ded8cd";
       ctx.lineWidth = 0.6; ctx.strokeRect(12, 12, WIDTH - 24, HEIGHT - 24);
-      ctx.fillStyle = ink;
+      ctx.fillStyle = dark ? "#b7bbc2" : "#35322e";
       ctx.textAlign = "center";
       ctx.font = `18px ${SERIF}`;
       const heading = formatCardHeading(card);
@@ -70,7 +71,7 @@ export function renderTextCard(card: TextCard): CardSurface[] {
         headingSize--; ctx.font = `${headingSize}px ${SERIF}`;
       }
       ctx.fillText(heading, WIDTH / 2, 82, WIDTH - MARGIN * 2);
-      ctx.strokeStyle = card.paper === "dark" ? "#656361" : "#c5bcae";
+      ctx.strokeStyle = dark ? "#555c66" : "#c5bcae";
       ctx.beginPath(); ctx.moveTo(WIDTH / 2 - 12, 108); ctx.lineTo(WIDTH / 2 + 12, 108); ctx.stroke();
       ctx.font = `${BODY_SIZE}px ${SERIF}`;
       ctx.textAlign = card.align;
@@ -100,17 +101,24 @@ export function renderImageCard(card: ImageCard, image: HTMLImageElement): CardS
   const description = card.description ?? card.caption;
   const captionHeight = description ? 42 : 0;
   const height = imageHeight + inset * 2 + captionHeight;
-  return [{ card, page: 0, pageCount: 1, width: WIDTH, height, render: () => {
+  return [{ card, page: 0, pageCount: 1, width: WIDTH, height, render: (theme = "day") => {
     const { canvas, ctx } = surface(WIDTH, height);
-    const edge = { white: "#e4e0d9", black: "#222326", wood: "#8c6646" }[card.frame];
+    const night = theme === "night";
+    const dark = night || card.frame === "black";
+    const edge = night ? "#303640" : { white: "#dedbd4", black: "#222326", wood: "#8c6646" }[card.frame];
     ctx.fillStyle = edge; ctx.fillRect(0, 0, WIDTH, height);
-    ctx.fillStyle = card.frame === "black" ? "#353638" : "#f6f3ed";
+    ctx.fillStyle = night ? "#1b1e24" : dark ? "#353638" : "#f1eee7";
     ctx.fillRect(9, 9, WIDTH - 18, height - 18);
     const fitted = imageFitRect(image.naturalWidth, image.naturalHeight, imageWidth, imageHeight, card.fit);
     ctx.save(); ctx.beginPath(); ctx.rect(inset, inset, imageWidth, imageHeight); ctx.clip();
-    ctx.drawImage(image, inset + fitted.x, inset + fitted.y, fitted.width, fitted.height); ctx.restore();
+    ctx.drawImage(image, inset + fitted.x, inset + fitted.y, fitted.width, fitted.height);
+    if (night) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+      ctx.fillRect(inset + fitted.x, inset + fitted.y, fitted.width, fitted.height);
+    }
+    ctx.restore();
     if (description) {
-      ctx.fillStyle = card.frame === "black" ? "#e9e5dd" : "#5b554e";
+      ctx.fillStyle = dark ? "#a8afb9" : "#5b554e";
       ctx.textAlign = "center"; ctx.font = `14px ${SERIF}`;
       ctx.fillText(description, WIDTH / 2, height - 28, WIDTH - inset * 2);
     }
@@ -118,10 +126,10 @@ export function renderImageCard(card: ImageCard, image: HTMLImageElement): CardS
   } }];
 }
 
-export function renderCardReverse() {
+export function renderCardReverse(theme: CardTheme = "day") {
   const { canvas, ctx } = surface(WIDTH, HEIGHT);
-  ctx.fillStyle = "#ece7dd"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
-  ctx.fillStyle = "#b5ac9d"; ctx.textAlign = "center"; ctx.font = `18px ${SERIF}`;
+  ctx.fillStyle = theme === "night" ? "#181b20" : "#e6e1d7"; ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.fillStyle = theme === "night" ? "#737c8a" : "#a69d8e"; ctx.textAlign = "center"; ctx.font = `18px ${SERIF}`;
   ctx.fillText("拾 光", WIDTH / 2, HEIGHT / 2);
   return canvas;
 }

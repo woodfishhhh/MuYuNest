@@ -10,7 +10,7 @@ import { getBlogDockTransform } from "@/components/scene/blog-dock";
 import { getHomeGeometryAnchor } from "@/components/scene/home-card-flight/layout";
 import type { HomeCardFlight } from "@/components/scene/home-card-flight";
 import { createStarClusters, CLUSTER_PRESETS, type PlaygroundSettings, type StarMode } from "./star-clusters";
-import { createStarMotion } from "./star-motion";
+import { createStarMotion } from "@/composables/star-motion";
 
 const props = defineProps<{ settings: PlaygroundSettings; mode: StarMode; reference: boolean; collect: boolean; paused: boolean; theme: "day" | "night"; geometry: "cube" | "mobius" | "none"; cards: boolean; seed: number }>();
 const emit = defineEmits<{ error: [message: string] }>();

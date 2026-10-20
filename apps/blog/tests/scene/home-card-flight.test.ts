@@ -90,6 +90,17 @@ describe("home flight integration", () => {
       const scene = renderer.render.mock.calls[0][0] as THREE.Scene;
       expect(scene.children.length).toBeGreaterThanOrEqual(2);
       expect(scene.children.filter(child => child.visible)).toHaveLength(2);
+      const visibleCard = scene.children.find(child => child.visible && child.userData.cardId) as THREE.Mesh;
+      const front = (visibleCard.material as THREE.MeshBasicMaterial[])[4];
+      const oldTexture = front.map!;
+      const position = visibleCard.position.clone();
+      cards.setTheme("night");
+      expect(front.map).not.toBe(oldTexture);
+      expect(visibleCard.position).toEqual(position);
+      expect(textureDispose.mock.instances).toContain(oldTexture);
+      const darkTexture = front.map;
+      cards.setTheme("night");
+      expect(front.map).toBe(darkTexture);
       for (let i = 0; i < 300; i++) {
         cards.update(0.1, true, false);
         expect(scene.children.filter(child => child.visible).length).toBeLessThanOrEqual(2);
@@ -107,7 +118,7 @@ describe("home flight integration", () => {
     } finally { cards.dispose(); assets.restore(); }
   });
 
-  it("alternates content, inserts sparse 3D stars, and only decodes photos on demand", async () => {
+  it("loops each full list without random repeats, alternates content and inserts sparse 3D stars", async () => {
     const assets = mockAssets();
     const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
     const definitions = parseCardConfig({ version: 1, cards: [
@@ -116,8 +127,13 @@ describe("home flight integration", () => {
     ] }).cards;
     const renderer = mockRenderer(); const onReady = vi.fn();
     const drops: string[] = [];
+    const textIds: string[] = []; const imageIds: string[] = [];
     const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
-      width: 1651, height: 871, theme: "day", cards: definitions, onReady, onDrop: drop => drops.push(drop.kind) });
+      width: 1651, height: 871, theme: "day", cards: definitions, onReady, onDrop: drop => {
+        drops.push(drop.kind);
+        if (drop.kind === "text") textIds.push(drop.id!);
+        if (drop.kind === "image") imageIds.push(drop.id!);
+      } });
     try {
       await vi.waitFor(() => expect(drops).toHaveLength(2));
       expect(drops).toEqual(["text", "image"]);
@@ -133,6 +149,10 @@ describe("home flight integration", () => {
       const content = drops.filter(kind => kind !== "star");
       expect(content.length).toBeGreaterThan(20);
       content.forEach((kind, i) => expect(kind).toBe(i % 2 ? "image" : "text"));
+      expect(textIds.length).toBeGreaterThan(8);
+      expect(imageIds.length).toBeGreaterThan(6);
+      textIds.forEach((id, i) => expect(id).toBe(`text-${i % 4}`));
+      imageIds.forEach((id, i) => expect(id).toBe(`photo-${i % 6}`));
       let gap = 0; let stars = 0;
       for (const kind of drops) {
         if (kind === "star") { expect(gap).toBeGreaterThanOrEqual(3); expect(gap).toBeLessThanOrEqual(6); gap = 0; stars++; }

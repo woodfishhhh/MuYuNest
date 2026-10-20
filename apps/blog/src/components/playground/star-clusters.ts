@@ -1,13 +1,15 @@
 import * as THREE from "three";
-import { HOME_STAR_SETTINGS, ORIGINAL_STAR_SETTINGS, type ClusterSettings } from "@/composables/star-clusters";
+import { LEGACY_STAR_SETTINGS, ORIGINAL_STAR_SETTINGS, type ClusterSettings } from "@/composables/star-clusters";
+import type { StarMotionSettings, StarMode } from "@/composables/star-motion";
 import selectedPlayground from "@/content/star-playground.json";
-export { createStarClusters, bunchRadius, HOME_STAR_SETTINGS, HOME_STAR_SEED, type ClusterSettings } from "@/composables/star-clusters";
+export { createStarClusters, bunchRadius, type ClusterSettings } from "@/composables/star-clusters";
+export type { StarMode } from "@/composables/star-motion";
 
 export const CLUSTER_PRESETS: { name: string; description: string; settings: ClusterSettings }[] = [
   { name: "原版星线", description: "原来的十二条星线。从这里开始，沿线调整。", settings: { ...ORIGINAL_STAR_SETTINGS } },
   { name: "沿线成簇", description: "保留十二条线的走向，星星沿线疏密成簇。", settings: { bunches: 4, spread: 0.3, clumping: 0.8, curvature: 0.1, flow: 1, parallax: 1 } },
   { name: "柔和星束", description: "星线稍稍散开、弯曲，仍然从中心延伸到四周。", settings: { bunches: 3, spread: 0.65, clumping: 0.65, curvature: 0.28, flow: 0.8, parallax: 1 } },
-  { name: "首页选定", description: "你选定的宽星束、轻聚簇与慢速流动。", settings: { ...HOME_STAR_SETTINGS } },
+  { name: "旧版首页", description: "早期的十二条宽星束与轻聚簇。", settings: { ...LEGACY_STAR_SETTINGS } },
 ];
 export const CLUSTER_SLIDERS = [
   { key: "bunches", label: "每条线的星簇", min: 1, max: 24, step: 1 },
@@ -29,17 +31,7 @@ export function normalizeClusterSettings(value: Partial<ClusterSettings>): Clust
   return settings;
 }
 
-export type StarMode = "rays" | "comet" | "fall";
-export interface PlaygroundSettings extends ClusterSettings {
-  count: number;
-  density: number;
-  starSize: number;
-  reach: number;
-  trail: number;
-  angle: number;
-  gravity: number;
-  turbulence: number;
-}
+export type PlaygroundSettings = StarMotionSettings;
 
 export const SELECTED_PLAYGROUND = {
   ...selectedPlayground,
@@ -59,7 +51,7 @@ export interface StarControl {
 }
 
 const base: PlaygroundSettings = {
-  ...HOME_STAR_SETTINGS,
+  ...LEGACY_STAR_SETTINGS,
   count: 12, density: 0.48, starSize: 1.2, reach: 1,
   trail: 1, angle: 0, gravity: 1, turbulence: 0.4,
 };
