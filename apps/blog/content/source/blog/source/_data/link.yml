@@ -88,3 +88,7 @@ links:
         link: "https://blog.pldduck.com"
         avatar: "avatars/dblog.jpg"
         descr: "跑路的duck的技术分享和生活随笔"
+      - name: "跑路的duck"
+        link: "https://www.pldduck.com"
+        avatar: "https://www.pldduck.com/logo.png"
+        descr: "跑路的duck的小站"
