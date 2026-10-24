@@ -154,5 +154,12 @@
     "avatar": "https://www.pldduck.com/logo.png",
     "descr": "跑路的duck的小站",
     "className": "友情链接"
+  },
+  {
+    "name": "720 科技博客",
+    "link": "https://720info.top",
+    "avatar": "https://s41.ax1x.com/2026/08/03/pm5dNl9.jpg",
+    "descr": "用代码解决问题，用文字收藏平凡日子",
+    "className": "友情链接"
   }
 ]
