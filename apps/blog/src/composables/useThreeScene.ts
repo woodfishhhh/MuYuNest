@@ -34,16 +34,9 @@ export function useThreeScene(options: ThreeSceneOptions): ThreeScene {
   const scene = new THREE.Scene();
   scene.background = options.transparentBackground ? null : new THREE.Color(background);
 
+  // No lights: every scene material is unlit (basic, points, lines, custom
+  // shaders), and lights would only add per-frame light setup to each render.
   const camera = new THREE.PerspectiveCamera(75, options.width / options.height, 0.1, 1000);
-
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-  scene.add(ambientLight);
-  const pointLight = new THREE.PointLight(0xffffff, 1);
-  pointLight.position.set(10, 10, 10);
-  scene.add(pointLight);
-  const spotLight = new THREE.SpotLight(0xffffff, 0.5);
-  spotLight.position.set(-10, -10, -10);
-  scene.add(spotLight);
 
   function resize(width: number, height: number) {
     camera.aspect = width / height;

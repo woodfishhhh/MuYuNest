@@ -165,4 +165,55 @@ describe("useArticleReading", () => {
 
     wrapper.unmount();
   });
+
+  it("tracks the active heading while scrolling without rescanning the article", async () => {
+    const Harness = defineComponent({
+      setup() {
+        const contentRoot = shallowRef<HTMLElement | null>(null);
+        const scrollContainer = shallowRef<HTMLElement | null>(null);
+        const tocItems = shallowRef<TocItem[]>([
+          { id: "first", level: 2, text: "First" },
+          { id: "second", level: 2, text: "Second" },
+        ]);
+        const { activeId } = useArticleReading({ contentRoot, scrollContainer, tocItems });
+        return { activeId, contentRoot, scrollContainer };
+      },
+      template: `
+        <div ref="scrollContainer" data-testid="scroll-container">
+          <div ref="contentRoot" data-testid="content-root">
+            <h2 id="first">First</h2>
+            <h2 id="second">Second</h2>
+          </div>
+          <output data-testid="active-id">{{ activeId }}</output>
+        </div>
+      `,
+    });
+
+    const wrapper = mount(Harness, { attachTo: document.body });
+    await nextTick();
+    await nextTick();
+
+    const scrollContainer = wrapper.get("[data-testid='scroll-container']").element as HTMLElement;
+    const contentRoot = wrapper.get("[data-testid='content-root']").element as HTMLElement;
+    Object.defineProperty(scrollContainer, "scrollTop", { configurable: true, value: 0, writable: true });
+    vi.spyOn(scrollContainer, "getBoundingClientRect").mockReturnValue(makeRect(0, 700));
+    vi.spyOn(document.getElementById("first")!, "getBoundingClientRect").mockImplementation(() =>
+      makeRect(120 - scrollContainer.scrollTop),
+    );
+    vi.spyOn(document.getElementById("second")!, "getBoundingClientRect").mockImplementation(() =>
+      makeRect(900 - scrollContainer.scrollTop),
+    );
+    const scan = vi.spyOn(contentRoot, "querySelectorAll");
+
+    for (const top of [100, 300, 500, 700, 850]) {
+      scrollContainer.scrollTop = top;
+      scrollContainer.dispatchEvent(new Event("scroll"));
+    }
+    await nextTick();
+
+    expect(wrapper.get("[data-testid='active-id']").text()).toBe("second");
+    expect(scan.mock.calls.length).toBeLessThanOrEqual(1);
+
+    wrapper.unmount();
+  });
 });

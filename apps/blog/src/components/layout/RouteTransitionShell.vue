@@ -191,7 +191,8 @@ watch(
   z-index: 121;
   pointer-events: none;
   opacity: 0;
+  /* Already soft; a blur filter on this oversized layer cost a full-screen
+     pass per frame of the sweep without changing how it looks. */
   background: linear-gradient(100deg, transparent 22%, rgba(255, 255, 255, 0.18) 50%, transparent 78%);
-  filter: blur(12px);
 }
 </style>

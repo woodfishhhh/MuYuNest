@@ -90,26 +90,38 @@ export function useArticleReading(options: UseArticleReadingOptions) {
     return typeof performance === "undefined" ? Date.now() : performance.now();
   }
 
+  // Scroll fires every frame while reading; rescanning the whole article for
+  // headings each time is wasted work while the same DOM stays mounted.
+  let headingCache: {
+    contentRoot: HTMLElement | null;
+    headings: HTMLElement[];
+    tocItems: TocItem[];
+    validIds: Set<string>;
+  } | null = null;
+
   function getObservedHeadings() {
     const contentRoot = options.contentRoot.value;
     const tocItems = options.tocItems.value;
-    const validIds = new Set(tocItems.map((item) => item.id));
+    const fallbackId = tocItems[0]?.id ?? "";
 
-    if (!contentRoot || tocItems.length === 0) {
-      return {
-        fallbackId: tocItems[0]?.id ?? "",
-        headings: [] as HTMLElement[],
-        validIds,
-      };
+    if (
+      !headingCache ||
+      headingCache.contentRoot !== contentRoot ||
+      headingCache.tocItems !== tocItems ||
+      // Empty or detached results mean the prose rendered later; scan again.
+      !headingCache.headings[0]?.isConnected
+    ) {
+      const validIds = new Set(tocItems.map((item) => item.id));
+      const headings =
+        contentRoot && tocItems.length > 0
+          ? Array.from(contentRoot.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]")).filter((heading) =>
+              validIds.has(heading.id),
+            )
+          : [];
+      headingCache = { contentRoot, headings, tocItems, validIds };
     }
 
-    return {
-      fallbackId: tocItems[0]?.id ?? "",
-      headings: Array.from(contentRoot.querySelectorAll<HTMLElement>("h2[id], h3[id], h4[id]")).filter((heading) =>
-        validIds.has(heading.id),
-      ),
-      validIds,
-    };
+    return { fallbackId, headings: headingCache.headings, validIds: headingCache.validIds };
   }
 
   function updateActiveHeadingFromLayout() {
@@ -238,6 +250,7 @@ export function useArticleReading(options: UseArticleReadingOptions) {
 
   async function refresh() {
     await nextTick();
+    headingCache = null;
     setupHeadingObserver();
     updateReadProgress();
     if (!appliedHash && typeof window !== "undefined" && options.contentRoot.value) restoreHash();

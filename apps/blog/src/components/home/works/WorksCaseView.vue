@@ -8,9 +8,14 @@ import LiquidGlassCard from "./LiquidGlassCard.vue";
 import WorkActionLinks from "./WorkActionLinks.vue";
 import { createWorksCardPresentation } from "./works-card-preset";
 
-const props = defineProps<{
-  works: WorkProjectData[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    works: WorkProjectData[];
+    /** False while the cached Works panel is hidden, so the glass stops rendering. */
+    active?: boolean;
+  }>(),
+  { active: true },
+);
 
 const { theme } = useTheme();
 
@@ -29,6 +34,7 @@ const caseItems = computed(() =>
       <LiquidGlassCard
         v-for="item in caseItems"
         :key="item.work.slug"
+        :active="props.active"
         class="works-case__glass"
         :corner-radius="8"
         data-glass="liquid"
