@@ -36,7 +36,7 @@ categories:
 		</ul>
 ```
 
-ul;里只能包裹li标签（不能写段落p，标题h），li中可以包括任何内容
+ul里只能包裹li标签（不能写段落p，标题h），li中可以包括任何内容
 
 ### 有序列表
 
@@ -145,7 +145,7 @@ caption是表格标题
 | tbody  | 表格主体 | 主要内容区域 |
 | tfoot  | 表格底部 | 汇总信息区域 |
 
-看不见说是，但是以后用的上，可以弄多层表头什么的
+这三个标签加了也看不出效果，但是以后用得上，可以弄多层表头什么的
 
 ```html
 	<body>
@@ -214,8 +214,8 @@ https://www.woodfishhhh.xyz/images/27d21dbd5962aff747a0ed4976199fee.png?_t=17506
 
 ## 表单
 
-作用：收集用户信息
-使用场景：登录页面，注册页面，搜索区域
+- 作用：收集用户信息
+- 使用场景：登录页面，注册页面，搜索区域
 
 ### input标签
 
@@ -272,7 +272,7 @@ input标签的type属性值不同，则功能不同
 默认情况，只能选中上传一个文件，添加**multiple**标签可以实现**文件多选**
 
 ```html
-<input type="file" mulitple>
+<input type="file" multiple>
 ```
 
 ### 多选框checkbox
@@ -341,7 +341,7 @@ input标签的type属性值不同，则功能不同
 ### 按钮 - button
 
 ```html
-<button type="">按钮</botton>
+<button type="">按钮</button>
 ```
 
 | type 属性值 | 说明                                             |

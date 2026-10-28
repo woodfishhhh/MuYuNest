@@ -43,7 +43,7 @@ p2.run ();
 **自动类型转换**：父类 变量名 = new 子类 ; 例如：
 
 ```java
-People = new Teacher ();
+People p = new Teacher ();
 ```
 
 **强制类型转换**：子类变量名 =(子类) 父类变量 例如
@@ -59,7 +59,7 @@ Teacher t = (Teacher) p;
 
 ```java
 People p = new Teacher ();
-Student s = (Student) p; //java.Lang.CLassCastEception
+Student s = (Student) p; // java.lang.ClassCastException
 ```
 
 强转前，Java 建议先用 instanceof 关键字判断当前对象的真实类型，再强转。

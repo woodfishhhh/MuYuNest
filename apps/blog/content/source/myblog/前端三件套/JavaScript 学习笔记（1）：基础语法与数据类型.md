@@ -124,7 +124,7 @@ document.write('嗨，欢迎来传智播学习前端技术！')
 
 JavaScript 可以接收用户的输入，然后再将输入的结果输出：
 
-`alert()`、`document.wirte()`
+`alert()`、`document.write()`
 
 以数字为例，向 `alert()` 或 `document.write()`输入任意数字，他都会以弹窗形式展示（输出）给用户。
 
@@ -229,7 +229,7 @@ JavaScript 使用专门的关键字 `let` 和 `var` 来声明（定义）变量�
 
 关于变量的名称（标识符）有一系列的规则需要遵守：
 
-1. 只能是字母、数字、下划线、$，且不能能数字开头
+1. 只能是字母、数字、下划线、$，且不能以数字开头
 2. 字母区分大小写，如 Age 和 age 是不同的变量
 3. JavaScript 内部已占用于单词（关键字或保留字）不允许使用
 4. 尽量保证变量具有一定的语义，见字知义
@@ -428,6 +428,3 @@ console.log(total); // 输出："Total: $150"
     console.log(Number(str))
 </script>
 ```
-
-
-###

@@ -100,7 +100,7 @@ const reg =  /表达式/
     console.log(reg2.test('前端web学习'))  // false
     console.log(reg2.test('we'))  // false 
     console.log(reg2.test('web'))  // true
-    console.log(reg2.test('webweb'))  // flase 
+    console.log(reg2.test('webweb'))  // false 
   </script>
 </body>
 ```
@@ -149,7 +149,7 @@ const reg =  /表达式/
     // 4. {n} 重复 n 次
     const reg4 = /^w{3}$/
     console.log(reg4.test(''))  // false
-    console.log(reg4.test('w'))  // flase
+    console.log(reg4.test('w'))  // false
     console.log(reg4.test('ww'))  // false
     console.log(reg4.test('www'))  // true
     console.log(reg4.test('wwww'))  // false
@@ -212,7 +212,7 @@ const reg =  /表达式/
     console.log(reg3.test('B'))  // true
     console.log(reg3.test('b'))  // true
     console.log(reg3.test(9))  // true
-    console.log(reg3.test(','))  // flase
+    console.log(reg3.test(','))  // false
 
     // 用户名可以输入英文字母，数字，可以加下划线，要求 6~16 位
     const reg4 = /^[a-zA-Z0-9_]{6,16}$/
