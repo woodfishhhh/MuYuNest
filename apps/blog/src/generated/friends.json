@@ -54,7 +54,8 @@
     "link": "https://www.jxufe-cs.top/",
     "avatar": "/imported-assets/3a3baf3a6aa17fc32b22b90f64a4eb0c313fcff9.png",
     "descr": "成立于1996年的江财学术社团",
-    "className": "友情链接"
+    "className": "友情链接",
+    "offline": true
   },
   {
     "name": "江财OFFER",
