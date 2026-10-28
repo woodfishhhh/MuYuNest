@@ -66,7 +66,7 @@ Linux里每个用户都有自己的专属工作目录，叫HOME目录。
 - root用户的HOME目录，在：`/root`
 
 
-FinalShell登陆终端后，默认的工作目录就是用户的HOME目录
+FinalShell登录终端后，默认的工作目录就是用户的HOME目录
 
 
 ## 相对路径、绝对路径

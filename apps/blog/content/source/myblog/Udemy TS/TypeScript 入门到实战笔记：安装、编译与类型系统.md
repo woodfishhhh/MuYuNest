@@ -122,7 +122,7 @@ tsc --init
 
 ### Class
 
-声明一个 Class 类，并事例化这个 Class：
+声明一个 Class 类，并实例化这个 Class：
 
 ```typescript
 // 声明一个Class类
@@ -130,7 +130,7 @@ class Person {
   // 声明一个name属性为string
   name: string;
 
-  // 声明一个constructor构造函数，在执行事例化时调用执行
+  // 声明一个constructor构造函数，在执行实例化时调用执行
   constructor(name: string) {
     this.name = name;
   }
@@ -1221,7 +1221,7 @@ npm install --save-dev clean-webpack-plugin
 解决 TS 不识别 JS 原生三方库抛出异常问题
 
 ```shell
-npm install --save-dev @type/lodash
+npm install --save-dev @types/lodash
 ```
 
 使用 declare 关键字声明变量存在

@@ -334,7 +334,7 @@ getUser(1)
   Promise.resolve("成功的数据").then((data) => console.log(data)); // 输出：成功的数据
   ```
 
-#### 4.6.2 `Promise.reject(error)	`
+#### 4.6.2 `Promise.reject(error)`
 
 创建一个立即失败的 Promise，直接返回 `error`。示例：
 

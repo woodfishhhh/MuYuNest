@@ -186,8 +186,7 @@ getLocationAndCountry();
 ### 3.1 Async/Await 的本质：Promise 的语法糖
 
 - 结论：Async/Await 不是新的异步机制，而是"消费 Promise 的语法糖"——底层还是 Promise 和 JavaScript 事件循环，只是写法更简单。
-- 等价对比：Async/Await vs then 链
-  以"获取国家数据并解析 JSON"为例，两种写法是等价的：
+- 等价对比：Async/Await vs then 链。以"获取国家数据并解析 JSON"为例，两种写法是等价的：
   1. Async/Await 写法：
      ```javascript
      async function fetchCountry() {

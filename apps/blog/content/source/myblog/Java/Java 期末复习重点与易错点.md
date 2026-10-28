@@ -199,7 +199,7 @@ int binary = Integer.parseInt("101", 2);  // 二进制转十进制，返回 5
 
 .length返回数组的长度
 
-.length返回字符串的长度
+.length()返回字符串的长度
 
 .charAt(index)返回字符串中指定位置的字符
 

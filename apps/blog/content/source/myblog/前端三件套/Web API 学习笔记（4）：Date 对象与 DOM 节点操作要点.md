@@ -85,6 +85,7 @@ console.log(Date.now());
 往已有的 DOM 节点里插入新节点，要解决两件事：拿到新的 DOM 节点，确定插在哪。
 
 1. `appendChild` 方法
+
    代码演示：
 
 ```html
@@ -124,7 +125,8 @@ console.log(Date.now());
 - `appendChild`：在末尾（结束标签前）插入节点。
 
 
-1. `insertBefore` 方法
+2. `insertBefore` 方法
+
    再看另一种情况：
 
 ```html
@@ -296,7 +298,7 @@ DOM 树里的节点都不是孤立的，不是父子关系就是兄弟关系，�
 
 结论：`parentNode` 获取父节点，按相对位置查找，实际用起来很灵活。
 
-1. 兄弟关系
+2. 兄弟关系
 
 ```html
 <body>
