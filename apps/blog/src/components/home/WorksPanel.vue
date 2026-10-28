@@ -92,7 +92,7 @@ onUnmounted(() => {
         v-if="showCaseView"
         class="works-panel__body"
       >
-        <WorksCaseView :works="works" />
+        <WorksCaseView :works="works" :active="store.mode === 'works'" />
       </div>
     </Transition>
   </div>

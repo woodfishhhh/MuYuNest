@@ -162,7 +162,8 @@ const { activateSkill } = useMatterCapsules({
   border: 1px solid var(--author-capsule-border);
   background: var(--author-capsule-bg);
   box-shadow: var(--author-capsule-shadow);
-  backdrop-filter: blur(10px);
+  /* No backdrop-filter: these 47 physics bodies move every frame, and blurring
+     behind each one cost a pass per capsule for a nearly opaque background. */
   color: var(--stage-fg);
   cursor: grab;
   user-select: none;

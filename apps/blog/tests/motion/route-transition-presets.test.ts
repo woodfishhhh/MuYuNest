@@ -37,6 +37,14 @@ describe("route transition presets", () => {
     expect(panel.yFrom).toBe(0);
   });
 
+  it("keeps the return to a full-screen panel off the blur path", () => {
+    expect(getTransitionPresetName("postToPage")).toBe("softReturn");
+
+    const back = getPresetVars("softReturn", { reducedMotion: false });
+    expect(back.blur).toBe(0);
+    expect(back.opacityFrom).toBeLessThan(1);
+  });
+
   it("does not create a transformed compositor layer for panel switches", () => {
     const element = document.createElement("div");
     const tween = playFocusPush(element, { preset: "panelShift", reducedMotion: false });

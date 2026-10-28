@@ -113,9 +113,11 @@ function handleTouchMove(event: TouchEvent) {
 }
 
 onMounted(() => {
-  window.addEventListener("wheel", handleWheel, { passive: false });
+  // Neither handler cancels the event. Non-passive window listeners would make
+  // every page scroll wait for the main thread, which is busy rendering WebGL.
+  window.addEventListener("wheel", handleWheel, { passive: true });
   window.addEventListener("touchstart", handleTouchStart, { passive: true });
-  window.addEventListener("touchmove", handleTouchMove, { passive: false });
+  window.addEventListener("touchmove", handleTouchMove, { passive: true });
 });
 
 onBeforeUnmount(() => {

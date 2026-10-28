@@ -1,6 +1,6 @@
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { defineComponent, nextTick, shallowRef } from "vue";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { stepAuthorSlideIndex, useAuthorSlider } from "@/composables/useAuthorSlider";
 
@@ -111,6 +111,46 @@ describe("stepAuthorSlideIndex", () => {
 
     expect(event.defaultPrevented).toBe(false);
     expect(wrapper.get("[data-active-index]").text()).toBe("0");
+  });
+
+  it("only blocks page scrolling with a wheel listener while its panel is active", async () => {
+    const active = shallowRef(false);
+    const addSpy = vi.spyOn(window, "addEventListener");
+    const removeSpy = vi.spyOn(window, "removeEventListener");
+    const wrapper = mount(
+      defineComponent({
+        setup() {
+          const viewportRef = shallowRef<HTMLElement | null>(null);
+          const trackRef = shallowRef<HTMLElement | null>(null);
+          useAuthorSlider({ active, viewportRef, trackRef });
+          return { trackRef, viewportRef };
+        },
+        template: `<div ref="viewportRef"><div ref="trackRef"><section data-author-screen /></div></div>`,
+      }),
+      { attachTo: document.body },
+    );
+    mountedWrappers.push(wrapper);
+    const wheelAdds = () => addSpy.mock.calls.filter(([type]) => type === "wheel");
+    const wheelRemoves = () => removeSpy.mock.calls.filter(([type]) => type === "wheel");
+
+    try {
+      await nextTick();
+      await nextTick();
+      expect(wheelAdds()).toHaveLength(0);
+
+      active.value = true;
+      await nextTick();
+      expect(wheelAdds()).toHaveLength(1);
+      expect(wheelAdds()[0][2]).toEqual({ passive: false });
+
+      const removesBefore = wheelRemoves().length;
+      active.value = false;
+      await nextTick();
+      expect(wheelRemoves().length).toBe(removesBefore + 1);
+    } finally {
+      addSpy.mockRestore();
+      removeSpy.mockRestore();
+    }
   });
 
   it("lets a touch gesture that starts inside scrollable content finish without changing slides", async () => {

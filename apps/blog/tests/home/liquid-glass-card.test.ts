@@ -1,4 +1,4 @@
-import { flushPromises, mount } from "@vue/test-utils";
+import { enableAutoUnmount, flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import LiquidGlassCard from "@/components/home/works/LiquidGlassCard.vue";
@@ -9,6 +9,9 @@ const liquidGLMock = vi.hoisted(() => {
 });
 
 vi.mock("liquid-gl", () => ({ default: liquidGLMock }));
+
+// Lenses register with a shared ticker; leftover mounts would keep it running.
+enableAutoUnmount(afterEach);
 
 describe("LiquidGlassCard", () => {
   beforeEach(() => {
@@ -100,6 +103,64 @@ describe("LiquidGlassCard", () => {
     expect(wrapper.attributes("style")).toContain(
       "--glass-padding: clamp(1.125rem, 5vw, 2rem)",
     );
+  });
+
+  it("drives the shared liquid-gl renderer only while its panel is visible", async () => {
+    const frames = new Map<number, FrameRequestCallback>();
+    let nextFrame = 1;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
+      frames.set(nextFrame, callback);
+      return nextFrame++;
+    });
+    const cancelFrame = vi.fn((id: number) => frames.delete(id));
+    vi.stubGlobal("cancelAnimationFrame", cancelFrame);
+    const runFrames = (count: number) => {
+      for (let i = 0; i < count; i++) {
+        const pending = [...frames.entries()];
+        frames.clear();
+        pending.forEach(([, callback]) => callback(performance.now()));
+      }
+    };
+    // liquid-gl starts its own never-ending loop when the first lens is created.
+    const renderer = { _rafId: 41 as number | null, useExternalTicker: false, render: vi.fn() };
+    liquidGLMock.mockImplementation(() => {
+      Object.assign(window, { __liquidGLRenderer__: renderer });
+    });
+
+    const wrapper = mount(LiquidGlassCard, { props: { active: true }, slots: { default: "Case" } });
+    try {
+      await vi.advanceTimersByTimeAsync(100);
+      await flushPromises();
+
+      expect(cancelFrame).toHaveBeenCalledWith(41);
+      expect(renderer._rafId).toBeNull();
+      expect(renderer.useExternalTicker).toBe(true);
+      runFrames(3);
+      expect(renderer.render).toHaveBeenCalledTimes(3);
+
+      await wrapper.setProps({ active: false });
+      await flushPromises();
+      renderer.render.mockClear();
+      runFrames(1);
+      // Exactly one last frame clears the lenses of the now hidden panel.
+      expect(renderer.render).toHaveBeenCalledTimes(1);
+      renderer.render.mockClear();
+      runFrames(5);
+      expect(renderer.render).not.toHaveBeenCalled();
+
+      await wrapper.setProps({ active: true });
+      await flushPromises();
+      runFrames(2);
+      expect(renderer.render).toHaveBeenCalledTimes(2);
+    } finally {
+      wrapper.unmount();
+      runFrames(1);
+      Reflect.deleteProperty(window, "__liquidGLRenderer__");
+      liquidGLMock.mockReset();
+    }
+    renderer.render.mockClear();
+    runFrames(3);
+    expect(renderer.render).not.toHaveBeenCalled();
   });
 
   it("can leave WebGL rendering to a shared scene layer", async () => {

@@ -1,6 +1,6 @@
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { nextTick, reactive, shallowRef } from "vue";
-import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 interface Deferred<T> {
   promise: Promise<T>;
@@ -24,6 +24,11 @@ const sceneState = {
   mobiusSetOpacity: null as ReturnType<typeof vi.fn> | null,
   onControlConstruct: null as (() => void) | null,
   sceneDispose: vi.fn(),
+  // Frame loop controls for tests that drive `tick` by hand.
+  delta: 0,
+  elapsed: 0,
+  render: vi.fn(),
+  setWarpIntensity: vi.fn(),
 };
 
 function createTransformGroup() {
@@ -121,10 +126,10 @@ function installSceneMocks(
       connect() {}
       dispose() {}
       getDelta() {
-        return 0;
+        return sceneState.delta;
       }
       getElapsed() {
-        return 0;
+        return sceneState.elapsed;
       }
       update() {}
     },
@@ -139,7 +144,9 @@ function installSceneMocks(
     },
   }));
 
+  const route = reactive({ name: "home" });
   vi.doMock("vue-router", () => ({
+    useRoute: () => route,
     useRouter: () => ({ push: vi.fn() }),
   }));
 
@@ -182,7 +189,7 @@ function installSceneMocks(
     useThreeScene: () => ({
       camera,
       dispose: sceneState.sceneDispose,
-      render: vi.fn(),
+      render: sceneState.render,
       renderer,
       resize: vi.fn(),
       scene,
@@ -223,7 +230,8 @@ function installSceneMocks(
       group: createTransformGroup(),
       setColor: vi.fn(),
       setOpacity: vi.fn(),
-      setWarpIntensity: vi.fn(),
+      setWarpIntensity: sceneState.setWarpIntensity,
+      setLens: vi.fn(),
       setCollectMode: vi.fn(),
       update: vi.fn(),
     }),
@@ -269,7 +277,19 @@ function installSceneMocks(
   vi.doMock("@/utils/site-mode", () => ({ getRouteLocationForSiteMode: () => ({}) }));
   vi.doMock("three/examples/jsm/controls/TrackballControls.js", () => controlsModule.promise);
 
-  return { store, theme };
+  return { route, store, theme };
+}
+
+/** Replaces requestAnimationFrame so each test decides when frames run. */
+function installFrameQueue() {
+  const pending: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => pending.push(callback));
+  vi.stubGlobal("cancelAnimationFrame", () => {});
+  return {
+    step(timestampMs: number) {
+      pending.splice(0).forEach((callback) => callback(timestampMs));
+    },
+  };
 }
 
 class MockTrackballControls {
@@ -300,6 +320,12 @@ describe("ThreeSceneCanvas lifecycle", () => {
     sceneState.mobiusGroup = null;
     sceneState.mobiusSetOpacity = null;
     sceneState.onControlConstruct = null;
+    sceneState.delta = 0;
+    sceneState.elapsed = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("hides Works cards when Blog opens and restores them only after undocking", async () => {
@@ -393,6 +419,72 @@ describe("ThreeSceneCanvas lifecycle", () => {
 
     expect(sceneState.sceneDispose).toHaveBeenCalledTimes(1);
     expect(errorHandler).not.toHaveBeenCalled();
+  }, 15_000);
+
+  it("plays a navigation warp pulse through the star field", async () => {
+    const frames = installFrameQueue();
+    const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
+    const { route } = installSceneMocks(controlsModule);
+    const ThreeSceneCanvas = (await import("@/components/scene/ThreeSceneCanvas.vue")).default;
+    const wrapper = mount(ThreeSceneCanvas);
+    controlsModule.resolve({ TrackballControls: MockTrackballControls });
+    await flushPromises();
+
+    // Let the camera intro finish; pulses wait for it.
+    sceneState.delta = 1 / 60;
+    sceneState.elapsed = 2;
+    frames.step(performance.now());
+
+    route.name = "post";
+    await nextTick();
+    sceneState.elapsed = 2.25;
+    frames.step(performance.now());
+    expect(sceneState.setWarpIntensity).toHaveBeenLastCalledWith(expect.closeTo(0.62, 2));
+
+    sceneState.elapsed = 4;
+    frames.step(performance.now());
+    expect(sceneState.setWarpIntensity).toHaveBeenLastCalledWith(0);
+
+    wrapper.unmount();
+  }, 15_000);
+
+  it("drops the reading backdrop to the calm frame rate once it settles", async () => {
+    const frames = installFrameQueue();
+    const controlsModule = deferred<{ TrackballControls: typeof MockTrackballControls }>();
+    const { route } = installSceneMocks(controlsModule);
+    const ThreeSceneCanvas = (await import("@/components/scene/ThreeSceneCanvas.vue")).default;
+    const wrapper = mount(ThreeSceneCanvas);
+    controlsModule.resolve({ TrackballControls: MockTrackballControls });
+    await flushPromises();
+    sceneState.delta = 1 / 60;
+    sceneState.elapsed = 2;
+    frames.step(performance.now());
+
+    route.name = "blog";
+    await nextTick();
+    // Wait out the library's own warp pulse before measuring the cap.
+    sceneState.elapsed = 5;
+    const base = performance.now();
+    const frameMs = 1000 / 60;
+
+    sceneState.render.mockClear();
+    for (let frame = 0; frame < 30; frame++) frames.step(base + frame * frameMs);
+    // The dock and camera are still settling: every frame renders.
+    expect(sceneState.render).toHaveBeenCalledTimes(30);
+
+    sceneState.render.mockClear();
+    for (let frame = 0; frame < 60; frame++) frames.step(base + 1300 + frame * frameMs);
+    expect(sceneState.render.mock.calls.length).toBeGreaterThanOrEqual(29);
+    expect(sceneState.render.mock.calls.length).toBeLessThanOrEqual(31);
+
+    route.name = "works";
+    await nextTick();
+    sceneState.elapsed = 8;
+    sceneState.render.mockClear();
+    for (let frame = 0; frame < 30; frame++) frames.step(base + 3000 + frame * frameMs);
+    expect(sceneState.render).toHaveBeenCalledTimes(30);
+
+    wrapper.unmount();
   }, 15_000);
 
   it("disposes controls created during an unmount triggered by their constructor", async () => {

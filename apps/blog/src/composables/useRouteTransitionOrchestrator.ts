@@ -40,8 +40,10 @@ function getPrimaryTarget(kind: TransitionKind) {
     case "overlayClose":
       return document.querySelector<HTMLElement>("[data-reading-surface]");
     case "pageToPost":
-    case "postToPage":
       return document.querySelector<HTMLElement>("[data-post-surface]");
+    // The article is already unmounted when the return starts; ease in the
+    // panel being returned to instead.
+    case "postToPage":
     case "panelTransition":
     default:
       return document.querySelector<HTMLElement>("[data-panel-active='true']");

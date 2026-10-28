@@ -89,7 +89,8 @@ const screens = [
       <div ref="track" class="author-stage__content">
         <AuthorHeroScreen :author="props.author" />
         <AuthorAboutScreen :author="props.author" />
-        <AuthorCapsuleScreen :active="activeIndex === 2" :skills="props.author.skills" />
+        <!-- The panel stays cached when hidden; leaving on this slide must stop the physics loop. -->
+        <AuthorCapsuleScreen :active="props.active && activeIndex === 2" :skills="props.author.skills" />
         <AuthorPoemScreen :poem="props.author.poem" />
       </div>
     </div>

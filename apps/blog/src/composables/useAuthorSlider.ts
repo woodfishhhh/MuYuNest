@@ -3,6 +3,7 @@ import {
   onBeforeUnmount,
   onMounted,
   shallowRef,
+  watch,
   type Ref,
   type ShallowRef,
 } from "vue";
@@ -96,9 +97,22 @@ export function useAuthorSlider({
   let touchStartTarget: EventTarget | null = null;
   let touchStartScrollableStates: ScrollableAncestorState[] = [];
   let unlockTimer: number | null = null;
+  let listenersReady = false;
+  let wheelBound = false;
 
   function isInteractionActive() {
     return active?.value ?? true;
+  }
+
+  // The wheel handler must be able to cancel slide gestures, so it cannot be
+  // passive. Keep it off while the cached panel is hidden: a non-passive
+  // window listener makes every scroll elsewhere wait on the main thread.
+  function syncWheelListener() {
+    const shouldBind = listenersReady && isInteractionActive();
+    if (shouldBind === wheelBound) return;
+    wheelBound = shouldBind;
+    if (shouldBind) window.addEventListener("wheel", handleWheel, { passive: false });
+    else window.removeEventListener("wheel", handleWheel);
   }
 
   function getSlides() {
@@ -290,7 +304,8 @@ export function useAuthorSlider({
       unlockTimer = null;
     }
 
-    window.removeEventListener("wheel", handleWheel);
+    listenersReady = false;
+    syncWheelListener();
     window.removeEventListener("touchstart", handleTouchStart);
     window.removeEventListener("touchend", handleTouchEnd);
     window.removeEventListener("keydown", handleKeydown);
@@ -315,7 +330,8 @@ export function useAuthorSlider({
     gsap.set(track, { yPercent: -100 * clampedInitialIndex });
     animateReveal(clampedInitialIndex);
 
-    window.addEventListener("wheel", handleWheel, { passive: false });
+    listenersReady = true;
+    syncWheelListener();
     window.addEventListener("touchstart", handleTouchStart, { passive: true });
     window.addEventListener("touchend", handleTouchEnd, { passive: true });
     window.addEventListener("keydown", handleKeydown);
@@ -324,6 +340,8 @@ export function useAuthorSlider({
   onMounted(() => {
     void setup();
   });
+
+  if (active) watch(active, syncWheelListener);
 
   onBeforeUnmount(() => {
     cleanup();

@@ -1,10 +1,54 @@
 <script lang="ts">
 const registeredDynamicSelectors = new Set<string>();
+
+interface LiquidGlRenderer {
+  _rafId: number | null;
+  useExternalTicker: boolean;
+  render: () => void;
+}
+
+// liquid-gl drives one global renderer from a requestAnimationFrame loop that
+// never stops, so after a visit to Works it kept redrawing its full-screen
+// canvas on every other page. Take over its ticker the same way its own
+// syncWith() helper does, and only tick while a lens is on a visible panel.
+const visibleLenses = new Set<symbol>();
+let lensFrameId: number | null = null;
+
+function getLiquidRenderer() {
+  return (window as Window & { __liquidGLRenderer__?: LiquidGlRenderer }).__liquidGLRenderer__ ?? null;
+}
+
+function renderLensFrame() {
+  getLiquidRenderer()?.render();
+  lensFrameId = requestAnimationFrame(renderLensFrame);
+}
+
+function syncLensTicker() {
+  const renderer = getLiquidRenderer();
+  if (!renderer) return;
+  if (!renderer.useExternalTicker) {
+    if (renderer._rafId !== null) cancelAnimationFrame(renderer._rafId);
+    renderer._rafId = null;
+    renderer.useExternalTicker = true;
+  }
+
+  if (visibleLenses.size > 0) {
+    lensFrameId ??= requestAnimationFrame(renderLensFrame);
+  } else if (lensFrameId !== null) {
+    cancelAnimationFrame(lensFrameId);
+    // The hidden panel's lenses measure zero now; one last frame clears them
+    // from the shared overlay canvas instead of freezing them on screen.
+    lensFrameId = null;
+    requestAnimationFrame(() => {
+      if (visibleLenses.size === 0) getLiquidRenderer()?.render();
+    });
+  }
+}
 </script>
 
 <script setup lang="ts">
 import type { CSSProperties } from "vue";
-import { computed, onMounted, onUnmounted, ref, useId, useTemplateRef } from "vue";
+import { computed, onMounted, onUnmounted, ref, useId, useTemplateRef, watch } from "vue";
 
 import { supportsContentLayout } from "@/utils/responsive";
 
@@ -12,6 +56,8 @@ import { WORKS_WEBGL_GLASS_PROFILE } from "./works-card-preset";
 
 const props = withDefaults(
   defineProps<{
+    /** False while the hosting panel is cached but hidden. */
+    active?: boolean;
     cornerRadius?: number;
     dynamicSelector?: string;
     padding?: string;
@@ -20,6 +66,7 @@ const props = withDefaults(
     webglEnabled?: boolean;
   }>(),
   {
+    active: true,
     cornerRadius: 8,
     dynamicSelector: "[data-liquid-gl-snapshot]",
     padding: "24px 32px",
@@ -38,6 +85,7 @@ let initializationTimer: number | null = null;
 let webglInitialized = false;
 let resizeObserver: ResizeObserver | null = null;
 let unmounted = false;
+const lensTicket = Symbol(targetId);
 
 const rootStyle = computed<CSSProperties>(() => ({
   "--glass-padding": props.padding,
@@ -116,6 +164,7 @@ async function initializeWebGL() {
       liquidGL.registerDynamic(props.dynamicSelector);
       registeredDynamicSelectors.add(props.dynamicSelector);
     }
+    syncLensActivity();
   } catch {
     webglInitialized = false;
     webglReady.value = false;
@@ -123,6 +172,15 @@ async function initializeWebGL() {
     initializationPending = false;
   }
 }
+
+function syncLensActivity() {
+  if (webglInitialized && props.active && !unmounted) visibleLenses.add(lensTicket);
+  else visibleLenses.delete(lensTicket);
+  syncLensTicker();
+}
+
+// Post flush: the hidden panel has already collapsed when the last frame renders.
+watch(() => props.active, syncLensActivity, { flush: "post" });
 
 function scheduleInitialization() {
   if (webglInitialized || webglReady.value || unmounted || !props.webglEnabled) return;
@@ -143,6 +201,7 @@ onUnmounted(() => {
   unmounted = true;
   if (initializationTimer !== null) window.clearTimeout(initializationTimer);
   resizeObserver?.disconnect();
+  syncLensActivity();
 });
 </script>
 

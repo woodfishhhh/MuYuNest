@@ -27,7 +27,9 @@ export function getPresetVars(preset: PresetName, options: { reducedMotion: bool
   if (preset === "softReturn") {
     return {
       duration: 0.46,
-      blur: 4,
+      // The return eases in a whole full-screen panel; blurring it would cost a
+      // full-viewport filter pass per frame while HomeView remounts.
+      blur: 0,
       scaleFrom: 0.985,
       yFrom: 14,
       opacityFrom: 0.06,

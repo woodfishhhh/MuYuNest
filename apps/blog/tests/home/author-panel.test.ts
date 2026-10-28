@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { shallowRef } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import type { AuthorProfileData } from "@/types/content";
@@ -95,5 +96,27 @@ describe("AuthorPanel", () => {
     expect(wrapper.text()).not.toContain("Philosophy");
     expect(wrapper.text()).not.toContain("Biography");
     expect(wrapper.text()).not.toContain("Progress");
+  });
+
+  it("stops the capsule physics when the cached panel is hidden on the Stack slide", async () => {
+    vi.resetModules();
+    vi.doMock("@/composables/useAuthorSlider", () => ({
+      useAuthorSlider: () => ({
+        activeIndex: shallowRef(2),
+        goToSlide: () => {},
+      }),
+    }));
+    const capsuleActivity: boolean[] = [];
+    vi.doMock("@/composables/useMatterCapsules", () => ({
+      useMatterCapsules: ({ active }: { active: { value: boolean } }) => {
+        capsuleActivity.push(active.value);
+        return { activateSkill: () => {} };
+      },
+    }));
+
+    const AuthorPanel = (await import("@/components/home/AuthorPanel.vue")).default;
+    mount(AuthorPanel, { props: { active: false, author } });
+
+    expect(capsuleActivity).toEqual([false]);
   });
 });

@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
       <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
         <Transition name="home-hint" mode="out-in">
           <div v-if="homeHint" class="pointer-events-auto absolute bottom-24 flex w-full justify-center sm:bottom-8">
-            <div class="animate-bounce text-sm tracking-widest text-[var(--stage-hint)] opacity-70">
+            <div class="motion-safe:animate-bounce text-sm tracking-widest text-[var(--stage-hint)] opacity-70">
               <div v-if="siteStore.homeExperience === 'collect'" class="text-center">
                 <p>抓住一张卡片，读一段时光</p>
                 <p class="mt-1 text-xs tracking-wide">鼠标滚轮调整卡片大小</p>
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
         <Transition name="focus-hint" mode="out-in">
           <div v-if="focusHint" class="pointer-events-auto absolute bottom-8 flex w-full justify-center">
             <button
-              class="animate-bounce cursor-pointer text-sm tracking-widest text-[var(--stage-hint)] transition-colors hover:text-[var(--stage-fg)]"
+              class="motion-safe:animate-bounce cursor-pointer text-sm tracking-widest text-[var(--stage-hint)] transition-colors hover:text-[var(--stage-fg)]"
               type="button"
               @click="siteStore.exitFocus()"
             >

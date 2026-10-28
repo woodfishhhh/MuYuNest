@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import gsap from "gsap";
 import * as THREE from "three";
 
@@ -32,7 +32,19 @@ import {
   shouldRaycastSceneGeometry,
   supportsWorksOrbitViewport,
 } from "@/components/scene/scene-interaction";
+import {
+  CALM_SCENE_FRAME_INTERVAL,
+  createAdaptivePixelRatio,
+  getScenePixelRatioCap,
+  shouldSkipSceneFrame,
+  type AdaptivePixelRatio,
+} from "@/components/scene/scene-frame-budget";
 import { getSceneThemeActivity } from "@/components/scene/scene-theme-activity";
+import {
+  resolveSceneWarpPulse,
+  sampleSceneWarpPulse,
+  type SceneWarpPulse,
+} from "@/components/scene/scene-warp-pulse";
 import {
   createWorksOrbitCards,
   getWorksCenterMagnetStrength,
@@ -61,8 +73,12 @@ interface ActiveGeometry {
 const container = ref<HTMLElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const store = useSiteStore();
+const route = useRoute();
 const router = useRouter();
 const { theme } = useTheme();
+// The library and articles cover the scene with reading UI; behind it the sky
+// only drifts, so it does not need the display's full frame rate.
+const isCalmRoute = computed(() => route.name === "blog" || route.name === "post");
 
 const homeFlightVisible = computed(() => store.mode === "home" && !store.isFocusing && store.homeExperience === "collect");
 const homeFlightReady = ref(false);
@@ -98,6 +114,7 @@ const onPointerUp = () => {
 const onPointerLeave = () => {
   isDragging.value = false;
   pointerInsideCanvas = false;
+  lensPointerActive = false;
   clearSceneMagneticPointerTarget();
   if (!worksOrbitCards?.isInteracting() && !homeCardFlight?.isInteracting()) pointer.set(0, 0);
 };
@@ -128,6 +145,13 @@ const WORKS_CASE_MOBILE_GEOMETRY_OPACITY = 0.14;
 const HYPERCUBE_SCENE_SCALE = 1;
 const MOBIUS_SCENE_SCALE = 1.7;
 const INACTIVE_SCALE = 0.001;
+// Let the camera and dock settle before dropping to the calm frame rate.
+const CALM_ROUTE_SETTLE_SECONDS = 1.2;
+const DOCK_REMEASURE_INTERVAL = 0.5;
+const MAX_WARP_PULSES = 3;
+const LENS_FADE_IN_RATE = 5;
+const LENS_FADE_OUT_RATE = 8;
+const LENS_FOLLOW_RATE = 14;
 
 const defaultRotations = {
   night: { x: 0.5, y: 0.5, z: 0 },
@@ -159,9 +183,21 @@ let blogDockAnchor: DockRect | null = null;
 let blogDockViewport: DockRect | null = null;
 const blogDock = { progress: 0 };
 const isBlogDocking = ref(false);
+// The container is fixed and full-screen, so its rect only changes on resize.
+let sceneRect: DockRect | null = null;
+let lastDockMeasureAt = Number.NEGATIVE_INFINITY;
 let pointerInsideCanvas = false;
+let homeWheelListening = false;
+let lensPointerActive = false;
+let lensStrength = 0;
 let suppressNextCanvasClick = false;
 let sceneDisposed = false;
+let adaptivePixelRatio: AdaptivePixelRatio | null = null;
+let lastRenderedAt: number | null = null;
+let lastFrameWasCapped = false;
+let calmRouteSince = 0;
+let worksRitualIntensity = 0;
+let warpPulses: { pulse: SceneWarpPulse; startedAt: number }[] = [];
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -170,6 +206,7 @@ const geometryWorldCenter = new THREE.Vector3();
 const cameraTargetPosition = new THREE.Vector3();
 const cameraTargetLook = new THREE.Vector3();
 const cameraLookDirection = new THREE.Vector3();
+const lensCenter = new THREE.Vector2();
 const worksViewport = { height: 0, width: 0 };
 
 let introStartTime: number | null = null;
@@ -184,14 +221,25 @@ function getActiveGeometry() {
   return hypercube;
 }
 
+function measureSceneRect() {
+  if (!container.value) return null;
+  sceneRect = container.value.getBoundingClientRect();
+  return sceneRect;
+}
+
 function measureBlogDock() {
   const anchor = document.querySelector<HTMLElement>("[data-scene-blog-dock]");
   if (!anchor || !container.value) return;
   blogDockAnchor = anchor.getBoundingClientRect();
-  blogDockViewport = container.value.getBoundingClientRect();
+  blogDockViewport = measureSceneRect();
+}
+
+function isDockTweening(progress: number) {
+  return progress > 0 && progress < 1;
 }
 
 function updateBlogDock(immediate = false) {
+  lastDockMeasureAt = Number.NEGATIVE_INFINITY;
   measureBlogDock();
   gsap.killTweensOf(blogDock);
   gsap.killTweensOf(homeDock);
@@ -213,7 +261,7 @@ function updateBlogDock(immediate = false) {
   }
 }
 
-function applyBlogDock() {
+function applyBlogDock(elapsed: number) {
   if (!geometryRoot || !threeScene) return;
   const progress = Math.min(1, blogDock.progress + homeDock.progress);
   if (progress === 0) {
@@ -224,8 +272,20 @@ function applyBlogDock() {
     hypercube?.setPointScale(hypercube.group.scale.x);
     return;
   }
-  if (!blogDockAnchor || !blogDockViewport) measureBlogDock();
-  const viewport = container.value?.getBoundingClientRect();
+  // While the dock tweens, the nav may still be mounting, so look for it every
+  // frame. At rest a missing anchor is retried twice a second: a full-document
+  // query per frame is most expensive on long article pages.
+  const docking = isDockTweening(blogDock.progress) || isDockTweening(homeDock.progress);
+  if (
+    (!blogDockAnchor || !blogDockViewport) &&
+    (docking || elapsed - lastDockMeasureAt > DOCK_REMEASURE_INTERVAL)
+  ) {
+    lastDockMeasureAt = elapsed;
+    measureBlogDock();
+  }
+  // Reading layout every frame would force a synchronous reflow whenever Vue
+  // or GSAP touched the DOM earlier in the frame.
+  const viewport = sceneRect ?? measureSceneRect();
   if (!viewport || viewport.width <= 0 || viewport.height <= 0) return;
   const homeAnchor = getHomeGeometryAnchor(viewport);
   const anchor = blendDockAnchors(homeAnchor, blogDockAnchor ?? homeAnchor, homeDock.progress, blogDock.progress);
@@ -444,12 +504,16 @@ function handleResize() {
   sceneViewport.height = height;
   store.syncHomeExperience(width);
   isMobile.value = !supportsContentLayout(width);
+  measureSceneRect();
   measureBlogDock();
   homeCardFlight?.resize(width, height);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   applyThemeGeometryState(theme.value);
 
-  threeScene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Keep the adapted resolution across ordinary resizes; a new screen density restarts it.
+  const pixelRatioCap = getScenePixelRatioCap(window.devicePixelRatio);
+  adaptivePixelRatio?.setMax(pixelRatioCap);
+  threeScene.renderer.setPixelRatio(adaptivePixelRatio?.value ?? pixelRatioCap);
   threeScene.resize(width, height);
   controls?.handleResize();
   // homeBackdropGlyph?.updateViewport({ height, width });
@@ -459,6 +523,12 @@ function handleResize() {
 
 function handleReducedMotionChange(event: MediaQueryListEvent) {
   prefersReducedMotion = event.matches;
+  if (prefersReducedMotion) {
+    // Stop decorative motion now rather than letting it play out.
+    warpPulses = [];
+    lensStrength = 0;
+    starField?.setLens(lensCenter, 0, 1);
+  }
   updateBlogDock(true);
   updateGeometryTransform(true);
   updateWorksOrbitCards();
@@ -513,7 +583,59 @@ function updateWorksOrbitCards(elapsed = 0, delta = 0) {
     visible && worksOrbitCards.isInteracting() ? getWorksCenterMagnetStrength(pointer, prefersReducedMotion) : 0;
   hypercube?.setInteractionIntensity(theme.value === "night" ? ritualIntensity : 0);
   mobius?.setInteractionIntensity(theme.value === "day" ? ritualIntensity : 0);
-  starField?.setWarpIntensity(ritualIntensity);
+  // Mixed with navigation warp pulses in the frame loop.
+  worksRitualIntensity = ritualIntensity;
+}
+
+function handleRouteWarp(fromRouteName: string | null, toRouteName: string | null) {
+  // The intro flight already moves through the stars; reduced motion keeps them still.
+  if (prefersReducedMotion || !introCompleted || !sceneTimer) return;
+  const pulse = resolveSceneWarpPulse(fromRouteName, toRouteName);
+  if (!pulse) return;
+  // Pulses add up, so a quick second navigation blends into the first one
+  // instead of stopping and reversing the stars within a frame.
+  warpPulses = [
+    ...warpPulses.slice(1 - MAX_WARP_PULSES),
+    { pulse, startedAt: sceneTimer.getElapsed() },
+  ];
+}
+
+function getStarWarpIntensity(elapsed: number) {
+  let pulseIntensity = 0;
+  if (warpPulses.length > 0) {
+    warpPulses = warpPulses.filter(({ pulse, startedAt }) => elapsed - startedAt < pulse.duration);
+    for (const { pulse, startedAt } of warpPulses) {
+      pulseIntensity += sampleSceneWarpPulse(pulse, elapsed - startedAt);
+    }
+  }
+  return Math.abs(pulseIntensity) > worksRitualIntensity ? pulseIntensity : worksRitualIntensity;
+}
+
+function updateStarLens(delta: number) {
+  if (!starField) return;
+  const target =
+    lensPointerActive &&
+    !prefersReducedMotion &&
+    !isCalmRoute.value &&
+    !store.isFocusing &&
+    !worksOrbitCards?.isInteracting() &&
+    !homeCardFlight?.isInteracting()
+      ? 1
+      : 0;
+  if (target === 0 && lensStrength === 0) return;
+
+  // Appear under the pointer instead of sliding in from the last exit point.
+  if (lensStrength === 0) lensCenter.copy(pointer);
+  else if (target > 0) lensCenter.lerp(pointer, 1 - Math.exp(-delta * LENS_FOLLOW_RATE));
+  const rate = target > lensStrength ? LENS_FADE_IN_RATE : LENS_FADE_OUT_RATE;
+  lensStrength += (target - lensStrength) * (1 - Math.exp(-delta * rate));
+  if (target === 0 && lensStrength < 0.002) lensStrength = 0;
+  starField.setLens(lensCenter, lensStrength, sceneViewport.width / Math.max(sceneViewport.height, 1));
+}
+
+function getSceneFrameInterval(now: number) {
+  if (!isCalmRoute.value || !introCompleted || warpPulses.length > 0) return 0;
+  return now - calmRouteSince >= CALM_ROUTE_SETTLE_SECONDS ? CALM_SCENE_FRAME_INTERVAL : 0;
 }
 
 async function ensureHomeCardFlight() {
@@ -576,14 +698,16 @@ function renderSceneFrame() {
 }
 
 function updatePointerFromEvent(event: PointerEvent | MouseEvent) {
-  if (!container.value) return;
-  const rect = container.value.getBoundingClientRect();
+  const rect = sceneRect ?? measureSceneRect();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return;
   pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
 function handlePointerMove(event: PointerEvent) {
   pointerInsideCanvas = true;
+  // Touch has no hover; a lens stuck under a lifted finger would read as a glitch.
+  lensPointerActive = event.pointerType === "mouse";
   updatePointerFromEvent(event);
   if (homeFlightVisible.value && homeCardFlight) {
     if (homeCardFlight.isInteracting()) {
@@ -610,7 +734,9 @@ function syncWorksMagneticPointerTarget(hit: ReturnType<WorksOrbitCards["pick"]>
     return;
   }
 
-  const viewport = container.value.getBoundingClientRect();
+  // Runs every Works frame; the cached rect avoids a forced layout per frame.
+  const viewport = sceneRect ?? measureSceneRect();
+  if (!viewport) return;
   setSceneMagneticPointerTarget(
     projectNdcBoundsToPointerTarget(
       `works-action:${hit.slug}:${hit.action}`,
@@ -627,6 +753,7 @@ function releaseCardInteraction(event?: PointerEvent) {
     suppressNextCanvasClick = true;
     homeCardFlight.release();
     homeCardGrabActive.value = false;
+    setHomeWheelListening(false);
     if (event?.currentTarget instanceof HTMLElement && event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -653,6 +780,15 @@ function releaseCardInteraction(event?: PointerEvent) {
   }
 }
 
+// Only a held card consumes the wheel. Listening for the whole session would
+// make every article and panel scroll wait on the main thread.
+function setHomeWheelListening(listening: boolean) {
+  if (listening === homeWheelListening) return;
+  homeWheelListening = listening;
+  if (listening) window.addEventListener("wheel", handleHomeWheel, { passive: false });
+  else window.removeEventListener("wheel", handleHomeWheel);
+}
+
 function handleHomeWheel(event: WheelEvent) {
   if (!homeFlightVisible.value || !homeCardFlight?.isInteracting() || event.ctrlKey) return;
   const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16
@@ -673,6 +809,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     suppressNextCanvasClick = true;
     homeCardGrabActive.value = true;
     homeCardScale.value = 1;
+    setHomeWheelListening(true);
     if (event.currentTarget instanceof HTMLCanvasElement) event.currentTarget.setPointerCapture(event.pointerId);
     return;
   }
@@ -764,6 +901,9 @@ onMounted(async () => {
     transparentBackground: true,
     width,
   });
+  adaptivePixelRatio = createAdaptivePixelRatio(getScenePixelRatioCap(window.devicePixelRatio));
+  calmRouteSince = performance.now() / 1000;
+  measureSceneRect();
   threeScene.camera.position.copy(CAMERA_INTRO_START_POSITION);
   threeScene.camera.lookAt(CAMERA_INTRO_START_LOOK);
 
@@ -820,7 +960,6 @@ onMounted(async () => {
   updateGeometryTransform(true);
 
   window.addEventListener("resize", handleResize);
-  window.addEventListener("wheel", handleHomeWheel, { passive: false });
   container.value.addEventListener("pointermove", handlePointerMove);
   canvasRef.value.addEventListener("pointerdown", handleCanvasPointerDown);
   canvasRef.value.addEventListener("pointerup", releaseCardInteraction);
@@ -850,9 +989,25 @@ onMounted(async () => {
   function tick(timestamp?: number) {
     if (!threeScene || !starField || !hypercube || !mobius || !sceneTimer) return;
 
+    const now = (timestamp ?? performance.now()) / 1000;
+    const frameInterval = getSceneFrameInterval(now);
+    if (shouldSkipSceneFrame(now, lastRenderedAt, frameInterval)) {
+      animationFrameId = requestAnimationFrame(tick);
+      return;
+    }
+    lastRenderedAt = now;
+
     sceneTimer.update(timestamp);
     const delta = sceneTimer.getDelta();
     const elapsed = sceneTimer.getElapsed();
+
+    // Capped frames say nothing about GPU headroom, and neither does the first
+    // uncapped frame after them.
+    const frameCapped = frameInterval > 0;
+    const nextPixelRatio =
+      frameCapped || lastFrameWasCapped ? null : adaptivePixelRatio?.sample(delta) ?? null;
+    lastFrameWasCapped = frameCapped;
+    if (nextPixelRatio !== null) threeScene.renderer.setPixelRatio(nextPixelRatio);
 
     const activeGeometry = getActiveGeometry();
     hypercube.setDockProgress(blogDock.progress);
@@ -915,14 +1070,18 @@ onMounted(async () => {
     }
 
     starField.setCollectMode(homeFlightVisible.value, prefersReducedMotion);
+    starField.setWarpIntensity(getStarWarpIntensity(elapsed));
+    updateStarLens(delta);
     starField.update(prefersReducedMotion ? 0 : delta, { camera: threeScene.camera, ...sceneViewport, pointer: smoothedPointer });
-    applyBlogDock();
+    applyBlogDock(elapsed);
     homeCardFlight?.update(delta, homeFlightVisible.value, prefersReducedMotion);
     homeStarVisible.value = homeFlightVisible.value && !!homeCardFlight?.isStarVisible();
     if (!homeFlightVisible.value) {
       homeCardHovered.value = false;
       homeCardGrabActive.value = false;
     }
+    // The flight can drop a held card on its own (hidden panel, mode switch).
+    if (homeWheelListening && !homeCardFlight?.isInteracting()) setHomeWheelListening(false);
     updateWorksOrbitCards(elapsed, delta);
 
     const activeRaycastGeometry = getActiveGeometry();
@@ -987,6 +1146,8 @@ onMounted(async () => {
 watch(
   () => store.mode,
   (mode, previousMode) => {
+    // Panels differ in GPU cost (Works copies the framebuffer for its glass).
+    adaptivePixelRatio?.noteContextChange();
     updateBlogDock();
     void ensureHomeCardFlight();
     homeCardFlight?.update(0, homeFlightVisible.value, prefersReducedMotion);
@@ -998,6 +1159,14 @@ watch(
     }
     applyThemeGeometryState(theme.value);
     updateWorksOrbitCards();
+  },
+);
+watch(
+  () => (typeof route.name === "string" ? route.name : null),
+  (toRouteName, fromRouteName) => {
+    if (isCalmRoute.value) calmRouteSince = performance.now() / 1000;
+    adaptivePixelRatio?.noteContextChange();
+    handleRouteWarp(fromRouteName, toRouteName);
   },
 );
 watch(
@@ -1063,10 +1232,11 @@ onBeforeUnmount(() => {
   gsap.killTweensOf(homeDock);
   homeCardFlight?.dispose();
   homeCardFlight = null;
+  warpPulses = [];
   clearSceneMagneticPointerTarget();
   if (animationFrameId) cancelAnimationFrame(animationFrameId);
   window.removeEventListener("resize", handleResize);
-  window.removeEventListener("wheel", handleHomeWheel);
+  setHomeWheelListening(false);
   if (container.value) container.value.removeEventListener("pointermove", handlePointerMove);
   if (canvasRef.value) canvasRef.value.removeEventListener("pointerdown", handleCanvasPointerDown);
   if (canvasRef.value) {
@@ -1124,6 +1294,8 @@ onBeforeUnmount(() => {
   sceneTimer = null;
   threeScene = null;
   reducedMotionQuery = null;
+  adaptivePixelRatio = null;
+  lastRenderedAt = null;
 });
 </script>
 
