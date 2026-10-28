@@ -17,7 +17,7 @@ draft: false
 
 # Hooks 状态与并发更新
 
-**每次渲染拿到的 props 和 state 都是一份固定快照。** `setState` 和 `dispatch` 提交的是下一次渲染要处理的更新，不会改写正在执行的事件处理器所读取的变量。
+每次渲染拿到的 props 和 state 都是一份固定的快照。`setState` 和 `dispatch` 提交的是下一次渲染要处理的更新，不会改掉正在执行的事件处理器里读到的变量。
 
 ```text
 事件处理器读取当前 render 的快照
@@ -31,9 +31,9 @@ React 批处理更新并重新调用组件
 
 ## Hook 调用规则
 
-Hook 只能在函数组件或自定义 Hook 的顶层调用，不能放进条件、循环和普通嵌套函数。这样 React 才能用稳定的调用顺序把每个 Hook 与对应状态关联起来。
+Hook 只能在函数组件或自定义 Hook 的顶层调用，不能放进条件、循环和普通的嵌套函数里。这样 React 才能靠稳定的调用顺序，把每个 Hook 和对应的状态对上。
 
-调用 `setCount` 后紧接着读取的仍是旧值。这不是因为 `setCount` 等待某个定时器，而是因为正在执行的事件处理器闭包属于当前 render：
+调完 `setCount` 紧接着读，拿到的还是旧值。原因不是 `setCount` 在等什么定时器，而是正在执行的事件处理器闭包属于当前这次 render：
 
 ```tsx
 const [count, setCount] = useState(0);
@@ -46,7 +46,7 @@ function handleClick() {
 
 ## `useState`：局部状态
 
-普通局部变量会在每次渲染时重新创建，修改它也不会通知 React。`useState` 同时提供当前快照和提交下一状态的函数：
+普通的局部变量每次渲染都会重新创建，改了也不会通知 React。`useState` 同时给出当前的快照和提交下一个状态的函数：
 
 ```tsx
 import { useState } from 'react';
@@ -62,7 +62,7 @@ export function Toggle() {
 }
 ```
 
-TypeScript 通常能从初始值推导类型。只有空数组、可空值或联合类型等信息不足的场景，才需要显式泛型：
+TypeScript 一般能从初始值推出类型。只有空数组、可空值、联合类型这类信息不够的场景，才要显式写泛型：
 
 ```tsx
 interface User {
@@ -76,17 +76,17 @@ const [selected, setSelected] = useState<User | null>(null);
 
 ### 惰性初始化
 
-初始化需要较多计算时，应传函数本身，而不是先调用函数：
+初始化要做比较多的计算时，传函数本身，别先把函数调了：
 
 ```tsx
 const [rows] = useState(() => buildInitialRows());
 ```
 
-React 只在初始化状态时使用其结果。开发环境 Strict Mode 可能额外调用初始化函数来检查纯度，因此初始化函数不能写入外部变量、发送请求或产生其他副作用。
+React 只在初始化状态时用它的结果。开发环境的 Strict Mode 可能多调一次初始化函数来检查纯度，所以初始化函数里不能写外部变量、发请求或者产生别的副作用。
 
 ### 对象和数组按只读值处理
 
-状态中的对象与数组不能原地修改。React 通过下一状态的引用判断是否需要继续更新；直接 `push` 后仍把同一数组交回去，既破坏旧快照，也可能让 React 跳过渲染。
+状态里的对象和数组不能原地改。React 靠下一个状态的引用判断要不要接着更新；直接 `push` 之后还把同一个数组交回去，既破坏了旧快照，也可能让 React 跳过渲染。
 
 | 目的 | 推荐写法 |
 |---|---|
@@ -96,7 +96,7 @@ React 只在初始化状态时使用其结果。开发环境 Strict Mode 可能�
 | 指定位置插入 | `[...items.slice(0, index), item, ...items.slice(index)]` |
 | 排序或反转 | `[...items].sort(...)` / `[...items].reverse()` |
 
-对象更新也要复制变更路径：
+更新对象也要把变更的那条路径复制一遍：
 
 ```tsx
 interface Profile {
@@ -123,11 +123,11 @@ function enableDarkMode() {
 }
 ```
 
-`useState` 不会像某些 Store 那样浅合并对象。传入 `{ name: '新名字' }` 会把整个状态替换成这个新对象。
+`useState` 不会像某些 Store 那样浅合并对象。传 `{ name: '新名字' }` 进去，整个状态就被换成了这个新对象。
 
 ### 批处理与更新函数
 
-同一个事件里的多次更新通常会被批处理。若下一状态依赖上一状态，应传更新函数：
+同一个事件里的多次更新一般会被批处理。下一个状态依赖上一个状态时，要传更新函数：
 
 ```tsx
 function addThree() {
@@ -137,11 +137,11 @@ function addThree() {
 }
 ```
 
-React 会按顺序把队列中的三个更新函数应用到待处理状态。若连续写三次 `setCount(count + 1)`，三次读取的都是当前 render 中相同的 `count`，最终只得到一次加一。这里的核心是**快照与更新队列**，不是“`setState` 天然防抖”或普通同步/异步任务的区别。
+React 会按顺序把队列里的三个更新函数应用到待处理的状态上。要是连写三次 `setCount(count + 1)`，三次读到的都是当前 render 里同一个 `count`，最后只加了一次。关键在快照和更新队列，跟"`setState` 自带防抖"或者普通的同步/异步任务没关系。
 
 ## `useReducer`：状态转换
 
-当多个事件都要修改同一组结构化状态时，`useReducer` 可以把“发生了什么”和“状态怎样变化”分开：
+好几个事件都要改同一组结构化状态时，`useReducer` 能把"发生了什么"和"状态怎么变"分开：
 
 ```text
 组件 dispatch(action)
@@ -153,7 +153,7 @@ reducer(currentState, action)
 下一次 render 读取 nextState
 ```
 
-Reducer 必须是纯函数：不能修改传入的旧状态，不能发送请求，也不能依赖调用次数。可辨识联合类型能让购物车 Action 保持类型安全：
+Reducer 必须是纯函数：不能改传进来的旧状态，不能发请求，也不能依赖被调了几次。可辨识联合类型能让购物车的 Action 保持类型安全：
 
 ```tsx
 import { useReducer } from 'react';
@@ -229,11 +229,11 @@ export function Cart() {
 }
 ```
 
-总价是当前购物车能直接计算出的派生值，不必再保存成另一份状态。这样不会出现“商品数量已经更新，总价状态却忘了同步”的双数据源问题。
+总价是当前购物车能直接算出来的派生值，不用再存成另一份状态。这样就不会出现"商品数量更新了，总价状态却忘了同步"的双数据源问题。
 
 ### 第三个参数：初始化函数
 
-`useReducer(reducer, initialArg, init?)` 的 `init` 接收 `initialArg`，其返回值才是初始状态。它适合解析持久化数据或规范化初始值：
+`useReducer(reducer, initialArg, init?)` 的 `init` 接收 `initialArg`，它的返回值才是初始状态。适合用来解析持久化数据或规范化初始值：
 
 ```tsx
 function normalizeCart(items: CartItem[]): CartItem[] {
@@ -250,11 +250,11 @@ const [items, dispatch] = useReducer(
 );
 ```
 
-与 `useState` 一样，开发环境 Strict Mode 可能额外调用 reducer 和初始化函数来检查纯度。`dispatch` 也只提交下一次 render 的状态；在同一个事件处理器里紧接着读取 `items`，读到的仍是当前快照。
+和 `useState` 一样，开发环境的 Strict Mode 可能多调几次 reducer 和初始化函数来检查纯度。`dispatch` 也只是提交下一次 render 的状态；同一个事件处理器里紧接着读 `items`，读到的还是当前的快照。
 
 ## `useImmer`：Draft 更新
 
-`useImmer` 和 `useImmerReducer` 来自第三方包 **`use-immer`**，不是 React 官方 Hook。它们基于 Immer，让代码看起来像在修改 Draft，最终仍生成新的不可变状态并复用未修改的结构。
+`useImmer` 和 `useImmerReducer` 来自第三方包 `use-immer`，不是 React 官方的 Hook。它们基于 Immer，代码看起来像在改 Draft，最后还是生成新的不可变状态，并复用没改动的结构。
 
 ```bash
 npm install immer use-immer
@@ -287,9 +287,9 @@ export function ProfileEditor() {
 }
 ```
 
-数组的 `push`、`splice` 和下标赋值也可用于 Draft。它们修改的是 Immer 提供的代理，不是 React 交给当前 render 的旧状态。
+数组的 `push`、`splice` 和下标赋值也能用在 Draft 上。它们改的是 Immer 提供的代理，不是 React 交给当前 render 的旧状态。
 
-`useImmerReducer` 保留 Action 模型，但 reducer 接收可写 Draft：
+`useImmerReducer` 保留了 Action 模型，只是 reducer 接收的是能写的 Draft：
 
 ```tsx
 import { useImmerReducer } from 'use-immer';
@@ -308,11 +308,11 @@ function counterReducer(draft: CounterState, action: CounterAction) {
 const [state, dispatch] = useImmerReducer(counterReducer, { count: 0 });
 ```
 
-Immer 降低的是深层复制的书写成本，不会替代合理的状态拆分。Draft 也不应保存到外部、异步回调或下一次更新中继续使用。
+Immer 省掉的是深层复制的书写成本，代替不了合理的状态拆分。Draft 也别存到外面、放进异步回调，或者留到下一次更新接着用。
 
 ## `useSyncExternalStore`：外部 Store 快照
 
-`useSyncExternalStore` 用于连接不由 React 管理、但能被订阅的数据源，例如自建 Store、浏览器在线状态、`localStorage` 或 History。它接收三个契约：
+`useSyncExternalStore` 用来连接不归 React 管、但能订阅的数据源，比如自建的 Store、浏览器的在线状态、`localStorage` 或 History。它接收三个约定：
 
 | 参数 | 责任 |
 |---|---|
@@ -320,16 +320,16 @@ Immer 降低的是深层复制的书写成本，不会替代合理的状态拆�
 | `getSnapshot()` | 返回客户端当前快照 |
 | `getServerSnapshot()` | 返回服务端渲染与 hydration 使用的初始快照 |
 
-React 用 `Object.is` 比较相邻快照。快照必须满足以下要求：
+React 用 `Object.is` 比较相邻的两次快照。快照要满足：
 
-- Store 没变化时，多次调用必须返回相同值或相同引用。
-- Store 变化后，必须返回新的不可变快照。
-- 若底层数据可变，应由适配层缓存最近一次不可变快照。
-- 不要在 `getSnapshot` 中无条件写 `return JSON.parse(...)`、`return {...data}` 或 `return [...data]`，否则每次都是新引用，可能触发无限更新。
+- Store 没变时，多次调用要返回相同的值或相同的引用。
+- Store 变了以后，要返回新的不可变快照。
+- 底层数据是可变的话，要由适配层缓存最近一次的不可变快照。
+- 别在 `getSnapshot` 里无条件写 `return JSON.parse(...)`、`return {...data}` 或 `return [...data]`，不然每次都是新引用，可能触发无限更新。
 
 ### 订阅 `localStorage`
 
-`localStorage` 的原始值是字符串，天然适合作为稳定快照。浏览器的 `storage` 事件只通知同源的其他文档，因此当前标签页写入后还要发一个应用内事件：
+`localStorage` 的原始值是字符串，天然适合当稳定的快照。浏览器的 `storage` 事件只通知同源的其他文档，所以当前标签页写完后，还要自己发一个应用内的事件：
 
 ```tsx
 import { useSyncExternalStore } from 'react';
@@ -362,11 +362,11 @@ export function useStoredString(key: string, fallback: string) {
 }
 ```
 
-若要保存对象，可以让快照仍保持序列化字符串，再在快照之外解析；或者在 Store 适配器中缓存解析后的不可变对象。SSR 场景的 `getServerSnapshot` 必须与客户端 hydration 时的初始数据一致，实际项目通常由服务端把这份数据序列化到页面中。
+要存对象的话，可以让快照还是序列化的字符串，在快照之外再解析；或者在 Store 适配器里缓存解析好的不可变对象。SSR 场景下的 `getServerSnapshot` 必须和客户端 hydration 时的初始数据一致，实际项目一般由服务端把这份数据序列化到页面里。
 
 ### 订阅 History
 
-`popstate` 会响应前进和后退，但 `history.pushState()` 与 `replaceState()` 本身不会派发 `popstate`。封装导航方法时应主动通知订阅者：
+`popstate` 会响应前进和后退，但 `history.pushState()` 和 `replaceState()` 本身不会派发 `popstate`。封装导航方法时要主动通知订阅者：
 
 ```tsx
 const locationChangeEvent = 'app:location-change';
@@ -401,11 +401,11 @@ function useLocationPath() {
 }
 ```
 
-真实 SSR 应把请求 URL 作为服务端快照，而不是固定写成 `/`。完整路由器还要处理 base path、滚动恢复、并发导航和错误边界，这个示例只说明外部 Store 的订阅协议。
+真实的 SSR 要把请求的 URL 当作服务端快照，别固定写成 `/`。完整的路由器还要处理 base path、滚动恢复、并发导航和错误边界，这个示例只用来说明外部 Store 的订阅协议。
 
 ## `useTransition`：非紧急更新
 
-Transition 不是动画，也不是定时器。传给 `startTransition` 的函数会立即执行；React 只是把其中同步提交的状态更新标记为非紧急，使渲染可以被点击、输入等更紧急的更新打断并重启。
+Transition 不是动画，也不是定时器。传给 `startTransition` 的函数会立刻执行；React 只是把里面同步提交的状态更新标成非紧急，让这次渲染能被点击、输入这些更紧急的更新打断并重来。
 
 ```tsx
 import { memo, useMemo, useState, useTransition } from 'react';
@@ -454,9 +454,9 @@ export function SearchPanel({ rows }: { rows: Row[] }) {
 }
 ```
 
-受控文本框的 `value` 不能由 Transition 更新，否则输入会失去即时一致性。应同步更新输入值，只把列表、图表、Tab 内容或导航结果等可中断部分放进 Transition。
+受控文本框的 `value` 不能用 Transition 更新，不然输入就没法即时保持一致。输入值要同步更新，只把列表、图表、Tab 内容或导航结果这些能中断的部分放进 Transition。
 
-React 19 的 Transition Action 可以是异步函数，但目前 `await` 之后的状态更新需要再包一层 `startTransition` 才会被标记：
+React 19 的 Transition Action 可以是异步函数，但目前 `await` 之后的状态更新还要再包一层 `startTransition` 才会被标记：
 
 ```tsx
 startTransition(async () => {
@@ -467,11 +467,11 @@ startTransition(async () => {
 });
 ```
 
-把 `setState` 放入 `setTimeout` 后不会自动继承 Transition 标记。异步请求还可能乱序完成，应另外使用取消、请求序号、队列或更高层的 Action API 维护顺序。
+把 `setState` 放进 `setTimeout` 后，不会自动继承 Transition 标记。异步请求还可能乱序完成，要另外用取消、请求序号、队列或更上层的 Action API 来维护顺序。
 
 ## `useDeferredValue`：延后值
 
-无法直接控制状态更新位置时，可以把一个值的“旧版本”暂时交给较慢的子树：
+没法直接控制状态在哪里更新时，可以把一个值的"旧版本"暂时交给比较慢的子树：
 
 ```tsx
 import { useDeferredValue, useState } from 'react';
@@ -498,9 +498,9 @@ export function DeferredSearch({ rows }: { rows: Row[] }) {
 }
 ```
 
-首次渲染时，没有旧值可用，返回值通常与传入值相同。更新时，React 先用旧的 deferred 值完成当前渲染，再在后台尝试新值；后台渲染可以被新的输入打断。
+首次渲染时没有旧值可用，返回值一般和传进去的一样。更新时，React 先用旧的 deferred 值完成这次渲染，再在后台试新值；后台渲染能被新的输入打断。
 
-`useDeferredValue` 没有固定的 300ms 或 500ms 延迟，所以它不是防抖，也不保证减少网络请求。若每次按键都发请求，仍然会产生每次按键对应的请求；它延后的只是使用该值的渲染。要控制请求频率，应另做防抖、缓存或取消。
+`useDeferredValue` 没有固定的 300ms 或 500ms 延迟，所以它不是防抖，也不保证减少网络请求。每次按键都发请求的话，请求照样每次都会发；它推迟的只是用到这个值的渲染。要控制请求频率，得另外做防抖、缓存或取消。
 
 ## 选型
 
@@ -513,4 +513,4 @@ export function DeferredSearch({ rows }: { rows: Row[] }) {
 | 自己掌握更新函数，想降低该更新的紧急度 | `useTransition` |
 | 只拿到一个值，想让慢 UI 暂时使用旧值 | `useDeferredValue` |
 
-判断是否使用并发 Hook 时，先通过性能分析确认瓶颈。Transition 和 deferred value 只能让渲染调度更合理，不能替代虚拟列表、数据缓存、拆分组件或降低计算复杂度。
+决定要不要用并发 Hook 之前，先用性能分析确认瓶颈在哪。Transition 和 deferred value 只能让渲染调度更合理，代替不了虚拟列表、数据缓存、拆分组件或者降低计算复杂度。

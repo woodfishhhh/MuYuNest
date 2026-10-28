@@ -20,11 +20,11 @@ draft: false
 
 # Next.js 16 Route Handler 与 Cookie 会话
 
-Route Handler 是 App Router 中的后端入口。它适合处理 Webhook、上传、登录、第三方回调和需要明确 HTTP 方法的接口。页面跳转解决不了这些问题，必须把请求解析、响应状态、Cookie 属性和服务端鉴权写在同一条边界上。
+Route Handler 是 App Router 里的后端入口，适合做 Webhook、上传、登录、第三方回调，以及需要明确 HTTP 方法的接口。这些事页面跳转办不了，请求解析、响应状态、Cookie 属性和服务端鉴权得在同一个地方写清楚。
 
 ## 1. 最小 Route Handler
 
-文件名固定为 `route.ts`，路径直接映射 URL：
+文件名固定是 `route.ts`，路径直接映射成 URL：
 
 ```text
 src/app/api/health/route.ts  ->  GET /api/health
@@ -39,7 +39,7 @@ export async function GET() {
 }
 ```
 
-可以直接返回 Web 标准 `Response`，需要 JSON、重定向或设置 Cookie 时使用 `NextResponse` 更方便。
+可以直接返回 Web 标准的 `Response`；要返回 JSON、重定向或设置 Cookie 时，用 `NextResponse` 更方便。
 
 ## 2. 查询参数、JSON 和状态码
 
@@ -75,14 +75,14 @@ export async function POST(request: Request) {
 }
 ```
 
-几个容易忽略的点：
+几个容易漏的点：
 
-- 查询参数从 `request.nextUrl.searchParams` 读取，不要手写字符串切割。
-- `request.json()` 是异步操作，只能消费一次请求体。
-- 创建资源使用 `201`，参数缺失用 `400` 或 `422`，不要所有失败都返回 `200`。
-- `POST` 的请求头必须有 `Content-Type: application/json`。
+- 查询参数从 `request.nextUrl.searchParams` 读，别手动切字符串。
+- `request.json()` 是异步的，请求体只能读一次。
+- 创建资源用 `201`，缺参数用 `400` 或 `422`，别所有失败都返回 `200`。
+- `POST` 的请求头要带 `Content-Type: application/json`。
 
-同一个文件可以导出 `GET`、`POST`、`PUT`、`PATCH`、`DELETE` 等方法。方法名必须是大写导出函数，不能导出一个自定义名称期待框架自动识别。
+一个文件可以导出 `GET`、`POST`、`PUT`、`PATCH`、`DELETE` 等方法。方法名必须是大写的导出函数，导出个自定义名字，框架是不会自动识别的。
 
 ## 3. 动态 API 路由
 
@@ -109,11 +109,11 @@ export async function GET(_request: Request, { params }: Context) {
 }
 ```
 
-Next.js 16 的动态 `params` 需要 `await`。这和页面动态路由一致；不能把旧版本的同步写法复制到新项目里。
+Next.js 16 的动态 `params` 要 `await`，和页面的动态路由一样；旧版本的同步写法别照搬到新项目里。
 
 ## 4. Cookie 的正确用途
 
-Cookie 适合保存一个短小的、可校验的会话标识，不适合直接保存密码、完整用户对象或未经保护的权限信息。Route Handler 中读写 Cookie：
+Cookie 适合存一个短小、能校验的会话标识，不适合直接存密码、完整的用户对象或者没有保护的权限信息。在 Route Handler 里读写 Cookie：
 
 ```ts
 import { cookies } from 'next/headers';
@@ -159,11 +159,11 @@ export async function GET() {
 }
 ```
 
-`httpOnly` 防止客户端 JavaScript 直接读取会话 Cookie，`secure` 保证生产环境只走 HTTPS，`sameSite` 降低跨站请求伪造风险。真正的 session 还要服务端存储或签名校验；把固定字符串写入 Cookie 只能演示 API 链路，不能作为生产认证方案。
+`httpOnly` 让客户端 JavaScript 读不到会话 Cookie，`secure` 保证生产环境只走 HTTPS，`sameSite` 降低跨站请求伪造的风险。真正的 session 还需要服务端存储或签名校验；往 Cookie 里写个固定字符串只能演示 API 链路，不能当生产环境的认证方案。
 
 ## 5. 前端检查登录态
 
-客户端可以请求 `/api/me` 来更新界面，但不能把客户端状态当成授权结论：
+客户端可以请求 `/api/me` 来更新界面，但客户端的状态不能当成授权结论：
 
 ```tsx
 'use client';
@@ -183,4 +183,4 @@ export function SessionGate() {
 }
 ```
 
-页面和 API 都必须独立检查会话。否则用户可以绕过页面按钮，直接调用接口。
+页面和 API 都要各自检查会话，不然用户可以绕开页面按钮，直接调接口。

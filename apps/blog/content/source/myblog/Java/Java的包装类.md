@@ -28,11 +28,11 @@ categories:
 
 ## 装箱与拆箱
 
-装箱：将一个基本数据类型变为包装类称为装箱操作
+装箱：把基本数据类型变成包装类
 
-拆箱：将一个包装类变回基本数据类型，称为拆箱操作，转换的方法由Number类提供
+拆箱：把包装类变回基本数据类型，转换的方法由Number类提供
 
-下面看具体操作，这里以整形为例：
+以整型为例：
 
 ```java
 public class WrapperDemo{
@@ -44,7 +44,7 @@ public class WrapperDemo{
 }
 ```
 
-JDK1.5之后，增加了自动装箱和拆箱的操作
+JDK1.5之后，有了自动装箱和拆箱
 
 ```java
 public class WrapperDemo{
@@ -62,7 +62,7 @@ public class WrapperDemo{
 
 ### valueOf
 
-平时应该多用用静态的valueOf方法创建实例，通过valueOf创造的实例可以被共享，这没有问题，因为包装对象是不可变的。
+平时多用静态的valueOf方法创建实例。valueOf创建的实例可以被共享，因为包装对象不可变，共享没问题。
 
 ```java
 Integer x1 = new Interger("32");

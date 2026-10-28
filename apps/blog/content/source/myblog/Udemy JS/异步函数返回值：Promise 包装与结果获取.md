@@ -14,19 +14,19 @@ categories:
 
 ## 一、知识点总览
 
-本视频聚焦 JavaScript 中异步函数（Async Functions）返回值的特性、获取方式、错误处理及代码优化，解决“异步函数如何返回数据”“返回值为何是 Promise”“如何优雅处理异步返回结果”等关键问题，是异步编程进阶的核心内容。
+这一集讲 JavaScript 异步函数（Async Functions）返回值的特点、怎么拿到返回值、错误怎么处理，以及代码怎么优化。要回答的问题是："异步函数怎么把数据返回出来""返回值为什么是 Promise""怎么好好处理异步返回的结果"。
 
 ## 二、异步函数返回值的本质（特点）
 
 ### 2.1 关键结论：异步函数永远返回 Promise
 
-- **特性说明**：无论异步函数（`async function` 声明）内部返回什么值（基本类型、对象、函数等），最终都会被 JavaScript 包装成一个 **已兑现（fulfilled）的 Promise**；若函数内部抛出错误，则返回一个 **已拒绝（rejected）的 Promise**。
-- **原理拆解**：
-  异步函数的执行逻辑是“非阻塞”的——调用异步函数时，JS 引擎会立即返回一个未完成的 Promise，然后在后台继续执行函数内部代码；当函数执行完毕（或遇到 `return`/`throw`），再更新 Promise 的状态（兑现/拒绝）并传递结果。
+- 特点：不管异步函数（`async function` 声明）里面返回的是什么（基本类型、对象、函数等），最后都会被 JavaScript 包成一个已兑现（fulfilled）的 Promise；函数里面抛了错的话，返回的就是一个已拒绝（rejected）的 Promise。
+- 原理：
+  异步函数是"非阻塞"执行的——调用异步函数时，JS 引擎马上返回一个还没完成的 Promise，然后在后台接着执行函数里的代码；函数执行完（或者碰到 `return`/`throw`），再更新 Promise 的状态（兑现/拒绝），把结果传出去。
 
 ### 2.2 对比：异步函数 vs 普通函数返回值
 
-通过 `console.log` 观察执行顺序，可直观理解两者差异：
+用 `console.log` 看执行顺序，就能直观看出两者的差别：
 
 ```javascript
 // 1. 普通函数：同步执行，立即返回值
@@ -55,8 +55,8 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 3.1 方式1：使用 `.then()` 链式调用（兼容 Promise 旧语法）
 
-- **适用场景**：需要在异步函数执行完毕后，基于返回值做后续操作（如渲染页面、调用其他接口）。
-- **语法示例**：
+- 适用场景：异步函数执行完后，要根据返回值接着做事（比如渲染页面、调别的接口）。
+- 语法示例：
 
   ```javascript
   // 异步函数：模拟获取用户地理位置（返回城市名称）
@@ -79,9 +79,9 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 3.2 方式2：使用 `await` + 异步函数（推荐，更简洁）
 
-- **核心规则**：`await` 关键字必须在 **另一个异步函数内部** 使用，作用是“暂停当前异步函数的执行，等待目标 Promise 兑现后再继续”。
-- **优化点**：避免 `.then()` 链式调用的嵌套问题（“回调地狱”），代码逻辑更接近同步写法。
-- **语法示例**：
+- 规则：`await` 关键字必须用在另一个异步函数里，作用是"暂停当前这个异步函数，等目标 Promise 兑现了再接着往下走"。
+- 好处：避开 `.then()` 链式调用的嵌套问题（"回调地狱"），代码写起来更像同步的。
+- 语法示例：
 
   ```javascript
   async function getCity() {
@@ -101,7 +101,7 @@ console.log("4. 异步函数返回值：", asyncResult);
   })();
   ```
 
-- **补充**：若项目支持 ES2022+ 语法，可直接在模块顶层使用 `await`（无需 IIFE），如：
+- 补充：项目支持 ES2022+ 语法的话，可以直接在模块顶层用 `await`（不用 IIFE），比如：
   ```javascript
   // 模块文件（.mjs 或 package.json 配置 "type": "module"）
   const city = await getCity();
@@ -112,8 +112,8 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 4.1 问题：异步函数内部错误默认不触发外部 `catch`
 
-- **现象**：若异步函数内部用 `try/catch` 捕获了错误，但未重新抛出（`throw`），则函数返回的 Promise 仍为“已兑现”状态，外部 `.catch()` 或 `try/catch` 无法捕获该错误。
-- **示例（错误写法）**：
+- 现象：异步函数里用 `try/catch` 接住了错误、但没有重新抛出（`throw`）的话，函数返回的 Promise 还是"已兑现"，外面的 `.catch()` 或 `try/catch` 接不到这个错误。
+- 示例（错误写法）：
 
   ```javascript
   async function getCity() {
@@ -139,8 +139,8 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 4.2 解决方案：重新抛出错误（`throw error`）
 
-- **原理**：在异步函数的 `catch` 块中重新抛出错误，会将函数返回的 Promise 状态改为“已拒绝”，外部即可通过 `.catch()` 或 `try/catch` 捕获。
-- **示例（正确写法）**：
+- 原理：在异步函数的 `catch` 块里重新抛出错误，函数返回的 Promise 就会变成"已拒绝"，外面就能用 `.catch()` 或 `try/catch` 接住。
+- 示例（正确写法）：
 
   ```javascript
   async function getCity() {
@@ -168,8 +168,8 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 4.3 额外优化：用 `finally` 执行收尾操作
 
-- **特性**：`finally` 块中的代码无论 Promise 状态是“兑现”还是“拒绝”，都会执行（如关闭加载动画、清理资源）。
-- **示例**：
+- 特点：不管 Promise 是"兑现"还是"拒绝"，`finally` 块里的代码都会执行（比如关掉加载动画、清理资源）。
+- 示例：
   ```javascript
   (async function () {
     console.log("开始获取城市...");
@@ -193,7 +193,7 @@ console.log("4. 异步函数返回值：", asyncResult);
 
 ### 例题1：获取用户信息并渲染
 
-需求：用两个异步函数分别获取“用户 ID”和“用户详情”，要求先获取 ID，再用 ID 查详情，最后打印结果；若任一环节失败，捕获错误并提示。
+需求：用两个异步函数分别拿"用户 ID"和"用户详情"，先拿 ID，再用 ID 查详情，最后打印结果；任何一步失败都要接住错误并提示。
 
 ```javascript
 // 异步函数1：获取用户ID（模拟接口调用）
@@ -232,7 +232,7 @@ async function getUserInfo(userId) {
 
 ### 例题2：判断返回值类型
 
-问题：以下代码执行后，`result1` 和 `result2` 分别是什么类型？为什么？
+问题：下面这段代码执行后，`result1` 和 `result2` 分别是什么类型？为什么？
 
 ```javascript
 async function func1() {
@@ -246,14 +246,14 @@ const result1 = func1();
 const result2 = func2();
 ```
 
-**答案**：
+答案：
 
-- `result1` 是 `Promise` 类型（状态：fulfilled，值：123）。因为异步函数无论返回什么值，都会包装成已兑现的 Promise。
-- `result2` 是 `Promise` 类型（状态：rejected，值：Error 对象）。因为异步函数内部抛出错误，会包装成已拒绝的 Promise。
+- `result1` 是 `Promise`（状态：fulfilled，值：123）。因为异步函数不管返回什么，都会包成已兑现的 Promise。
+- `result2` 是 `Promise`（状态：rejected，值：Error 对象）。因为异步函数里抛了错，会包成已拒绝的 Promise。
 
 ## 六、总结
 
-1. **返回值本质**：异步函数永远返回 Promise，`return X` 等价于 `return Promise.resolve(X)`，`throw E` 等价于 `return Promise.reject(E)`。
-2. **获取方式**：优先用 `await + async`（代码简洁），兼容场景用 `.then()`；`await` 必须在异步函数内部使用。
-3. **错误处理**：异步函数内部捕获错误后，需 `throw error` 才能让外部捕获；`finally` 用于执行收尾操作。
-4. **核心原则**：避免混合 `await` 和 `.then()` 语法，保持代码风格统一，降低可读性成本。
+1. 返回值的本质：异步函数永远返回 Promise，`return X` 相当于 `return Promise.resolve(X)`，`throw E` 相当于 `return Promise.reject(E)`。
+2. 怎么拿返回值：优先用 `await + async`（代码简洁），要兼容的场景用 `.then()`；`await` 必须在异步函数里用。
+3. 错误处理：异步函数里接住错误后，要 `throw error` 外面才接得到；`finally` 用来做收尾。
+4. 原则：别把 `await` 和 `.then()` 混着写，代码风格统一，读起来更省力。

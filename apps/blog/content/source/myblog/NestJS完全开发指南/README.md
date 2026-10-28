@@ -12,7 +12,7 @@ draft: false
 
 # NestJS 完全开发指南
 
-NestJS 请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。
+NestJS 的请求链路、依赖注入、TypeORM、认证测试和生产部署笔记。
 
 ## 原始链接
 

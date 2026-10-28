@@ -20,7 +20,7 @@ draft: false
 
 # Next.js 16 App Router 与路由系统
 
-App Router 的核心不是“多了几个文件名”，而是把 URL、布局、加载状态、错误边界和组件生命周期绑定到文件系统。理解这些约定后，页面之间的共享结构不需要再靠一个巨大组件读取 pathname 来判断。
+App Router 就是用文件夹管路由：URL、布局、loading、报错页全靠文件约定，不用再在一个大组件里读 pathname 判断。
 
 ## 1. 文件夹就是 URL，文件名决定能力
 
@@ -35,9 +35,9 @@ src/app/
 └─ not-found.tsx               # 当前路由的 404 UI
 ```
 
-`about` 文件夹本身不会产生页面；只有其中存在 `page.tsx` 时，`/about` 才是可访问路由。`layout.tsx`、`loading.tsx` 和 `error.tsx` 是约定文件，名字不能随意改。
+`about/` 里没有 `page.tsx`，访问 `/about` 就是 404。`layout.tsx`、`loading.tsx`、`error.tsx` 这几个文件名是固定的，不能改。
 
-页面和布局的嵌套关系：
+页面和布局的嵌套：
 
 ```tsx
 // src/app/layout.tsx
@@ -57,11 +57,11 @@ export default function AboutLayout({ children }: { children: React.ReactNode })
 }
 ```
 
-访问 `/about/me` 时，页面会被根布局和 `about/layout.tsx` 依次包住。布局适合放不会随子页面切换而消失的导航、字体、Provider 和共享数据。
+访问 `/about/me` 时，页面外面先套 `about/layout.tsx`，再套根布局。切页面时不该消失的东西放布局里：导航、字体、Provider、共享数据。
 
 ## 2. `layout` 和 `template` 的区别
 
-二者都可以共享 UI，但生命周期不同：
+两个都能共享 UI，区别在生命周期：
 
 | 文件 | 切换子路由时 | 状态 | `useEffect` |
 | --- | --- | --- | --- |
@@ -83,11 +83,14 @@ export default function DocsTemplate({ children }: { children: React.ReactNode }
 }
 ```
 
-需要持久化的导航状态、Provider 和页面外壳放 `layout`；需要每次切换都重置的表单、动画或埋点边界放 `template`。带 Hook 的布局或模板必须声明 `'use client'`，但这不意味着父级所有页面都要客户端化。
+- 要保留状态的放 `layout`：导航状态、Provider、页面外壳
+- 每次切换都要重置的放 `template`：表单、动画、埋点
+
+用了 Hook 的 layout 或 template 要写 `'use client'`，但别的页面不用因此都变成客户端组件。
 
 ## 3. 加载、错误和 404
 
-异步页面可以配同级 `loading.tsx`：
+异步页面旁边放一个 `loading.tsx`：
 
 ```tsx
 // src/app/about/loading.tsx
@@ -96,7 +99,7 @@ export default function Loading() {
 }
 ```
 
-页面抛出异常时，同级 `error.tsx` 接管显示。错误边界本身需要客户端能力：
+页面抛异常时，显示同级的 `error.tsx`。它需要客户端能力：
 
 ```tsx
 // src/app/about/error.tsx
@@ -118,7 +121,7 @@ export default function ErrorPage({
 }
 ```
 
-全局 404 可以放在 `src/app/not-found.tsx`：
+全局 404 放 `src/app/not-found.tsx`：
 
 ```tsx
 export default function NotFound() {
@@ -126,7 +129,7 @@ export default function NotFound() {
 }
 ```
 
-数据查询发现资源不存在时，在服务器组件中调用 `notFound()`，不要返回一个标题为空的“成功页面”：
+查数据发现资源不存在，就在服务器组件里调 `notFound()`，别返回一个空标题的“正常页面”：
 
 ```tsx
 import { notFound } from 'next/navigation';
@@ -145,7 +148,7 @@ src/app/docs/[...slug]/page.tsx    # /docs/a/b/c
 src/app/shop/[[...slug]]/page.tsx  # /shop 和 /shop/a/b 都匹配
 ```
 
-Next.js 16 中 `params` 按 Promise 接收：
+Next.js 16 里 `params` 是 Promise：
 
 ```tsx
 type Props = { params: Promise<{ slug: string }> };
@@ -156,7 +159,7 @@ export default async function PostPage({ params }: Props) {
 }
 ```
 
-路由组使用圆括号，不会进入 URL：
+路由组用圆括号，不出现在 URL 里：
 
 ```text
 src/app/
@@ -165,7 +168,7 @@ src/app/
 └─ (dashboard)/settings/page.tsx
 ```
 
-平行路由用 `@slot` 把多个页面区域交给同一个布局：
+平行路由用 `@slot`，把几块页面区域交给同一个布局：
 
 ```text
 app/dashboard/
@@ -175,11 +178,11 @@ app/dashboard/
 └─ @activity/page.tsx
 ```
 
-它适合仪表盘、侧栏和弹窗等可以独立加载或独立切换的区域。不要为了“目录看起来高级”滥用平行路由；如果两个区域没有独立生命周期，普通组件组合更清楚。
+适合仪表盘、侧栏、弹窗这种能各自加载、各自切换的区域。两块区域没有独立的生命周期，就直接用普通组件组合，别为了目录好看硬上。
 
 ## 5. 导航方式
 
-应用内跳转优先使用 `Link`：
+站内跳转用 `Link`：
 
 ```tsx
 import Link from 'next/link';
@@ -187,7 +190,7 @@ import Link from 'next/link';
 <Link href={`/blog/${post.slug}`}>{post.title}</Link>;
 ```
 
-需要事件中跳转时使用客户端 Hook：
+在事件里跳转用客户端 Hook：
 
 ```tsx
 'use client';
@@ -202,7 +205,7 @@ function openSettings() {
 }
 ```
 
-服务器端完成条件判断时使用 `redirect()`：
+服务器端判断完条件再跳，用 `redirect()`：
 
 ```tsx
 import { redirect } from 'next/navigation';
@@ -210,4 +213,4 @@ import { redirect } from 'next/navigation';
 if (!user) redirect('/login');
 ```
 
-不要把 `router.push` 当成权限控制。它只是导航；资源权限仍要在 Route Handler、Server Action 或数据库查询边界重新验证。
+`router.push` 只是跳转，不是权限控制。权限还是要在 Route Handler、Server Action 或查数据库的地方再校验一次。

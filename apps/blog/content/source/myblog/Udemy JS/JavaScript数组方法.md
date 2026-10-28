@@ -15,15 +15,15 @@ categories:
 
 ## 一、核心主题
 
-本章节聚焦JavaScript中处理数组的现代高阶函数方法,重点讲解`forEach`、`map`、`filter`、`reduce`四大核心数组方法的语法、参数、返回值及典型应用场景,通过对比传统循环方式,掌握函数式编程思想在数组处理中的应用,提升代码简洁性和可维护性。
+这一章讲 JavaScript 里处理数组的现代高阶函数，重点是 `forEach`、`map`、`filter`、`reduce` 四个方法的语法、参数、返回值和典型用法。拿它们和传统循环对比，体会函数式编程在数组处理里的用法，代码会更简洁、更好维护。
 
 ## 二、forEach方法:遍历数组
 
 ### 2.1 基本语法与特点
 
-- **作用**:对数组的每个元素执行一次提供的回调函数
-- **返回值**:undefined(无返回值)
-- **是否修改原数组**:不会直接修改,但可在回调中修改
+- 作用：对数组的每个元素执行一次回调函数
+- 返回值：undefined（没有返回值）
+- 改不改原数组：不会直接改，但可以在回调里改
 
 ```javascript
 array.forEach(function (currentValue, index, array) {
@@ -31,12 +31,12 @@ array.forEach(function (currentValue, index, array) {
 }, thisArg);
 ```
 
-**参数说明**:
+参数：
 
-- `currentValue`:当前元素值
-- `index`:当前元素索引(可选)
-- `array`:原数组本身(可选)
-- `thisArg`:执行回调函数时用作this的值(可选)
+- `currentValue`：当前元素的值
+- `index`：当前元素的索引（可选）
+- `array`：原数组本身（可选）
+- `thisArg`：执行回调时用作 this 的值（可选）
 
 ### 2.2 例题:打印餐厅菜单
 
@@ -78,15 +78,15 @@ menu.forEach(function (dish, index) {
 | 回调函数       | 需要      | 不需要 |
 | 代码简洁度     | 高        | 高     |
 
-**重要提示**:forEach无法使用break或continue中断循环,必须遍历所有元素。
+注意：forEach 没法用 break 或 continue 中断，一定会遍历完所有元素。
 
 ## 三、map方法:转换数组
 
 ### 3.1 基本语法与特点
 
-- **作用**:对数组的每个元素执行回调函数,返回由处理结果组成的新数组
-- **返回值**:新数组(与原数组长度相同)
-- **是否修改原数组**:不修改,返回新数组
+- 作用：对每个元素执行回调，返回由处理结果组成的新数组
+- 返回值：新数组（长度和原数组一样）
+- 改不改原数组：不改，返回新数组
 
 ```javascript
 const newArray = array.map(function (currentValue, index, array) {
@@ -143,9 +143,9 @@ console.log(correct); // [2, 4, 6]
 
 ### 4.1 基本语法与特点
 
-- **作用**:根据指定条件过滤数组元素,返回满足条件的新数组
-- **返回值**:新数组(包含满足条件的元素)
-- **是否修改原数组**:不修改
+- 作用：按条件过滤数组元素，返回满足条件的元素组成的新数组
+- 返回值：新数组（只含满足条件的元素）
+- 改不改原数组：不改
 
 ```javascript
 const newArray = array.filter(function (currentValue, index, array) {
@@ -207,9 +207,9 @@ console.log(evens); // [2, 4]
 
 ### 5.1 基本语法与特点
 
-- **作用**:对数组的每个元素执行回调函数,将其结果累积为单个返回值
-- **返回值**:累积后的单个值(可以是任意类型)
-- **是否修改原数组**:不修改
+- 作用：对每个元素执行回调，把结果累积成一个值
+- 返回值：累积后的单个值（什么类型都行）
+- 改不改原数组：不改
 
 ```javascript
 const result = array.reduce(function (
@@ -222,13 +222,13 @@ const result = array.reduce(function (
 }, initialValue);
 ```
 
-**参数说明**:
+参数：
 
-- `accumulator`:累积器,存储回调的返回值
-- `currentValue`:当前元素值
-- `currentIndex`:当前索引(可选)
-- `array`:原数组(可选)
-- `initialValue`:初始值(可选,重要!)
+- `accumulator`：累积器，存回调的返回值
+- `currentValue`：当前元素的值
+- `currentIndex`：当前索引（可选）
+- `array`：原数组（可选）
+- `initialValue`：初始值（可选，但很重要）
 
 ### 5.2 例题:计算菜单总价
 
@@ -294,7 +294,7 @@ const safe = empty.reduce((acc, num) => acc + num, 0); // 0
 
 ### 6.1 链式调用原理
 
-数组方法返回数组(map/filter),可继续调用其他数组方法,形成链式调用,代码更简洁。
+map/filter 返回的是数组，可以接着调别的数组方法，串成一条链，代码更简洁。
 
 ### 6.2 例题:筛选、转换、求和
 
@@ -352,8 +352,8 @@ console.log(result1, result2); // [4, 8] [4, 8]
 
 ### 7.1 find方法
 
-- **作用**:返回数组中满足条件的第一个元素
-- **返回值**:找到的元素或undefined
+- 作用：返回数组里第一个满足条件的元素
+- 返回值：找到的元素，或者 undefined
 
 ```javascript
 const dishes = [
@@ -372,8 +372,8 @@ console.log(expensiveDish); // {name: '牛排', price: 28}
 
 ### 7.2 findIndex方法
 
-- **作用**:返回数组中满足条件的第一个元素的索引
-- **返回值**:索引或-1
+- 作用：返回数组里第一个满足条件的元素的索引
+- 返回值：索引，或者 -1
 
 ```javascript
 const menu = ["沙拉", "牛排", "意面"];
@@ -389,8 +389,8 @@ console.log(index); // 1
 
 ### 8.1 some方法
 
-- **作用**:检查数组中是否至少有一个元素满足条件
-- **返回值**:布尔值
+- 作用：检查数组里是不是至少有一个元素满足条件
+- 返回值：布尔值
 
 ```javascript
 const dishes = [
@@ -409,8 +409,8 @@ console.log(hasVegetarian); // true
 
 ### 8.2 every方法
 
-- **作用**:检查数组中是否所有元素都满足条件
-- **返回值**:布尔值
+- 作用：检查数组里是不是所有元素都满足条件
+- 返回值：布尔值
 
 ```javascript
 const dishes = [
@@ -444,13 +444,13 @@ console.log(allVegetarian); // true
 
 ### 9.2 使用场景决策树
 
-1. **仅需遍历,不返回结果** → forEach
-2. **需要转换数组元素** → map
-3. **需要筛选满足条件元素** → filter
-4. **需要汇总为单个值** → reduce
-5. **查找第一个匹配元素** → find/findIndex
-6. **判断数组是否满足条件** → some/every
-7. **需要中断循环** → for-of
+1. 只遍历，不要结果 → forEach
+2. 要转换数组元素 → map
+3. 要筛出满足条件的元素 → filter
+4. 要汇总成一个值 → reduce
+5. 找第一个匹配的元素 → find/findIndex
+6. 判断数组满不满足条件 → some/every
+7. 要中断循环 → for-of
 
 ### 9.3 箭头函数简写
 
@@ -478,10 +478,10 @@ const processed = items.map((item) => {
 
 ## 十、总结:数组方法的核心要点
 
-1. **不可变性**:map、filter、reduce等方法不修改原数组,返回新数据
-2. **函数式编程**:将循环逻辑抽象为函数,代码更声明式
-3. **链式调用**:map和filter返回数组,可继续调用其他方法
-4. **回调函数**:所有方法都接收回调函数,参数位置固定
-5. **箭头函数**:配合箭头函数可大幅简化代码
-6. **性能考虑**:大规模数据时,链式调用可能多次遍历数组
-7. **选择合适方法**:根据需求选择最匹配的方法,避免滥用forEach
+1. 不可变：map、filter、reduce 这些方法不改原数组，返回新数据
+2. 函数式：把循环逻辑抽成函数，代码更声明式
+3. 链式调用：map 和 filter 返回数组，能接着调别的方法
+4. 回调函数：所有方法都接收回调，参数位置是固定的
+5. 箭头函数：配合箭头函数能把代码写得很短
+6. 性能：数据量大时，链式调用可能会把数组遍历好几遍
+7. 选对方法：按需求挑最合适的方法，别什么都用 forEach

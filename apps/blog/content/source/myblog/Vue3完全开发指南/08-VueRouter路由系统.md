@@ -17,7 +17,7 @@ draft: false
 
 # Vue Router 路由系统
 
-Vue 单页应用通常只有一个 `index.html`。路由器监听 URL 变化，把当前位置匹配到组件树，再把组件渲染进 `<RouterView>`：
+Vue 单页应用一般只有一个 `index.html`。路由器监听 URL 的变化，把当前位置匹配到组件树上，再把组件渲染进 `<RouterView>`：
 
 ```text
 浏览器 URL
@@ -31,7 +31,7 @@ RouterView 渲染对应组件
 
 ## 1. 安装与最小配置
 
-Vue 3 使用 Vue Router 4：
+Vue 3 用的是 Vue Router 4：
 
 ```bash
 npm install vue-router@4
@@ -77,7 +77,7 @@ export const router = createRouter({
 });
 ```
 
-动态 `import()` 会形成按路由拆分的代码块，首次访问时再加载。首屏必需的极小页面可以静态导入，其他页面默认懒加载。
+动态 `import()` 会形成按路由拆分的代码块，第一次访问时才加载。首屏必需的极小页面可以静态导入，别的页面默认懒加载。
 
 ### 1.2 注册插件
 
@@ -96,7 +96,7 @@ app
   .mount('#app');
 ```
 
-先安装 Pinia，再安装 Router。这样首次导航触发全局守卫时，守卫中的 `useSessionStore()` 已经能取得 Active Pinia；若守卫在应用安装前就会执行，则应创建并导出同一个 Pinia 实例，再显式传给 `useSessionStore(pinia)`。
+先装 Pinia，再装 Router。这样第一次导航触发全局守卫时，守卫里的 `useSessionStore()` 已经能拿到 Active Pinia；要是守卫在应用安装之前就会执行，就要建一个 Pinia 实例并导出，再显式传给 `useSessionStore(pinia)`。
 
 ### 1.3 两个核心组件
 
@@ -123,9 +123,9 @@ const navigation = [
 </template>
 ```
 
-- `RouterLink` 通过 History API 导航，不会像普通 `<a href>` 那样重新加载整页。
-- `RouterView` 是出口；匹配到的页面组件会渲染到这里。
-- 普通链接仍适合站外地址、下载和需要完整文档导航的场景。
+- `RouterLink` 通过 History API 导航，不会像普通的 `<a href>` 那样重新加载整个页面。
+- `RouterView` 是出口；匹配到的页面组件渲染在这里。
+- 站外地址、下载和需要完整文档导航的场景，还是用普通链接。
 
 ## 2. 三种 History 实现
 
@@ -135,9 +135,9 @@ const navigation = [
 | `createWebHashHistory()` | `/#/users/42` | 无法配置服务器回退的静态托管 | 无特殊要求，`#` 后内容不发给服务器 |
 | `createMemoryHistory()` | 无浏览器地址栏依赖 | SSR、测试或非浏览器环境 | 由应用显式设置初始位置 |
 
-Hash 模式监听 `hashchange`；HTML5 History 模式使用 `pushState()`、`replaceState()` 和 `popstate`。业务代码不要手动拼这些底层 API，应让 Router 保持 URL、组件和导航状态一致。
+Hash 模式监听 `hashchange`；HTML5 History 模式用 `pushState()`、`replaceState()` 和 `popstate`。业务代码别自己去拼这些底层 API，交给 Router 来保持 URL、组件和导航状态一致。
 
-History 模式直接刷新 `/users/42` 时，请求会先到 Web 服务器。服务器若寻找同名文件就会 404，因此部署时需要：
+History 模式下直接刷新 `/users/42`，请求会先到 Web 服务器。服务器要是去找同名的文件，就会 404，所以部署时需要：
 
 ```nginx
 location / {
@@ -149,7 +149,7 @@ location / {
 
 ### 3.1 命名路由
 
-优先通过 `name` 导航，而不是在组件中散落硬编码路径：
+优先用 `name` 导航，别在组件里到处写死路径：
 
 ```vue
 <template>
@@ -159,12 +159,12 @@ location / {
 </template>
 ```
 
-路由路径变化时，只需修改路由表；业务组件仍引用稳定名称。路由名称在整个 Router 中必须唯一。
+路由路径变了，只用改路由表；业务组件引用的还是那个稳定的名字。路由名在整个 Router 里必须唯一。
 
 ### 3.2 `useRouter()` 与 `useRoute()`
 
-- `useRouter()` 返回路由器实例，用于“去哪里”。
-- `useRoute()` 返回当前路由的响应式信息，用于“现在在哪里”。
+- `useRouter()` 返回路由器实例，管"去哪儿"。
+- `useRoute()` 返回当前路由的响应式信息，管"现在在哪儿"。
 
 ```vue
 <script setup lang="ts">
@@ -202,7 +202,7 @@ function goBack() {
 | `router.go(1)` / `router.go(-1)` | 前进或后退指定步数 |
 | `router.back()` / `router.forward()` | 后退或前进一项 |
 
-登录成功后通常用 `replace`，避免用户点击后退又回到登录页：
+登录成功后一般用 `replace`，免得用户点后退又回到登录页：
 
 ```ts
 await router.replace({ name: 'home' });
@@ -214,7 +214,7 @@ await router.replace({ name: 'home' });
 
 ### 4.1 Path Params
 
-适合标识资源，进入 URL 路径并可刷新恢复：
+适合标识资源，写在 URL 路径里，刷新后还能恢复：
 
 ```ts
 {
@@ -225,7 +225,7 @@ await router.replace({ name: 'home' });
 }
 ```
 
-页面通过 Props 接收参数，比让展示组件直接依赖 Router 更容易测试：
+页面通过 Props 接收参数，比让展示组件直接依赖 Router 更好测：
 
 ```vue
 <script setup lang="ts">
@@ -245,11 +245,11 @@ const numericId = computed(() => {
 </template>
 ```
 
-路由参数来自 URL，运行时通常是字符串或字符串数组。TypeScript 注解不会自动把 `"42"` 变成数字，必须转换并校验。
+路由参数来自 URL，运行时一般是字符串或字符串数组。TypeScript 注解不会自动把 `"42"` 变成数字，要自己转换并校验。
 
 ### 4.2 Query
 
-适合筛选、分页、排序和可分享的 UI 状态：
+适合筛选、分页、排序和能分享的 UI 状态：
 
 ```ts
 await router.push({
@@ -262,7 +262,7 @@ await router.push({
 });
 ```
 
-读取时同样要处理 `string | string[] | null`：
+读的时候同样要处理 `string | string[] | null`：
 
 ```ts
 const page = computed(() => {
@@ -274,11 +274,11 @@ const page = computed(() => {
 });
 ```
 
-不要把完整商品对象塞进 Query，也不要把密码、Token 或个人敏感信息放进 URL。URL 会进入浏览器历史、访问日志、分析系统和 Referer。
+别把完整的商品对象塞进 Query，也别把密码、Token 或个人敏感信息放进 URL。URL 会进浏览器历史、访问日志、分析系统和 Referer。
 
 ### 4.3 临时数据与资源详情
 
-旧写法会把任意对象放进 `params`，但不在路径中声明的 Params 不是可靠的数据通道，刷新也会丢失。详情页只传资源 ID，再由页面按 ID 读取 Store 或请求接口：
+旧写法会把随便什么对象放进 `params`，但没在路径里声明的 Params 不是可靠的数据通道，刷新就没了。详情页只传资源 ID，页面再按 ID 去读 Store 或请求接口：
 
 ```ts
 await router.push({
@@ -287,11 +287,11 @@ await router.push({
 });
 ```
 
-这样 URL 可复制、可刷新，也能直接进入。
+这样 URL 能复制、能刷新，也能直接打开。
 
 ## 5. 嵌套路由
 
-后台布局的侧栏不变、内容区变化，或移动端底部导航不变、页面主体变化，都适合父子路由：
+后台布局侧栏不变、内容区变，或者移动端底部导航不变、页面主体变，都适合用父子路由：
 
 ```ts
 const routes: RouteRecordRaw[] = [
@@ -321,7 +321,7 @@ const routes: RouteRecordRaw[] = [
 ];
 ```
 
-父布局必须提供子出口：
+父布局必须提供子路由的出口：
 
 ```vue
 <script setup lang="ts">
@@ -338,11 +338,11 @@ import AppSidebar from '@/components/navigation/AppSidebar.vue';
 </template>
 ```
 
-子路由的 `path: 'users'` 是相对路径，最终为 `/app/users`。若写成 `path: '/users'`，它会成为根级 URL，通常不符合嵌套意图。
+子路由的 `path: 'users'` 是相对路径，最后是 `/app/users`。写成 `path: '/users'` 的话，它就变成根级的 URL 了，一般不符合嵌套的本意。
 
 ## 6. 命名视图
 
-一个路由需要同时控制多个区域时，可给 `RouterView` 命名：
+一个路由要同时控制好几个区域时，可以给 `RouterView` 起名字：
 
 ```ts
 {
@@ -363,13 +363,13 @@ import AppSidebar from '@/components/navigation/AppSidebar.vue';
 </template>
 ```
 
-`default` 对应无 `name` 的出口。命名视图适合由 URL 共同决定的稳定页面区域；普通页面内部复用仍优先用组件和插槽，不要把 Router 当布局系统滥用。
+`default` 对应没有 `name` 的出口。命名视图适合由 URL 共同决定的、稳定的页面区域；普通页面内部的复用还是优先用组件和插槽，别把 Router 当布局系统乱用。
 
 ## 7. 重定向与别名
 
 ### 7.1 重定向
 
-重定向会改变最终 URL：
+重定向会改变最终的 URL：
 
 ```ts
 {
@@ -378,7 +378,7 @@ import AppSidebar from '@/components/navigation/AppSidebar.vue';
 }
 ```
 
-也可根据目标路由计算：
+也可以根据目标路由算出来：
 
 ```ts
 {
@@ -392,7 +392,7 @@ import AppSidebar from '@/components/navigation/AppSidebar.vue';
 
 ### 7.2 别名
 
-别名让多个 URL 匹配同一条路由记录，URL 保持用户访问的形式：
+别名让好几个 URL 匹配同一条路由记录，URL 保持用户访问时的样子：
 
 ```ts
 {
@@ -402,13 +402,13 @@ import AppSidebar from '@/components/navigation/AppSidebar.vue';
 }
 ```
 
-迁移旧 URL 时，面向搜索引擎的永久跳转最好由服务器返回 301/308；客户端 Router 重定向不能完全替代 HTTP 重定向。
+迁移旧 URL 时，面向搜索引擎的永久跳转最好由服务器返回 301/308；客户端 Router 的重定向不能完全代替 HTTP 重定向。
 
 ## 8. 导航守卫
 
 ### 8.1 前置守卫
 
-全局 `beforeEach` 会在每次导航确认前运行。Vue Router 4 推荐通过返回值控制导航，不再混用容易漏调用的 `next()`：
+全局 `beforeEach` 会在每次导航确认之前运行。Vue Router 4 推荐用返回值控制导航，别再混用容易漏调的 `next()`：
 
 ```ts
 router.beforeEach(async (to) => {
@@ -433,7 +433,7 @@ router.beforeEach(async (to) => {
 });
 ```
 
-返回值语义：
+返回值的含义：
 
 | 返回值 | 结果 |
 | --- | --- |
@@ -442,13 +442,13 @@ router.beforeEach(async (to) => {
 | 路由地址对象 | 重定向 |
 | 抛出 Error | 导航失败，交给错误处理 |
 
-前端守卫只控制界面入口，不构成真正授权。服务端接口必须再次校验 Session/Token 和资源权限；用户可以绕过前端直接发 HTTP 请求。
+前端守卫只控制界面的入口，不是真正的授权。服务端接口必须再校验一遍 Session/Token 和资源权限；用户可以绕开前端直接发 HTTP 请求。
 
-仅检查 `localStorage` 中是否有字符串也不等于已登录。可靠流程应由服务端验证会话，并处理过期、撤销和角色变化。
+光检查 `localStorage` 里有没有一个字符串，也不等于已经登录了。可靠的流程要由服务端验证会话，并处理过期、撤销和角色变化。
 
 ### 8.2 后置守卫
 
-`afterEach` 不能取消导航，适合结束进度条、记录成功页面访问和更新标题：
+`afterEach` 取消不了导航，适合结束进度条、记录成功的页面访问和更新标题：
 
 ```ts
 router.beforeEach(() => {
@@ -471,21 +471,21 @@ router.onError((error) => {
 });
 ```
 
-进度条组件应有明确的 `start()/done()` API，并在卸载或失败时清理 `requestAnimationFrame`。若已有成熟的小型进度条库，优先复用，不必在 `main.ts` 手动创建和挂载复杂 VNode。
+进度条组件要有明确的 `start()/done()` API，卸载或失败时清掉 `requestAnimationFrame`。已经有成熟的小进度条库的话优先复用，没必要在 `main.ts` 里手动创建、挂载复杂的 VNode。
 
 ### 8.3 路由级与组件级守卫
 
-- `beforeEach`：全局认证、统一前置条件。
-- `beforeResolve`：异步组件和组件内守卫已解析后、导航确认前。
-- 路由记录的 `beforeEnter`：只约束某条路由。
-- `onBeforeRouteLeave()`：离开编辑页前检查未保存内容。
-- `onBeforeRouteUpdate()`：同一组件复用但 Params 改变时响应。
+- `beforeEach`：全局认证、统一的前置条件。
+- `beforeResolve`：异步组件和组件内守卫都解析完之后、导航确认之前。
+- 路由记录上的 `beforeEnter`：只约束某一条路由。
+- `onBeforeRouteLeave()`：离开编辑页之前检查有没有没保存的内容。
+- `onBeforeRouteUpdate()`：同一个组件被复用、但 Params 变了时响应。
 
-不要把所有数据请求都塞进全局守卫，否则一次慢接口会阻塞整个应用导航。
+别把所有数据请求都塞进全局守卫，不然一个慢接口就会卡住整个应用的导航。
 
 ## 9. 路由元信息
 
-`meta` 用于给路由声明标题、访问要求、菜单信息和过渡名。通过模块扩展给它加类型：
+`meta` 用来给路由声明标题、访问要求、菜单信息和过渡名。通过模块扩展给它加上类型：
 
 ```ts
 // src/router/meta.d.ts
@@ -519,11 +519,11 @@ declare module 'vue-router' {
 }
 ```
 
-嵌套路由的 `to.meta` 是所有匹配记录 Meta 的非递归合并结果。权限规则较复杂时，也可以检查 `to.matched`，明确父子记录的组合语义。
+嵌套路由的 `to.meta`，是所有匹配记录的 Meta 做非递归合并的结果。权限规则比较复杂时，也可以检查 `to.matched`，把父子记录组合起来的含义写清楚。
 
 ## 10. 路由过渡
 
-`RouterView` 的插槽可取得当前组件和路由：
+`RouterView` 的插槽能拿到当前的组件和路由：
 
 ```vue
 <script setup lang="ts">
@@ -586,11 +586,11 @@ const transitionName = computed(
 </style>
 ```
 
-Key 决定组件是否重建。使用 `fullPath` 会让 Query 的每次变化都重建页面；想复用实例时应使用路由名称或路径，并在组件中侦听真正关心的参数。
+Key 决定组件要不要重建。用 `fullPath` 的话，Query 每变一次页面都会重建；想复用实例就用路由名或路径，再在组件里侦听真正关心的参数。
 
 ## 11. 滚动行为
 
-`scrollBehavior` 在导航结束后决定滚动位置：
+`scrollBehavior` 在导航结束后决定滚到哪儿：
 
 ```ts
 import type { RouterScrollBehavior } from 'vue-router';
@@ -620,14 +620,14 @@ export const router = createRouter({
 });
 ```
 
-- 浏览器前进/后退时优先返回 `savedPosition`。
+- 浏览器前进/后退时，优先返回 `savedPosition`。
 - 新页面默认回到顶部。
-- 锚点目标如果异步出现，可以返回 Promise，等待页面布局稳定后再滚动。
-- Vue Router 4 使用 `top/left`，不是旧版的 `x/y`。
+- 锚点目标是异步出现的话，可以返回一个 Promise，等页面布局稳定了再滚。
+- Vue Router 4 用 `top/left`，不是旧版的 `x/y`。
 
 ## 12. 动态路由与菜单权限
 
-服务器可按用户角色返回菜单描述，前端再调用 `addRoute()`。服务器返回的应是业务键，不是可执行的文件路径：
+服务器可以按用户角色返回菜单描述，前端再调 `addRoute()`。服务器返回的应该是业务键，不是能执行的文件路径：
 
 ```ts
 interface MenuRoute {
@@ -681,44 +681,44 @@ export function installMenuRoutes(items: MenuRoute[]) {
 
 这样有四个好处：
 
-1. Vite 能在构建期发现所有组件。
-2. 后端不能让浏览器任意导入一个文件。
-3. 未知 `view` 会在类型或边界校验阶段失败。
-4. 退出登录时可调用 `removeRoute` 回收用户专属路由。
+1. Vite 在构建期就能发现所有组件。
+2. 后端没法让浏览器随便导入一个文件。
+3. 不认识的 `view` 会在类型或边界校验阶段就失败。
+4. 退出登录时可以调 `removeRoute` 收回用户专属的路由。
 
-`addRoute()` 只注册记录，不会自动重跑当前地址的匹配。若当前导航正落在刚添加的路由上，可在安装后执行：
+`addRoute()` 只是注册记录，不会自动重新匹配当前地址。当前导航正好落在刚加的路由上的话，可以在装完之后执行：
 
 ```ts
 await router.replace(router.currentRoute.value.fullPath);
 ```
 
-动态路由只是菜单和页面可见性的表达。真正的数据访问仍必须由服务端按当前身份授权，不能因为菜单没显示就认为接口安全。
+动态路由只是表达菜单和页面能不能看到。真正的数据访问还是要由服务端按当前身份授权，不能因为菜单没显示就认为接口是安全的。
 
 ## 13. 排错清单
 
 ### 页面 URL 变了，内容没变
 
-检查根组件或父布局是否有 `RouterView`，以及子路由是否嵌套到了预期父记录。
+看根组件或父布局里有没有 `RouterView`，以及子路由是不是嵌到了预期的父记录下面。
 
 ### 子路由跳转到错误地址
 
-子 `path` 是否误写了开头的 `/`；命名导航是否引用了重复或错误的 Route Name。
+子路由的 `path` 是不是误写了开头的 `/`；命名导航是不是引用了重复或错误的 Route Name。
 
 ### Params 刷新后消失
 
-确认参数是否在 `path` 中声明。资源详情应把 ID 放进路径，再按 ID 恢复数据。
+确认参数有没有在 `path` 里声明。资源详情应该把 ID 放进路径，再按 ID 恢复数据。
 
 ### 守卫无限重定向
 
-登录路由是否也被 `requiresAuth` 拦截；重定向目标是否和当前地址相同；会话恢复失败时是否正确结束加载状态。
+登录路由是不是也被 `requiresAuth` 拦住了；重定向的目标是不是和当前地址一样；会话恢复失败时有没有正确结束加载状态。
 
 ### History 模式刷新 404
 
-这是服务器没有 SPA fallback，不是 Vue 组件错误。Nginx 配置 `try_files $uri $uri/ /index.html`，然后先 `nginx -t` 再重载。
+这是服务器没配 SPA fallback，不是 Vue 组件的错。Nginx 配 `try_files $uri $uri/ /index.html`，然后先 `nginx -t` 再重载。
 
 ### 动态路由首次进入仍是 404
 
-确保路由已在导航完成前注册，或注册后 `replace()` 当前完整地址。还要检查父路由名称和动态子路径。
+确保路由在导航完成前就注册好了，或者注册后 `replace()` 一下当前的完整地址。还要检查父路由的名字和动态子路径。
 
 ## 14. 路由链路
 
@@ -732,4 +732,4 @@ URL 输入
   -> scrollBehavior 恢复滚动位置
 ```
 
-Vue Router 的价值不只是“点击切页面”。它把 URL、组件层级、导航生命周期、页面元信息和可恢复状态组织成一个明确模型。路由表越清晰，权限、布局、刷新恢复和部署行为就越容易验证。
+Vue Router 的价值不只是"点一下切个页面"。它把 URL、组件层级、导航的生命周期、页面元信息和可恢复的状态组织成一个明确的模型。路由表越清楚，权限、布局、刷新恢复和部署行为就越容易验证。

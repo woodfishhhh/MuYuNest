@@ -19,7 +19,7 @@ draft: false
 
 # NestJS TypeORM 实体、CRUD 与事务
 
-NestJS 连接 MySQL 的最小闭环是：根模块建立连接，业务模块注册实体，Service 注入 `Repository`，所有数据库操作都从 Repository 发起。
+NestJS 连 MySQL 的最小闭环：根模块建连接，业务模块注册实体，Service 注入 `Repository`，所有数据库操作都从 Repository 发起。
 
 ```bash
 npm i @nestjs/typeorm typeorm mysql2
@@ -54,11 +54,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 export class AppModule {}
 ```
 
-`autoLoadEntities` 会收集业务模块通过 `forFeature` 注册的实体。`synchronize` 会直接按实体修改表结构，只适合本地开发；生产环境应关闭它，并用 migration 管理结构变更。数据库密码也不要写死在源码中。
+`autoLoadEntities` 会收集业务模块通过 `forFeature` 注册的实体。`synchronize` 会直接按实体改表结构，只适合本地开发；生产环境要关掉，用 migration 管结构变更。数据库密码也别写死在源码里。
 
 ## 实体怎么映射表
 
-实体是表结构在 TypeScript 中的映射。下面的字段覆盖了常见主键、唯一约束、时间列、默认值和查询隐藏字段：
+实体就是表结构在 TypeScript 里的映射。下面的字段覆盖了常见的主键、唯一约束、时间列、默认值和查询时隐藏的字段：
 
 ```ts
 // users/entities/user.entity.ts
@@ -105,12 +105,12 @@ export class User {
 }
 ```
 
-- `@PrimaryGeneratedColumn()` 创建自增主键；传入 `'uuid'` 可改用 UUID。
+- `@PrimaryGeneratedColumn()` 建自增主键，传 `'uuid'` 就改用 UUID。
 - `@CreateDateColumn()` 和 `@UpdateDateColumn()` 由 TypeORM 在写入时维护。
-- `select: false` 让普通查询默认不返回敏感列，但它不是输出 DTO 的替代品。示例允许无本地密码的账号保存 `NULL`；纯密码登录系统应改为非空，并在创建用户前完成哈希。
-- `nullable: true` 表示数据库允许 `NULL`，TypeScript 类型也应包含 `null`。
+- `select: false` 让普通查询默认不返回敏感列，但代替不了输出 DTO。示例允许没有本地密码的账号存 `NULL`；纯密码登录的系统要改成非空，并在创建用户前做好哈希。
+- `nullable: true` 表示数据库允许 `NULL`，TypeScript 类型里也要带上 `null`。
 
-TypeORM 还提供 `simple-array` 和 `simple-json`：
+TypeORM 还有 `simple-array` 和 `simple-json`：
 
 ```ts
 @Column('simple-array')
@@ -120,11 +120,11 @@ aliases!: string[];
 profile!: { city: string; age: number };
 ```
 
-`simple-array` 通过逗号拼接，元素本身不能安全包含逗号；`simple-json` 只是序列化 JSON，数据库无法像原生 JSON 列那样高效查询内部字段。需要检索、约束或关联时，应拆表或使用数据库原生 JSON 类型。
+`simple-array` 用逗号拼接，元素本身不能安全地包含逗号；`simple-json` 只是把 JSON 序列化存进去，数据库没法像原生 JSON 列那样高效查里面的字段。要检索、加约束或做关联，就拆表或者用数据库原生的 JSON 类型。
 
 ## Repository 放在哪
 
-实体必须先进入当前业务模块的 `TypeOrmModule.forFeature`，Repository 才能被注入：
+实体要先进当前业务模块的 `TypeOrmModule.forFeature`，Repository 才能注入：
 
 ```ts
 // users/users.module.ts
@@ -150,11 +150,11 @@ constructor(
 ) {}
 ```
 
-这里只写 `Repository<User>` 不够：泛型在运行时会被擦除，`@InjectRepository(User)` 才为 Nest 提供正确的注入 token。
+光写 `Repository<User>` 不够：泛型在运行时被擦掉了，要靠 `@InjectRepository(User)` 给 Nest 提供正确的注入 token。
 
 ## CRUD 接口
 
-CRUD 分别是 Create、Read、Update、Delete。Controller 只处理 HTTP 参数，查询和写库逻辑放进 Service。
+CRUD 就是 Create、Read、Update、Delete。Controller 只处理 HTTP 参数，查询和写库的逻辑放进 Service。
 
 ```ts
 // users/dto/create-user.dto.ts
@@ -172,7 +172,7 @@ export class CreateUserDto {
 }
 ```
 
-更新接口应使用真实的 DTO 类，不能只写 `Partial<CreateUserDto>`：TypeScript 类型在运行时不存在，`ValidationPipe` 无法据此执行校验。
+更新接口要用真实的 DTO 类，不能只写 `Partial<CreateUserDto>`：TypeScript 类型运行时不存在，`ValidationPipe` 没法据此校验。
 
 ```ts
 // users/dto/update-user.dto.ts
@@ -258,9 +258,9 @@ export class UsersService {
 }
 ```
 
-`create()` 只创建实体对象，不会执行 `INSERT`；真正写库的是 `save()`。`preload()` 会按主键读取实体、合并补丁，未找到时返回 `undefined`，适合需要实体校验或 listener 的更新。
+`create()` 只创建实体对象，不执行 `INSERT`，真正写库的是 `save()`。`preload()` 按主键读出实体、合并补丁，找不到时返回 `undefined`，适合需要实体校验或 listener 的更新。
 
-直接调用 `update(id, patch)` 和 `delete(id)` 只执行 SQL，不会先加载实体。它们往返更少，但不会走依赖实体实例的流程。选择哪一种取决于业务约束，而不是哪一种代码更短。
+直接调 `update(id, patch)` 和 `delete(id)` 只执行 SQL，不会先加载实体。往返次数少，但不走那些依赖实体实例的流程。选哪种看业务约束，不看哪种代码短。
 
 ```ts
 // users/users.controller.ts
@@ -294,13 +294,13 @@ export class UsersController {
 }
 ```
 
-`page` 从 1 开始时，偏移量是 `(page - 1) * pageSize`。列表查询必须有稳定排序，否则翻页期间插入新数据会让记录重复或遗漏。`findAndCount` 能复用同一份查询条件，避免列表过滤了名称、总数却仍统计全表。
+`page` 从 1 开始时，偏移量是 `(page - 1) * pageSize`。列表查询一定要有稳定排序，不然翻页时插入新数据，记录会重复或漏掉。`findAndCount` 能复用同一份查询条件，免得列表按名称过滤了、总数却还在统计全表。
 
-模糊查询中的 `%keyword%` 在数据量大时通常不能有效利用普通索引。搜索变慢后，应根据数据库能力改用前缀索引、全文索引或独立搜索服务。
+模糊查询的 `%keyword%` 在数据量大时一般用不上普通索引。搜索变慢了，按数据库的能力换成前缀索引、全文索引或独立的搜索服务。
 
 ## 一对多关系
 
-一个用户拥有多个标签时，外键应放在“多”的一侧：
+一个用户有多个标签时，外键放在"多"的那一侧：
 
 ```ts
 // users/entities/tag.entity.ts
@@ -330,7 +330,7 @@ const tags = names.map((name) => this.tags.create({ name, user }));
 await this.tags.save(tags);
 ```
 
-读取关系可以使用 `relations`：
+读关系可以用 `relations`：
 
 ```ts
 return this.users.find({
@@ -339,11 +339,11 @@ return this.users.find({
 });
 ```
 
-关系不是默认加载的。列表接口盲目加载所有一对多数据会放大响应并拖慢查询，通常应按详情接口按需加载，或用 QueryBuilder 只选择需要的列。
+关系默认不加载。列表接口盲目加载所有一对多数据，响应会变大、查询会变慢，一般在详情接口按需加载，或者用 QueryBuilder 只选需要的列。
 
 ## 事务必须使用同一个 Manager
 
-转账包含“扣款”和“入账”两个写操作，任何一步失败都必须整体回滚。TypeORM 的关键规则是：事务回调里的所有查询都必须使用回调提供的 `EntityManager`，不能混用外部注入的 Repository。
+转账有"扣款"和"入账"两个写操作，哪一步失败都要整体回滚。TypeORM 这里的关键规则：事务回调里的所有查询都要用回调给的 `EntityManager`，不能混用外面注入的 Repository。
 
 ```ts
 // accounts/accounts.service.ts
@@ -396,28 +396,28 @@ export class AccountsService {
 }
 ```
 
-金额使用整数“分”保存，避免 JavaScript 浮点数误差。事务能保证原子性，但并发转账还需要锁或原子条件更新，否则两个请求可能同时读到相同余额并发生超扣。锁的行为依赖数据库和隔离级别，必须在实际使用的 MySQL 版本上做并发集成测试。
+金额用整数"分"存，避开 JavaScript 的浮点误差。事务保证原子性，但并发转账还需要锁或者带条件的原子更新，不然两个请求可能同时读到同一个余额，结果扣超了。锁的行为跟数据库和隔离级别有关，要在实际用的 MySQL 版本上做并发集成测试。
 
-事务失败时直接抛出异常即可触发回滚。不要捕获异常后只返回 `{ success: false }`，那会让事务回调正常结束并提交已经执行的写操作。
+事务失败时直接抛异常就会触发回滚。别捕获异常后只返回 `{ success: false }`，那样事务回调算正常结束，已经执行的写操作会被提交。
 
 ## 常见故障
 
 ### `No metadata for User was found`
 
-检查实体是否带 `@Entity()`，业务模块是否 `forFeature([User])`，根连接是否启用了 `autoLoadEntities` 或显式配置了 `entities`。
+查实体有没有 `@Entity()`，业务模块有没有 `forFeature([User])`，根连接有没有开 `autoLoadEntities` 或者显式配 `entities`。
 
 ### Nest 无法解析 `Repository<User>`
 
-检查 Service 所在模块是否导入 `TypeOrmModule.forFeature([User])`，构造器参数是否有 `@InjectRepository(User)`。
+查 Service 所在的模块有没有导入 `TypeOrmModule.forFeature([User])`，构造器参数上有没有 `@InjectRepository(User)`。
 
 ### `save()` 之后响应泄漏密码
 
-`select: false` 只影响查询。刚创建的实体仍可能包含敏感字段，响应层仍应使用输出 DTO 或序列化拦截器做字段白名单。
+`select: false` 只影响查询。刚创建的实体还是可能带着敏感字段，响应层还是要用输出 DTO 或序列化拦截器做字段白名单。
 
 ### 开发环境能建表，生产环境没有变化
 
-关闭 `synchronize` 后，实体变化不会自动修改数据库。生成并执行 migration，且把 migration 纳入部署流程。
+关了 `synchronize`，实体变了也不会自动改数据库。要生成并执行 migration，把 migration 放进部署流程。
 
 ### 事务写了一半却没有回滚
 
-检查是否在事务回调里调用了外部 Repository，或是否吞掉异常后返回普通结果。事务内统一从回调的 `manager` 获取 Repository，并让失败继续抛出。
+看是不是在事务回调里调了外部的 Repository，或者吞掉异常后返回了普通结果。事务里统一从回调的 `manager` 拿 Repository，失败了就继续往外抛。

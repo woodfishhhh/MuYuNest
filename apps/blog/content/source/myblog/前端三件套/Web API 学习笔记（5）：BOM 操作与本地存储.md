@@ -30,7 +30,7 @@ BOM（Browser Object Model）即浏览器对象模型，`window`对象是 BOM �
 
 ### （四）拓展
 
-`window`对象还有一些其他属性和方法，如`window.innerWidth`获取窗口内部宽度，`window.open()`打开新窗口等，在网页布局和交互中有广泛应用。
+`window` 还有别的属性和方法，比如 `window.innerWidth` 拿窗口内部宽度，`window.open()` 打开新窗口。
 
 ## 定时器 - 延迟函数
 
@@ -40,7 +40,7 @@ BOM（Browser Object Model）即浏览器对象模型，`window`对象是 BOM �
 
 ### （二）用法
 
-**`setTimeout`语法**：`setTimeout(回调函数, 延迟时间)`，延迟时间单位为毫秒。
+`setTimeout`语法：`setTimeout(回调函数, 延迟时间)`，延迟时间单位为毫秒。
 
 ```javascript
 let timerId = setTimeout(function () {
@@ -48,7 +48,7 @@ let timerId = setTimeout(function () {
 }, 3000);
 ```
 
-**`setInterval`语法**：`setInterval(回调函数, 间隔时间)`
+`setInterval`语法：`setInterval(回调函数, 间隔时间)`
 
 ```javascript
 let intervalId = setInterval(function () {
@@ -56,7 +56,7 @@ let intervalId = setInterval(function () {
 }, 2000);
 ```
 
-**清除延时函数**：`clearTimeout(timerId)`用于清除`setTimeout`设置的定时器，`clearInterval(intervalId)`用于清除`setInterval`设置的定时器。
+清除延时函数：`clearTimeout(timerId)`用于清除`setTimeout`设置的定时器，`clearInterval(intervalId)`用于清除`setInterval`设置的定时器。
 
 ### （三）案例
 
@@ -79,7 +79,7 @@ let intervalId = setInterval(function () {
 
 ### （四）拓展
 
-定时器在动画效果、轮播图等网页交互效果实现中经常用到，合理设置定时器的时间间隔和逻辑，能提升用户体验。
+动画、轮播图这类交互经常用到定时器，时间间隔和逻辑要设合理。
 
 ## location 对象
 
@@ -129,7 +129,7 @@ let intervalId = setInterval(function () {
 
 ### （四）拓展
 
-在前端路由中，`location`对象的`hash`属性常被用于实现单页面应用（SPA）的路由功能，通过监听`hash`的变化来切换页面内容。
+前端路由里常用 `location.hash` 实现单页面应用（SPA）的路由：监听 `hash` 的变化来切换页面内容。
 
 ## navigator 对象
 
@@ -161,7 +161,7 @@ let intervalId = setInterval(function () {
 
 ### （四）拓展
 
-除了检测设备类型，`navigator`对象还可用于检测浏览器支持的功能，如`navigator.geolocation`用于获取用户地理位置信息（需用户授权）。
+除了检测设备类型，`navigator` 还能检测浏览器支持哪些功能，比如 `navigator.geolocation` 获取用户的地理位置（要用户授权）。
 
 ## history 对象
 
@@ -207,7 +207,7 @@ let intervalId = setInterval(function () {
 
 ### （四）拓展
 
-在单页面应用中，`history`对象可与前端路由结合，通过`history.pushState()`和`history.replaceState()`方法实现无刷新页面跳转，同时更新浏览器历史记录。
+单页面应用里，`history` 可以配合前端路由，用 `history.pushState()` 和 `history.replaceState()` 实现不刷新页面的跳转，同时更新浏览器的历史记录。
 
 ## 本地存储（今日重点）
 
@@ -219,27 +219,27 @@ let intervalId = setInterval(function () {
 
 1. `localStorage`
 
-   - **作用**：数据长期保留在本地浏览器，刷新和关闭页面数据不丢失。
-   - **特性**：以键值对形式存储，且存储的是字符串，可省略`window`。
+   - 作用：数据长期保留在本地浏览器，刷新和关闭页面数据不丢失。
+   - 特性：以键值对形式存储，且存储的是字符串，可省略`window`。
    - 操作方法
-     - **存储**：`localStorage.setItem('key', 'value')`
-     - **获取**：`localStorage.getItem('key')`
-     - **删除**：`localStorage.removeItem('key')`
+     - 存储：`localStorage.setItem('key', 'value')`
+     - 获取：`localStorage.getItem('key')`
+     - 删除：`localStorage.removeItem('key')`
 
 2. `sessionStorage`
 
-   - **特性**：用法与`localStorage`基本相同，但当页面浏览器关闭时，存储的数据会被清除。
+   - 特性：用法与`localStorage`基本相同，但当页面浏览器关闭时，存储的数据会被清除。
 
    - 操作方法
 
-     - **存储**：`sessionStorage.setItem('key', 'value')`
-     - **获取**：`sessionStorage.getItem('key')`
-     - **删除**：`sessionStorage.removeItem('key')`
+     - 存储：`sessionStorage.setItem('key', 'value')`
+     - 获取：`sessionStorage.getItem('key')`
+     - 删除：`sessionStorage.removeItem('key')`
 
 3. `localStorage`存储复杂数据类型
 
-   - **问题**：本地只能存储字符串，无法直接存储复杂数据类型。
-   - **解决**：使用`JSON.stringify(复杂数据类型)`将复杂数据类型转换为 JSON 字符串后存储，使用时通过`JSON.parse(JSON字符串)`将取出的字符串转换为对象。
+   - 问题：本地只能存储字符串，无法直接存储复杂数据类型。
+   - 解决：使用`JSON.stringify(复杂数据类型)`将复杂数据类型转换为 JSON 字符串后存储，使用时通过`JSON.parse(JSON字符串)`将取出的字符串转换为对象。
 
 ### （三）案例
 
@@ -290,14 +290,14 @@ let intervalId = setInterval(function () {
 
 ### （四）拓展
 
-本地存储在实现网页离线功能、记住用户设置等场景中有广泛应用。但需注意，由于数据存储在本地，要注意数据的安全性，避免存储敏感信息。
+本地存储常用来做网页离线功能、记住用户设置。数据存在本地，别存敏感信息。
 
 ## 八、综合案例相关数组方法
 
 ### （一）数组`map`方法
 
-1. **概念**：用于遍历数组处理数据，并返回一个新数组。
-2. **用法**：`数组.map(function (ele, index) { /* 处理逻辑 */ return 处理后的值; })`，`ele`为数组元素，`index`为索引。
+1. 概念：用于遍历数组处理数据，并返回一个新数组。
+2. 用法：`数组.map(function (ele, index) { /* 处理逻辑 */ return 处理后的值; })`，`ele`为数组元素，`index`为索引。
 
 ```javascript
 const arr = ['red', 'blue', 'pink'];
@@ -308,13 +308,13 @@ console.log(newArr);
 ```
 
 
-1. **案例**：上述代码展示了`map`方法遍历数组并添加固定字符串的案例。
-2. **拓展**：`map`方法常与其他数组方法如`filter`、`reduce`等结合使用，实现复杂的数据处理逻辑。
+1. 案例：上述代码展示了`map`方法遍历数组并添加固定字符串的案例。
+2. 拓展：`map` 常和 `filter`、`reduce` 这些数组方法组合着用，处理复杂一点的数据。
 
 ### （二）数组`join`方法
 
-1. **概念**：将数组中的所有元素转换为一个字符串。
-2. **用法**：`数组.join(分隔符)`，分隔符为空时默认用逗号分隔，为空字符串时元素之间无分隔符。
+1. 概念：将数组中的所有元素转换为一个字符串。
+2. 用法：`数组.join(分隔符)`，分隔符为空时默认用逗号分隔，为空字符串时元素之间无分隔符。
 
 ```html
 <body>
@@ -331,5 +331,5 @@ console.log(newArr);
 ```
 
 
-1. **案例**：上述代码展示了`join`方法将数组转换为不同分隔符字符串的案例。
-2. **拓展**：在将数组数据展示为特定格式的文本时，`join`方法非常有用，如将数组转换为 CSV 格式字符串。
+1. 案例：上述代码展示了`join`方法将数组转换为不同分隔符字符串的案例。
+2. 拓展：要把数组展示成特定格式的文本时很好用，比如转成 CSV 格式的字符串。

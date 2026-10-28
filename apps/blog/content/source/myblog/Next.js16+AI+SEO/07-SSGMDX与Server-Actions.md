@@ -20,11 +20,11 @@ draft: false
 
 # Next.js 16 SSG、MDX 与 Server Actions
 
-静态导出解决的是“构建一次、部署静态文件”的问题，MDX 解决的是“内容和组件一起写”的问题，Server Actions 则把表单提交直接连接到服务端函数。三者适合不同边界，不能因为都能写页面就混为一谈。
+三样东西各管一件事：静态导出是"构建一次、部署静态文件"，MDX 是"内容和组件写在一起"，Server Actions 是把表单提交直接连到服务端函数。适用的边界不一样，别因为都能写页面就混为一谈。
 
 ## 1. 静态导出：把页面编译成文件
 
-在 `next.config.ts` 中开启静态导出：
+在 `next.config.ts` 里开静态导出：
 
 ```ts
 import type { NextConfig } from 'next';
@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-执行 `next build` 后，默认会生成 `out/` 目录。`out/` 可以直接交给 Nginx、对象存储、CDN 或其他静态服务器。`trailingSlash: true` 会让路由更容易映射到 `about/index.html` 这种静态目录结构；如果托管平台已经有自己的路由规则，也应按平台行为验证。
+执行 `next build` 后默认生成 `out/` 目录，可以直接交给 Nginx、对象存储、CDN 或其他静态服务器。`trailingSlash: true` 让路由更容易对应到 `about/index.html` 这种静态目录结构；托管平台有自己的路由规则的话，也要按平台的行为验证一下。
 
 静态导出的取舍很明确：
 
@@ -48,11 +48,11 @@ export default nextConfig;
 | 低成本 CDN 分发 | 实时个性化内容和服务端交互 |
 | 不需要服务器运行时的项目 | 依赖动态 API、数据库或身份状态的页面 |
 
-静态页面中的客户端交互仍然可以运行，但交互逻辑必须在浏览器中完成；不能把服务端动态能力伪装成静态能力。
+静态页面里的客户端交互照样能跑，但交互逻辑得在浏览器里完成；服务端的动态能力装不成静态的。
 
 ## 2. 动态路由必须在构建时枚举
 
-动态路由需要通过 `generateStaticParams` 告诉构建过程需要生成哪些路径：
+动态路由要通过 `generateStaticParams` 告诉构建过程要生成哪些路径：
 
 ```tsx
 type Props = {
@@ -69,9 +69,9 @@ export default async function ArticlePage({ params }: Props) {
 }
 ```
 
-如果路径来自数据库或远程 CMS，`generateStaticParams` 必须在构建阶段能访问它。数据变更后不会自动刷新已经生成的 HTML，通常需要重新构建并重新部署。
+路径来自数据库或远程 CMS 的话，`generateStaticParams` 在构建阶段必须访问得到它们。数据变了，已经生成的 HTML 不会自动刷新，一般要重新构建、重新部署。
 
-`next/image` 的默认图片优化依赖 Next.js 服务端运行时，而纯静态导出没有这个运行时。可选方案是：
+`next/image` 默认的图片优化依赖 Next.js 的服务端运行时，纯静态导出没有这个运行时。可以这样处理：
 
 ```ts
 const nextConfig: NextConfig = {
@@ -80,11 +80,11 @@ const nextConfig: NextConfig = {
 };
 ```
 
-也可以使用原生 `<img>`，或配置自己的图片 loader。静态导出前必须检查图片、动态路由、重写和 API 依赖，避免本地构建成功、上线后页面却缺能力。
+也可以用原生的 `<img>`，或者配置自己的图片 loader。静态导出前要把图片、动态路由、重写和 API 依赖都查一遍，免得本地构建成功，上线后页面却少了功能。
 
 ## 3. MDX：Markdown 中组合 React 组件
 
-MDX 是 Markdown 和 JSX 的混合语法。它适合文章、文档和教程：正文保持 Markdown 的可读性，需要交互时再引入 React 组件。
+MDX 是 Markdown 和 JSX 混在一起的语法，适合文章、文档和教程：正文保持 Markdown 的可读性，要交互时再引入 React 组件。
 
 安装并配置：
 
@@ -118,7 +118,7 @@ export default function Page() {
 }
 ```
 
-`mdx-components.tsx` 可以为所有 MDX 文件提供统一的组件映射：
+`mdx-components.tsx` 能给所有 MDX 文件提供统一的组件映射：
 
 ```tsx
 import type { MDXComponents } from 'mdx/types';
@@ -133,11 +133,11 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
 
 ### 远程 MDX 的边界
 
-远程 Markdown 可以当作文本获取，交给受控的 Markdown/MDX 编译链处理。不要把不可信内容直接当成任意 React 代码执行；MDX 能调用组件和表达式，远程内容的作者、依赖和编译环境必须可信。文章系统如果只需要 Markdown，使用安全的 Markdown renderer 往往更简单。
+远程 Markdown 可以当成文本取回来，交给受控的 Markdown/MDX 编译链处理。别把不可信的内容直接当成任意 React 代码执行；MDX 能调用组件和表达式，远程内容的作者、依赖和编译环境都得可信。文章系统只需要 Markdown 的话，用一个安全的 Markdown renderer 往往更简单。
 
 ## 4. Server Actions：表单直接调用服务端函数
 
-一个最小的 Server Action：
+最小的 Server Action：
 
 ```ts
 // app/todos/actions.ts
@@ -174,11 +174,11 @@ export default function TodoForm() {
 }
 ```
 
-表单字段必须有 `name`，否则不会出现在 `FormData` 中。服务端函数仍然必须做鉴权、校验和权限判断；`'use server'` 不是授权机制。
+表单字段必须有 `name`，不然不会出现在 `FormData` 里。服务端函数照样要做鉴权、校验和权限判断，`'use server'` 不负责授权。
 
 ## 5. 固定参数用 `bind`，用户输入用校验
 
-编辑某条记录时，固定的记录 ID 可以通过 `bind` 传入，而不是依赖一个可被用户修改的隐藏字段：
+编辑某条记录时，固定的记录 ID 可以用 `bind` 传进去，别依赖一个用户能改的隐藏字段：
 
 ```tsx
 const updateTodoForId = updateTodo.bind(null, todo.id);
@@ -209,11 +209,11 @@ export async function updateTodo(id: string, formData: FormData) {
 }
 ```
 
-真实项目更适合使用 Zod 等 schema validator，将类型转换、长度限制和业务规则集中起来。`Object.fromEntries(formData)` 只是方便读取，不能替代白名单校验。
+真实项目更适合用 Zod 这类 schema validator，把类型转换、长度限制和业务规则集中在一起。`Object.fromEntries(formData)` 只是读起来方便，代替不了白名单校验。
 
 ## 6. 给用户反馈：`useActionState` 与 pending 状态
 
-需要显示服务端返回的错误或成功消息时，在 Client Component 中使用 React 的 `useActionState`：
+要显示服务端返回的错误或成功消息，就在 Client Component 里用 React 的 `useActionState`：
 
 ```tsx
 'use client';
@@ -238,7 +238,7 @@ export function TodoForm() {
 }
 ```
 
-也可以在提交按钮组件中使用 `useFormStatus`，把 pending 状态限制在表单内部。把 Action 放在独立的服务端模块中，Client Component 只负责交互状态，边界会更清楚。
+也可以在提交按钮组件里用 `useFormStatus`，把 pending 状态限制在表单内部。Action 放进单独的服务端模块，Client Component 只管交互状态，边界会更清楚。
 
 ## 7. 一套可迁移的判断表
 
@@ -252,4 +252,4 @@ export function TodoForm() {
 | 固定资源 ID | `Function.prototype.bind` |
 | 内容更新后刷新缓存 | `revalidatePath` 或 tag 失效 |
 
-先判断页面的运行时需求，再决定采用静态导出、动态渲染还是 Server Action。技术选型应该由数据生命周期和安全边界驱动，而不是由 API 名字驱动。
+先看页面在运行时需要什么，再决定用静态导出、动态渲染还是 Server Action。选型要看数据的生命周期和安全边界，别看 API 名字。

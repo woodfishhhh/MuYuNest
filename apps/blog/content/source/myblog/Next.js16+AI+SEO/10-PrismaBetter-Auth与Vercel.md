@@ -20,25 +20,25 @@ draft: false
 
 # Next.js 16 Prisma、Better Auth 与 Vercel
 
-数据库、身份验证和部署是一个完整应用的闭环：Prisma 负责把 schema 变成可使用的数据库客户端，Better Auth 负责会话和登录流程，Vercel 负责把应用、环境变量和生产数据库连接起来。每个环节都必须区分开发配置和生产配置。
+数据库、身份验证和部署凑成一个完整应用的闭环：Prisma 把 schema 变成能用的数据库客户端，Better Auth 管会话和登录流程，Vercel 把应用、环境变量和生产数据库连起来。每个环节都要分清开发配置和生产配置。
 
 ## 1. Prisma 的职责
 
-Prisma 常见工作流：
+Prisma 的常见工作流：
 
-1. 在 `prisma/schema.prisma` 中描述数据模型。
-2. 使用迁移命令把模型变化同步到数据库。
+1. 在 `prisma/schema.prisma` 里描述数据模型。
+2. 用迁移命令把模型的变化同步到数据库。
 3. 生成类型安全的 Prisma Client。
-4. 在服务端模块中通过 Client 读写数据。
+4. 在服务端模块里通过 Client 读写数据。
 
-初始化和安装版本应以当前项目的 Prisma 文档为准：
+初始化和安装的版本以当前项目的 Prisma 文档为准：
 
 ```bash
 npm install prisma @prisma/client
 npx prisma init
 ```
 
-典型 schema：
+典型的 schema：
 
 ```prisma
 generator client {
@@ -68,18 +68,18 @@ model Post {
 }
 ```
 
-`DATABASE_URL` 放在 `.env` 或部署平台环境变量中。使用 Prisma 7 时，具体生成器、配置文件和 adapter API 可能随版本变化，不能把课程中的版本号当作今天项目的永恒接口；以项目实际安装版本的迁移结果和官方文档为准。
+`DATABASE_URL` 放在 `.env` 或部署平台的环境变量里。用 Prisma 7 的话，具体的生成器、配置文件和 adapter API 可能随版本变，课程里的版本号不能当成今天项目永远不变的接口；以项目实际装的版本的迁移结果和官方文档为准。
 
 ```bash
 npx prisma migrate dev --name init
 npx prisma generate
 ```
 
-开发迁移用于建立和演进本地数据库；生产环境要使用经过审查的迁移链，不要把 `migrate dev` 当成生产部署命令。
+开发迁移用来建立和演进本地数据库；生产环境要用审查过的迁移链，别把 `migrate dev` 当成生产部署命令。
 
 ## 2. 在 Next.js 中复用 Prisma Client
 
-开发环境的热更新会反复执行模块代码，如果每次都创建一个新的 Client，可能耗尽数据库连接。用全局变量保存开发实例：
+开发环境的热更新会反复执行模块代码，每次都新建一个 Client 的话，可能把数据库连接耗光。用全局变量保存开发环境的实例：
 
 ```ts
 // src/lib/prisma.ts
@@ -96,7 +96,7 @@ if (process.env.NODE_ENV !== 'production') {
 }
 ```
 
-查询只能在服务端模块或服务端函数中执行：
+查询只能在服务端模块或服务端函数里执行：
 
 ```ts
 import 'server-only';
@@ -111,17 +111,17 @@ export async function getPublishedPosts() {
 }
 ```
 
-不要把 Prisma Client、数据库 URL 或查询结果中不必要的字段传给 Client Component。服务端边界既是性能边界，也是秘密和权限边界。
+别把 Prisma Client、数据库 URL 或者查询结果里用不着的字段传给 Client Component。服务端边界既是性能边界，也是秘密和权限的边界。
 
 ## 3. Better Auth：把登录流程放在服务端
 
-安装 Better Auth 及其 Prisma adapter。实际包名和 adapter API 要锁定在项目使用的版本：
+安装 Better Auth 和它的 Prisma adapter。实际的包名和 adapter API 要锁定在项目用的版本：
 
 ```bash
 npm install better-auth @better-auth/prisma-adapter
 ```
 
-一个常见的配置骨架：
+常见的配置骨架：
 
 ```ts
 // src/lib/auth.ts
@@ -141,7 +141,7 @@ export const auth = betterAuth({
 });
 ```
 
-认证配置使用服务端环境变量：
+认证配置用服务端环境变量：
 
 ```dotenv
 BETTER_AUTH_SECRET="a-long-random-secret"
@@ -149,11 +149,11 @@ BETTER_AUTH_URL="http://localhost:3000"
 DATABASE_URL="postgresql://..."
 ```
 
-生产环境要为每个部署环境生成合适的随机 secret，不能提交到仓库，也不能使用用户可控的短字符串。`BETTER_AUTH_URL` 必须和部署后的站点 URL 一致，否则回调和 Cookie 域可能出现问题。
+生产环境要给每个部署环境生成合适的随机 secret，不能提交进仓库，也不能用用户能控制的短字符串。`BETTER_AUTH_URL` 必须和部署后的站点 URL 一致，不然回调和 Cookie 域可能出问题。
 
 ## 4. 暴露认证 Route Handler
 
-Better Auth 的请求处理器可以挂到 catch-all 路由：
+Better Auth 的请求处理器可以挂到 catch-all 路由上：
 
 ```ts
 // app/api/auth/[...all]/route.ts
@@ -163,7 +163,7 @@ import { auth } from '@/src/lib/auth';
 export const { GET, POST } = toNextJsHandler(auth);
 ```
 
-这类 Route Handler 只是 HTTP 入口，不是权限判断的替代品。业务页面和写操作仍然要读取当前 session，并对资源归属进行检查：
+这类 Route Handler 只是 HTTP 入口，代替不了权限判断。业务页面和写操作还是要读当前的 session，并检查资源归属：
 
 ```ts
 const session = await auth.api.getSession({ headers: await headers() });
@@ -173,11 +173,11 @@ if (!session) {
 }
 ```
 
-在服务端获取 session 时要使用当前请求 headers。客户端 session hook 适合更新导航和交互状态，不能作为服务端数据访问的唯一授权依据。
+在服务端取 session 要用当前请求的 headers。客户端的 session hook 适合更新导航和交互状态，不能当成服务端数据访问唯一的授权依据。
 
 ## 5. 登录和注册交互
 
-客户端可以调用 Better Auth 生成的 client：
+客户端可以调 Better Auth 生成的 client：
 
 ```ts
 'use client';
@@ -217,11 +217,11 @@ export function LoginForm() {
 }
 ```
 
-生产登录流程至少要考虑密码策略、速率限制、CSRF/Origin 校验、会话过期、退出登录、密码重置、邮箱验证和错误信息的枚举风险。演示用的固定账号、明文密码和前端硬编码密钥不能直接上线。
+生产的登录流程至少要考虑：密码策略、速率限制、CSRF/Origin 校验、会话过期、退出登录、密码重置、邮箱验证，以及错误信息会不会被用来枚举账号。演示用的固定账号、明文密码和前端硬编码的密钥不能直接上线。
 
 ## 6. OAuth 回调必须与部署地址一致
 
-启用 GitHub 等社交登录时，需要在供应商后台配置精确的回调 URL，并把 client ID、client secret 放在环境变量中：
+开 GitHub 这类社交登录时，要在供应商后台配置精确的回调 URL，client ID 和 client secret 放环境变量里：
 
 ```ts
 export const auth = betterAuth({
@@ -235,16 +235,16 @@ export const auth = betterAuth({
 });
 ```
 
-本地、预览和生产域名通常不同，三套回调配置不要混用。部署后出现“登录后跳回错误地址”，优先检查 `BETTER_AUTH_URL`、OAuth provider callback、Cookie 的 `secure` 属性和代理转发的协议头。
+本地、预览和生产的域名一般都不一样，三套回调配置别混用。部署后出现"登录完跳回了错误的地址"，先查 `BETTER_AUTH_URL`、OAuth provider 的 callback、Cookie 的 `secure` 属性和代理转发的协议头。
 
 ## 7. Vercel 部署的配置顺序
 
-一个可复现的部署流程：
+一个能复现的部署流程：
 
-1. 将项目连接到 Git 仓库，确认构建分支和 Node.js 版本。
-2. 在 Vercel 为 Development、Preview、Production 分别填写环境变量。
-3. 配置生产 `DATABASE_URL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`、OAuth 密钥和必要的公开变量。
-4. 在构建阶段生成 Prisma Client，并在部署流程中执行经过审核的生产迁移。
+1. 把项目连到 Git 仓库，确认构建分支和 Node.js 版本。
+2. 在 Vercel 里给 Development、Preview、Production 分别填环境变量。
+3. 配好生产的 `DATABASE_URL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`、OAuth 密钥和必要的公开变量。
+4. 构建阶段生成 Prisma Client，部署流程里执行审核过的生产迁移。
 5. 部署后检查公开页面、数据库读写、登录、退出、OAuth 回调和静态资源。
 
 构建脚本可以集中管理：
@@ -257,11 +257,11 @@ export const auth = betterAuth({
 }
 ```
 
-数据库迁移通常由独立的 release job 执行，而不是让每个应用实例启动时竞争迁移锁。若必须在部署命令中执行，也要保证迁移是幂等的、可审查的，并且生产数据库备份和回滚方案已经准备好。
+数据库迁移一般由单独的 release job 执行，不要让每个应用实例启动时去抢迁移锁。实在要在部署命令里执行，也要保证迁移幂等、可审查，生产数据库的备份和回滚方案也要提前准备好。
 
 ## 8. Vercel CLI 与自建部署的区别
 
-CLI 可以用于预览和发布：
+CLI 能用来预览和发布：
 
 ```bash
 vercel env pull .env.local
@@ -269,15 +269,15 @@ vercel build
 vercel deploy --prebuilt
 ```
 
-这些命令不等于所有项目都应该采用的生产流程。Vercel 的托管运行时、环境变量和域名配置是一套体系；`output: 'standalone'` 更适合自建 Node.js 容器，两者不要混成同一部署假设。静态导出则是另一条路线，不能依赖 Vercel 的服务端能力。
+这些命令不是所有项目都该照搬的生产流程。Vercel 的托管运行时、环境变量和域名配置是一整套；`output: 'standalone'` 更适合自建的 Node.js 容器，两者别混成同一个部署假设。静态导出又是另一条路线，不能依赖 Vercel 的服务端能力。
 
 部署后的验收清单：
 
-- 页面能在无登录状态下正常访问。
-- 受保护页面在服务端拒绝未授权请求。
-- 注册、登录、退出和 session 刷新都能完成。
-- 数据库迁移版本与生产 schema 一致。
-- `NEXT_PUBLIC_` 变量中没有秘密。
-- 图片远程域名、字体、favicon 和 Open Graph 资源可访问。
-- Preview 和 Production 使用正确的域名、数据库与认证回调。
-- 失败部署不会留下半完成迁移或错误的 Cookie 域。
+- 不登录也能正常访问页面。
+- 受保护的页面在服务端拒绝未授权的请求。
+- 注册、登录、退出和 session 刷新都能走通。
+- 数据库迁移版本和生产 schema 一致。
+- `NEXT_PUBLIC_` 变量里没有秘密。
+- 远程图片域名、字体、favicon 和 Open Graph 资源都能访问。
+- Preview 和 Production 用的是正确的域名、数据库和认证回调。
+- 部署失败不会留下做了一半的迁移或者错误的 Cookie 域。

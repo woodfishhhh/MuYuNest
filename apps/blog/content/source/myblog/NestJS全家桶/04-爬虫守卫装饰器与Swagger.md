@@ -19,17 +19,17 @@ draft: false
 
 # NestJS 爬虫、守卫、自定义装饰器与 Swagger
 
-一个可维护的 HTTP 服务不只要能发请求，还要解决四个问题：外部页面如何稳定解析，接口由谁访问，权限声明如何复用，以及这些约束怎样进入接口文档。
+这篇讲四件事：外部页面怎么稳定解析，接口谁能访问，权限声明怎么复用，这些约束怎么写进接口文档。
 
 ## 用 Axios 和 Cheerio 解析页面
 
-Axios 负责 HTTP，Cheerio 负责在 Node.js 中解析 HTML。它不会执行页面中的 JavaScript，因此适合服务端已经返回完整 HTML 的页面。
+Axios 管 HTTP，Cheerio 在 Node.js 里解析 HTML。Cheerio 不执行页面里的 JavaScript，所以适合服务端直接返回完整 HTML 的页面。
 
 ```bash
 npm i axios cheerio
 ```
 
-先实现单页解析，不要一开始就把分页、下载和重试揉进同一个函数：
+先写单页解析，别一上来就把分页、下载和重试揉进一个函数：
 
 ```ts
 // crawler/crawler.service.ts
@@ -74,11 +74,11 @@ export class CrawlerService {
 }
 ```
 
-`new URL(src, pageUrl)` 同时处理绝对 URL、`/images/a.jpg` 和 `../a.jpg`，比手动拼域名可靠。选择器必须根据真实 DOM 调整；页面一改版，解析结果就可能变成空数组，因此需要对结果数量和关键字段做断言。
+`new URL(src, pageUrl)` 能同时处理绝对 URL、`/images/a.jpg` 和 `../a.jpg`，比手动拼域名靠谱。选择器要按真实 DOM 调；页面一改版，解析结果可能就变成空数组了，所以要对结果数量和关键字段做断言。
 
 ### 分页不要无限递归
 
-爬取分页时要限制页数，并记录访问过的 URL，防止页面形成环：
+爬分页要限制页数，并记下访问过的 URL，防止页面之间形成环：
 
 ```ts
 async crawl(startUrl: string, maxPages = 20): Promise<string[]> {
@@ -104,11 +104,11 @@ async crawl(startUrl: string, maxPages = 20): Promise<string[]> {
 }
 ```
 
-这里不用无界递归，避免错误的“下一页”链接导致栈增长或死循环。还应遵守目标站点的服务条款、`robots.txt`、版权和访问频率限制；登录墙、验证码和反爬限制不是应该绕过的故障。
+这里没用无界递归，免得一个错误的"下一页"链接让栈一直涨或者死循环。另外要遵守目标站点的服务条款、`robots.txt`、版权和访问频率限制；登录墙、验证码和反爬限制不是该绕过去的故障。
 
 ### 下载二进制文件
 
-Axios 下载图片时使用流，避免把大文件全部缓存在内存：
+Axios 下载图片时用流，别把大文件整个缓存在内存里：
 
 ```ts
 import { createWriteStream } from 'node:fs';
@@ -131,15 +131,15 @@ async downloadImage(imageUrl: string, outputDir: string): Promise<string> {
 }
 ```
 
-`Array.forEach(async () => ...)` 不会等待内部 Promise。批量下载可以用顺序 `for...of`，或者使用有限并发队列；不要直接 `Promise.all()` 数千个请求。文件名还要解决重复、非法字符和响应内容类型校验，生产任务应增加重试、退避、断点记录和失败清单。
+`Array.forEach(async () => ...)` 不会等里面的 Promise。批量下载可以用顺序的 `for...of`，或者用限制并发的队列，别直接 `Promise.all()` 几千个请求。文件名还要处理重复、非法字符，并校验响应的内容类型；生产任务要加重试、退避、断点记录和失败清单。
 
 ### SSRF 风险
 
-如果爬取地址来自接口参数，服务端可能被诱导访问 `127.0.0.1`、云元数据地址或内网管理系统。公开接口必须使用域名白名单，解析 DNS 后拒绝私网地址，并限制重定向目标。只校验字符串是否以 `https://` 开头远远不够。
+爬取地址要是来自接口参数，服务端可能被诱导去访问 `127.0.0.1`、云元数据地址或内网管理系统。公开接口要用域名白名单，解析 DNS 后拒绝私网地址，并限制重定向目标。只检查字符串是不是以 `https://` 开头，差得远。
 
 ## Guard 决定能否执行
 
-Guard 在 Controller 之前返回布尔值，适合认证和授权。返回 `false` 时 Nest 会产生 403；认证失败需要明确返回 401 时，直接抛出 `UnauthorizedException`。
+Guard 在 Controller 之前返回布尔值，适合做认证和授权。返回 `false` 时 Nest 给 403；认证失败要明确返回 401 的话，直接抛 `UnauthorizedException`。
 
 ```ts
 import {
@@ -168,7 +168,7 @@ export class AuthGuard implements CanActivate {
 }
 ```
 
-示例中的 `request.user` 应由 Passport 策略、中间件或前置认证 Guard 在验证 JWT 后写入。不能从 `?role=admin` 读取角色，那相当于让客户端自己声明权限。
+示例里的 `request.user` 应该由 Passport 策略、中间件或前面的认证 Guard 在验证 JWT 后写进去。不能从 `?role=admin` 读角色，那等于让客户端自己声明权限。
 
 局部使用：
 
@@ -178,7 +178,7 @@ export class AuthGuard implements CanActivate {
 export class AdminController {}
 ```
 
-全局 Guard 推荐通过 `APP_GUARD` 注册，这样可以使用依赖注入：
+全局 Guard 推荐用 `APP_GUARD` 注册，这样能用依赖注入：
 
 ```ts
 import { APP_GUARD } from '@nestjs/core';
@@ -196,7 +196,7 @@ export class AppModule {}
 
 ## 角色元数据
 
-授权规则不应硬编码在 Guard 中。Controller 负责声明需要哪些角色，Guard 负责读取声明并判断当前用户。
+授权规则别硬编码在 Guard 里。Controller 声明需要哪些角色，Guard 读声明、判断当前用户。
 
 ```ts
 // auth/roles.decorator.ts
@@ -233,7 +233,7 @@ export class RolesGuard implements CanActivate {
 }
 ```
 
-`getAllAndOverride()` 同时读取方法和 Controller 上的元数据，方法声明优先。若业务要求用户拥有全部角色，把 `some()` 改为 `every()`，但必须先把权限语义写清楚。
+`getAllAndOverride()` 同时读方法和 Controller 上的元数据，方法上的声明优先。业务要求用户拥有全部角色的话，把 `some()` 改成 `every()`，但得先把权限语义写清楚。
 
 ```ts
 @Roles('admin')
@@ -246,7 +246,7 @@ findReports() {
 
 ## 自定义参数装饰器
 
-多个 Controller 都从 `request.user` 取用户时，可以封装参数装饰器：
+好几个 Controller 都要从 `request.user` 取用户时，可以封装成参数装饰器：
 
 ```ts
 // auth/current-user.decorator.ts
@@ -272,7 +272,7 @@ export const CurrentUser = createParamDecorator(
 );
 ```
 
-使用时既可以取完整用户，也可以只取一个字段：
+用的时候能取完整用户，也能只取一个字段：
 
 ```ts
 @Get('me')
@@ -286,11 +286,11 @@ findMine(@CurrentUser('id') userId: string) {
 }
 ```
 
-这个装饰器只负责读取值，不负责认证。没有前置 Guard 时，`request.user` 仍可能不存在。
+这个装饰器只读值，不管认证。前面没有 Guard 的话，`request.user` 照样可能不存在。
 
 ## 聚合装饰器
 
-`applyDecorators()` 可以把一组重复声明组合起来：
+`applyDecorators()` 能把一组重复的声明组合起来：
 
 ```ts
 import { applyDecorators, UseGuards } from '@nestjs/common';
@@ -307,7 +307,7 @@ export function RequireRoles(...roles: string[]) {
 }
 ```
 
-聚合装饰器适合表达一个稳定的业务概念。不要为了少写两行代码，把毫无关系的缓存、限流、Swagger 和权限规则塞进一个名字含糊的装饰器。
+聚合装饰器适合表达一个稳定的业务概念。别为了少写两行，把毫不相干的缓存、限流、Swagger 和权限规则塞进一个名字含糊的装饰器。
 
 ## 配置 Swagger
 
@@ -334,7 +334,7 @@ const document = SwaggerModule.createDocument(app, swaggerConfig);
 SwaggerModule.setup('api-docs', app, document);
 ```
 
-启动后访问 `/api-docs`。生产环境不一定适合公开文档页面，可以通过环境变量关闭、增加鉴权，或只在内网暴露。
+启动后访问 `/api-docs`。生产环境不一定适合公开文档页面，可以用环境变量关掉、加鉴权，或者只在内网开放。
 
 ### Controller 与接口描述
 
@@ -374,7 +374,7 @@ export class UsersController {
 }
 ```
 
-`@ApiParam()` 描述 `:id`，`@ApiQuery()` 描述查询参数。文档中的 `required: true` 不会替代 Pipe 校验，Swagger 描述和运行时代码必须同时维护。
+`@ApiParam()` 描述 `:id`，`@ApiQuery()` 描述查询参数。文档里写 `required: true` 代替不了 Pipe 校验，Swagger 描述和运行时代码都要维护。
 
 ### DTO 模型
 
@@ -410,11 +410,11 @@ export class UserResponseDto {
 }
 ```
 
-请求 DTO 和响应 DTO 应分开。否则密码字段、内部角色或数据库列可能被错误地展示为响应结构。`@ApiProperty()` 负责 OpenAPI 模型，`class-validator` 装饰器负责运行时校验，两者职责不同。
+请求 DTO 和响应 DTO 要分开，不然密码字段、内部角色或数据库列可能被当成响应结构展示出来。`@ApiProperty()` 管 OpenAPI 模型，`class-validator` 的装饰器管运行时校验，各管各的。
 
 ### Bearer Token
 
-`DocumentBuilder.addBearerAuth()` 注册安全方案，`@ApiBearerAuth()` 声明接口使用它。两者必须同时存在，名称也必须一致：
+`DocumentBuilder.addBearerAuth()` 注册安全方案，`@ApiBearerAuth()` 声明接口用它。两个都要有，名字也要一致：
 
 ```ts
 const config = new DocumentBuilder()
@@ -429,11 +429,11 @@ const config = new DocumentBuilder()
 export class AdminController {}
 ```
 
-Swagger UI 的 Authorize 按钮只会把 `Authorization: Bearer ...` 加到请求头。它不会验证 Token，也不会自动创建 Guard；真正的安全边界仍然在认证策略和 Guard 中。
+Swagger UI 的 Authorize 按钮只是把 `Authorization: Bearer ...` 加进请求头，不会验证 Token，也不会自动创建 Guard。真正的安全边界还是在认证策略和 Guard 里。
 
 ## 把文档与行为对齐
 
-接口实现、权限和文档应该形成同一条约束链：
+接口实现、权限和文档要连成同一条约束链：
 
 ```text
 ValidationPipe / DTO 约束输入
@@ -447,4 +447,10 @@ Controller 执行业务接口
 Swagger 描述输入、输出和错误响应
 ```
 
-最常见的偏差有三类：文档写必填但代码接受空值，文档声明 Bearer Token 但接口没有 Guard，以及 DTO 暴露了不该返回的字段。接口测试应验证真实状态码和响应结构，OpenAPI 只能描述契约，不能替代运行时保护。
+最常见的三种偏差：
+
+- 文档写着必填，代码却接受空值
+- 文档声明了 Bearer Token，接口却没有 Guard
+- DTO 暴露了不该返回的字段
+
+接口测试要验证真实的状态码和响应结构。OpenAPI 只描述契约，代替不了运行时的保护。

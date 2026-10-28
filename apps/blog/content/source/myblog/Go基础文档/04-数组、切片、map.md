@@ -124,7 +124,7 @@ fmt.Println(list == nil) // true
 
 
 
-那么我们可以通过make函数创建知道长度，指定容量的切片了
+那么我们可以通过make函数创建指定长度、指定容量的切片了
 
 ```Go
 make([]type, length, capacity)

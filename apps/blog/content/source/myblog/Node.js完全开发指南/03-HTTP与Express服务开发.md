@@ -35,11 +35,11 @@ app.listen(3000, () => {
 });
 ```
 
-这就是一个最小 HTTP 闭环：进程监听端口，路由匹配方法和路径，处理函数结束响应。忘记结束响应、在响应后继续写入、没有处理异步异常，是服务端最常见的三类故障。
+这就是一个最小的 HTTP 闭环：进程监听端口，路由匹配方法和路径，处理函数结束响应。服务端最常见的三类故障：忘了结束响应，响应结束后还在写，没处理异步异常。
 
 ## 原生 HTTP 看协议
 
-Express 最终仍建立在 Node.js HTTP 能力上。用 `node:http` 写一遍路由，可以看清请求与响应各自负责什么：
+Express 底下还是 Node.js 的 HTTP 能力。用 `node:http` 写一遍路由，能看清请求和响应各管什么：
 
 ```js
 import { createServer } from 'node:http';
@@ -108,19 +108,19 @@ async function readJson(request, limit = 1024 * 1024) {
 }
 ```
 
-这段代码把职责拆得很清楚：
+这段代码的分工：
 
 - `request.method` 和 `URL.pathname` 决定路由。
-- `URL.searchParams` 读取查询参数。
-- 请求体是流，必须限制字节数并处理非法 JSON。
+- `URL.searchParams` 读查询参数。
+- 请求体是流，要限制字节数，并处理非法 JSON。
 - `sendJson()` 保证状态码、内容类型和序列化方式一致。
-- 每个路由分支都 `return`，避免同一个响应被写两次。
+- 每个路由分支都 `return`，免得同一个响应被写两次。
 
-这里容易炸在只限制字符串长度。请求体按字节传输，使用 `Buffer` 累加才能正确限制多字节文本的实际体积。真实服务还要处理请求中止、读取超时和内容类型校验。
+这里容易炸在只限制了字符串长度。请求体按字节传输，用 `Buffer` 累加才能正确限制多字节文本的实际体积。真实服务还要处理请求中止、读取超时和内容类型校验。
 
 ### 用 HTTP 文件验收
 
-安装 VS Code REST Client 后，可以把接口请求和代码放在一起：
+装了 VS Code REST Client 后，可以把接口请求和代码放在一起：
 
 ```http
 ### 查询用户
@@ -138,11 +138,11 @@ Content-Type: application/json
 GET http://localhost:3000/not-found
 ```
 
-请求头与 JSON Body 之间必须留一个空行。测试不应只覆盖 200，还要覆盖非法 JSON、超大请求体和不存在的路由。
+请求头和 JSON Body 之间要空一行。测试别只测 200，非法 JSON、超大请求体和不存在的路由都要测。
 
 ## Express 处理输入
 
-Express 把路由、请求体和中间件组织成一条处理链：
+Express 把路由、请求体和中间件串成一条处理链：
 
 ```js
 import express from 'express';
@@ -172,7 +172,7 @@ app.listen(3000);
 | `/users/42` 对应 `/users/:id` | `request.params.id` |
 | JSON 请求体 | `request.body`，前提是注册 `express.json()` |
 
-成功解析不等于数据合法。查询参数、路径参数和 Body 都来自外部，仍要校验类型、长度、格式和业务约束。
+解析成功了，不代表数据合法。查询参数、路径参数和 Body 都来自外部，类型、长度、格式和业务约束照样要校验。
 
 ### Router 划分边界
 
@@ -197,7 +197,7 @@ import { usersRouter } from './routes/users.js';
 app.use('/users', usersRouter);
 ```
 
-最终路径由注册前缀和 Router 内部路径拼成：`POST /users/login` 与 `POST /users/register`。前缀表达模块边界，也避免所有路由堆在入口文件。
+最终路径是注册时的前缀加上 Router 内部的路径：`POST /users/login` 和 `POST /users/register`。前缀表达模块边界，也免得所有路由都堆在入口文件里。
 
 ### 中间件必须收口
 
@@ -220,9 +220,9 @@ function requestLogger(request, response, next) {
 app.use(requestLogger);
 ```
 
-普通中间件必须选择一种结果：调用 `next()`，发送响应，或把错误交给错误处理器。发送响应后再次 `next()`，很容易触发 `ERR_HTTP_HEADERS_SENT`。
+普通中间件只能选一种结果：调 `next()`，发响应，或者把错误交给错误处理器。发完响应再 `next()`，很容易触发 `ERR_HTTP_HEADERS_SENT`。
 
-统一错误出口放在路由之后：
+统一的错误出口放在路由后面：
 
 ```js
 app.use((error, request, response, next) => {
@@ -238,17 +238,17 @@ app.use((error, request, response, next) => {
 });
 ```
 
-错误中间件必须保留四个参数。日志应包含请求标识和必要上下文，但不能记录密码、完整授权头或不必要的个人信息。
+错误中间件一定要保留四个参数。日志里要有请求标识和必要的上下文，但不能记密码、完整的授权头或者没必要的个人信息。
 
 ## 反向代理
 
-反向代理让浏览器只访问一个公开入口，再由代理选择内部服务：
+反向代理让浏览器只访问一个公开入口，再由代理去选内部服务：
 
 ```text
 Browser → /api/users → Reverse Proxy → http://internal-api:4000/users
 ```
 
-`http-proxy-middleware` 可以把 `/api` 请求转发并重写路径：
+`http-proxy-middleware` 能把 `/api` 请求转发出去，并改写路径：
 
 ```js
 import { createServer } from 'node:http';
@@ -275,20 +275,20 @@ createServer((request, response) => {
 }).listen(3000);
 ```
 
-访问 `/api/users` 时，后端收到 `/users`。浏览器看见的是同源入口，所以代理常被用于开发环境规避浏览器跨域读取限制；代理到后端的服务器间请求本来就不受浏览器同源策略控制。
+访问 `/api/users` 时，后端收到的是 `/users`。浏览器看到的是同源入口，所以开发环境常用代理绕开浏览器的跨域读取限制；代理到后端的是服务器之间的请求，本来就不受浏览器同源策略管。
 
-路径转发不等于高可用。生产代理还要处理连接和响应超时、健康检查、重试边界、请求体上限、日志、限流和可信代理头。对非幂等请求盲目重试，可能重复写入数据。
+能转发路径不代表高可用。生产环境的代理还要处理连接和响应超时、健康检查、重试边界、请求体上限、日志、限流和可信代理头。对非幂等请求盲目重试，可能会重复写数据。
 
 ## 静态文件与缓存
 
-动态接口随请求或数据状态变化，带内容指纹的 JavaScript、CSS、字体和图片更适合静态托管：
+动态接口随请求或数据状态变化；带内容指纹的 JavaScript、CSS、字体和图片更适合静态托管：
 
 ```text
 /api/*       → 业务服务
 /assets/*    → 静态文件、浏览器缓存或 CDN
 ```
 
-用原生 HTTP 返回静态文件时，URL 不能直接拼到磁盘路径：
+用原生 HTTP 返回静态文件时，URL 不能直接拼成磁盘路径：
 
 ```js
 import { createReadStream } from 'node:fs';
@@ -351,11 +351,16 @@ async function sendStatic(request, response) {
 }
 ```
 
-第一次检查挡住 `../` 形成的词法目录穿越，`realpath()` 再解析现有符号链接，第二次检查会拒绝指向静态目录外的链接。只有字符串前缀检查不够：`public/link` 看起来在根目录内，链接目标却可能是任意磁盘位置。`decodeURIComponent()` 可能因为非法编码抛错，因此也要进入错误处理链；文件在 `stat()` 之后仍可能被删除，所以读取流还要单独监听错误。
+这段代码做了两次检查：
 
-带内容哈希且不会原地修改的构建资源可以设置很长的强缓存；HTML 通常要更保守。强缓存命中时，请求不会到达应用服务器。CDN 再把静态资源放到离用户更近的节点，降低源站带宽和延迟。
+- 第一次挡住 `../` 造成的词法目录穿越；
+- `realpath()` 解析现有的符号链接后，第二次检查拒绝指向静态目录外面的链接。
 
-Express 的静态托管更简洁：
+光做字符串前缀检查不够：`public/link` 看起来在根目录里，链接的目标却可能是磁盘上任何地方。`decodeURIComponent()` 碰到非法编码会抛错，所以也要接进错误处理链；文件在 `stat()` 之后还可能被删掉，所以读取流还要单独监听错误。
+
+带内容哈希、不会原地修改的构建资源，可以设很长的强缓存；HTML 一般要保守一些。强缓存命中时，请求根本不会到应用服务器。CDN 再把静态资源放到离用户更近的节点，降低源站的带宽和延迟。
+
+Express 的静态托管更简单：
 
 ```js
 app.use('/assets', express.static('public', {
@@ -365,7 +370,7 @@ app.use('/assets', express.static('public', {
 
 ## Nodemailer 与 SMTP
 
-邮件适合任务通知、故障告警和构建结果。YAML 保存非敏感结构，授权码从环境变量读取：
+邮件适合任务通知、故障告警和构建结果。YAML 存非敏感的结构，授权码从环境变量读：
 
 ```yaml
 smtp:
@@ -405,11 +410,11 @@ await transporter.sendMail({
 });
 ```
 
-YAML 解析器不会自动把任意占位符替换成环境变量，敏感值应在代码中明确读取。对外提供发送邮件接口时，还必须校验收件人、限制频率、认证调用方并审计失败，否则服务很容易变成垃圾邮件出口。POST 只改变数据位置，不自动提供授权或加密，传输仍需 HTTPS。
+YAML 解析器不会自动把占位符替换成环境变量，敏感值要在代码里明确读取。对外开放发邮件的接口时，还要校验收件人、限频、认证调用方、审计失败，不然服务很容易变成垃圾邮件的出口。POST 只是改变了数据放的位置，不会自带授权或加密，传输还是要走 HTTPS。
 
 ## Referer 防盗链
 
-静态资源可以检查 `Referer`，减少普通网页直接引用：
+静态资源可以检查 `Referer`，减少普通网页的直接引用：
 
 ```js
 const allowedHosts = new Set([
@@ -442,19 +447,19 @@ function hotlinkGuard(request, response, next) {
 app.use('/assets', hotlinkGuard, express.static('public'));
 ```
 
-浏览器可能因为隐私策略不发送 Referer，非浏览器客户端也可以伪造它。防盗链只能减少普通引用，不能作为身份认证。高价值资源还需要签名 URL、短期令牌、鉴权和流量策略。
+浏览器可能因为隐私策略不发 Referer，非浏览器客户端也能伪造它。防盗链只能减少普通引用，不能拿来做身份认证。高价值的资源还需要签名 URL、短期令牌、鉴权和流量策略。
 
 ## CORS 只约束浏览器
 
-浏览器同源由协议、主机和端口共同决定：
+浏览器的同源由协议、主机和端口一起决定：
 
 ```text
 scheme + host + port
 ```
 
-任意一项不同就是跨源。CORS 决定页面 JavaScript 能否读取跨源响应；请求可能已经到达服务器，甚至已经产生副作用，浏览器才因为响应头不合规而拒绝把结果交给脚本。
+任何一项不同就是跨源。CORS 决定页面的 JavaScript 能不能读到跨源响应；请求可能已经到了服务器，甚至已经产生了副作用，浏览器才因为响应头不合规，拒绝把结果交给脚本。
 
-一个受限来源的 Express 中间件：
+一个只允许特定来源的 Express 中间件：
 
 ```js
 const allowedOrigins = new Set([
@@ -492,17 +497,17 @@ app.use((request, response, next) => {
 });
 ```
 
-关键响应头各自解决不同问题：
+几个关键响应头各管一件事：
 
-- `Access-Control-Allow-Origin` 允许哪个来源读取响应。
-- `Access-Control-Allow-Methods` 和 `Access-Control-Allow-Headers` 回答预检允许什么。
-- `Access-Control-Expose-Headers` 决定前端能读取哪些非简单响应头。
-- `Access-Control-Allow-Credentials` 允许带 Cookie 等凭证。
-- `Vary: Origin` 防止共享缓存把一个来源的 CORS 响应复用给另一个来源。
+- `Access-Control-Allow-Origin`：允许哪个来源读响应。
+- `Access-Control-Allow-Methods` 和 `Access-Control-Allow-Headers`：回答预检允许什么。
+- `Access-Control-Expose-Headers`：前端能读到哪些非简单响应头。
+- `Access-Control-Allow-Credentials`：允许带 Cookie 等凭证。
+- `Vary: Origin`：防止共享缓存把给一个来源的 CORS 响应复用给另一个来源。
 
-使用凭证时，`Access-Control-Allow-Origin` 不能写 `*`。预检请求是权限询问，不应写数据库、发送邮件或执行其他业务副作用。
+带凭证时，`Access-Control-Allow-Origin` 不能写 `*`。预检请求只是在问权限，别在里面写数据库、发邮件或做其他业务副作用。
 
-后端即使返回了自定义头，前端也未必能读到：
+后端就算返回了自定义头，前端也不一定读得到：
 
 ```js
 response.setHeader('X-Request-Id', 'req-123');
@@ -514,11 +519,11 @@ const response = await fetch('http://localhost:3000/info');
 console.log(response.headers.get('x-request-id'));
 ```
 
-开发者工具里可见，不代表页面脚本已获得读取权限。
+开发者工具里看得见，不代表页面脚本有权读取。
 
 ## SSE 持续推送
 
-SSE 适合服务器单向推送文本事件，例如日志、构建进度和实时指标。Express 端点如下：
+SSE 适合服务器单向推送文本事件，比如日志、构建进度和实时指标。Express 端点：
 
 ```js
 app.get('/events', (request, response) => {
@@ -542,7 +547,7 @@ app.get('/events', (request, response) => {
 });
 ```
 
-浏览器使用 `EventSource`：
+浏览器用 `EventSource`：
 
 ```js
 const source = new EventSource('http://localhost:3000/events');
@@ -560,6 +565,6 @@ source.onerror = (error) => {
 };
 ```
 
-每个事件帧以空行结束。未写 `event:` 时事件名默认为 `message`。客户端断开后必须清理定时器、消息订阅和数据库监听，否则每条失效连接都会留下后台任务。
+每个事件帧以空行结束。没写 `event:` 时，事件名默认是 `message`。客户端断开后，要清掉定时器、消息订阅和数据库监听，不然每条失效的连接都会留下一个后台任务。
 
-反向代理还可能缓冲响应，导致服务端不断 `write()`，浏览器却迟迟收不到事件。除了禁用缓冲，还要配置连接超时、心跳、断线重连策略和每个实例允许的最大长连接数。
+反向代理还可能缓冲响应，结果服务端一直在 `write()`，浏览器却迟迟收不到事件。除了关掉缓冲，还要配连接超时、心跳、断线重连策略，以及每个实例允许的最大长连接数。

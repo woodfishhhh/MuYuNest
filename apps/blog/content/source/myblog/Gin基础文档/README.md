@@ -11,9 +11,9 @@ draft: false
 
 # Gin 基础课程：请求、响应、绑定与中间件
 
-一个请求进入 Gin 后，会经过路由和中间件，再由处理器读取参数、执行校验并写出响应。学习这条链路时，把数据来源、错误状态和执行顺序放在一起看，比单独记几个 API 更容易定位问题。
+请求进入 Gin 后，先过路由和中间件，再由处理器读参数、做校验、写响应。学这条链路时，把数据来源、错误状态和执行顺序放在一起看，比单独记几个 API 更好定位问题。
 
-下面 8 篇笔记各自包含完整程序、运行命令和预期结果。先具备 Go 的结构体、函数、接口和基本错误处理知识即可；需要复习时可以查看 [Go 基础课程](https://blog.woodfish.site/posts/go-basics)。
+下面 8 篇笔记每篇都有完整程序、运行命令和预期结果。会 Go 的结构体、函数、接口和基本错误处理就够了，要复习可以看 [Go 基础课程](https://blog.woodfish.site/posts/go-basics)。
 
 ## 阅读目录
 
@@ -30,15 +30,15 @@ draft: false
 
 ## 示例环境
 
-示例固定使用 Gin `v1.12.0`，该版本要求 Go `1.25.0` 或更高版本。本地验证使用 Go `1.26.4`。固定依赖版本可以减少练习时因依赖变化造成的差异；它不表示其他版本都不能使用。[Gin 的 go.mod](https://github.com/gin-gonic/gin/blob/v1.12.0/go.mod)
+示例固定用 Gin `v1.12.0`，这个版本要求 Go `1.25.0` 或更高。本地验证用的是 Go `1.26.4`。固定版本是为了减少练习时依赖变化带来的差异，不是说其他版本都不能用。[Gin 的 go.mod](https://github.com/gin-gonic/gin/blob/v1.12.0/go.mod)
 
-每篇都可以复制到一个独立目录运行。所有程序默认监听 `127.0.0.1:8080`，按 Ctrl+C 停止后再启动另一篇，避免端口冲突。命令以 PowerShell 7 为例，JSON 请求通过 UTF-8 文件发送，减少终端引号转义带来的干扰。
+每篇都可以复制到一个独立目录运行。所有程序默认监听 `127.0.0.1:8080`，按 Ctrl+C 停掉再启动下一篇，免得端口冲突。命令以 PowerShell 7 为例，JSON 请求通过 UTF-8 文件发送，少受终端引号转义的干扰。
 
-也可以直接取得 [全部示例与测试](https://github.com/woodfishhhh/MuYuNest/tree/main/course-notes/gin-basics/examples)。进入该目录执行：
+也可以直接拿 [全部示例与测试](https://github.com/woodfishhhh/MuYuNest/tree/main/course-notes/gin-basics/examples)，进入该目录执行：
 
 ```powershell
 go mod download
 go test ./...
 ```
 
-测试通过 HTTP 请求和响应检查表单绑定、文件下载、上传限制、中文校验错误及中间件顺序。每个示例相互独立，`03-files` 还包含模板、样式和 CSV 文件，运行时应先进入它自己的目录。
+测试通过 HTTP 请求和响应检查表单绑定、文件下载、上传限制、中文校验错误和中间件顺序。每个示例互相独立；`03-files` 还带模板、样式和 CSV 文件，运行前要先进它自己的目录。
