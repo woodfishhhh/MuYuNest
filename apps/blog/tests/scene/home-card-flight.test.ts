@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Flight, layoutFor, seededRandom, CARD_PICKUP_DURATION, PERSPECTIVE, STEP } from "@/components/scene/home-card-flight/motion";
+import { Flight, layoutFor, seededRandom } from "@/components/scene/home-card-flight/motion";
 import { Flight as ApprovedFlight } from "./fixtures/approved-home-flight";
 import { getHomeGeometryAnchor, blendDockAnchors } from "@/components/scene/home-card-flight/layout";
 import { getBlogDockTransform } from "@/components/scene/blog-dock";
@@ -9,55 +9,23 @@ import { createHomeCardFlight } from "@/components/scene/home-card-flight";
 describe("home flight integration", () => {
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-  it("preserves the approved demo's autonomous flight and release", () => {
+  it("preserves the approved demo's flight, pickup, reversal and release exactly", () => {
     const actual = new Flight(2);
     const approved = new ApprovedFlight(2);
     actual.reset(layoutFor(1651, 871), seededRandom(42));
     approved.reset(layoutFor(1651, 871), seededRandom(42));
     for (let i = 0; i < 100; i++) { actual.tick(undefined, 2.5); approved.tick(undefined, 2.5); }
-    expect(actual).toMatchObject({ ...approved });
+    expect({ ...actual }).toEqual({ ...approved });
+    actual.state = approved.state = "dragging";
+    for (const target of [{ x: 500, y: -300 }, { x: -650, y: 300 }]) {
+      for (let i = 0; i < 120; i++) {
+        actual.tick(target, 2.5); approved.tick(target, 2.5);
+        expect({ ...actual }).toEqual({ ...approved });
+      }
+    }
     actual.state = approved.state = "vanishing";
     for (let i = 0; i < 61; i++) { actual.tick(); approved.tick(); }
-    expect(actual).toMatchObject({ ...approved });
-  });
-
-  function cardRotation(flight: Flight) {
-    return new THREE.Quaternion().setFromEuler(new THREE.Euler(-THREE.MathUtils.degToRad(flight.rx),
-      THREE.MathUtils.degToRad(flight.ry), -THREE.MathUtils.degToRad(flight.rz), "XYZ"));
-  }
-
-  it.each([180, 270, -170])("smoothly picks up a card facing %i degrees without a first-frame pose jump", angle => {
-    const layout = layoutFor(1651, 871);
-    const offset = layout.perspectiveY - layout.originY;
-    const flight = new Flight(0);
-    Object.assign(flight, { state: "flying", x: 540, y: -260, z: -12000, rx: 35, ry: angle, rz: -20, s: 0.8 });
-    const before = { x: flight.x, y: flight.y, z: flight.z, rx: flight.rx, ry: flight.ry, rz: flight.rz, s: flight.s };
-    const magnification = PERSPECTIVE / (PERSPECTIVE - flight.z);
-    const target = { x: flight.x * magnification, y: flight.y * magnification + offset * (1 - magnification) };
-    const initialRotation = cardRotation(flight);
-    const front = new THREE.Quaternion();
-    flight.beginPickup(offset);
-    expect(flight).toMatchObject(before);
-    flight.tick(target);
-    expect(cardRotation(flight).angleTo(initialRotation)).toBeLessThan(THREE.MathUtils.degToRad(1));
-    expect(PERSPECTIVE / (PERSPECTIVE - flight.z) - magnification).toBeLessThan(0.003);
-    expect(cardRotation(flight).angleTo(front)).toBeGreaterThan(0.5);
-    let lastSize = magnification * 0.8;
-    let lastAngle = cardRotation(flight).angleTo(front);
-    for (let frame = 1; frame < Math.ceil(CARD_PICKUP_DURATION / STEP); frame++) {
-      flight.tick(target);
-      const currentMagnification = PERSPECTIVE / (PERSPECTIVE - flight.z);
-      const apparentSize = currentMagnification * flight.s;
-      expect(apparentSize).toBeGreaterThanOrEqual(lastSize - 1e-6);
-      expect(apparentSize - lastSize).toBeLessThan(0.05);
-      expect(flight.x * currentMagnification).toBeCloseTo(target.x, 5);
-      expect(flight.y * currentMagnification + offset * (1 - currentMagnification)).toBeCloseTo(target.y, 5);
-      const remainingAngle = cardRotation(flight).angleTo(front);
-      expect(remainingAngle).toBeLessThanOrEqual(lastAngle + 0.002);
-      lastSize = apparentSize; lastAngle = remainingAngle;
-    }
-    expect(flight.z).toBe(0);
-    expect(lastAngle).toBeLessThan(0.01);
+    expect({ ...actual }).toEqual({ ...approved });
   });
 
   it.each([[1651, 871], [390, 844]])("aligns either geometry with the card emission origin at %i x %i", (width, height) => {
@@ -106,41 +74,6 @@ describe("home flight integration", () => {
     return { capabilities: { getMaxAnisotropy: () => 4 }, autoClear: true,
       clearDepth: vi.fn(), render: vi.fn(), dispose: vi.fn() };
   }
-
-  it("preserves the rendered pose on pickup and turns the actual mesh toward the camera automatically", async () => {
-    const assets = mockAssets();
-    vi.spyOn(Math, "random").mockReturnValue(0.3);
-    const { parseCardConfig } = await import("@/components/scene/home-card-flight/card-config");
-    const fixture = parseCardConfig({ version: 1, cards: [{ id: "poem", type: "text", text: "一首小诗。" }] }).cards;
-    const renderer = mockRenderer(); const onReady = vi.fn();
-    const cards = createHomeCardFlight({ renderer: renderer as unknown as THREE.WebGLRenderer,
-      width: 1651, height: 871, theme: "night", cards: fixture, onReady });
-    try {
-      await vi.waitFor(() => expect(onReady).toHaveBeenCalledOnce());
-      cards.update(0, true, true); cards.render();
-      const [scene, camera] = renderer.render.mock.calls[0] as [THREE.Scene, THREE.PerspectiveCamera];
-      const mesh = scene.children.find(child => child.userData.cardId === "poem") as THREE.Mesh;
-      scene.updateMatrixWorld(true);
-      const center = mesh.getWorldPosition(new THREE.Vector3()).project(camera);
-      const pointer = new THREE.Vector2(center.x, center.y);
-      const position = mesh.position.clone(); const rotation = mesh.quaternion.clone(); const scale = mesh.scale.clone();
-      expect(cards.beginDrag(pointer)).toBe(true);
-      cards.update(0, true, true);
-      expect(mesh.position).toEqual(position); expect(mesh.scale).toEqual(scale);
-      expect(mesh.quaternion.angleTo(rotation)).toBeLessThan(1e-6);
-      cards.update(STEP, true, true);
-      expect(mesh.quaternion.angleTo(rotation)).toBeLessThan(THREE.MathUtils.degToRad(1));
-      expect(mesh.quaternion.angleTo(new THREE.Quaternion())).toBeGreaterThan(0.5);
-      for (let frame = 0; frame < 60; frame++) cards.update(STEP, true, true);
-      expect(mesh.position.z).toBe(0);
-      expect(mesh.quaternion.angleTo(new THREE.Quaternion())).toBeLessThan(0.001);
-      const settled = mesh.position.clone();
-      for (let frame = 0; frame < 30; frame++) cards.update(STEP, true, true);
-      expect(mesh.position.distanceTo(settled)).toBeLessThan(0.001);
-      expect(cards.isInteracting()).toBe(true);
-      cards.release(); expect(cards.isInteracting()).toBe(false);
-    } finally { cards.dispose(); assets.restore(); }
-  });
 
   it("pauses outside Home, preserves renderer state and disposes only owned resources", async () => {
     const assets = mockAssets();
