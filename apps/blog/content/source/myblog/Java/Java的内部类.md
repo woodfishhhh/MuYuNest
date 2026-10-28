@@ -14,7 +14,7 @@ categories:
 
 ### 成员内部类
 
-成员内部类直接定义在外部类里，与外部类的属性和方法处于同一层级。它能够访问外部类的所有成员，包括私有成员。
+直接定义在外部类里，和外部类的属性、方法同级。能访问外部类的所有成员，包括私有成员。
 
 ```java
 public class OuterClass {
@@ -44,7 +44,7 @@ public class OuterClass {
 
 ### 静态内部类
 
-静态内部类用 `static` 关键字修饰，它不能直接访问外部类的非静态成员。
+用 `static` 关键字修饰，不能直接访问外部类的非静态成员。
 
 ```java
 public class OuterClass {
@@ -68,7 +68,7 @@ public class OuterClass {
 
 ### 局部内部类
 
-局部内部类定义在方法或者代码块内部，其作用域仅限于该方法或代码块。
+定义在方法或代码块内部，作用域只在这个方法或代码块里。
 
 ```java
 public class OuterClass {
@@ -100,7 +100,7 @@ public class OuterClass {
 
 ### 匿名内部类
 
-匿名内部类没有具体的类名，通常用于创建接口或者抽象类的实例。
+没有类名，一般用来创建接口或抽象类的实例。
 
 ```java
 public class OuterClass {
@@ -133,7 +133,7 @@ public class OuterClass {
 
 ### Lambda 表达式（Java 8+）
 
-Lambda 表达式是匿名内部类的一种简化形式，专门用于函数式接口（即只包含一个抽象方法的接口）。
+匿名内部类的简化写法，专门用于函数式接口（只包含一个抽象方法的接口）。
 
 ```java
 public class LambdaExample {

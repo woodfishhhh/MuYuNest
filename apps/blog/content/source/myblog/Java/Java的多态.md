@@ -14,7 +14,7 @@ categories:
 
 
 多态是在继承 / 实现情况下的一种现象，表现为：对象多态、行为多态。
-多态的具体代码体现
+多态的具体代码体现：
 
 ```java
 People p1 = new Student ()
@@ -34,7 +34,7 @@ p2.run ();
 
 ### 使用多态有什么好处？存在什么问题？
 
-- 解耦合；使用父类类型的变量作为方法的形参时，可以接收一切子类对象。
+- 解耦合；用父类类型的变量作方法形参时，可以接收一切子类对象。
 - 多态下不能直接调用子类的独有方法。
 
 
@@ -54,16 +54,15 @@ Teacher t = (Teacher) p;
 
 ### 强制类型转换的一个注意事项
 
-- 存在继承 / 实现关系就可以在编译阶段进行强制类型转换，编译降阶段不会报错。
-- 运行时，如果发现对象的真实类型与强转后的类型不同，就会报类型转换异常 (ClassCastException) 的错误出来。
+- 有继承 / 实现关系就能强转，编译阶段不会报错。
+- 运行时如果对象的真实类型和强转后的类型不同，就会报类型转换异常 (ClassCastException)。
 
 ```java
 People p = new Teacher ();
 Student s = (Student) p; //java.Lang.CLassCastEception
 ```
 
-**强转前，Java 建议:**
-使用 instanceof 关键字，判断当前对象的真实类型，再进行强转。
+强转前，Java 建议先用 instanceof 关键字判断当前对象的真实类型，再强转。
 
 ```java
 p instanceof Student

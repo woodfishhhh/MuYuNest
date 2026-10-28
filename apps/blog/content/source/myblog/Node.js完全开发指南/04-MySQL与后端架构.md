@@ -17,7 +17,7 @@ draft: false
 
 # MySQL 与后端架构
 
-一个可用的新增用户接口，至少要守住三件事：输入不能直接拼进 SQL，数据库异常不能变成无响应，请求结束后连接还要能复用。
+一个能用的新增用户接口，至少要守住三件事：输入不能直接拼进 SQL，数据库出错不能变成没有响应，请求结束后连接还能复用。
 
 ```ts
 import express from 'express';
@@ -93,11 +93,11 @@ app.use((error: unknown, _req, res, _next) => {
 });
 ```
 
-`createPool` 管连接生命周期，`execute` 的占位符把 SQL 结构和值分开，入口校验挡住明显的脏数据，错误中间件则保证异常有统一出口。先检查原始 JSON 类型，再做 `trim()` 等规范化；直接 `String(value)` 或 `Number(value)` 会把数组、布尔值和空字符串悄悄变成另一种合法外观。
+`createPool` 管连接的生命周期，`execute` 的占位符把 SQL 结构和值分开，入口校验挡住明显的脏数据，错误中间件保证异常有统一的出口。先检查原始 JSON 的类型，再做 `trim()` 之类的规范化；直接 `String(value)` 或 `Number(value)`，会把数组、布尔值和空字符串悄悄变成看起来合法的另一种值。
 
 ## MySQL 先验收
 
-Debian 或 Ubuntu 可以直接安装服务、启动并执行一次探活：
+Debian 或 Ubuntu 上可以直接装服务、启动，再做一次探活：
 
 ```bash
 sudo apt update
@@ -107,7 +107,7 @@ sudo mysqladmin ping
 sudo mysql -e "SELECT VERSION(), @@port;"
 ```
 
-Windows 使用 MySQL Installer 安装 Server 和命令行客户端后，先确认实际服务名再连接；默认服务名常见为 `MySQL80`，但应以第一条命令输出为准：
+Windows 上用 MySQL Installer 装好 Server 和命令行客户端后，先确认实际的服务名再连接；默认服务名常见的是 `MySQL80`，但以第一条命令的输出为准：
 
 ```powershell
 Get-Service -Name 'MySQL*'
@@ -116,11 +116,11 @@ mysqladmin --host=127.0.0.1 --user=root --password ping
 mysql --host=127.0.0.1 --user=root --password
 ```
 
-`mysqladmin ping` 返回 `mysqld is alive` 只证明服务可达，真正连接还要验证账号、密码、目标库和授权。应用不要长期使用 `root`，应创建权限收窄的独立账号。
+`mysqladmin ping` 返回 `mysqld is alive` 只说明服务能连上，真正连接还要验证账号、密码、目标库和授权。应用别长期用 `root`，要建一个权限收窄的独立账号。
 
 ## 表先约束数据
 
-关系型数据库的价值不只是“把对象存起来”。字段类型、主键、唯一约束和外键会持续约束数据，即使某个接口漏了校验，数据库仍能拒绝不可能的状态。
+关系型数据库的价值不只是"把对象存起来"。字段类型、主键、唯一约束和外键会一直约束数据，就算某个接口漏了校验，数据库也能拒绝不可能出现的状态。
 
 ```sql
 CREATE DATABASE IF NOT EXISTS node_app
@@ -151,7 +151,7 @@ CREATE TABLE photos (
 );
 ```
 
-这里各约束的职责不同：
+这些约束各管一块：
 
 | 约束 | 防止的问题 |
 | --- | --- |
@@ -161,20 +161,20 @@ CREATE TABLE photos (
 | `FOREIGN KEY` | 作品指向不存在的用户 |
 | 普通索引 | 高频条件只能扫描整张表 |
 
-主键适合做内部身份，邮箱、用户名等业务字段即使当前唯一，也不适合代替主键。业务规则会变，内部引用不应该跟着变。
+主键适合做内部身份。邮箱、用户名这些业务字段就算现在唯一，也不适合代替主键：业务规则会变，内部引用不该跟着变。
 
-改表结构要留下迁移记录，而不是只在可视化工具中点几下：
+改表结构要留下迁移记录，别只在可视化工具里点几下：
 
 ```sql
 ALTER TABLE users ADD INDEX idx_users_created_at (created_at);
 ALTER TABLE photos ADD INDEX idx_photos_created_at (created_at);
 ```
 
-新增非空列时要考虑旧数据如何填充；删除列前要确认读写它的旧版本应用已经下线。`DROP TABLE` 和 `DROP DATABASE` 会直接删除结构及数据，不能把它们和删除一行的 `DELETE` 混为一谈。
+加非空列时要想好旧数据怎么填；删列之前要确认读写它的旧版本应用已经下线。`DROP TABLE` 和 `DROP DATABASE` 会直接删掉结构和数据，别和删一行的 `DELETE` 搞混。
 
 ## 查询只取需要的列
 
-列表接口不要习惯性使用 `SELECT *`。明确列名能减少传输，也避免新增内部字段后被接口意外暴露。
+列表接口别习惯性地 `SELECT *`。写明列名能减少传输，也免得以后加了内部字段被接口意外暴露。
 
 ```sql
 SELECT id, name, age
@@ -191,9 +191,9 @@ LIMIT ? OFFSET ?;
 const offset = (page - 1) * size;
 ```
 
-`page` 和 `size` 必须先转换、校验并限制上限。允许客户端传一个极大的 `size`，等于允许它制造一次昂贵查询。
+`page` 和 `size` 要先转换、校验，再限制上限。允许客户端传一个特别大的 `size`，就等于允许它制造一次很贵的查询。
 
-常用匹配方式：
+常用的匹配方式：
 
 | 条件 | 含义 |
 | --- | --- |
@@ -203,9 +203,9 @@ const offset = (page - 1) * size;
 | `name LIKE '%满%'` | 任意位置包含“满” |
 | `name LIKE '_满'` | 前面恰好一个字符 |
 
-前导百分号通常无法利用普通 B-Tree 索引。数据量大后，`LIKE '%词%'` 可能成为慢查询，需要全文索引或专门的搜索系统。
+前导百分号一般用不上普通的 B-Tree 索引。数据量大了，`LIKE '%词%'` 可能变成慢查询，要换全文索引或专门的搜索系统。
 
-SQL 也能在结果返回前完成计算和聚合：
+SQL 也能在结果返回之前完成计算和聚合：
 
 ```sql
 SELECT
@@ -224,7 +224,7 @@ SELECT
 FROM users;
 ```
 
-聚合适合把计算推到数据所在的位置，但不要为了少写几行 Node.js 就堆出难以维护的 SQL。判断标准是查询是否清楚、能否使用索引，以及返回的数据量是否真的减少。
+聚合适合把计算推到数据所在的地方，但别为了少写几行 Node.js 就堆出一段难维护的 SQL。判断标准：查询清不清楚，能不能用上索引，返回的数据量是不是真的少了。
 
 ## 写操作必须收窄范围
 
@@ -240,7 +240,7 @@ DELETE FROM users
 WHERE id = ?;
 ```
 
-`UPDATE` 或 `DELETE` 漏掉 `WHERE` 会影响整张表。接口层还要检查实际影响行数：
+`UPDATE` 或 `DELETE` 漏了 `WHERE` 会影响整张表。接口层还要检查实际影响的行数：
 
 ```ts
 const [result] = await db.execute<ResultSetHeader>(
@@ -253,18 +253,18 @@ if (result.affectedRows === 0) {
 }
 ```
 
-把目标 `id` 放在路径中比较清楚：
+把目标 `id` 放在路径里比较清楚：
 
 ```text
 PATCH  /users/42
 DELETE /users/42
 ```
 
-服务端应从允许更新的字段中构造语句，不能把整个 `req.body` 原样交给数据库。否则客户端可能改到 `role`、`status` 等本不该开放的字段。
+服务端要从允许更新的字段里构造语句，不能把整个 `req.body` 原样交给数据库，不然客户端可能改到 `role`、`status` 这些本来不开放的字段。
 
 ## 关联查询
 
-照片属于用户，返回照片和作者名时可以直接连接两张表：
+照片属于用户，返回照片和作者名时可以直接连两张表：
 
 ```sql
 SELECT
@@ -277,7 +277,7 @@ INNER JOIN users ON users.id = photos.user_id
 WHERE photos.id = ?;
 ```
 
-连接类型决定无匹配数据是否保留：
+连接类型决定没匹配上的数据留不留：
 
 | 连接 | 返回范围 |
 | --- | --- |
@@ -285,7 +285,7 @@ WHERE photos.id = ?;
 | `LEFT JOIN` | 左表全部行，右侧缺失时为 `NULL` |
 | `RIGHT JOIN` | 右表全部行，左侧缺失时为 `NULL` |
 
-要列出所有用户，包括还没上传作品的人，应从 `users` 驱动左连接：
+要列出所有用户，包括还没上传作品的，就从 `users` 出发做左连接：
 
 ```sql
 SELECT users.id, users.name, photos.title
@@ -293,7 +293,7 @@ FROM users
 LEFT JOIN photos ON photos.user_id = users.id;
 ```
 
-只需要把另一条查询的结果当条件时，子查询也很直接：
+只是要拿另一条查询的结果当条件的话，子查询也很直接：
 
 ```sql
 SELECT id, title
@@ -306,18 +306,18 @@ WHERE user_id = (
 );
 ```
 
-子查询不是天然更慢，连接也不是天然更快。最终要看执行计划、索引和数据分布；出现慢查询时用 `EXPLAIN` 看数据库实际选择了什么路径。
+子查询不一定更慢，连接也不一定更快。最后要看执行计划、索引和数据分布；出现慢查询时用 `EXPLAIN` 看数据库实际选了哪条路径。
 
 ## 连接池归基础设施层
 
-数据库连接不该在每个路由里重新创建。先安装驱动和 YAML 解析器：
+数据库连接别在每个路由里重新建。先装驱动和 YAML 解析器：
 
 ```bash
 npm install mysql2 js-yaml
 npm install --save-dev @types/js-yaml
 ```
 
-`config/app.yaml` 只保存可提交的非敏感默认值：
+`config/app.yaml` 只存能提交的、非敏感的默认值：
 
 ```yaml
 database:
@@ -328,7 +328,7 @@ database:
   connectionLimit: 10
 ```
 
-基础设施模块实际读取 YAML，再让环境变量覆盖部署差异。密码没有 YAML 回退，缺失时直接阻止进程启动：
+基础设施模块读 YAML，再用环境变量覆盖部署差异。密码没有 YAML 回退，缺了就直接不让进程启动：
 
 ```ts
 // src/infrastructure/database.ts
@@ -394,11 +394,11 @@ export async function checkDatabase() {
 }
 ```
 
-YAML 解析器不会替换 `${DB_PASSWORD}` 之类的占位符，覆盖逻辑必须由代码明确执行。生产密码放环境变量或密钥服务，不要提交 YAML、`.env` 或源代码。连接池上限也不是越大越好：应用实例数乘以每实例连接数，不能超过数据库可承受的连接量。
+YAML 解析器不会替换 `${DB_PASSWORD}` 这种占位符，覆盖逻辑要由代码明确执行。生产密码放环境变量或密钥服务，别提交进 YAML、`.env` 或源代码。连接池上限也不是越大越好：应用实例数乘以每个实例的连接数，不能超过数据库能承受的连接量。
 
 ## mysql2、Knex 还是 Prisma
 
-三种方式处理的是同一个数据库，只是抽象层级不同。
+三种方式操作的是同一个数据库，只是抽象层级不一样。
 
 | 工具 | 适合的情况 | 仍要自己处理 |
 | --- | --- | --- |
@@ -429,9 +429,9 @@ const users = await db('users')
   .limit(20);
 ```
 
-查询链通常在 `await` 时才执行。调试动态查询时可查看生成的 SQL 和绑定值，但日志里不要打印密码、token 等敏感参数。
+查询链一般在 `await` 时才执行。调试动态查询时可以看生成的 SQL 和绑定值，但日志里别打出密码、token 这些敏感参数。
 
-需要多个写操作共同成功时，必须共享同一个事务对象：
+多个写操作要一起成功时，必须共用同一个事务对象：
 
 ```ts
 // amount 使用最小货币单位，例如“分”
@@ -460,7 +460,11 @@ await db.transaction(async (trx) => {
 });
 ```
 
-正数校验必须在写库前完成，否则负数会把“扣款”变成加款。借记和贷记都必须恰好影响一行，任一步不满足就抛错回滚。事务内部如果误用全局 `db`，那条语句会跑到事务之外，代码看似完整，原子性却已经破坏。
+几个要点：
+
+- 正数校验必须在写库之前做，不然负数会把"扣款"变成加款。
+- 借记和贷记都必须正好影响一行，有一步不满足就抛错回滚。
+- 事务里要是误用了全局的 `db`，那条语句就跑到事务外面去了。代码看着完整，原子性已经没了。
 
 ### Prisma 用模型生成客户端
 
@@ -512,11 +516,11 @@ const users = await prisma.user.findMany({
 });
 ```
 
-原表使用 `BIGINT UNSIGNED`、定长上限和 `TIMESTAMP`，Prisma 模型也要保留这些原生类型，不能用默认 `Int`、无长度 `String` 和普通 `DateTime` 含糊代替。Prisma 返回的 `BigInt` 不能直接交给 `JSON.stringify()`，HTTP 响应应按接口约定转换成字符串。类型提示仍不会替代数据库知识：少了索引，类型再准确也会慢；关系和删除规则设计错了，生成客户端也不会自动修正业务。
+原表用的是 `BIGINT UNSIGNED`、定长上限和 `TIMESTAMP`，Prisma 模型里也要保留这些原生类型，别拿默认的 `Int`、不带长度的 `String` 和普通的 `DateTime` 含糊代替。Prisma 返回的 `BigInt` 不能直接交给 `JSON.stringify()`，HTTP 响应要按接口约定转成字符串。类型提示也代替不了数据库知识：缺了索引，类型再准也会慢；关系和删除规则设计错了，生成的客户端也不会帮你改正业务。
 
 ## 分层只解决职责混乱
 
-一个 API 项目常见的依赖方向是：
+一个 API 项目常见的依赖方向：
 
 ```text
 HTTP request
@@ -531,16 +535,16 @@ HTTP request
 - Repository 封装数据访问，返回领域需要的数据。
 - 基础设施层持有连接池、日志和外部客户端。
 
-需要装饰器路由和容器装配时，安装 Inversify 的 Express 适配层：
+需要装饰器路由和容器装配的话，装 Inversify 的 Express 适配层：
 
 ```bash
 npm install --save-exact express@4.22.2 inversify@6.2.2 inversify-express-utils@6.5.0 reflect-metadata@0.2.2
 npm install --save-dev --save-exact @types/express@4.17.25
 ```
 
-这组版本满足 `inversify-express-utils@6.5.0` 的 peer dependency，同时把 Express 保持在 4.x、Inversify 保持在 6.x。不要省略 `--save-exact`；还要提交生成的 `package-lock.json`，部署时使用 `npm ci`，否则传递依赖仍可能漂移。
+这组版本满足 `inversify-express-utils@6.5.0` 的 peer dependency，同时让 Express 停在 4.x、Inversify 停在 6.x。别省掉 `--save-exact`；还要提交生成的 `package-lock.json`，部署时用 `npm ci`，不然传递依赖还是可能漂移。
 
-TypeScript 要开启旧式装饰器和元数据输出：
+TypeScript 要开旧式装饰器和元数据输出：
 
 ```json
 {
@@ -650,7 +654,7 @@ const app = server.build();
 app.listen(3000);
 ```
 
-`@injectable()` 让仓储和服务可被容器构造，`@inject()` 用稳定 token 说明构造参数依赖，`@controller()` 与 `@httpGet()` 把控制器方法接到 Express。`reflect-metadata` 必须在这些类求值前导入。依赖注入真正解决的是对象创建权：业务类不再自行 `new` 下游依赖，测试可以替换绑定；依赖很少时仍可手工装配，不必强上容器。
+`@injectable()` 让仓储和服务能被容器构造，`@inject()` 用稳定的 token 说明构造参数依赖什么，`@controller()` 和 `@httpGet()` 把控制器方法接到 Express 上。`reflect-metadata` 必须在这些类求值之前导入。依赖注入真正解决的是对象的创建权：业务类不再自己 `new` 下游依赖，测试时可以换绑定；依赖很少的时候手工装配也行，没必要硬上容器。
 
 ## DTO 守住 HTTP 边界
 
@@ -709,11 +713,11 @@ async function parseCreateUser(input: unknown) {
 }
 ```
 
-转换器只修剪已经是字符串的值，不会把对象、布尔值或数组强制转成文本；关闭隐式转换后，字符串 `"18"` 也不会冒充数字 `18`。入口校验负责给客户端清晰的 `400`，数据库约束负责保证最终一致性。两者不能互相替代：并发请求可能同时通过“邮箱是否存在”的查询，真正阻止重复的仍是唯一索引。
+转换器只修剪本来就是字符串的值，不会把对象、布尔值或数组强转成文本；关掉隐式转换后，字符串 `"18"` 也冒充不了数字 `18`。入口校验负责给客户端一个清楚的 `400`，数据库约束负责保证最终一致性。两者不能互相代替：并发请求可能同时通过"邮箱是否存在"的查询，真正拦住重复的还是唯一索引。
 
 ## JWT 校验链路
 
-JWT 的 Payload 只是 Base64URL 编码，不是加密。只放最少的身份声明，密码、手机号等敏感数据不应该进入 token。
+JWT 的 Payload 只是 Base64URL 编码，没有加密。里面只放最少的身份声明，密码、手机号这些敏感数据别放进 token。
 
 ```ts
 import jwt from 'jsonwebtoken';
@@ -764,6 +768,6 @@ app.get('/profile', requireJwt, (req, res) => {
 });
 ```
 
-签名有效只说明 token 没被篡改，并不代表账户仍然有效。封禁、删除、权限变化等状态若要立即生效，鉴权时还要查用户或校验版本号。密钥需要安全保存和轮换，访问 token 应短期有效；退出登录、改密和多端会话则需要单独设计失效策略。
+签名有效只说明 token 没被篡改，不代表账户还有效。封禁、删除、权限变化这些状态要立刻生效的话，鉴权时还要查用户或者校验版本号。密钥要安全保存、定期轮换，访问 token 的有效期要短；退出登录、改密码和多端会话，要单独设计失效策略。
 
-完整链路最终落在清晰的所有权上：HTTP 层解释请求，业务层维护规则，数据层维护一致性，鉴权层只建立可信身份。把这些职责混在一个路由函数里，功能仍可能跑通，但任何失败都会变得难以定位。
+整条链路最后落在清楚的职责归属上：HTTP 层解释请求，业务层维护规则，数据层维护一致性，鉴权层只负责建立可信的身份。这些职责全混在一个路由函数里，功能也许照样能跑，但出了任何问题都很难定位。

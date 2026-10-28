@@ -23,15 +23,15 @@ HTTP 请求 -> Controller -> Service -> Repository -> Database
 HTTP 响应 <- 序列化 Interceptor <- Service 返回的 Entity
 ```
 
-- Controller：读取请求并调用 Service。
+- Controller：读请求，调 Service。
 - Service：处理业务规则。
 - Repository：执行数据库操作。
 - Entity：描述持久化结构。
-- DTO：限制接口输入和输出。
+- DTO：限制接口的输入和输出。
 
 ## Entity 与 Repository
 
-Entity 映射数据库表，实例对应一行记录。
+Entity 映射数据库表，一个实例对应一行记录。
 
 ```ts
 // user.entity.ts
@@ -54,7 +54,7 @@ export class User {
 }
 ```
 
-根模块建立数据库连接，功能模块用 `forFeature` 注册 Entity。
+根模块建数据库连接，功能模块用 `forFeature` 注册 Entity。
 
 ```ts
 // app.module.ts
@@ -86,16 +86,16 @@ export class UsersService {
 }
 ```
 
-泛型在编译后会消失，`@InjectRepository(User)` 为 DI 提供运行时 token。
+泛型编译后就没了，`@InjectRepository(User)` 给 DI 提供运行时的 token。
 
-- Entity 包含主键、密码哈希和内部状态等持久化字段。
-- 输入 DTO 只声明客户端可写字段。
-- 输出 DTO 只声明接口公开字段，防止新增数据库列意外暴露。
+- Entity 里有主键、密码哈希、内部状态这些持久化字段。
+- 输入 DTO 只声明客户端能写的字段。
+- 输出 DTO 只声明接口公开的字段，免得新加的数据库列被意外暴露。
 
 ## `create`、`save`、`update` 与 `remove`
 
-- `repo.create(data)` 只在内存里创建 Entity 实例，不会执行 SQL。
-- `repo.save(entity)` 才会插入或更新数据库，并返回保存后的实体。
+- `repo.create(data)` 只在内存里建 Entity 实例，不执行 SQL。
+- `repo.save(entity)` 才会插入或更新数据库，返回保存后的实体。
 
 ```ts
 async create(email: string, password: string) {
@@ -104,7 +104,7 @@ async create(email: string, password: string) {
 }
 ```
 
-Entity 存在 listener、subscriber 或实例方法时，先 `create` 再 `save`，确保操作的是实体实例。
+Entity 上有 listener、subscriber 或实例方法时，先 `create` 再 `save`，保证操作的是实体实例。
 
 | 操作方式 | 是否先取 Entity | 数据库往返 | Entity listener |
 | --- | --- | --- | --- |
@@ -113,13 +113,13 @@ Entity 存在 listener、subscriber 或实例方法时，先 `create` 再 `save`
 | `remove(entity)` | 需要 | 通常两次 | 会按实体流程执行 |
 | `delete(criteria)` | 不需要 | 一次 | 不走实体实例流程 |
 
-- 依赖实体钩子：使用 `save` / `remove`。
-- 批量操作或减少数据库往返：使用 `update` / `delete`。
-- `save` 收到数据库中已有的主键时会执行更新。主键必须由路由或服务端决定，请求体不能直接传给 `save`。
+- 依赖实体钩子：用 `save` / `remove`。
+- 批量操作或想少几次数据库往返：用 `update` / `delete`。
+- `save` 收到数据库里已有的主键时会执行更新。主键要由路由或服务端决定，不能把请求体直接传给 `save`。
 
 ## CRUD Service
 
-TypeORM 0.3 使用 `findOneBy({ id })` 或 `findOne({ where: { id } })`，不再使用旧版的 `findOne(id)`。
+TypeORM 0.3 用 `findOneBy({ id })` 或 `findOne({ where: { id } })`，旧版的 `findOne(id)` 已经不用了。
 
 ```ts
 type UserPatch = Partial<Pick<User, 'email' | 'password'>>;
@@ -152,15 +152,15 @@ async remove(id: number) {
 }
 ```
 
-- patch 类型用 `Pick` 限制可修改字段，避免 `Partial<User>` 放开 `id`。
-- 需要实体钩子或修改前校验时，先查再改再 `save`；固定值批量更新可直接 `update`。
-- 跨表写入使用 transaction，保证一起提交或回滚。
+- patch 类型用 `Pick` 限定能改的字段，避免 `Partial<User>` 把 `id` 也放开。
+- 需要实体钩子或修改前校验时，先查、再改、再 `save`；按固定值批量更新可以直接 `update`。
+- 跨表写入用 transaction，保证一起提交或一起回滚。
 
 ### 查询返回值
 
-- `findOneBy` 未命中返回 `null`，详情接口通常转换为 404。
-- `find` 未命中返回 `[]`。
-- 查询参数必填时由 DTO 或 Pipe 拒绝空值；可选时显式决定是否添加 `where` 条件。
+- `findOneBy` 没查到返回 `null`，详情接口一般转成 404。
+- `find` 没查到返回 `[]`。
+- 查询参数必填的话由 DTO 或 Pipe 拒绝空值；可选的话，明确决定要不要加 `where` 条件。
 
 ```ts
 async find(email?: string) {
@@ -172,13 +172,13 @@ async find(email?: string) {
 }
 ```
 
-- 列表接口必须设置排序和分页上限，常用过滤字段建立索引。
-- 删除未命中可返回 404，也可定义为幂等成功；接口内保持一致。
-- Service 需要被 WebSocket、gRPC 或任务队列复用时，抛领域错误，由入口层映射协议错误。
+- 列表接口一定要设排序和分页上限，常用的过滤字段要建索引。
+- 删除没命中可以返回 404，也可以算幂等成功；同一个接口里保持一致就行。
+- Service 要被 WebSocket、gRPC 或任务队列复用的话，抛领域错误，由入口层映射成各自协议的错误。
 
 ## 输入 DTO
 
-创建和更新的校验规则不同。创建用户时邮箱、密码都必填；更新时两者都可以不传，但只要传了就必须合法。
+创建和更新的校验规则不一样。创建用户时邮箱、密码都必填；更新时两个都可以不传，但只要传了就得合法。
 
 ```ts
 // create-user.dto.ts
@@ -204,7 +204,7 @@ export class UpdateUserDto {
 }
 ```
 
-Controller 读取参数、触发校验并调用 Service。
+Controller 读参数、触发校验、调 Service。
 
 ```ts
 @Controller('users')
@@ -243,11 +243,11 @@ export class UsersController {
 }
 ```
 
-URL 参数默认是字符串。`ParseIntPipe` 负责数字转换并在失败时返回 400；全局 `ValidationPipe` 至少开启 `whitelist: true`。
+URL 参数默认是字符串。`ParseIntPipe` 负责转数字，失败时返回 400；全局 `ValidationPipe` 至少要开 `whitelist: true`。
 
 ## 输出 DTO 与序列化
 
-输入 DTO 和输出 DTO 不复用。密码哈希也不能出现在接口响应中。
+输入 DTO 和输出 DTO 不复用。密码哈希也不能出现在接口响应里。
 
 ```ts
 // user.dto.ts
@@ -262,7 +262,7 @@ export class UserDto {
 }
 ```
 
-优先使用输出 DTO 白名单；同一个 Entity 可以映射为公开资料、管理员视图等不同响应。
+优先用输出 DTO 做白名单；同一个 Entity 可以映射成公开资料、管理员视图等不同的响应。
 
 ```ts
 type ClassConstructor = new (...args: any[]) => object;
@@ -295,45 +295,45 @@ export class UsersController {
 }
 ```
 
-- `excludeExtraneousValues: true` 只保留 `@Expose()` 字段。
-- `plainToInstance` 支持对象和数组；旧版名称是 `plainToClass`。
-- 不要 `delete user.password`：这会修改实体对象，而且数组、分页和嵌套关系容易漏字段。
-- 排错顺序：Service 返回值 -> Interceptor 原始 `data` -> DTO 的 `@Expose()`。
+- `excludeExtraneousValues: true` 只保留 `@Expose()` 的字段。
+- `plainToInstance` 支持对象和数组，旧版叫 `plainToClass`。
+- 别 `delete user.password`：这会改掉实体对象本身，而且碰到数组、分页和嵌套关系很容易漏字段。
+- 排错顺序：Service 的返回值 -> Interceptor 拿到的原始 `data` -> DTO 的 `@Expose()`。
 
 ## 排错
 
 ### 1. `No metadata for User was found`
 
-先检查 `User` 是否进入根连接的 `entities`，或是否启用了 `autoLoadEntities`；再检查功能模块有没有 `TypeOrmModule.forFeature([User])`。
+先查 `User` 有没有进根连接的 `entities`，或者有没有开 `autoLoadEntities`；再查功能模块有没有 `TypeOrmModule.forFeature([User])`。
 
 ### 2. Nest 无法解析 `Repository<User>`
 
-通常是漏了 `@InjectRepository(User)`，或者 Service 所在模块没有导入 `TypeOrmModule.forFeature([User])`。只看 TypeScript 类型不会解决运行时 DI。
+一般是漏了 `@InjectRepository(User)`，或者 Service 所在的模块没导入 `TypeOrmModule.forFeature([User])`。光看 TypeScript 类型解决不了运行时 DI。
 
 ### 3. 调了 `create`，数据库却没有数据
 
-`create` 不写库。打开 TypeORM query 日志，确认后面是否真的执行了 `save`，以及异步调用是否 `await`。
+`create` 不写库。打开 TypeORM 的 query 日志，确认后面是不是真的执行了 `save`，异步调用有没有 `await`。
 
 ### 4. 更新或删除后 listener 没运行
 
-检查是不是直接用了 `update` / `delete`。如果业务依赖实体 listener，先查出实体，再 `save` / `remove`；如果不依赖，就别为了形式多跑一次查询。
+看是不是直接用了 `update` / `delete`。业务依赖实体 listener 的话，先查出实体再 `save` / `remove`；不依赖的话，就别为了走形式多跑一次查询。
 
 ### 5. 密码仍然出现在响应里
 
-确认 Interceptor 的作用范围，确认 DTO 字段有 `@Expose()`，并检查是否打开 `excludeExtraneousValues`。不要只在某一个 Controller 方法里手动 `delete user.password`，这种修补很容易漏路由。
+确认 Interceptor 的作用范围、DTO 字段上有没有 `@Expose()`、有没有开 `excludeExtraneousValues`。别只在某一个 Controller 方法里手动 `delete user.password`，这种补丁很容易漏掉别的路由。
 
 ### 6. 重复邮箱偶尔还是写进去了
 
-Service 中“先查询再创建”只能改善提示，挡不住并发请求。数据库列仍要加唯一约束，并把唯一键冲突转换成合适的接口错误。
+Service 里"先查再建"只能让提示友好点，挡不住并发请求。数据库列还是要加唯一约束，并把唯一键冲突转成合适的接口错误。
 
 ### 7. `synchronize: true` 用到了生产环境
 
-生产环境关闭 `synchronize`，使用 migration 管理表结构。
+生产环境关掉 `synchronize`，用 migration 管表结构。
 
 ### 8. SQLite 能跑，换 PostgreSQL 后出错
 
-SQLite 的类型和约束更宽松。迁移到 PostgreSQL 前检查列类型、大小写比较、唯一约束、日期时区和事务行为，并在目标数据库运行集成测试。
+SQLite 的类型和约束更宽松。迁到 PostgreSQL 之前，查一遍列类型、大小写比较、唯一约束、日期时区和事务行为，并在目标数据库上跑集成测试。
 
 ### 9. Controller 越写越厚
 
-查库、业务判断、对象合并和多步写入放在 Service；`@Param`、`@Body` 和 HTTP 状态码留在 Controller。
+查库、业务判断、对象合并、多步写入放进 Service；`@Param`、`@Body` 和 HTTP 状态码留在 Controller。

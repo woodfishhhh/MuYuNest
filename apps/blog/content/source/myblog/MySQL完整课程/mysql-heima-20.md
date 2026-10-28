@@ -12,13 +12,13 @@ tags:
   - 课程笔记
 ---
 
-SELECT INTO 可以把一行中的若干列赋给相应变量，但一个普通 INT 变量接不住多行结果。需要逐行处理查询结果时，可以声明游标，再依次 FETCH。游标描述如何访问结果集，并不意味着应用已经拿到一个可以任意跳转修改的内存数组。
+SELECT INTO 只能把一行结果赋给变量，普通 INT 变量接不住多行。要逐行处理查询结果，就声明游标，再一行行 FETCH。游标只是按顺序读结果集的方式，不是一个能随便跳转、修改的内存数组。
 
-课程的任务是按年龄筛选用户，把姓名与专业写入另一张表。下面沿用 index_user，年龄条件明确为 `age<=p_age`。如果只需要复制数据，实际更适合 `INSERT ... SELECT`；这里先把游标的完整过程走通。
+课程的例子：按年龄筛选用户，把姓名和专业写进另一张表。下面沿用 index_user，条件写成 `age<=p_age`。只是复制数据的话，其实用 `INSERT ... SELECT` 更合适，这里先把游标的流程走一遍。
 
 ## 先准备目标表，再创建过程
 
-目标表在过程外创建，避免每次调用都 DROP/CREATE 表，以及 DDL 带来的提交边界变化：
+目标表在过程外面建好，免得每次调用都 DROP/CREATE，也避开 DDL 带来的隐式提交：
 
 ```sql
 CREATE TABLE user_profession (
@@ -51,9 +51,9 @@ END$$
 DELIMITER ;
 ```
 
-声明顺序有规则：普通变量与条件在前，游标在后，handler 再后面，然后才开始执行 OPEN 等语句。FETCH 的变量数量和顺序要与 SELECT 的列对应。
+声明顺序是固定的：普通变量和条件 → 游标 → handler，然后才是 OPEN 等语句。FETCH 的变量个数和顺序要和 SELECT 的列一一对应。
 
-打开游标后，每次 FETCH 取得下一行。读到末尾时触发 NOT FOUND，handler 把 v_done 置为 TRUE，控制流回到 FETCH 后面，再由 LEAVE 退出。因此必须先检查 v_done，不能直接插入；否则没有取到新行时，旧变量值可能被重复使用。
+OPEN 之后，每 FETCH 一次取下一行。读到末尾触发 NOT FOUND，handler 把 v_done 设为 TRUE，回到 FETCH 后面，再由 LEAVE 退出。所以要先判断 v_done 再插入，否则没取到新行时会把上一轮的旧值再写一遍。
 
 ```sql
 START TRANSACTION;
@@ -62,9 +62,9 @@ SELECT * FROM user_profession ORDER BY source_id;
 ROLLBACK;
 ```
 
-在初始 index_user 数据下，只有白起的年龄为 30，预期得到一行；回滚后目标表仍为空。把事务放在调用方，可以明确决定本次复制是否提交。若正式提交后再次复制同一 source_id，主键冲突会暴露重复调用；是否忽略、覆盖或拒绝重复，应由业务明确选择。
+按初始 index_user 数据，只有白起年龄是 30，预期得到一行；回滚后目标表还是空的。事务放在调用方，由调用方决定这次复制提不提交。提交后再复制同一个 source_id 会主键冲突，正好暴露重复调用；要忽略、覆盖还是拒绝，看业务需要。
 
-再看 p_age=31 的完整读取过程。index_user 中四个人都符合条件，游标查询按 id 排好序。OPEN 准备结果访问状态，但不会自动把第一行放进 v_id 等变量；第一次 FETCH 才取得白起。
+再看 p_age=31 时完整的读取过程。index_user 里四个人都符合，游标查询按 id 排序。OPEN 只是准备好结果，不会自动把第一行放进 v_id 这些变量，第一次 FETCH 才拿到白起。
 
 | FETCH 次数 | 本次结果 | v_done | 接下来执行什么 |
 | --- | --- | --- | --- |
@@ -74,34 +74,40 @@ ROLLBACK;
 | 4 | 曹操，id=4 | FALSE | 插入第四行 |
 | 5 | 没有下一行 | handler 改为 TRUE | LEAVE，随后 CLOSE |
 
-第五次读取并不会把变量自动清成一组可以安全写入的空值。程序先检查 done，再决定是否使用变量，因此不会把上一轮的曹操又写一次。若把 INSERT 放在 done 判断前面，这个末尾控制就被破坏了。
+第五次 FETCH 不会把变量清空。因为先判断 done 再决定用不用变量，所以不会把上一轮的曹操再写一次。要是把 INSERT 放到 done 判断前面，就会出这个问题。
 
-空结果也沿同一条流程处理。例如 p_age=10 时，第一次 FETCH 就没有行，handler 把 done 改为 TRUE，循环立即退出，目标表仍为空。代码不需要另写“查询数量等于零”的前置判断，因为游标结束条件已经覆盖了这个情况。
+空结果也走同一套流程。比如 p_age=10，第一次 FETCH 就没数据，handler 把 done 改成 TRUE，循环直接退出，目标表还是空的。不用额外写"查询数量等于零"的判断，游标结束条件已经覆盖了。
 
-在目标表为空时，用 `START TRANSACTION; CALL copy_profession(31); SELECT * FROM user_profession ORDER BY source_id; ROLLBACK;` 可以核对四行顺序及回滚。不要在已经提交了一轮相同 ID 后直接重复调用，否则看到的重复键错误来自目标表约束，而不是游标读错了位置。
+目标表为空时，可以用 `START TRANSACTION; CALL copy_profession(31); SELECT * FROM user_profession ORDER BY source_id; ROLLBACK;` 核对四行的顺序和回滚。别在已经提交过同一批 ID 之后再直接调用，那时的重复键报错来自目标表约束，不是游标读错了位置。
 
 ## handler 决定异常后的控制流
 
-`DECLARE CONTINUE HANDLER FOR ...` 处理后继续执行引发条件的语句之后的逻辑。`EXIT HANDLER` 处理后退出声明它的 BEGIN/END 块，不能简单理解成只跳出当前循环。
+`DECLARE CONTINUE HANDLER FOR ...`：处理完继续执行触发条件那条语句之后的逻辑。`EXIT HANDLER`：处理完退出声明它的 BEGIN/END 块，不只是跳出当前循环。
 
-常见条件类型有：NOT FOUND 对应“没有更多数据”等 02 类状态；SQLWARNING 对应 01 类警告；SQLEXCEPTION 处理其他异常类。也可以指定特定 SQLSTATE 或错误码。
+常见条件类型：
 
-课程中的另一种写法是用 EXIT HANDLER 捕获游标结束并关闭游标。它能完成简单流程，但如果过程还需要执行循环之后的正常逻辑，使用 done 标记通常更直观。
+- NOT FOUND：没有更多数据等 02 类状态
+- SQLWARNING：01 类警告
+- SQLEXCEPTION：其他异常
 
-handler 的作用范围很重要。若同一块里还有其他 SELECT INTO 也可能没有结果，通用 NOT FOUND handler 也会被它触发。更复杂程序可以用嵌套块把捕获范围限制到实际需要的操作。
+也可以指定具体的 SQLSTATE 或错误码。
+
+课程里另一种写法是用 EXIT HANDLER 捕获游标结束并关闭游标。简单流程能用，但如果循环后面还有正常逻辑要跑，用 done 标记更直观。
+
+注意 handler 的作用范围。同一个块里如果还有别的 SELECT INTO 可能查不到结果，通用的 NOT FOUND handler 也会被它触发。复杂一点的程序可以用嵌套块，把捕获范围限制在真正需要的操作上。
 
 ## 只有复制需求时，优先用集合操作
 
-同一个任务可直接表达为：
+同样的任务可以直接写成：
 
 ```sql
 INSERT INTO user_profession(source_id,name,profession)
 SELECT id,name,profession FROM index_user WHERE age<=30;
 ```
 
-数据库可以整体处理结果，不需要在存储程序中逐行 FETCH。游标适合确有逐行状态和控制要求的任务；不能因为学会循环，就把可以用一条 SQL 完成的操作都改成循环。
+数据库能整体处理结果，不用在存储过程里逐行 FETCH。游标只适合确实需要逐行维护状态、逐行控制的任务，别因为会写循环，就把一条 SQL 能做完的事都改成循环。
 
-检查游标程序时，重点核对空结果、最后一行、重复调用和中途写入失败。正常结束不报错只能说明控制流跑完，还要查询目标表确认没有漏行或重复行，并确认事务是否按预期提交。
+检查游标程序时，重点看：空结果、最后一行、重复调用、中途写入失败。正常跑完不报错只说明控制流走完了，还要查目标表确认没有漏行、没有重复，以及事务有没有按预期提交。
 
 
 ---

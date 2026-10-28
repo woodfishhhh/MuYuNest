@@ -25,8 +25,8 @@ categories:
 
 构造函数
 
-- **概念**：构造函数是用于创建对象的函数，使用`new`关键字调用的函数即为构造函数。
-- **用法及案例**
+- 概念：构造函数是用于创建对象的函数，使用`new`关键字调用的函数即为构造函数。
+- 用法及案例
 
 ```html
 <script>
@@ -47,8 +47,8 @@ categories:
 
 实例成员
 
-- **概念**：通过构造函数创建的对象为实例对象，其属性和方法是实例成员。
-- **用法及案例**
+- 概念：通过构造函数创建的对象为实例对象，其属性和方法是实例成员。
+- 用法及案例
 
 ```html
 <script>
@@ -72,8 +72,8 @@ categories:
 
 静态成员
 
-- **概念**：JavaScript 中函数本质是对象类型，构造函数的属性和方法是静态成员。
-- **用法及案例**
+- 概念：JavaScript 中函数本质是对象类型，构造函数的属性和方法是静态成员。
+- 用法及案例
 
 ```html
 <script>
@@ -94,7 +94,7 @@ categories:
 
 ### （二）内置构造函数
 
-1. **概念**：JavaScript 有 6 种主要数据类型，包括字符串、数值、布尔、`undefined`、`null`和对象。其中字符串、数值、布尔、`undefined`、`null`是简单或基础类型，对象是引用类型。JavaScript 内置一些构造函数用于数据处理，如`Date`。
+1. 概念：JavaScript 有 6 种主要数据类型，包括字符串、数值、布尔、`undefined`、`null`和对象。其中字符串、数值、布尔、`undefined`、`null`是简单或基础类型，对象是引用类型。JavaScript 内置一些构造函数用于数据处理，如`Date`。
 
 
 #### JavaScript 中的 Object（对象）
@@ -107,14 +107,14 @@ categories:
 
 有两种主要方式可以创建对象：
 
-1. **用 Object 构造函数**（不推荐）
+1. 用 Object 构造函数（不推荐）
 
    ```javascript
    // 用 new Object() 创建对象
    const user = new Object({name: '小明', age: 15});
    ```
 
-2. **用对象字面量 `{}`**（推荐）
+2. 用对象字面量 `{}`（推荐）
 
    ```javascript
    // 直接用 {} 创建对象（更简单直观）
@@ -138,7 +138,7 @@ let people = {
 
 ##### 常用检查方法
 
-1. **查看对象的构造函数**
+1. 查看对象的构造函数
 
    ```javascript
    console.log(student.constructor); // 输出：[Function: Object]
@@ -147,7 +147,7 @@ let people = {
 
    说明：无论是用 `{}` 还是 `new Object()` 创建的对象，都是由 `Object` 构造函数创建的。
 
-2. **检查是否是 Object 的实例**
+2. 检查是否是 Object 的实例
 
    ```javascript
    console.log(student instanceof Object); // 输出：true
@@ -157,7 +157,7 @@ let people = {
 
 ##### 实用工具（Object 的静态方法）
 
-1. **合并对象（创建新对象）**
+1. 合并对象（创建新对象）
 
    ```javascript
    const obj1 = {a: 1};
@@ -165,14 +165,14 @@ let people = {
    const newObj = Object.assign({}, obj1, obj2); // {a:1, b:2}
    ```
 
-2. **获取所有属性名**
+2. 获取所有属性名
 
    ```javascript
    const obj = {name: '张三', age: 18};
    console.log(Object.keys(obj)); // 输出：['name', 'age']
    ```
 
-3. **获取所有属性值**
+3. 获取所有属性值
 
    ```javascript
    console.log(Object.values(obj)); // 输出：['张三', 18]
@@ -186,8 +186,8 @@ let people = {
 
 Array
 
-- **概念**：`Array`是内置构造函数，用于创建数组。
-- **用法及案例**
+- 概念：`Array`是内置构造函数，用于创建数组。
+- 用法及案例
 
 ```html
 <script>
@@ -214,10 +214,10 @@ Array
 
 包装类型
 
-- **概念**：JavaScript 中字符串、数值、布尔类型数据具有对象特征，是因为底层用`Object`构造函数 “包装”，被称为包装类型。
+- 概念：JavaScript 中字符串、数值、布尔类型数据具有对象特征，是因为底层用`Object`构造函数 “包装”，被称为包装类型。
 - String
-  - **概念**：`String`是内置构造函数，用于创建字符串。
-  - **用法及案例**
+  - 概念：`String`是内置构造函数，用于创建字符串。
+  - 用法及案例
 
 ```html
 <script>
@@ -245,8 +245,8 @@ Array
 
 - Number
 
-  - **概念**：`Number`是内置构造函数，用于创建数值。
-  - **用法及案例**
+  - 概念：`Number`是内置构造函数，用于创建数值。
+  - 用法及案例
 
 ```html
 <script>

@@ -16,7 +16,7 @@ draft: false
 
 # NestJS 全家桶
 
-从 NestJS 的依赖注入和 HTTP 请求处理开始，逐步搭建文件处理、校验鉴权、接口文档以及 TypeORM 数据持久化能力。
+从 NestJS 的依赖注入和 HTTP 请求处理开始，一步步加上文件处理、校验鉴权、接口文档和 TypeORM 数据持久化。
 
 ## 目录
 

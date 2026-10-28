@@ -14,9 +14,9 @@ draft: false
 
 # Vue 3 完全开发指南
 
-从 Vue 3 响应式原理和组件体系出发，覆盖动画、自定义能力、工程化、Pinia、Vue Router、可视化项目，以及 PM2、Linux、Nginx 和 Web 安全基础。
+从 Vue 3 的响应式原理和组件体系讲起，覆盖动画、自定义能力、工程化、Pinia、Vue Router、可视化项目，以及 PM2、Linux、Nginx 和 Web 安全基础。
 
-示例统一采用 Composition API、`<script setup lang="ts">` 和当前通行写法；遇到版本敏感 API 时，以项目 lockfile 与对应官方文档为准。
+示例统一用 Composition API、`<script setup lang="ts">` 和现在通行的写法；碰到跟版本有关的 API，以项目的 lockfile 和对应的官方文档为准。
 
 ## 原始链接
 

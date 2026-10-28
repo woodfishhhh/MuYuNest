@@ -16,9 +16,9 @@ categories:
 
 复习：
 
-splice() 方法用于添加或删除数组中的元素。
+splice() 用来添加或删除数组里的元素。
 
-**注意：**这种方法会改变原始数组。
+**注意：**它会改变原数组。
 
 1. **删除数组：**
 
@@ -44,43 +44,39 @@ arr.splice(1, 0, 'pink', 'hotpink') // 在索引号是1的位置添加 pink  hot
 console.log(arr) // ['red', 'pink', 'hotpink', 'green', 'blue']
 ~~~
 
-
-
-> 了解 DOM 的结构并掌握其基本的操作，体验 DOM 的在开发中的作用
+> 了解 DOM 的结构，掌握基本操作，体会 DOM 在开发中的作用
 
 - 知道 ECMAScript 与 JavaScript 的关系
-- 了解 DOM 的相关概念及DOM 的本质是一个对象
+- 了解 DOM 的相关概念，DOM 本质是一个对象
 - 掌握查找节点的基本方法
 - 掌握节点属性和文本的操作
-- 能够使用间歇函数创建定时任务
+- 会用间歇函数创建定时任务
 
 ## 介绍
 
 > 知道 ECMAScript 与 JavaScript 的关系，Web APIs 是浏览器扩展的功能。
 
-严格意义上讲，我们在 JavaScript 阶段学习的知识绝大部分属于 ECMAScript 的知识体系，ECMAScript 简称 ES 它提供了一套语言标准规范，如变量、数据类型、表达式、语句、函数等语法规则都是由 ECMAScript 规定的。浏览器将 ECMAScript 大部分的规范加以实现，并且在此基础上又扩展一些实用的功能，这些被扩展出来的内容我们称为 Web APIs。
+前面 JavaScript 阶段学的基本都是 ECMAScript（简称 ES）。ES 是一套语言标准规范，变量、数据类型、表达式、语句、函数这些语法规则都是它规定的。浏览器实现了 ES 的大部分规范，又在此基础上扩展了一些实用功能，扩展出来的这部分就叫 Web APIs。
 
 ![guide](https://www.woodfishhhh.xyz/images/guide.png?_t=1753076439587)
 
-ECMAScript 运行在浏览器中然后再结合 Web APIs 才是真正的 JavaScript，Web APIs 的核心是 DOM 和 BOM。
+ECMAScript 跑在浏览器里，再加上 Web APIs，才是真正的 JavaScript。Web APIs 的核心是 DOM 和 BOM。
 
-扩展阅读：ECMAScript 规范在不断的更新中，存在多个不同的版本，早期的版本号采用数字顺序编号如 ECMAScript3、ECMAScript5，后来由于更新速度较快便采用年份做为版本号，如 ECMAScript2017、ECMAScript2018 这种格式，ECMAScript6 是 2015 年发布的，常叫做 EMCAScript2015。
+扩展阅读：ECMAScript 一直在更新，有多个版本。早期按数字编号，如 ECMAScript3、ECMAScript5；后来更新太快，改用年份当版本号，如 ECMAScript2017、ECMAScript2018。ECMAScript6 是 2015 年发布的，常叫做 ECMAScript2015。
 
 关于 JavaScript 历史的[扩展阅读](https://javascript.ruanyifeng.com/introduction/history.html)。
 
+> 知道 DOM 相关概念，学习 DOM 基本操作，体会 DOM 的作用
 
+DOM（Document Object Model）把 HTML 文档里的每个标签都当成一个对象，对象上有很多属性和方法。改这些属性、调这些方法，就能动态更新 HTML。
 
-> 知道 DOM 相关的概念，建立对 DOM 的初步认识，学习 DOM 的基本操作，体会 DOM 的作用
+简单说，DOM 就是用来动态修改 HTML 的，网页特效和用户交互都靠它。
 
-DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素视为一个对象，这个对象下包含了许多的属性和方法，通过操作这些属性或者调用这些方法实现对 HTML 的动态更新，为实现网页特效以及用户交互提供技术支撑。
-
-简言之 DOM 是用来动态修改 HTML 的，其目的是开发网页特效及用户交互。
-
-观察一个小例子：
+看个小例子：
 
 ![demo](https://www.woodfishhhh.xyz/images/demo.gif?_t=1753076439587)
 
-上述的例子中当用户分分别点击【开始】或【结束】按钮后，通过右侧调试窗口可以观察到 html 标签的内容在不断的发生改变，这便是通过 DOM 实现的。
+分别点【开始】或【结束】按钮，右侧调试窗口里 html 标签的内容一直在变，这就是 DOM 做的。
 
 ### 概念
 
@@ -102,23 +98,23 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 </html>
 ```
 
-如下图所示，将 HTML 文档以树状结构直观的表现出来，我们称之为文档树或 DOM 树，**文档树直观的体现了标签与标签之间的关系。**
+把 HTML 文档画成树状结构，就是文档树，也叫 DOM 树（见下图）。**文档树体现了标签之间的关系。**
 
 ![dom](https://www.woodfishhhh.xyz/images/web-api.jpg.jpeg?_t=1753076439587)
 
 #### DOM 节点
 
-节点是文档树的组成部分，**每一个节点都是一个 DOM 对象**，主要分为元素节点、属性节点、文本节点等。
+文档树由节点组成，**每个节点都是一个 DOM 对象**。主要有元素节点、属性节点、文本节点等：
 
-1. 【元素节点】其实就是 HTML 标签，如上图中 `head`、`div`、`body` 等都属于元素节点。
-2. 【属性节点】是指 HTML 标签中的属性，如上图中 `a` 标签的 `href` 属性、`div` 标签的 `class` 属性。
-3. 【文本节点】是指 HTML 标签的文字内容，如 `title` 标签中的文字。
+1. 【元素节点】就是 HTML 标签，比如上图的 `head`、`div`、`body`。
+2. 【属性节点】标签上的属性，比如上图 `a` 标签的 `href`、`div` 标签的 `class`。
+3. 【文本节点】标签里的文字，比如 `title` 标签中的文字。
 4. 【根节点】特指 `html` 标签。
 5. 其它...
 
 #### document
 
-`document` 是 JavaScript 内置的专门用于 DOM 的对象，该对象包含了若干的属性和方法，`document` 是学习 DOM 的核心。
+`document` 是 JavaScript 内置的、专门操作 DOM 的对象，上面有很多属性和方法，是学 DOM 的核心。
 
 ```html
 <script>
@@ -136,7 +132,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 </script>
 ```
 
-上述列举了 `document` 对象的部分属性和方法，我们先对 `document` 有一个整体的认识。
+上面列了 `document` 的部分属性和方法，先有个整体印象就行。
 
 ## 获取DOM对象
 
@@ -175,30 +171,26 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 ### 1. 获取页面标签的常用方式
 
-获取页面中的标签，最终常用以下两种方式：
+常用的就这两个：
 
 - `querySelectorAll()`
 - `querySelector()`
 
 ### 2. 两者的区别
 
-- `querySelector()`：仅能选取**一个元素**（匹配的第一个元素 ），返回单个 DOM 节点，可直接对其操作。
-- `querySelectorAll()`：可选取**多个元素**（匹配的所有元素 ），返回**伪数组**（`NodeList` 类型 ），需遍历（如 `for`、`forEach` ）才能操作每个元素。
+- `querySelector()`：只取匹配的第一个元素，返回单个 DOM 节点，拿到就能直接操作。
+- `querySelectorAll()`：取匹配的所有元素，返回**伪数组**（`NodeList`），要遍历（`for`、`forEach`）才能操作每个元素。
 
 ### 3. 参数注意事项
 
-- 小括号内需写 **CSS 选择器**（如 `#id`、`.class`、`tag` 等 ）。
-- 选择器必须是**字符串格式**，需用引号（单 / 双引号均可 ）包裹，否则会因语法错误无法执行。
-
-
-
-
+- 括号里写 CSS 选择器，比如 `#id`、`.class`、`tag`。
+- 选择器是字符串，要用引号包起来（单双引号都行），不然会报语法错误。
 
 ## 操作元素内容
 
-通过修改 DOM 的文本内容，动态改变网页的内容。
+改 DOM 的文本内容，就能动态改网页内容。
 
-1. `innerText` 将文本内容添加/更新到任意标签位置，**文本中包含的标签不会被解析。**
+1. `innerText`：把文本内容添加/更新到任意标签位置，**文本里的标签不会被解析。**
 
 ```html
 <script>
@@ -209,7 +201,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 </script>
 ```
 
-2. `innerHTML` 将文本内容添加/更新到任意标签位置，**文本中包含的标签会被解析。**
+2. `innerHTML`：把文本内容添加/更新到任意标签位置，**文本里的标签会被解析。**
 
 ```html
 <script>
@@ -220,15 +212,15 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 </script>
 ```
 
-总结：如果文本内容中包含 `html` 标签时推荐使用 `innerHTML`，否则建议使用 `innerText` 属性。
+总结：文本里有 `html` 标签就用 `innerHTML`，没有就用 `innerText`。
 
 ##操作元素属性 
 
-有3种方式可以实现对属性的修改：
+改属性有3种方式：
 
 #### 常用属性修改
 
-1. 直接能过属性名修改，最简洁的语法
+1. 直接通过属性名修改，写法最简洁
 
 ```html
 <script>
@@ -243,9 +235,9 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 #### 控制样式属性
 
-1. 应用【修改样式】，通过修改行内样式 `style` 属性，实现对样式的动态修改。
+1. 【修改样式】改行内样式 `style` 属性，动态修改样式。
 
-通过元素节点获得的 `style` 属性本身的数据类型也是对象，如 `box.style.color`、`box.style.width` 分别用来获取元素节点 CSS 样式的 `color` 和 `width` 的值。
+元素节点的 `style` 属性本身也是对象，`box.style.color`、`box.style.width` 分别拿到 CSS 样式里 `color` 和 `width` 的值。
 
 ```html
 <!DOCTYPE html>
@@ -270,11 +262,11 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 </html>
 ```
 
-任何标签都有 `style` 属性，通过 `style` 属性可以动态更改网页标签的样式，如要遇到 `css` 属性中包含字符 `-` 时，要将 `-` 去掉并将其后面的字母改成大写，如 `background-color` 要写成 `box.style.backgroundColor`
+任何标签都有 `style` 属性，用它就能动态改样式。注意 `css` 属性名里带 `-` 的，要去掉 `-` 并把后面的字母大写，比如 `background-color` 要写成 `box.style.backgroundColor`。
 
 2. 操作类名(className) 操作CSS
 
-如果修改的样式比较多，直接通过style属性修改比较繁琐，我们可以通过借助于css类名的形式。
+要改的样式多时，一条条用 style 改太繁琐，可以借助 css 类名。
 
 ~~~html
 <!DOCTYPE html>
@@ -303,13 +295,13 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 >注意：
 >
->1.由于class是关键字, 所以使用className去代替
+>1.class 是关键字，所以用 className 代替
 >
->2.className是使用新值换旧值, 如果需要添加一个类,需要保留之前的类名
+>2.className 是用新值换旧值，要添加一个类的话，得把之前的类名也保留下来
 
 3. 通过 classList 操作类控制CSS
 
-为了解决className 容易覆盖以前的类名，我们可以通过classList方式追加和删除类名
+className 容易把以前的类名覆盖掉，用 classList 可以单独追加和删除类名。
 
 ~~~html
 <!DOCTYPE html>
@@ -357,9 +349,9 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 #### 操作表单元素属性
 
-表单很多情况，也需要修改属性，比如点击眼睛，可以看到密码，本质是把表单类型转换为文本框
+表单很多时候也要改属性。比如点眼睛图标显示密码，其实就是把表单类型改成文本框。
 
-正常的有属性有取值的跟其他的标签属性没有任何区别
+有属性值的属性，用法跟其他标签属性一样：
 
 获取:DOM对象.属性名
 
@@ -404,15 +396,14 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 #### 自定义属性
 
-标准属性: 标签天生自带的属性 比如class id title等, 可以直接使用点语法操作比如： disabled、checked、selected
+标准属性：标签天生自带的属性，比如 class、id、title 等，可以直接用点语法操作，比如：disabled、checked、selected
 
 自定义属性：
 
-在html5中推出来了专门的data-自定义属性  
+html5 推出了专门的 data- 自定义属性：
 
-在标签上一律以data-开头
-
-在DOM对象上一律以dataset对象方式获取
+- 在标签上一律以 data- 开头
+- 在 DOM 对象上一律用 dataset 对象获取
 
 ~~~html
 <!DOCTYPE html>
@@ -444,7 +435,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 
 > 知道间歇函数的作用，利用间歇函数创建定时任务。
 
-`setInterval` 是 JavaScript 中内置的函数，它的作用是间隔固定的时间自动重复执行另一个函数，也叫定时器函数。
+`setInterval` 是 JavaScript 内置函数，每隔固定时间自动重复执行另一个函数，也叫定时器函数。
 
 ```html
 <script>
@@ -460,7 +451,7 @@ DOM（Document Object Model）是将整个 HTML 文档的每一个标签元素�
 ```
 
 **返回值与清除定时器**
-`setInterval` 会返回一个唯一的标识符（timerID），可以用 `clearInterval` 来停止定时器：
+`setInterval` 会返回一个唯一标识（timerID），用 `clearInterval` 停止定时器：
 
 `let 变量名 = setInterval(函数，间隔时间)`
 
@@ -480,7 +471,7 @@ setTimeout(function() {
 ```
 
 **直接传入函数**
-可以不单独定义函数，而是直接传入匿名函数：
+不用单独定义函数，直接传匿名函数也行：
 
 ```javascript
 // 直接传入匿名函数
@@ -490,7 +481,7 @@ setInterval(function() {
 ```
 
 **传递参数**
-如果需要给被调用的函数传递参数，可以这样做：
+要给被调用的函数传参，这样写：
 
 ```javascript
 function greet(name) {
@@ -500,7 +491,3 @@ function greet(name) {
 // 传递参数
 setInterval(greet, 3000, 'John'); // 每3秒输出 "Hello, John!"
 ```
-
-
-
-

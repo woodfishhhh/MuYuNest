@@ -21,7 +21,7 @@ draft: false
 
 # Next.js 16 AI SDK、Proxy 与渲染模式
 
-AI 聊天页的难点不在于调用一次模型，而在于把密钥留在服务器、把回复流式传回浏览器、保存上下文，并且不让一个小交互把整个页面拖进客户端。Proxy、RSC 和三种渲染模式解决的是同一条链路上的不同问题。
+AI 聊天页难的不是调一次模型，而是：密钥留在服务器，回复流式传回浏览器，上下文存下来，还不能因为一个小交互把整个页面拖进客户端。Proxy、RSC 和三种渲染模式管的是这条链路上的不同环节。
 
 ## 1. AI 请求必须停在服务器
 
@@ -31,7 +31,7 @@ AI 聊天页的难点不在于调用一次模型，而在于把密钥留在服�
 pnpm add ai @ai-sdk/openai @ai-sdk/react
 ```
 
-如果使用 DeepSeek 等 OpenAI 兼容服务，只需要替换 provider 和 base URL：
+用 DeepSeek 这类 OpenAI 兼容服务的话，换掉 provider 和 base URL 就行：
 
 ```ts
 // src/lib/ai.ts
@@ -43,11 +43,11 @@ export const deepseek = createOpenAI({
 });
 ```
 
-`DEEPSEEK_API_KEY` 只能在服务器模块读取。不能把它写进 `NEXT_PUBLIC_*`，也不能从客户端直接请求模型供应商。
+`DEEPSEEK_API_KEY` 只能在服务器模块里读。不能写进 `NEXT_PUBLIC_*`，也不能从客户端直接请求模型供应商。
 
 ## 2. Route Handler 返回流
 
-把 AI 入口放在约定目录后，`useChat` 可以使用默认 API 路径：
+AI 入口放在约定的目录后，`useChat` 就能用默认的 API 路径：
 
 ```text
 src/app/api/chat/route.ts
@@ -71,13 +71,13 @@ export async function POST(request: Request) {
 }
 ```
 
-这里有三个边界：
+这里分三步：
 
-1. `request.json()` 读取客户端上下文。
-2. `convertToModelMessages` 把 UI 消息转换成模型需要的消息格式。
-3. `streamText` 生成增量结果，响应使用流式格式而不是等待完整字符串。
+1. `request.json()` 读客户端传来的上下文。
+2. `convertToModelMessages` 把 UI 消息转成模型要的消息格式。
+3. `streamText` 生成增量结果，响应用流式格式，不等完整的字符串。
 
-不要把客户端提交的消息无限制地直接转发给模型。生产代码还应限制消息数量和单条长度，校验 role/content，设置超时、错误响应和用量上限。
+别把客户端提交的消息不加限制地直接转发给模型。生产代码还要限制消息条数和单条长度，校验 role/content，加上超时、错误响应和用量上限。
 
 ## 3. 客户端消费上下文
 
@@ -125,11 +125,11 @@ export function Chat() {
 }
 ```
 
-消息结构包含 `role`、`id` 和 `parts`。不要假定所有 part 都是文本，未来加入图片、工具调用或文件时要按 `part.type` 分支。底部空节点配合 `scrollIntoView` 是简单可靠的自动滚动边界，比不断修改 `scrollTop` 更不容易和流式渲染打架。
+消息结构里有 `role`、`id` 和 `parts`。别假定所有 part 都是文本，以后加图片、工具调用或文件时要按 `part.type` 分支处理。自动滚动用底部一个空节点配合 `scrollIntoView` 就够了，又简单又可靠，比一直改 `scrollTop` 更不容易和流式渲染冲突。
 
 ## 4. Proxy：拦截、转发和快速门禁
 
-Next.js 16 把原来的 Middleware 文件名改成了 `proxy.ts`，功能没有因此变成新的鉴权系统：
+Next.js 16 把原来的 Middleware 文件名改成了 `proxy.ts`，功能并没有因此变成一套新的鉴权系统：
 
 ```ts
 // src/proxy.ts
@@ -150,15 +150,15 @@ export const config = {
 };
 ```
 
-Proxy 可以做：
+Proxy 能做的：
 
-- 根据 matcher 只拦截需要的路径。
-- 添加 CORS 响应头。
+- 按 matcher 只拦截需要的路径。
+- 加 CORS 响应头。
 - 把 `/api/legacy` 转发给另一个后端。
-- 根据 Header、Cookie、Query 做简单匹配。
-- 做限流或登录态的快速门禁。
+- 按 Header、Cookie、Query 做简单匹配。
+- 做限流，或者登录态的快速门禁。
 
-但 Cookie 存在不等于会话有效，Proxy 也不应该承担复杂的数据库权限查询。真正的资源授权仍需要在 Route Handler、Server Action 或服务端数据函数中完成。
+但有 Cookie 不代表会话有效，Proxy 也不该承担复杂的数据库权限查询。真正的资源授权还是要在 Route Handler、Server Action 或服务端数据函数里做。
 
 ## 5. CSR、SSR、SSG 和 hydration
 
@@ -168,13 +168,13 @@ Proxy 可以做：
 | SSR | 每次请求的服务器 | 较快 | 好 | 电商、动态博客 |
 | SSG | 构建阶段 | 很快 | 好 | 文档、营销页、稳定内容 |
 
-SSR 返回 HTML 后，浏览器还要下载 JavaScript，对比服务端生成的结构并绑定事件，这一步叫 hydration。HTML 先出现但按钮暂时不能点击，是正常的 hydration 过程，不是页面没有渲染。
+SSR 返回 HTML 后，浏览器还要下载 JavaScript，对照服务端生成的结构绑定事件，这一步叫 hydration。HTML 先出来、按钮暂时点不了，是正常的 hydration 过程，不是页面没渲染。
 
-RSC 在 SSR 上进一步拆分：
+RSC 在 SSR 的基础上又拆了一层：
 
-- Server Component 默认在服务器执行，可以读取数据库和私有模块，不进入客户端 bundle。
-- Client Component 用 `'use client'` 标记，需要状态、事件或浏览器 API 时才使用。
-- 服务端组件可以包住客户端组件，客户端组件不能直接在内部 import 服务器组件。
+- Server Component 默认在服务器执行，能读数据库和私有模块，不进客户端 bundle。
+- Client Component 用 `'use client'` 标记，需要状态、事件或浏览器 API 时才用。
+- 服务端组件可以包住客户端组件，客户端组件不能在内部直接 import 服务器组件。
 
 ```tsx
 // Server Component
@@ -191,7 +191,7 @@ export default async function Article() {
 }
 ```
 
-如果一个模块只能被服务器使用，安装并声明 `server-only`：
+一个模块只能给服务器用的话，装上并声明 `server-only`：
 
 ```ts
 // src/lib/private-db.ts
@@ -202,11 +202,11 @@ export async function loadPrivateData() {
 }
 ```
 
-这样当客户端模块误导入它时，构建阶段就会失败，而不是把私有实现悄悄打进浏览器。
+这样客户端模块误导入它时，构建阶段就会失败，私有实现不会被悄悄打进浏览器。
 
 ## 6. RSC 漏洞和升级纪律
 
-RSC、Server Actions 和相关解析器属于高权限边界。发现框架安全公告后，不要只改一个依赖字符串就结束：
+RSC、Server Actions 和相关的解析器都是高权限边界。看到框架的安全公告后，别只改个依赖版本号就完事：
 
 ```bash
 pnpm update next react react-dom
@@ -214,4 +214,4 @@ pnpm audit
 pnpm build
 ```
 
-升级后至少检查：生产构建、Route Handler、Server Action、登录回调和缓存行为。课程演示了受影响版本升级到修复版本的过程，但具体安全版本会变化，生产项目必须以当前官方公告和锁文件为准。
+升级后至少检查：生产构建、Route Handler、Server Action、登录回调和缓存行为。课程演示的是从受影响版本升到修复版本的过程，具体哪个版本安全会变，生产项目要以当前的官方公告和锁文件为准。

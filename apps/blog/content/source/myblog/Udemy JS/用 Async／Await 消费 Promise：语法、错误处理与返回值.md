@@ -16,8 +16,8 @@ categories:
 
 ### 1.1 Async 函数的定义与创建
 
-- **定义**：Async 函数是一种特殊的 JavaScript 函数，通过在 `function` 关键字前添加 `async` 关键字声明，专门用于配合 Await 关键字消费 Promise，使异步代码逻辑更接近同步代码的直观形式。
-- **创建语法**：
+- 定义：Async 函数是一种特殊的 JavaScript 函数，在 `function` 关键字前加上 `async` 来声明，专门配合 Await 关键字消费 Promise，让异步代码写起来更像同步代码。
+- 创建语法：
 
   ```javascript
   // 函数声明式
@@ -31,28 +31,28 @@ categories:
   };
   ```
 
-- **特点**：
-  1. 自动返回 Promise：无论 Async 函数内部返回什么值（非 Promise 类型值会被自动包装成已resolved的 Promise），函数最终的返回结果一定是 Promise 对象。例如：
+- 特点：
+  1. 自动返回 Promise：不管 Async 函数里面返回什么值（不是 Promise 的值会被自动包成已 resolved 的 Promise），函数最后返回的一定是 Promise 对象。比如：
      ```javascript
      async function getNum() {
        return 10; // 等价于 return Promise.resolve(10)
      }
      getNum().then((res) => console.log(res)); // 输出：10
      ```
-  2. 后台异步执行：Async 函数调用后，会在 JavaScript 事件循环的后台队列中执行，不会阻塞主线程（调用栈）的正常执行，避免页面卡顿或功能冻结。
+  2. 在后台异步执行：Async 函数调用后，会在 JavaScript 事件循环的后台队列里执行，不会卡住主线程（调用栈）的正常执行，页面不会因此卡顿或冻住。
 
 ### 1.2 Await 关键字的作用与使用规则
 
-- **定义**：`await` 是仅能在 Async 函数内部使用的关键字，用于“等待”一个 Promise 对象的状态变更（从 pending 变为 resolved 或 rejected），并获取 Promise resolved 后的结果。
-- **使用规则**：
-  1. 仅能在 Async 函数内使用：若在非 Async 函数中使用 `await`，会直接触发语法错误。
+- 定义：`await` 是只能在 Async 函数里用的关键字，用来"等"一个 Promise 对象的状态变化（从 pending 变成 resolved 或 rejected），并拿到 Promise resolved 后的结果。
+- 使用规则：
+  1. 只能在 Async 函数里用：在非 Async 函数里用 `await`，直接报语法错误。
      ```javascript
      // 错误示例：非 Async 函数中使用 await
      function wrongFunc() {
        await fetch('https://api.example.com'); // Uncaught SyntaxError: await is only valid in async functions
      }
      ```
-  2. 右侧需是 Promise 对象：若 `await` 右侧不是 Promise，会将其视为已 resolved 的 Promise，直接返回该值。例如：
+  2. 右边应该是 Promise 对象：`await` 右边不是 Promise 的话，会被当成已 resolved 的 Promise，直接返回这个值。比如：
      ```javascript
      async function getValue() {
        const result = await "hello"; // 等价于 await Promise.resolve('hello')
@@ -60,9 +60,9 @@ categories:
      }
      getValue();
      ```
-- **执行逻辑**：`await` 会暂停当前 Async 函数内部的代码执行（注意：仅暂停函数内部，不阻塞主线程），直至 Promise 状态变更：
-  - 若 Promise resolved：`await` 表达式的结果为 Promise 的 resolved 值，函数继续执行后续代码；
-  - 若 Promise rejected：需配合 `try/catch` 捕获错误（后续“错误处理”章节详解），否则会触发未捕获的 Promise 错误。
+- 执行逻辑：`await` 会暂停当前 Async 函数里的代码（注意：只暂停函数内部，不会卡住主线程），直到 Promise 状态变化：
+  - Promise resolved：`await` 表达式的结果就是 Promise 的 resolved 值，函数接着往下执行；
+  - Promise rejected：要配合 `try/catch` 接住错误（后面"错误处理"一节细讲），不然会触发未捕获的 Promise 错误。
 
 ## 二、Async/Await 消费 Promise 实战案例
 
@@ -70,7 +70,7 @@ categories:
 
 #### 场景需求
 
-通过 `fetch` 调用“国家信息 API”，获取指定国家（如葡萄牙）的信息，并打印响应结果，验证 Async 函数的异步特性。
+用 `fetch` 调"国家信息 API"，拿到指定国家（比如葡萄牙）的信息并打印响应，顺便验证 Async 函数是异步执行的。
 
 #### 实现代码
 
@@ -108,19 +108,19 @@ API 响应结果：Response {type: 'cors', url: 'https://restcountries.com/...',
 解析后的国家数据：[{name: {common: 'Portugal'}, ...}]
 ```
 
-- 结果分析：先打印“开始调用”和“调用已发起”，再打印 API 响应和解析后的数据，证明 Async 函数在后台异步执行，未阻塞主线程的同步代码（调用前后的 `console.log`）。
+- 分析：先打印"开始调用"和"调用已发起"，再打印 API 响应和解析后的数据，说明 Async 函数是在后台异步执行的，没有卡住主线程上的同步代码（调用前后的 `console.log`）。
 
 ### 2.2 进阶案例：Async/Await 处理 Promise 链（地理定位 + 反向地理编码）
 
 #### 场景需求
 
-1. 通过浏览器 `navigator.geolocation.getCurrentPosition` 获取用户当前地理位置（需先“Promise 化”该回调式 API）；
-2. 用获取到的经纬度调用“反向地理编码 API”，获取用户所在国家；
-3. 用获取到的国家名称，调用“国家信息 API”，最终打印完整的国家数据。
+1. 用浏览器的 `navigator.geolocation.getCurrentPosition` 拿到用户当前的地理位置（要先把这个回调式 API "Promise 化"）；
+2. 用拿到的经纬度调"反向地理编码 API"，得到用户所在的国家；
+3. 用国家名称调"国家信息 API"，最后打印完整的国家数据。
 
 #### 前置步骤：Promise 化回调式 API（地理定位）
 
-`navigator.geolocation.getCurrentPosition` 是传统回调式 API（非 Promise 风格），需先封装为 Promise，才能用 Await 消费：
+`navigator.geolocation.getCurrentPosition` 是传统的回调式 API（不是 Promise 风格），要先包成 Promise，才能用 Await 消费：
 
 ```javascript
 // 封装地理定位 API 为 Promise
@@ -178,16 +178,16 @@ getLocationAndCountry();
 
 #### 代码优势分析
 
-- 对比传统 `then` 链：无需嵌套 `then` 回调（避免“回调地狱”），代码按“步骤1→步骤2→步骤3”的线性逻辑编写，可读性大幅提升；
-- 错误统一处理：通过 `try/catch` 捕获整个异步流程中的所有错误（包括地理定位失败、API 请求超时等），无需在每个 `then` 后加 `catch`。
+- 和传统的 `then` 链比：不用嵌套 `then` 回调（避开"回调地狱"），代码按"步骤1→步骤2→步骤3"线性地写下来，好读很多；
+- 统一处理错误：用 `try/catch` 接住整个异步流程里的所有错误（包括定位失败、API 请求超时等），不用每个 `then` 后面都加 `catch`。
 
 ## 三、Async/Await 关键注意事项与本质
 
 ### 3.1 Async/Await 的本质：Promise 的语法糖
 
-- **核心结论**：Async/Await 并非新的异步机制，而是“消费 Promise 的语法糖”——底层仍依赖 Promise 和 JavaScript 事件循环，只是简化了 Promise 的调用写法。
-- **等价对比：Async/Await vs then 链**
-  以“获取国家数据并解析 JSON”为例，两种写法等价：
+- 结论：Async/Await 不是新的异步机制，而是"消费 Promise 的语法糖"——底层还是 Promise 和 JavaScript 事件循环，只是写法更简单。
+- 等价对比：Async/Await vs then 链
+  以"获取国家数据并解析 JSON"为例，两种写法是等价的：
   1. Async/Await 写法：
      ```javascript
      async function fetchCountry() {
@@ -204,15 +204,15 @@ getLocationAndCountry();
          .then((data) => console.log(data));
      }
      ```
-- **注意**：使用 Async/Await 的前提是理解 Promise 的底层逻辑（如 pending/resolved/rejected 状态、事件循环），否则可能无法排查隐藏的异步错误。
+- 注意：用 Async/Await 的前提是懂 Promise 的底层逻辑（pending/resolved/rejected 状态、事件循环），不然藏起来的异步错误可能查不出来。
 
 ### 3.2 未处理错误的风险与临时解决方案
 
 #### 风险场景
 
-若 Async 函数中 `await` 的 Promise 被 rejected（如 API 请求超限、网络中断），且未做错误处理，会触发“未捕获的 Promise 错误”，导致代码崩溃。
+Async 函数里 `await` 的 Promise 被 rejected 了（比如 API 请求超限、网络断了），又没做错误处理的话，会触发"未捕获的 Promise 错误"，代码就崩了。
 
-例如：反向地理编码 API 限制“每秒仅 3 次请求”，若快速刷新页面多次调用，会返回 429 错误：
+比如：反向地理编码 API 限制"每秒只能请求 3 次"，快速刷新页面多调几次，就会返回 429 错误：
 
 ```javascript
 async function getGeoData(lat, lng) {
@@ -226,7 +226,7 @@ getGeoData(38.7167, -9.1333); // 葡萄牙里斯本经纬度，快速调用会�
 
 #### 临时解决方案：try/catch 捕获错误
 
-在 Async 函数内部用 `try/catch` 包裹所有 `await` 语句，统一捕获错误：
+在 Async 函数里用 `try/catch` 把所有 `await` 语句包起来，统一接住错误：
 
 ```javascript
 async function getGeoData(lat, lng) {
@@ -251,16 +251,16 @@ async function getGeoData(lat, lng) {
 
 ### 4.1 知识点总结
 
-1. **Async 函数**：用 `async` 声明，自动返回 Promise，后台异步执行，不阻塞主线程；
-2. **Await 关键字**：仅在 Async 函数内使用，等待 Promise 状态变更，获取 resolved 结果，暂停函数内部执行但不阻塞主线程；
-3. **实战优势**：简化 Promise 链（替代 `then` 嵌套），代码逻辑线性化，错误处理统一（`try/catch`）；
-4. **本质与前提**：是 Promise 的语法糖，使用前需理解 Promise 和事件循环，否则易踩坑。
+1. Async 函数：用 `async` 声明，自动返回 Promise，在后台异步执行，不卡主线程；
+2. Await 关键字：只能在 Async 函数里用，等 Promise 状态变化、拿到 resolved 的结果，会暂停函数内部的执行，但不卡主线程；
+3. 实战上的好处：简化 Promise 链（代替 `then` 嵌套），代码逻辑变成线性的，错误统一用 `try/catch` 处理；
+4. 本质和前提：它是 Promise 的语法糖，用之前要懂 Promise 和事件循环，不然容易踩坑。
 
 ### 4.2 常见考点与例题
 
 #### 例题1：判断代码执行顺序
 
-请写出以下代码的输出顺序：
+写出下面代码的输出顺序：
 
 ```javascript
 console.log("1");
@@ -281,14 +281,14 @@ console.log("4");
 
 - 解析：
   1. `console.log('1')` 是同步代码，先执行；
-  2. 调用 `asyncFunc()`，同步执行函数内的 `console.log('2')`；
-  3. `await` 等待 Promise（定时器 1 秒后 resolve），暂停 `asyncFunc` 内部执行，将后续代码（`console.log('3')`）放入微任务队列；
-  4. 主线程继续执行同步代码 `console.log('4')`；
+  2. 调用 `asyncFunc()`，同步执行函数里的 `console.log('2')`；
+  3. `await` 等 Promise（定时器 1 秒后 resolve），暂停 `asyncFunc` 内部的执行，后面的代码（`console.log('3')`）放进微任务队列；
+  4. 主线程接着执行同步代码 `console.log('4')`；
   5. 1 秒后定时器触发，Promise resolve，`console.log('3')` 从微任务队列进入主线程执行。
 
 #### 例题2：Async 函数返回值处理
 
-以下代码中，`result` 的值是什么？
+下面代码里，`result` 的值是什么？
 
 ```javascript
 async function getResult() {
@@ -305,4 +305,4 @@ getResult().then((res) => {
 
 `result` 的值是 `'success'`
 
-- 解析：Async 函数内部返回非 Promise 值时，会自动包装成 `Promise.resolve('success')`，因此 `then` 中获取的 `res` 就是 `'success'`。
+- 解析：Async 函数里返回的不是 Promise 值时，会自动包成 `Promise.resolve('success')`，所以 `then` 里拿到的 `res` 就是 `'success'`。

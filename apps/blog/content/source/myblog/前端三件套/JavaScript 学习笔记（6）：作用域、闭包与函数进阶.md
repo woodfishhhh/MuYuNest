@@ -491,14 +491,14 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
 ##### 核心区别
 
-普通函数和箭头函数的本质区别在于：
+两者的区别：
 
-- 普通函数有自己的 `this`，`this` 指向调用它的对象
+- 普通函数有自己的 `this`，指向调用它的对象
 - 箭头函数没有自己的 `this`，它的 `this` 继承自上层作用域
 
 ##### 代码解析
 
-1. **全局作用域中的 this**
+1. 全局作用域中的 this
 
    ```javascript
    console.log(this)  // window
@@ -506,7 +506,7 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
    在全局作用域中，`this` 指向 window 对象
 
-2. **普通函数中的 this**
+2. 普通函数中的 this
 
    ```javascript
    function fn() {
@@ -517,7 +517,7 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
    普通函数由 window 调用，所以 `this` 指向 window
 
-3. **对象方法中的普通函数 this**
+3. 对象方法中的普通函数 this
 
    ```javascript
    const obj = {
@@ -531,7 +531,7 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
    函数由 obj 调用，所以 `this` 指向 obj
 
-4. **箭头函数中的 this**
+4. 箭头函数中的 this
 
    ```javascript
    const fn = () => {
@@ -542,7 +542,7 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
    箭头函数没有自己的 `this`，继承上层作用域（这里是全局作用域）的 `this`，即 window
 
-5. **对象方法中的箭头函数 this**
+5. 对象方法中的箭头函数 this
 
    ```javascript
    const obj = {
@@ -554,9 +554,9 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
    obj.sayHi()
    ```
 
-   箭头函数的 `this` 继承自定义时的上层作用域（全局作用域），而非调用它的对象，所以是 window
+   箭头函数的 `this` 继承自定义时的上层作用域（全局作用域），跟谁调用它没关系，所以是 window
 
-6. **嵌套在普通函数中的箭头函数**
+6. 嵌套在普通函数中的箭头函数
 
    ```javascript
    const obj = {
@@ -574,7 +574,7 @@ JavaScript 中的作用域是程序被执行时的底层机制，了解这一机
 
    箭头函数 `count` 的 `this` 继承自上层作用域（`sayHi` 函数的作用域），而 `sayHi` 作为普通函数，它的 `this` 指向 obj，所以 `count` 的 `this` 也是 obj
 
-总结：箭头函数的 `this` 是在定义时确定的，而非调用时，它会捕获上层作用域的 `this` 并永久保持。这一特性使得箭头函数特别适合作为回调函数，避免了 `this` 指向混乱的问题。
+总结：箭头函数的 `this` 在定义时就定了，不看调用时，它会拿到上层作用域的 `this` 并一直保持。所以箭头函数很适合当回调函数，不容易出现 `this` 指向混乱。
 
 
 ## 解构赋值
@@ -766,10 +766,10 @@ filter 方法创建一个新的数组，新数组中的元素是通过检查指�
 
 #### 1. map ：转换数组元素
 
-`map()` 方法创建一个新数组，其结果是该数组中的每个元素调用指定函数后的返回值。
-**核心作用**：对数组中的每个元素进行处理（如转换、计算等），返回处理后的新数组，不改变原数组。
+`map()` 创建一个新数组，里面是原数组每个元素调用指定函数后的返回值。
+作用：对每个元素做处理（转换、计算等），返回处理后的新数组，不改原数组。
 
-**语法**：
+语法：
 
 ```javascript
 array.map(function(currentValue, index, array) {
@@ -780,9 +780,9 @@ array.map(function(currentValue, index, array) {
 - `currentValue`：当前元素（必选）
 - `index`：当前元素索引（可选）
 - `array`：原数组（可选）
-- 返回值：新数组，长度与原数组一致
+- 返回值：新数组，长度和原数组一样
 
-**示例**：
+示例：
 
 ```javascript
 // 将数组中的数字乘以 2
@@ -800,17 +800,17 @@ const names = users.map(user => user.name);
 console.log(names); // ['Alice', 'Bob']
 ```
 
-**注意**：
+注意：
 
-- `map` 必须有返回值，否则新数组会充满 `undefined`。
-- 适合场景：数据转换（如格式转换、计算新值）、提取属性等。
+- `map` 一定要有返回值，不然新数组里全是 `undefined`。
+- 适合：数据转换（格式转换、算新值）、提取属性等。
 
 #### 2. filter ：筛选数组元素（补充）
 
-`filter()` 方法创建一个新数组，包含原数组中所有符合条件的元素。
-**核心作用**：根据条件筛选元素，返回筛选后的新数组，不改变原数组。
+`filter()` 创建一个新数组，里面是原数组中所有符合条件的元素。
+作用：按条件筛选元素，返回筛选后的新数组，不改原数组。
 
-**语法**：
+语法：
 
 ```javascript
 array.filter(function(currentValue, index, array) {
@@ -818,7 +818,7 @@ array.filter(function(currentValue, index, array) {
 }, thisArg);
 ```
 
-**示例**：
+示例：
 
 ```javascript
 // 筛选出偶数
@@ -836,17 +836,17 @@ const adults = users.filter(user => user.age > 18);
 console.log(adults); // [{ name: 'Bob', age: 20 }, { name: 'Charlie', age: 25 }]
 ```
 
-**注意**：
+注意：
 
-- 返回值是新数组，长度可能与原数组不同（取决于符合条件的元素数量）。
-- 适合场景：数据筛选（如过滤无效值、按条件提取元素）。
+- 返回的是新数组，长度可能和原数组不一样（看有多少元素符合条件）。
+- 适合：数据筛选（过滤无效值、按条件取元素）。
 
 #### 3. reduce ：累加 / 聚合数组元素
 
-`reduce()` 方法对数组中的每个元素执行回调函数，将其**累加 / 聚合**为一个单一的值（也可以是对象、数组等）。
-**核心作用**：将数组 “缩减” 为一个值，如求和、求积、统计次数、合并对象等。
+`reduce()` 对数组的每个元素执行回调，把它们累加 / 聚合成一个值（也可以是对象、数组等）。
+作用：把数组"缩减"成一个值，比如求和、求积、统计次数、合并对象。
 
-**语法**：
+语法：
 
 ```javascript
 array.reduce(function(accumulator, currentValue, index, array) {
@@ -856,9 +856,9 @@ array.reduce(function(accumulator, currentValue, index, array) {
 
 - `accumulator`：累计器（上一次回调的返回值）
 - `currentValue`：当前元素
-- `initialValue`：初始值（可选，若不提供则用数组第一个元素作为初始值，且从第二个元素开始遍历）
+- `initialValue`：初始值（可选，不提供的话就用数组第一个元素当初始值，从第二个元素开始遍历）
 
-**示例**：
+示例：
 
 ```javascript
 // 数组求和
@@ -887,10 +887,10 @@ const merged = users.reduce((acc, user) => {
 console.log(merged); // { names: ['Alice', 'Bob'], totalAge: 45 }
 ```
 
-**注意**：
+注意：
 
-- 若不提供 `initialValue` 且数组为空，会报错；若数组只有一个元素，则直接返回该元素。
-- 适合场景：累加计算、数据聚合、对象合并、数组扁平化等。
+- 没提供 `initialValue`、数组又是空的，会报错；数组只有一个元素的话，直接返回这个元素。
+- 适合：累加计算、数据聚合、对象合并、数组扁平化等。
 
 #### 总结：四大方法对比
 
@@ -901,6 +901,6 @@ console.log(merged); // { names: ['Alice', 'Bob'], totalAge: 45 }
 | filter  | 筛选元素         | 新数组（符合条件元素） | 不改变         | 过滤数据、条件筛选     |
 | reduce  | 累加 / 聚合元素  | 单一值（或复杂结构）   | 不改变         | 求和、统计、合并数据   |
 
-这些方法均为**纯函数风格**（不直接修改原数组，返回新数据），适合配合使用（如先 `filter` 筛选，再 `map` 转换，最后 `reduce` 聚合）。
+这几个方法都是纯函数风格（不直接改原数组，返回新数据），可以配合着用，比如先 `filter` 筛选，再 `map` 转换，最后 `reduce` 聚合。
 
 

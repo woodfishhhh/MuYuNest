@@ -11,25 +11,28 @@ draft: false
 
 # Gin 基础（01）：从 net/http 看懂一次请求
 
-浏览器请求 `/hello/Ada` 时，Go 程序要解决两个问题：把请求交给哪个函数，以及把什么内容写回连接。Gin 也沿用这条处理链。先把标准库里的几个对象分清楚，后面就不会把路由、处理器和服务器混在一起。
+浏览器请求 `/hello/Ada`，Go 程序要做两件事：把请求交给哪个函数，往连接里写回什么。Gin 走的也是这条处理链。先把标准库里这几个对象分清，后面路由、处理器、服务器就不会混在一起。
 
 ## 请求怎样到达处理函数
 
-`http.Server` 负责监听端口、接受连接和处理 HTTP 协议。它把每个请求交给一个实现了 `http.Handler` 的对象；这个接口只有 `ServeHTTP(http.ResponseWriter, *http.Request)` 方法。
-
-`http.ServeMux` 是标准库的路由器，也是一个 `http.Handler`。它根据请求方法和路径选择处理函数。`http.HandlerFunc` 则把具有相同参数的普通函数适配成处理器。
+- `http.Server`：监听端口、接受连接、处理 HTTP 协议。每个请求交给一个实现了 `http.Handler` 的对象，这个接口只有一个方法 `ServeHTTP(http.ResponseWriter, *http.Request)`。
+- `http.ServeMux`：标准库的路由器，本身也是 `http.Handler`，按请求方法和路径选处理函数。
+- `http.HandlerFunc`：把参数相同的普通函数适配成处理器。
 
 ![HTTP 服务器、路由与处理器的关系](./assets/http-request-flow.svg)
 
-进入处理函数后，`r` 保存客户端传来的方法、URL、请求头和请求体；`w` 用来设置响应头、状态码和响应体。两者方向不同：读请求用 `r`，写响应用 `w`。
+处理函数里，`r` 存着客户端传来的方法、URL、请求头和请求体；`w` 用来设置响应头、状态码和响应体。读请求用 `r`，写响应用 `w`。
 
-Go 1.22 起，`ServeMux` 可以直接注册 `GET /hello/{name}`，再用 `r.PathValue("name")` 取路径变量。`GET` 模式还匹配 `HEAD`。所以选择 Gin 的理由应该落在绑定、校验、中间件组织等需求上；现代标准库本身已经能按方法和路径变量路由。[Go 官方路由说明](https://go.dev/blog/routing-enhancements)
+Go 1.22 起，`ServeMux` 能直接注册 `GET /hello/{name}`，用 `r.PathValue("name")` 取路径变量。`GET` 模式也会匹配 `HEAD`。现在的标准库已经能按方法和路径变量路由，选 Gin 是为了绑定、校验、中间件组织这些需求。[Go 官方路由说明](https://go.dev/blog/routing-enhancements)
 
 ## 一个有明确输入规则的 HTTP 服务
 
-示例提供两个接口：`GET /hello/{name}` 返回问候语；`POST /echo` 接收一个带 `name` 的 JSON 对象。后者只允许一个 JSON 值，禁止未知字段，并限制请求体最多 1024 字节。
+示例有两个接口：
 
-使用 Go 1.25 或更高版本，新建独立目录。以下命令按 PowerShell 7 编写；Linux/macOS 请求示例中的 `curl.exe` 可换成 `curl`。
+- `GET /hello/{name}`：返回问候语。
+- `POST /echo`：接收一个带 `name` 的 JSON 对象。只允许一个 JSON 值，不允许未知字段，请求体最多 1024 字节。
+
+用 Go 1.25 或更高版本，新建一个独立目录。下面的命令按 PowerShell 7 写；Linux/macOS 上把请求示例里的 `curl.exe` 换成 `curl`。
 
 ```powershell
 mkdir gin-01-http
@@ -37,7 +40,7 @@ Set-Location gin-01-http
 go mod init example.com/gin-01-http
 ```
 
-每个示例单独运行，避免多个 `main` 函数放进同一个包。
+每个示例单独运行，别把多个 `main` 函数放进同一个包。
 
 保存为 `main.go`：
 
@@ -127,11 +130,11 @@ func main() {
 }
 ```
 
-`NewHandler` 返回路由器，`main` 把它装进服务器。把组装路由单独放进函数，是为了让测试直接发送 HTTP 请求，不必先占用固定端口。
+`NewHandler` 返回路由器，`main` 把它装进服务器。路由组装单独放进函数，测试就能直接发 HTTP 请求，不用先占一个固定端口。
 
-`json.NewDecoder(r.Body)` 从请求流中解码。第一次 `Decode` 成功，只能说明读到了一个 JSON 值；它不能证明后面已经没有内容。第二次读取应得到 `io.EOF`，这样才能拒绝 `{"name":"A"} {"name":"B"}` 这样的双 JSON 请求。
+`json.NewDecoder(r.Body)` 从请求流里解码。第一次 `Decode` 成功只说明读到了一个 JSON 值，后面可能还有内容。所以要再读一次，拿到 `io.EOF` 才算读完，这样才能拒掉 `{"name":"A"} {"name":"B"}` 这种双 JSON 请求。
 
-`http.MaxBytesReader` 包在原始请求体外面，超过限制后返回 `*http.MaxBytesError`。这里把它映射成 `413`，把普通格式错误映射成 `400`。仅检查 `Content-Length` 不够：请求可以使用分块传输，请求头中的声明也不能代替实际读取上限。[net/http 的 MaxBytesReader](https://pkg.go.dev/net/http#MaxBytesReader)
+`http.MaxBytesReader` 包在原始请求体外面，超过限制返回 `*http.MaxBytesError`。这里把它映射成 `413`，普通格式错误映射成 `400`。只查 `Content-Length` 不够：请求可以用分块传输，请求头里声明的长度也代替不了实际读取上限。[net/http 的 MaxBytesReader](https://pkg.go.dev/net/http#MaxBytesReader)
 
 ## 发送请求并核对结果
 
@@ -141,7 +144,7 @@ func main() {
 go run .
 ```
 
-再打开一个终端：
+另开一个终端：
 
 ```powershell
 curl.exe -i "http://127.0.0.1:8080/hello/Ada"
@@ -149,17 +152,21 @@ curl.exe -i "http://127.0.0.1:8080/hello/Ada"
 curl.exe -i "http://127.0.0.1:8080/echo" -H "Content-Type: application/json" --data-binary "@request.json"
 ```
 
-两个响应都是 `200`，正文分别是 `{"message":"你好，Ada"}` 和 `{"name":"小明"}`，响应头包含 `Content-Type: application/json; charset=utf-8`。
+两个响应都是 `200`，正文分别是 `{"message":"你好，Ada"}` 和 `{"name":"小明"}`，响应头带 `Content-Type: application/json; charset=utf-8`。
 
-把 `request.json` 改成 `{"name":"小明","admin":true}`，得到 `400`；把请求方法改成 `GET /echo`，路由器返回 `405`；把媒体类型改成 `text/plain`，接口返回 `415`。这些结果分别对应字段、方法和媒体类型的不同问题。
+再试几种错误，分别对应字段、方法和媒体类型的问题：
+
+- `request.json` 改成 `{"name":"小明","admin":true}`：`400`
+- 请求方法改成 `GET /echo`：路由器返回 `405`
+- 媒体类型改成 `text/plain`：接口返回 `415`
 
 ## 写响应时，先决定头部再写正文
 
-普通最终响应只能提交一次状态码。没有先调用 `WriteHeader` 时，第一次 `Write` 会隐式提交 `200`；之后再改成 `500` 已经来不及。示例先序列化数据，确认成功后才设置头部和状态码。
+普通的最终响应只能提交一次状态码。没先调 `WriteHeader` 的话，第一次 `Write` 会隐式提交 `200`，之后再想改成 `500` 就晚了。所以示例先序列化数据，成功了再设头部和状态码。
 
-`127.0.0.1:8080` 只供本机访问；`:8080` 通常监听所有可用网卡。打印一句 `http://127.0.0.1:8080` 不会改变实际监听地址，真正起作用的是服务器的 `Addr`。
+`127.0.0.1:8080` 只有本机能访问；`:8080` 通常监听所有可用网卡。打印一句 `http://127.0.0.1:8080` 不影响实际监听地址，起作用的是服务器的 `Addr`。
 
-请求结束后不要继续从后台 goroutine 写同一个 `ResponseWriter`。需要后台工作时，应先确定任务的输入、持久化和完成通知方式，响应本身仍由当前 HTTP 处理流程负责。
+请求结束后，别再从后台 goroutine 写同一个 `ResponseWriter`。要做后台任务，先想好任务的输入、持久化和完成通知方式；响应还是由当前这次 HTTP 处理流程来写。
 
 ---
 

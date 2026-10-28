@@ -11,11 +11,11 @@ categories:
 ---
 
 
-AJAX 的关键不在某个库名，而在浏览器如何发出 HTTP 请求、如何接收响应，以及 JavaScript 如何在异步结果返回后继续执行。axios 把这些步骤包成了更方便的接口；理解 XHR 和 Promise 后，请求失败时也更容易定位问题。
+AJAX 的关键不在某个库叫什么，而在浏览器怎么发 HTTP 请求、怎么收响应，以及异步结果回来以后 JavaScript 怎么接着执行。axios 把这些步骤包成了更好用的接口；把 XHR 和 Promise 弄懂了，请求出错时也更容易定位。
 
 ## 一、请求过程
 
-先看一个常见的 axios GET 请求。它接收 URL，返回 Promise，并把响应数据放在 `res.data` 中。
+先看一个常见的 axios GET 请求。它接收 URL，返回 Promise，把响应数据放在 `res.data` 里。
 
 ```javascript
 // 小张的日常：开车很熟练，但不懂发动机原理
@@ -24,11 +24,11 @@ axios.get('/api/data').then(res => {
 });
 ```
 
-这段调用省略了请求创建、事件监听和响应解析。后文会用 `XMLHttpRequest` 把这些步骤拆开，再逐步封装回类似的调用方式。
+这段调用省掉了创建请求、监听事件和解析响应这些步骤。后面会用 `XMLHttpRequest` 把它们一步步拆开，再一点点封装回类似的调用方式。
 
 ### 响应状态预览
 
-HTTP 状态码先告诉我们请求在协议层的结果。下面列出几个常见状态码。
+HTTP 状态码先告诉我们请求在协议层面的结果。下面是几个常见的状态码。
 
 ```js
 // 你知道这些状态码的含义吗？
@@ -41,7 +41,7 @@ const statusCodes = {
 };
 ```
 
-对应含义如下。
+对应的含义：
 
 ```js
 const statusCodes = {
@@ -53,11 +53,11 @@ const statusCodes = {
 };
 ```
 
-`2xx` 通常表示请求成功，`4xx` 多与请求、资源或权限有关，`5xx` 表示服务器处理失败。业务接口还可能在响应体里返回自己的错误码，不能只看 HTTP 状态。
+`2xx` 一般表示请求成功，`4xx` 多跟请求、资源或权限有关，`5xx` 表示服务器处理失败了。业务接口还可能在响应体里返回自己的错误码，不能只看 HTTP 状态。
 
 ### 异步执行预览
 
-网络请求不会阻塞后续 JavaScript。先用同步代码、Promise 和定时器看事件循环中的基本顺序。
+网络请求不会卡住后面的 JavaScript。先用同步代码、Promise 和定时器看看事件循环里的基本顺序。
 
 ```js
 // 你能预测这些代码的执行顺序吗？
@@ -75,7 +75,7 @@ console.log('🥇 第一名：另一个同步代码');
 // 输出顺序是：？？？
 ```
 
-输出为：
+输出是：
 
 ```
 输出顺序：
@@ -87,11 +87,11 @@ console.log('🥇 第一名：另一个同步代码');
 💡 原理：同步 → Promise微任务 → 定时器宏任务
 ```
 
-当前调用栈中的同步代码先执行，Promise 回调进入微任务队列，`setTimeout` 回调进入后续任务。即使没有额外延迟，定时器也要等当前代码和微任务处理完。
+当前调用栈里的同步代码先执行，Promise 的回调进微任务队列，`setTimeout` 的回调进后面的任务。就算没有额外的延迟，定时器也要等当前代码和微任务都处理完。
 
 ### 错误对象怎么读
 
-请求失败时，先把错误消息、响应状态、响应数据和请求配置打印出来。
+请求失败时，先把错误消息、响应状态、响应数据和请求配置打出来。
 
 ```js
 // 请求失败了，你如何排查？
@@ -106,7 +106,7 @@ axios.get('/api/books')
   });
 ```
 
-axios 的错误对象可以按三种情况分流。
+axios 的错误对象可以按三种情况分开处理。
 
 ```js
 // 企业级错误诊断流程
@@ -131,11 +131,11 @@ axios.get('/api/books')
   });
 ```
 
-有 `err.response` 说明服务器返回了响应；只有 `err.request` 时，检查网络、URL、跨域和服务状态；两者都没有时，再看请求配置和调用代码。
+有 `err.response`，说明服务器返回了响应；只有 `err.request` 的话，查网络、URL、跨域和服务状态；两个都没有，再看请求配置和调用代码。
 
 ### 调试工具
 
-浏览器调试主要用 Network 和 Console。Network 用来核对 URL、方法、请求头、请求体、状态码和响应体；Console 用来查看异常、断点和异步回调。
+浏览器调试主要用 Network 和 Console。Network 用来核对 URL、方法、请求头、请求体、状态码和响应体；Console 用来看异常、断点和异步回调。
 
 ```bash
 # Chrome DevTools - 工程师级配置
@@ -155,9 +155,9 @@ axios.get('/api/books')
   - Cookie和缓存管理
 ```
 
-Application 面板适合核对 Cookie、LocalStorage、SessionStorage 和缓存。排查请求时先看 Network 是否真的出现了请求记录，再决定查前端调用还是服务器响应。
+Application 面板适合核对 Cookie、LocalStorage、SessionStorage 和缓存。排查请求时，先看 Network 里是不是真的出现了这条请求，再决定是查前端调用还是查服务器响应。
 
-原文列出的编辑器工具保留如下。它们不是 AJAX 的运行条件，按项目现有配置选用即可。
+原文列的编辑器工具保留在下面。它们不是 AJAX 跑起来的前提，按项目现有的配置选就行。
 
 ```javascript
 // VS Code插件推荐（企业级开发）
@@ -170,7 +170,7 @@ Application 面板适合核对 Cookie、LocalStorage、SessionStorage 和缓存�
 
 ### 请求监控示例
 
-下面的示例尝试重写 XHR 的 `open` 和 `send`，记录请求耗时、状态码和响应大小。
+下面的示例试着重写 XHR 的 `open` 和 `send`，记录请求耗时、状态码和响应大小。
 
 ```javascript
 // 企业级：AJAX性能监控器
@@ -214,12 +214,12 @@ class EnterpriseAjaxMonitor {
 new EnterpriseAjaxMonitor();
 ```
 
-这段代码表达了统一拦截请求的思路，但方法被替换后，函数内部的 `this` 指向 XHR 实例。直接复用前应先修正原方法引用的保存位置。后文的完整监控示例会更清楚地处理这一点。
+这段代码表达的是统一拦截请求的思路，但方法被替换以后，函数里的 `this` 指向的是 XHR 实例。直接拿来用之前，要先改对原方法引用的保存位置。后面完整的监控示例会把这一点处理得更清楚。
 ### XHR 请求生命周期
 
-原生 XHR 把请求过程直接暴露出来：创建实例、配置请求、监听响应、发送数据。axios 在调用层做了封装，但排查浏览器端请求时，这几个动作仍然是判断问题所在的基础。
+原生 XHR 把请求过程直接摆在面前：创建实例、配置请求、监听响应、发送数据。axios 在调用层做了封装，但排查浏览器端的请求时，这几个动作还是判断问题出在哪的基础。
 
-下面先创建 XHR，并监听开始、进度、完成、网络错误和超时事件。
+下面先创建 XHR，监听开始、进度、完成、网络错误和超时这几个事件。
 ```javascript
 // 🏭 企业级：创建XMLHttpRequest实例
 class EnterpriseXMLHttpRequest {
@@ -261,7 +261,7 @@ class EnterpriseXMLHttpRequest {
 }
 ```
 
-事件只负责通知状态变化。请求方法、URL、超时和响应类型还要单独配置。
+事件只负责通知状态变了。请求方法、URL、超时和响应类型还要单独配置。
 
 下面的配置类统一处理方法、URL、请求头和默认值。
 ```javascript
@@ -306,9 +306,9 @@ class EnterpriseRequestConfig {
 }
 ```
 
-配置中的 `method` 会转成大写，URL 通过 `new URL` 校验。这个写法更适合绝对 URL；使用相对地址时需要提供基准地址。
+配置里的 `method` 会转成大写，URL 用 `new URL` 校验。这种写法更适合绝对 URL；用相对地址的话要提供一个基准地址。
 
-接下来根据 `readyState` 读取响应进度，并在完成后检查 HTTP 状态码。
+接下来按 `readyState` 读响应进度，完成后检查 HTTP 状态码。
 ```javascript
 // 🏭 企业级：响应事件标准化处理
 class EnterpriseResponseHandler {
@@ -401,9 +401,9 @@ class EnterpriseResponseHandler {
 }
 ```
 
-`readyState === 4` 只表示请求结束。示例继续用 `status` 区分 `2xx`、`4xx` 和 `5xx`，并在成功分支解析 JSON。
+`readyState === 4` 只表示请求结束了。示例接着用 `status` 区分 `2xx`、`4xx` 和 `5xx`，在成功的分支里解析 JSON。
 
-最后把请求头、超时和跨域凭证写入 XHR，再调用 `send`。
+最后把请求头、超时和跨域凭证写进 XHR，再调 `send`。
 ```javascript
 // 🏭 企业级：请求发送和监控
 class EnterpriseRequestSender {
@@ -440,11 +440,11 @@ class EnterpriseRequestSender {
 }
 ```
 
-`send` 的参数是请求体；没有请求体时传 `null`。同步抛出的异常会进入 `catch`，网络错误和超时仍由事件处理。
+`send` 的参数是请求体；没有请求体就传 `null`。同步抛出的异常会进 `catch`，网络错误和超时还是由事件来处理。
 
 ### 记录请求指标
 
-如果要统一观察页面中的 XHR，可以保留原始构造函数，再包装每个实例的 `open` 和 `send`。下面记录请求方法、URL、状态码、耗时和响应大小。
+要统一观察页面里的 XHR 的话，可以留着原来的构造函数，再包装每个实例的 `open` 和 `send`。下面记录请求方法、URL、状态码、耗时和响应大小。
 ```javascript
 // 🏭 企业级：XHR监控系统（完整实现）
 class EnterpriseXHRMonitor {
@@ -635,7 +635,7 @@ window.addEventListener('xhrAnalysisComplete', (event) => {
 });
 ```
 
-监控器会触发 `xhrAnalysisComplete` 自定义事件，外部可以读取单次请求和聚合指标。下面把这些数据渲染成一个简单面板。
+监控器会触发一个 `xhrAnalysisComplete` 自定义事件，外面可以读到单次请求和汇总的指标。下面把这些数据渲染成一个简单的面板。
 ```javascript
 // 企业级：监控数据可视化
 class EnterpriseMonitorDashboard {
@@ -736,11 +736,11 @@ setTimeout(() => {
 }, 1000);
 ```
 
-面板每秒刷新一次总请求数、成功率、平均响应时间和失败请求。实际接入时还要处理定时器销毁、重复挂载和敏感 URL 脱敏。
+面板每秒刷新一次总请求数、成功率、平均响应时间和失败的请求。真正接进项目时，还要处理定时器的销毁、重复挂载和敏感 URL 的脱敏。
 
 ### 最小 XHR 示例
 
-前面的代码拆开了生命周期和监控。下面回到最小版本，把创建、配置、监听和发送放进一个可运行的 HTML 页面。
+前面的代码把生命周期和监控拆开讲了。下面回到最小的版本，把创建、配置、监听和发送放进一个能运行的 HTML 页面。
 
    ```html
    <!DOCTYPE html>
@@ -786,11 +786,11 @@ setTimeout(() => {
    ```
 
 
-`XMLHttpRequest` 由浏览器提供。最小调用顺序是创建实例、`open` 配置方法和 URL、监听结束事件、`send` 发出请求。
+`XMLHttpRequest` 是浏览器提供的。最小的调用顺序：创建实例，`open` 配置方法和 URL，监听结束事件，`send` 发出请求。
 
 ### 查询参数
 
-查询参数放在 URL 的 `?` 后面，多组参数用 `&` 连接。原生 XHR 不会像 axios 的 `params` 那样自动拼接，需要自己构造 URL。下面请求辽宁省的城市列表。
+查询参数放在 URL 的 `?` 后面，多组参数用 `&` 连起来。原生 XHR 不会像 axios 的 `params` 那样自动拼，要自己构造 URL。下面请求辽宁省的城市列表。
 
    ![image-20230404133429378](images/image-20230404133429378.png)
    ```js
@@ -809,15 +809,15 @@ setTimeout(() => {
    ```
 
 
-参数已经随 `open` 中的 URL 发出，`send()` 不需要再传请求体。响应仍是字符串，示例用 `JSON.parse` 转成对象。
+参数已经跟着 `open` 里的 URL 发出去了，`send()` 不用再传请求体。响应还是字符串，示例用 `JSON.parse` 转成对象。
 
 ### 用 URLSearchParams 处理多组参数
 
-输入省份和城市后，可以把多组参数交给 `URLSearchParams`，避免手写 `参数名=值&参数名=值`。
+输入省份和城市以后，可以把多组参数交给 `URLSearchParams`，不用手写 `参数名=值&参数名=值`。
 
    ![image-20230221184135458](images/image-20230221184135458.png)
 
-下面只演示对象到查询字符串的转换。
+下面只演示对象怎么转成查询字符串。
 
    ```js
    // 1. 创建 URLSearchParams 对象
@@ -832,11 +832,11 @@ setTimeout(() => {
    ```
 
 
-`toString()` 返回可拼接到 URL 的查询字符串，并按 URL 规则编码参数值。
+`toString()` 返回能拼到 URL 上的查询字符串，参数值会按 URL 规则编码。
 
 ### 提交 JSON 请求体
 
-POST 注册请求把用户名和密码放在请求体中。前端要声明 `Content-Type: application/json`，用 `JSON.stringify` 把对象转成字符串，再把结果传给 `send`。
+POST 注册请求把用户名和密码放在请求体里。前端要声明 `Content-Type: application/json`，用 `JSON.stringify` 把对象转成字符串，再把结果传给 `send`。
 
    ![image-20230404135245271](images/image-20230404135245271.png)
 
@@ -859,7 +859,7 @@ POST 注册请求把用户名和密码放在请求体中。前端要声明 `Cont
       ```
 
 
-`setRequestHeader` 必须在 `open` 之后、`send` 之前调用。下面把它放进注册按钮的点击处理函数。
+`setRequestHeader` 必须在 `open` 之后、`send` 之前调。下面把它放进注册按钮的点击处理函数里。
 
    ```js
    /**
@@ -886,19 +886,19 @@ POST 注册请求把用户名和密码放在请求体中。前端要声明 `Cont
    ```
 
 
-请求体要放在 `send` 中，并且数据格式要与请求头和后端接口约定一致。
+请求体要放在 `send` 里，数据格式还要和请求头、后端接口的约定一致。
 
 ## 二、响应与状态
 
-XHR 的 `readyState` 描述请求进度，HTTP `status` 描述响应结果。前面的响应处理器已经展示了 `1` 到 `4` 的状态变化；实际判断成功时，仍要检查状态码是否属于 `2xx`。网络错误和超时则通过 `error`、`timeout` 事件继续区分。
+XHR 的 `readyState` 描述请求的进度，HTTP 的 `status` 描述响应的结果。前面的响应处理器已经展示了 `1` 到 `4` 的状态变化；实际判断成功时，还是要检查状态码是不是 `2xx`。网络错误和超时再通过 `error`、`timeout` 事件区分。
 
 ## 三、异步执行
 
 ### Promise 管理异步结果
 
-Promise 表示一次异步操作最终成功或失败。构造函数里启动任务，成功时调用 `resolve`，失败时调用 `reject`；调用方通过 `then` 和 `catch` 处理结果。
+Promise 表示一次异步操作最后是成功还是失败。在构造函数里启动任务，成功时调 `resolve`，失败时调 `reject`；调用方用 `then` 和 `catch` 处理结果。
 
-原课程用这张图说明 Promise 与 axios 调用之间的关系。
+原课程用这张图说明 Promise 和 axios 调用之间的关系。
 
 ![image-20230222113651404](images/image-20230222113651404.png)
 
@@ -919,7 +919,7 @@ Promise 表示一次异步操作最终成功或失败。构造函数里启动任
    })
    ```
 
-`resolve` 的值会进入 `then`，`reject` 的值会进入 `catch`。下面用定时器模拟一次失败。
+`resolve` 的值会进 `then`，`reject` 的值会进 `catch`。下面用定时器模拟一次失败。
 
    ```js
    /**
@@ -943,25 +943,25 @@ Promise 表示一次异步操作最终成功或失败。构造函数里启动任
    ```
 
 
-两秒后 Promise 进入失败状态，因此执行 `catch`。把示例中的 `reject` 换成 `resolve`，结果就会进入 `then`。
+两秒后 Promise 变成失败状态，所以执行 `catch`。把示例里的 `reject` 换成 `resolve`，就会进 `then`。
 
 ### Promise 的三种状态
 
-每个 Promise 都处于以下状态之一：
+每个 Promise 都处在下面某一种状态：
 
-- `pending`：初始状态，尚未成功或失败。
-- `fulfilled`：异步操作成功完成。
-- `rejected`：异步操作失败。
+- `pending`：初始状态，还没成功也没失败。
+- `fulfilled`：异步操作成功完成了。
+- `rejected`：异步操作失败了。
 
-状态变化会触发关联的处理函数。
+状态一变，就会触发关联的处理函数。
 
    ![image-20230222120815484](images/image-20230222120815484.png)
 
-Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会再次改变。
+Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会再变了。
 
 ### 用 Promise 包装 XHR
 
-把 XHR 放进 Promise 后，事件回调负责判断成功或失败，调用方继续使用 `then` 和 `catch`。下面请求省份列表并渲染到页面。
+把 XHR 放进 Promise 以后，事件回调负责判断成功还是失败，调用方继续用 `then` 和 `catch`。下面请求省份列表并渲染到页面上。
 
    ![image-20230404140252181](images/image-20230404140252181.png)
 
@@ -1002,17 +1002,17 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-`loadend` 中用 `xhr.status >= 200 && xhr.status < 300` 判断 HTTP 成功。成功时解析响应并调用 `resolve`，其余状态调用 `reject`。若要覆盖网络错误和超时，还应补充相应事件，避免 Promise 一直停在 `pending`。
+`loadend` 里用 `xhr.status >= 200 && xhr.status < 300` 判断 HTTP 成功。成功就解析响应、调 `resolve`，其他状态调 `reject`。要覆盖网络错误和超时的话，还得补上对应的事件，免得 Promise 一直停在 `pending`。
 
 ## 四、封装与错误排查
 
 ### 最小 myAxios
 
-封装函数接收配置对象并返回 Promise。内部负责创建 XHR 和分流结果，外部只处理配置、成功数据和错误。
+封装函数接收一个配置对象，返回 Promise。里面负责创建 XHR 和区分结果，外面只管配置、成功的数据和错误。
 
    ![image-20230222130217597](images/image-20230222130217597.png)
 
-先确定函数形状。
+先把函数的形状定下来。
 
    ```js
    function myAxios(config) {
@@ -1032,7 +1032,7 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-这个边界确定后，再实现默认 GET 请求和状态分流。
+边界定好以后，再实现默认的 GET 请求和状态分流。
 
    ```js
    /**
@@ -1073,11 +1073,11 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-`config.method || 'GET'` 在没有传方法时使用 GET。接下来让配置对象支持 `params`。
+`config.method || 'GET'` 表示没传方法时用 GET。接下来让配置对象支持 `params`。
 
 ### 支持查询参数
 
-如果配置中存在 `params`，先用 `URLSearchParams` 转成查询字符串，再拼到请求 URL。下面请求辽宁省大连市的地区列表。
+配置里有 `params` 的话，先用 `URLSearchParams` 转成查询字符串，再拼到请求 URL 上。下面请求辽宁省大连市的地区列表。
 
    ```js
    function myAxios(config) {
@@ -1118,11 +1118,11 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-`params` 对象经 `URLSearchParams` 处理后成为查询字符串。这个实现会修改原 `config.url`，同一个配置对象重复调用时要注意重复拼接。
+`params` 对象经过 `URLSearchParams` 处理后变成查询字符串。这个实现会改掉原来的 `config.url`，同一个配置对象重复调用时要小心重复拼接。
 
 ### 支持 JSON 请求体
 
-再加入 `data` 选项。存在请求体时，把对象转成 JSON，设置内容类型并发送；没有 `data` 时保持普通 `send()`。
+再加上 `data` 选项。有请求体时，把对象转成 JSON、设置内容类型再发送；没有 `data` 时还是普通的 `send()`。
 
    ```js
    function myAxios(config) {
@@ -1174,11 +1174,11 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-这样 `myAxios` 已经覆盖默认方法、查询参数、JSON 请求体和 Promise 结果分流。下面用天气查询验证这几个能力能否一起工作。
+这样 `myAxios` 已经覆盖了默认方法、查询参数、JSON 请求体和 Promise 结果分流。下面用天气查询验证这几个能力能不能一起工作。
 
 ### 天气查询：默认数据
 
-页面先请求北京市天气并渲染默认内容。
+页面先请求北京市的天气，渲染默认内容。
 
    ![image-20230222133327806](images/image-20230222133327806.png)
 
@@ -1295,15 +1295,15 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-默认调用传入北京市城市编码。这一步同时验证了 `params`、Promise 成功分支和页面渲染。
+默认调用时传北京市的城市编码。这一步同时验证了 `params`、Promise 成功分支和页面渲染。
 
 ### 天气查询：搜索城市
 
-输入框变化时，请求匹配的城市列表。
+输入框一变，就请求匹配的城市列表。
 
    ![image-20230222133553010](images/image-20230222133553010.png)
 
-监听 `input` 事件，把当前输入值作为 `params.city` 传给接口。
+监听 `input` 事件，把当前的输入值当作 `params.city` 传给接口。
 
    ```js
    /**
@@ -1332,15 +1332,15 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-接口返回后，城市名称写入列表，城市编码保存在 `data-code` 中，供点击时读取。
+接口返回后，城市名写进列表，城市编码存在 `data-code` 里，点击时再读出来。
 
 ### 天气查询：切换城市
 
-城市列表是动态生成的，因此在父级列表上使用事件委托。点击城市后读取编码，再复用 `getWeather`。
+城市列表是动态生成的，所以在父级列表上用事件委托。点了某个城市后读出编码，再复用 `getWeather`。
 
    ![image-20230222134653884](images/image-20230222134653884.png)
 
-下面只处理带有 `city-item` 类的点击目标。
+下面只处理带 `city-item` 类的点击目标。
 
    ```js
    /**
@@ -1361,7 +1361,7 @@ Promise 一旦从 `pending` 变成 `fulfilled` 或 `rejected`，状态就不会�
    ```
 
 
-`dataset.code` 的值由接口返回的数据决定。前端应按接口约定传城市名称或城市编码，不自行猜测字段格式。
+`dataset.code` 的值由接口返回的数据决定。前端按接口约定传城市名或城市编码，别自己猜字段格式。
 
 ## 参考文档
 

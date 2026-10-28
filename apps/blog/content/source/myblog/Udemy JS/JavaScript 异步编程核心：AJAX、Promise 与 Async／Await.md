@@ -17,13 +17,13 @@ categories:
 
 ### 1.1 异步编程概念
 
-- **定义**：JavaScript 是单线程语言，异步编程允许代码在等待某个操作（如网络请求、定时器）完成时，不阻塞后续代码执行，而是继续执行其他任务，待操作完成后再处理结果。
-- **应用场景**：
-  - 网络请求（如获取 API 数据）
+- 定义：JavaScript 是单线程语言。异步编程让代码在等某个操作（网络请求、定时器）完成时不卡住后面的代码，先去做别的事，等操作完成了再处理结果。
+- 常见场景：
+  - 网络请求（比如拿 API 数据）
   - 定时器（`setTimeout`、`setInterval`）
-  - 事件监听（如点击、输入事件）
+  - 事件监听（点击、输入事件）
 
-- **同步 vs 异步示例**：
+- 同步 vs 异步示例：
 
   ```javascript
   // 同步代码：按顺序执行，阻塞后续操作
@@ -44,9 +44,9 @@ categories:
 
 ### 1.2 AJAX 技术
 
-- **定义**：AJAX（Asynchronous JavaScript and XML）是一种异步请求数据的技术，核心是在不刷新页面的情况下与服务器交换数据并更新页面部分内容。
-- **原理**：通过 `XMLHttpRequest` 对象（或后续的 `fetch` API）向服务器发送请求，接收响应后解析数据并操作 DOM。
-- **数据格式**：早期常用 XML，现在主流使用 JSON（轻量、易解析）。
+- 定义：AJAX（Asynchronous JavaScript and XML）是一种异步请求数据的技术，不刷新页面就能和服务器交换数据，并更新页面的一部分。
+- 原理：用 `XMLHttpRequest` 对象（或者后来的 `fetch` API）向服务器发请求，收到响应后解析数据、操作 DOM。
+- 数据格式：早期常用 XML，现在主流是 JSON（轻、好解析）。
 
 ## 二、XMLHttpRequest（对应选集 248：Our First AJAX Call: XMLHttpRequest）
 
@@ -54,7 +54,7 @@ categories:
 
 1. 创建 `XMLHttpRequest` 实例
 2. 配置请求（请求方式、URL、是否异步）
-3. 监听 `load` 事件（获取响应结果）
+3. 监听 `load` 事件（拿响应结果）
 4. 发送请求
 5. 错误处理（网络错误、HTTP 错误）
 
@@ -92,14 +92,14 @@ xhr.send();
 ### 2.3 缺点
 
 - 语法繁琐，步骤多
-- 不支持 Promise，难以进行链式调用和错误统一处理
-- 处理多个异步请求时易陷入“回调地狱”
+- 不支持 Promise，很难链式调用、统一处理错误
+- 处理多个异步请求时容易陷进"回调地狱"
 
 ## 三、回调地狱（对应选集 250：Welcome to Callback Hell）
 
 ### 3.1 定义
 
-当多个异步操作需要按顺序执行（如先获取用户，再根据用户 ID 获取用户的订单，再根据订单 ID 获取订单详情）时，会嵌套多层回调函数，导致代码结构混乱、可读性差、难以维护，这种情况称为“回调地狱”。
+好几个异步操作要按顺序执行时（比如先拿用户，再按用户 ID 拿订单，再按订单 ID 拿订单详情），回调函数会一层套一层，代码结构乱、难读、难维护，这就叫"回调地狱"。
 
 ### 3.2 示例：回调地狱
 
@@ -143,41 +143,41 @@ getUser(1, (user) => {
 
 ### 3.3 解决方案
 
-- 使用 Promise 链式调用
-- 使用 `async/await` 语法（基于 Promise，更简洁）
+- 用 Promise 链式调用
+- 用 `async/await` 语法（基于 Promise，更简洁）
 
 ## 四、Promise（对应选集 251：Promises and the Fetch API、252：Consuming Promises、253：Chaining Promises、254：Handling Rejected Promises、255：Throwing Errors Manually）
 
 ### 4.1 Promise 概念
 
-- **定义**：Promise 是一种用于处理异步操作的对象，它代表一个异步操作的最终完成（或失败）及其结果值。
-- **三种状态**：
-  1. **Pending（待定）**：初始状态，既未成功也未失败
-  2. **Fulfilled（已成功）**：异步操作完成，调用 `resolve` 函数
-  3. **Rejected（已失败）**：异步操作失败，调用 `reject` 函数
-- **状态特点**：一旦状态改变（从 Pending 变为 Fulfilled 或 Rejected），就会永久保持该状态，不会再变化。
+- 定义：Promise 是处理异步操作的对象，代表一个异步操作最终是完成还是失败，以及它的结果值。
+- 三种状态：
+  1. Pending（待定）：初始状态，既没成功也没失败
+  2. Fulfilled（已成功）：异步操作完成，调用了 `resolve` 函数
+  3. Rejected（已失败）：异步操作失败，调用了 `reject` 函数
+- 状态一旦改变（从 Pending 变成 Fulfilled 或 Rejected），就永远停在那个状态，不会再变。
 
 ### 4.2 Promise 基本用法
 
 #### 4.2.1 创建 Promise
 
-通过 `new Promise((resolve, reject) => { ... })` 创建，传入一个“执行器函数”，该函数接收两个参数：
+用 `new Promise((resolve, reject) => { ... })` 创建，传进去一个"执行器函数"，它接收两个参数：
 
-- `resolve`：异步操作成功时调用，将 Promise 状态改为 Fulfilled，并传递结果值
-- `reject`：异步操作失败时调用，将 Promise 状态改为 Rejected，并传递错误信息
+- `resolve`：异步操作成功时调用，把 Promise 状态改成 Fulfilled，并传出结果值
+- `reject`：异步操作失败时调用，把 Promise 状态改成 Rejected，并传出错误信息
 
 ##### **简明解释**
 
-- resolve(value)：把这个 Promise 标记为“已完成”（fulfilled），并把 value 传给后续的 then。
-- reject(error)：把这个 Promise 标记为“已拒绝”（rejected），并把 error 传给后续的 catch。
-- 只会第一次生效；之后再次调用 resolve/reject 会被忽略。
-- 如果传给 resolve 的是一个 Promise/thenable，它会“跟随”那个 Promise 的状态（promise 解析）。
+- resolve(value)：把这个 Promise 标成"已完成"（fulfilled），把 value 交给后面的 then。
+- reject(error)：把这个 Promise 标成"已拒绝"（rejected），把 error 交给后面的 catch。
+- 只有第一次调用有效；之后再调 resolve/reject 都会被忽略。
+- 传给 resolve 的要是一个 Promise/thenable，它会"跟随"那个 Promise 的状态（promise 解析）。
 
-“这个算 return 吗？”
+"这个算 return 吗？"
 
-- 不是。resolve/reject 是函数调用，用来“结算”Promise；不是 return 的语义。
-- 在 executor 或 setTimeout 回调里写 return resolve 只是从那个回调返回，没必要；resolve 本身已经结算 Promise。
-- 真正有意义的 return 是在 .then 回调里：return 的值会成为“下一个 Promise”的完成值。
+- 不算。resolve/reject 是函数调用，用来"结算"Promise，跟 return 不是一回事。
+- 在 executor 或 setTimeout 回调里写 return resolve，只是从那个回调返回，没必要；resolve 本身已经把 Promise 结算了。
+- 真正有意义的 return 在 .then 回调里：return 的值会变成"下一个 Promise"的完成值。
 
 示例：
 
@@ -202,8 +202,8 @@ new Promise((resolve, reject) => {
 
 要点：
 
-- 在创建 Promise 时，用 resolve/reject 改变状态；executor 的 return 值会被忽略。
-- 在 .then 回调里，return 的值用于“链式传递”。
+- 创建 Promise 时，用 resolve/reject 改状态；executor 的 return 值会被忽略。
+- 在 .then 回调里，return 的值用来往下传。
 
 #### 4.2.2 示例：创建 Promise 处理异步请求
 
@@ -233,11 +233,11 @@ function fetchData(url) {
 
 ### 4.3 消费 Promise（处理结果）
 
-通过 `then()`、`catch()`、`finally()` 方法处理 Promise 的结果：
+用 `then()`、`catch()`、`finally()` 处理 Promise 的结果：
 
-- `then(onFulfilled, onRejected)`：处理成功结果（`onFulfilled`）或失败结果（`onRejected`），返回一个新的 Promise，支持链式调用
-- `catch(onRejected)`：专门处理失败结果，等价于 `then(null, onRejected)`
-- `finally(onFinally)`：无论 Promise 成功或失败，都会执行，用于清理操作（如关闭加载动画）
+- `then(onFulfilled, onRejected)`：处理成功（`onFulfilled`）或失败（`onRejected`）的结果，返回一个新的 Promise，所以能链式调用
+- `catch(onRejected)`：专门处理失败，等价于 `then(null, onRejected)`
+- `finally(onFinally)`：不管成功还是失败都会执行，用来做清理（比如关掉加载动画）
 
 #### 4.3.1 示例：消费 Promise
 
@@ -271,8 +271,8 @@ fetchData("https://jsonplaceholder.typicode.com/users/1")
 
 ### 4.4 Promise 链式调用
 
-- **特点**：`then()` 方法返回一个新的 Promise，因此可以连续调用 `then()`，将多个异步操作按顺序串联起来，避免回调地狱。
-- **示例：链式调用解决回调地狱**
+- `then()` 返回一个新的 Promise，所以能接着调 `then()`，把多个异步操作按顺序串起来，避开回调地狱。
+- 示例：用链式调用解决回调地狱
 
 ```javascript
 // 用 Promise 重构之前的“用户→订单→订单详情”流程
@@ -316,14 +316,14 @@ getUser(1)
 
 ### 4.5 手动抛出错误（`throw`）
 
-- 在 `then()` 中可以通过 `throw new Error("错误信息")` 手动抛出错误，该错误会被后续的 `catch()` 捕获。
-- 示例：见 4.3.1 中的“手动抛出错误”部分。
+- 在 `then()` 里可以用 `throw new Error("错误信息")` 手动抛错，后面的 `catch()` 会接住它。
+- 示例：见 4.3.1 里"手动抛出错误"那部分。
 
 ### 4.6 Promise 静态方法
 
 #### 4.6.1 `Promise.resolve(value)`
 
-- 创建一个立即成功的 Promise，直接返回 `value`。
+- 创建一个马上成功的 Promise，直接返回 `value`。
 - 示例：
   ```javascript
   Promise.resolve("成功的数据").then((data) => console.log(data)); // 输出：成功的数据
@@ -331,7 +331,7 @@ getUser(1)
 
 #### 4.6.2 `Promise.reject(error)	`
 
-- 创建一个立即失败的 Promise，直接返回 `error`。
+- 创建一个马上失败的 Promise，直接返回 `error`。
 - 示例：
   ```javascript
   Promise.reject(new Error("手动触发失败")).catch((error) =>
@@ -341,7 +341,7 @@ getUser(1)
 
 #### 4.6.3 `Promise.all(iterable)`
 
-- 接收一个 Promise 数组，等待所有 Promise 都成功后，返回一个包含所有结果的数组；若有一个 Promise 失败，立即返回该失败原因。
+- 接收一个 Promise 数组，等所有 Promise 都成功后，返回包含所有结果的数组；只要有一个失败，就马上返回那个失败原因。
 - 示例：
 
   ```javascript
@@ -359,7 +359,7 @@ getUser(1)
 
 #### 4.6.4 `Promise.race(iterable)`
 
-- 接收一个 Promise 数组，返回第一个完成（成功或失败）的 Promise 的结果。
+- 接收一个 Promise 数组，返回第一个完成（成功或失败都算）的 Promise 的结果。
 - 示例：
 
   ```javascript
@@ -379,12 +379,12 @@ getUser(1)
 
 #### 4.6.5 `Promise.allSettled(iterable)`
 
-- 接收一个 Promise 数组，**等待所有 Promise 都完成（无论成功或失败）** 后，返回一个包含每个 Promise 结果的数组。每个结果对象包含两个属性：
-  - `status`：字符串类型，值为 `fulfilled`（成功）或 `rejected`（失败）；
-  - `value`：仅当 `status` 为 `fulfilled` 时存在，对应 Promise 成功的结果；
-  - `reason`：仅当 `status` 为 `rejected` 时存在，对应 Promise 失败的原因。
+- 接收一个 Promise 数组，等所有 Promise 都完成（不管成功还是失败）后，返回包含每个 Promise 结果的数组。每个结果对象有这些属性：
+  - `status`：字符串，`fulfilled`（成功）或 `rejected`（失败）；
+  - `value`：只在 `status` 是 `fulfilled` 时有，对应成功的结果；
+  - `reason`：只在 `status` 是 `rejected` 时有，对应失败的原因。
 
-- 特点：**不会因某个 Promise 失败而中断**，会等待所有任务结束后统一返回结果，适合需要获取所有请求完整状态的场景（如批量操作结果统计、多接口并行调用且需处理部分失败的情况）。
+- 特点：不会因为某个 Promise 失败就中断，会等所有任务结束后统一返回。适合要拿到所有请求完整状态的场景（比如统计批量操作的结果、多个接口并行调用又要处理部分失败）。
 
 - 示例：
 
@@ -430,7 +430,7 @@ getUser(1)
   请求 3 成功： 延迟 2 秒成功
   ```
 
-- 与 `Promise.all` 的区别：
+- 和 `Promise.all` 的区别：
   | 特性 | `Promise.all` | `Promise.allSettled` |
   | ------------------- | ---------------------------- | ----------------------------- |
   | 失败处理 | 任一失败则立即 reject | 等待所有完成，记录失败原因 |
@@ -439,11 +439,11 @@ getUser(1)
 
 #### 4.6.6 `Promise.any(iterable)`
 
-- 接收一个 Promise 数组，**等待第一个成功的 Promise** 并返回其结果；若所有 Promise 都失败，则返回一个包含所有失败原因的 `AggregateError`（聚合错误）。
+- 接收一个 Promise 数组，等第一个成功的 Promise，返回它的结果；所有 Promise 都失败的话，返回一个包含所有失败原因的 `AggregateError`（聚合错误）。
 
-- 特点：与 `Promise.race` 类似（关注“第一个完成的结果”），但仅筛选“成功的结果”——忽略所有失败的 Promise，直到找到第一个成功的；只有当所有 Promise 都失败时，才会触发 `catch`。
+- 特点：和 `Promise.race` 有点像（都看"第一个完成的结果"），但只挑"成功的结果"——忽略所有失败的 Promise，直到找到第一个成功的；只有全都失败了才会进 `catch`。
 
-- 示例 1：存在成功的 Promise
+- 示例 1：有成功的 Promise
 
   ```javascript
   // 模拟失败的请求
@@ -490,11 +490,11 @@ getUser(1)
     });
   ```
 
-- 关键说明：
-  - `AggregateError` 是专门用于聚合多个错误的内置错误类型，其 `errors` 属性包含了所有 Promise 失败的原因数组，可通过 `error.errors` 遍历所有失败信息。
-  - 与 `Promise.race` 的核心区别：`Promise.race` 会返回“第一个完成（成功或失败）”的结果，而 `Promise.any` 会跳过所有失败，只返回“第一个成功”的结果，仅当全部失败时才报错。
+- 说明：
+  - `AggregateError` 是专门用来聚合多个错误的内置错误类型，它的 `errors` 属性是所有失败原因组成的数组，可以用 `error.errors` 遍历所有失败信息。
+  - 和 `Promise.race` 的区别：`Promise.race` 返回"第一个完成（成功或失败）"的结果，`Promise.any` 会跳过所有失败，只返回"第一个成功"的结果，全部失败才报错。
 
-- 与 `Promise.race`/`Promise.all` 的区别对比表：
+- 和 `Promise.race`/`Promise.all` 的对比：
   | 特性 | `Promise.any` | `Promise.race` | `Promise.all` |
   | ------------------- | ---------------------------- | ----------------------------- | ---------------------------- |
   | 关注结果类型 | 仅关注“成功”的结果 | 关注“第一个完成”（成功/失败） | 关注“所有成功”的结果 |
@@ -502,23 +502,23 @@ getUser(1)
   | 返回结果 | 第一个成功的结果 | 第一个完成的结果（成功/失败） | 所有成功的结果数组 |
   | 适用场景 | 多个备选接口，只要一个可用即可 | 竞速场景（如超时控制） | 需所有依赖都成功的场景 |
 
-- 典型应用场景：
-  - 多 CDN 资源加载：从多个 CDN 加载同一资源，只要有一个成功就使用，提升可用性；
-  - 备选接口调用：调用多个功能相同的接口，取第一个成功的响应，减少等待时间；
-  - 容错型并行请求：允许部分请求失败，只要有一个成功就继续执行后续逻辑。
+- 典型用法：
+  - 多 CDN 加载资源：从好几个 CDN 加载同一个资源，有一个成功就用，可用性更高；
+  - 备选接口：调好几个功能一样的接口，取第一个成功的响应，少等一会儿；
+  - 容错的并行请求：允许部分请求失败，只要有一个成功就接着执行后面的逻辑。
 
 ## 五、Fetch API（对应选集 251：Promises and the Fetch API、256：Coding Challenge #1）
 
 ### 5.1 Fetch 概念
 
-- **定义**：Fetch API 是现代浏览器提供的用于替代 `XMLHttpRequest` 的异步请求接口，基于 Promise，语法更简洁，支持链式调用。
-- **基本语法**：`fetch(url, [options])`，返回一个 Promise 对象（resolve 时返回 `Response` 对象，reject 时仅捕获网络错误）。
+- 定义：Fetch API 是现代浏览器提供的、用来替代 `XMLHttpRequest` 的异步请求接口，基于 Promise，语法更简洁，支持链式调用。
+- 基本语法：`fetch(url, [options])`，返回一个 Promise（resolve 时给出 `Response` 对象，reject 只在网络错误时发生）。
 
 ### 5.2 特点
 
-- 默认请求方式为 `GET`
-- 仅当网络错误（如无法连接服务器）时，Promise 才会 reject；HTTP 错误（如 404、500）不会导致 reject，需手动判断 `Response.ok` 属性
-- 需通过 `Response.json()`、`Response.text()` 等方法解析响应体
+- 默认请求方式是 `GET`
+- 只有网络错误（比如连不上服务器）时 Promise 才会 reject；HTTP 错误（404、500 这些）不会让它 reject，要自己判断 `Response.ok`
+- 要用 `Response.json()`、`Response.text()` 这些方法解析响应体
 
 ### 5.3 示例：使用 Fetch 获取数据（结合反向地理编码 API）
 
@@ -577,10 +577,10 @@ whereAmI(52.508, 13.381); // 输出：你在 Berlin, Germany → 国家信息：
 
 ### 6.1 Async/Await 概念
 
-- **定义**：`async/await` 是 ES2017 引入的语法糖，基于 Promise，允许以“同步代码”的形式编写异步代码，进一步简化异步操作的可读性和维护性。
-- **核心关键字**：
-  - `async`：修饰函数，使函数返回一个 Promise（即使函数内没有显式返回 Promise，也会自动包装为成功的 Promise）
-  - `await`：只能在 `async` 函数内使用，等待一个 Promise 完成（暂停函数执行，直到 Promise 状态改变）
+- 定义：`async/await` 是 ES2017 引入的语法糖，基于 Promise，可以用"同步代码"的样子写异步代码，更好读也更好维护。
+- 两个关键字：
+  - `async`：修饰函数，让函数返回一个 Promise（函数里没显式返回 Promise，也会自动包成一个成功的 Promise）
+  - `await`：只能在 `async` 函数里用，等一个 Promise 完成（暂停函数执行，直到 Promise 的状态改变）
 
 ### 6.2 基本用法
 
@@ -632,8 +632,8 @@ getCountryByCoords(52.508, 13.381)
 
 ### 6.3 错误处理（`try...catch`）
 
-- `await` 后的 Promise 若失败（reject），会抛出错误，需用 `try...catch` 捕获，相当于 Promise 的 `catch()` 方法。
-- 一个 `try` 块可以包含多个 `await` 语句，所有 `await` 的错误都会被同一个 `catch` 块捕获。
+- `await` 后面的 Promise 失败（reject）时会抛错，要用 `try...catch` 接住，相当于 Promise 的 `catch()`。
+- 一个 `try` 块里可以有好几个 `await`，它们的错误都会被同一个 `catch` 块接住。
 
 ### 6.4 Async/Await 与 Promise 对比
 
@@ -648,11 +648,11 @@ getCountryByCoords(52.508, 13.381)
 
 ### 7.1 需求
 
-实现一个函数，输入 GPS 坐标，完成以下两步：
+写一个函数，输入 GPS 坐标，完成下面几步：
 
-1. 通过 Geocode.xyz API 反向地理编码，获取坐标对应的城市和国家
-2. 通过 Rest Countries API 获取该国家的详细信息（如首都、人口）
-3. 处理 API 限流（Geocode.xyz 每秒仅允许 3 个请求）和错误
+1. 用 Geocode.xyz API 做反向地理编码，拿到坐标对应的城市和国家
+2. 用 Rest Countries API 拿这个国家的详细信息（首都、人口等）
+3. 处理 API 限流（Geocode.xyz 每秒只允许 3 个请求）和错误
 
 ### 7.2 完整代码（Async/Await 版本）
 
@@ -732,18 +732,18 @@ testWhereAmI();
 
 ### 7.3 关键知识点应用
 
-1. **Promise 延迟**：用 `delay()` 函数解决 API 限流问题
-2. **Async/Await 语法**：线性编写多步异步操作，可读性高
-3. **错误处理**：`try...catch` 捕获所有错误，包括网络错误、HTTP 错误、业务错误（如无国家信息）
-4. **API 协作**：串联两个 API 请求，前一个请求的结果作为后一个请求的参数
+1. Promise 延迟：用 `delay()` 函数解决 API 限流
+2. Async/Await：把多步异步操作写成线性的，好读
+3. 错误处理：`try...catch` 接住所有错误，包括网络错误、HTTP 错误和业务错误（比如没有国家信息）
+4. API 协作：串起两个 API 请求，前一个请求的结果当后一个请求的参数
 
 ## 八、总结
 
-1. **异步编程演进**：`XMLHttpRequest` → `Promise` → `fetch` → `async/await`，目标是简化异步代码、避免回调地狱、统一错误处理。
-2. **Promise 核心**：三种状态、`then()`/`catch()` 链式调用、静态方法（`all`/`race`），是现代异步编程的基础。
-3. **Fetch 要点**：基于 Promise，需手动处理 HTTP 错误，通过 `json()` 解析响应。
-4. **Async/Await 优势**：同步式写法、`try...catch` 错误处理、调试友好，是当前主流的异步编程方案。
-5. **实战原则**：
-   - 多 API 协作时，用 `await` 保证顺序执行
+1. 异步编程的演进：`XMLHttpRequest` → `Promise` → `fetch` → `async/await`，目的都是简化异步代码、避开回调地狱、统一错误处理。
+2. Promise：三种状态、`then()`/`catch()` 链式调用、静态方法（`all`/`race`），是现代异步编程的基础。
+3. Fetch：基于 Promise，HTTP 错误要自己处理，用 `json()` 解析响应。
+4. Async/Await：写法像同步代码，用 `try...catch` 处理错误，调试方便，是现在主流的异步写法。
+5. 实战原则：
+   - 多个 API 协作时，用 `await` 保证按顺序执行
    - 处理 API 限流/超时，用 `delay()` 或 `Promise.race()`
-   - 统一错误处理，避免遗漏错误场景
+   - 统一处理错误，别漏掉错误场景

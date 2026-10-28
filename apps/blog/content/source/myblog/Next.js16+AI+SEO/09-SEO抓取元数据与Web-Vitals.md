@@ -21,22 +21,22 @@ draft: false
 
 # Next.js 16 SEO：抓取、元数据与 Web Vitals
 
-SEO 不是给页面塞几个关键词，而是让搜索引擎能够发现、抓取、理解并正确展示内容，同时让真实用户获得稳定、快速的体验。Next.js 可以生成 robots、sitemap、Metadata、JSON-LD 和 Open Graph，但内容质量、链接结构和性能仍然决定最终效果。
+SEO 要做的是让搜索引擎能发现、抓取、理解并正确展示内容，同时让真实用户用得稳、用得快，跟往页面里塞关键词没关系。Next.js 能生成 robots、sitemap、Metadata、JSON-LD 和 Open Graph，但最终效果还是看内容质量、链接结构和性能。
 
 ## 1. 搜索引擎的基本链路
 
-可以把搜索过程拆成四步：
+搜索过程可以拆成四步：
 
 1. 发现 URL：通过站内链接、外部链接或 sitemap 找到页面。
 2. 抓取页面：请求 HTML、资源和允许访问的内容。
-3. 建立索引：解析正文、标题、结构化数据和页面关系。
-4. 生成排名与展示：根据相关性、质量、体验、权威性和搜索意图呈现结果。
+3. 建立索引：解析正文、标题、结构化数据和页面之间的关系。
+4. 排名与展示：按相关性、质量、体验、权威性和搜索意图展示结果。
 
-所以 SEO 的基础不是某个魔法字段，而是：可访问的页面、清晰的内部链接、稳定的 URL、真实有用的内容、正确的技术信号和持续的性能监测。不要使用隐藏文字、关键词堆砌、诱导跳转或批量低质量页面等做法。
+所以 SEO 的基础不在某个魔法字段，而在这些：页面能访问，内部链接清楚，URL 稳定，内容真实有用，技术信号正确，性能持续有人盯着。隐藏文字、关键词堆砌、诱导跳转、批量生成低质量页面这些做法都别用。
 
 ## 2. `robots.txt`：声明抓取边界
 
-在 App Router 中创建 `app/robots.ts`：
+在 App Router 里建 `app/robots.ts`：
 
 ```ts
 import type { MetadataRoute } from 'next';
@@ -56,9 +56,9 @@ export default function robots(): MetadataRoute.Robots {
 }
 ```
 
-访问 `/robots.txt` 时，Next.js 会生成文本结果。`userAgent: '*'` 表示通用规则，也可以为特定爬虫提供单独规则。`disallow` 不是访问控制，不能用来保护密码、后台数据或私有接口；真正的敏感资源必须由认证和服务端权限控制保护。
+访问 `/robots.txt` 时，Next.js 会生成文本结果。`userAgent: '*'` 是通用规则，也可以给特定爬虫单独写规则。`disallow` 不是访问控制，保护不了密码、后台数据或私有接口；真正敏感的资源要靠认证和服务端权限控制来保护。
 
-`crawlDelay` 并非所有爬虫都支持，不能把它当作通用的流量控制方案。生产环境要检查主域名、协议、部署前缀和 sitemap 地址是否一致。
+`crawlDelay` 不是所有爬虫都支持，别把它当成通用的流量控制手段。生产环境要检查主域名、协议、部署前缀和 sitemap 地址是不是一致。
 
 ## 3. `sitemap.xml`：告诉搜索引擎页面在哪里
 
@@ -86,7 +86,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 }
 ```
 
-数据库驱动的页面使用异步函数：
+数据库驱动的页面用异步函数：
 
 ```ts
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -104,11 +104,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 ```
 
-单个 sitemap 的 URL 数量和文件大小有限。内容规模很大时用 `generateSitemaps` 拆分，或由独立的 sitemap 服务生成索引。只放真实、可索引、返回 200 的 canonical URL，不要把登录页、筛选组合和重复 URL 全部塞进去。
+单个 sitemap 的 URL 数量和文件大小都有上限。内容规模很大时用 `generateSitemaps` 拆分，或者交给单独的 sitemap 服务生成索引。只放真实、可索引、返回 200 的 canonical URL，别把登录页、筛选组合和重复的 URL 一股脑塞进去。
 
 ## 4. Metadata：标题和描述要反映页面内容
 
-静态页面可以直接导出 `metadata`：
+静态页面直接导出 `metadata`：
 
 ```ts
 import type { Metadata } from 'next';
@@ -123,7 +123,7 @@ export const metadata: Metadata = {
 };
 ```
 
-动态页面使用 `generateMetadata`：
+动态页面用 `generateMetadata`：
 
 ```tsx
 import type { Metadata } from 'next';
@@ -150,11 +150,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 ```
 
-布局和页面的 metadata 会按层级合并，页面级字段可以覆盖父级字段。`title` 还支持 `default`、`template` 和 `absolute`，要先定义清晰的标题策略，避免出现重复后缀或标题过长。生成 metadata 的数据请求应在服务端完成，并与页面数据共享缓存策略。
+布局和页面的 metadata 按层级合并，页面级的字段可以覆盖父级。`title` 还支持 `default`、`template` 和 `absolute`，先定好标题策略，免得出现重复的后缀或者标题太长。生成 metadata 的数据请求要在服务端完成，并和页面数据共用缓存策略。
 
 ## 5. JSON-LD：给机器看的结构化语义
 
-结构化数据可以帮助搜索引擎理解文章、作者、面包屑和产品等实体。以博客文章为例：
+结构化数据能帮搜索引擎理解文章、作者、面包屑和产品这些实体。以博客文章为例：
 
 ```tsx
 type ArticleJsonLdProps = {
@@ -190,7 +190,7 @@ export function ArticleJsonLd(props: ArticleJsonLdProps) {
 }
 ```
 
-`dangerouslySetInnerHTML` 在这里是把 JSON 放进 script 文本，不是渲染用户 HTML；仍然要对动态字符串做安全序列化。不要直接拼接 JSON，也不要为了搜索结果虚构作者、评分、价格或日期。结构化数据必须与用户实际看到的页面内容一致，并使用符合 schema.org 的类型和字段。
+这里的 `dangerouslySetInnerHTML` 是把 JSON 放进 script 文本，不是渲染用户的 HTML；动态字符串照样要安全地序列化。别直接拼接 JSON，也别为了搜索结果编造作者、评分、价格或日期。结构化数据要和用户实际看到的页面内容一致，用符合 schema.org 的类型和字段。
 
 ## 6. Open Graph 与 Twitter/X 卡片
 
@@ -223,11 +223,11 @@ export const metadata: Metadata = {
 };
 ```
 
-文章页面可使用 `type: 'article'`，并补充作者和发布时间。`metadataBase` 让相对图片路径能够解析成绝对 URL；生产域名、协议和图片尺寸必须按真实部署验证。Twitter/X 通常可以复用 Open Graph 信息，但需要不同卡片效果时应显式设置 `twitter`。
+文章页可以用 `type: 'article'`，再补上作者和发布时间。`metadataBase` 让相对的图片路径能解析成绝对 URL；生产域名、协议和图片尺寸都要按真实部署验证。Twitter/X 一般能复用 Open Graph 的信息，要不同的卡片效果时再显式设置 `twitter`。
 
 ## 7. Web Vitals：用真实用户体验校验 SEO 基础
 
-常用指标及参考阈值：
+常用指标和参考阈值：
 
 | 指标 | 衡量内容 | 良好 |
 | --- | --- | --- |
@@ -235,7 +235,7 @@ export const metadata: Metadata = {
 | INP | 交互响应延迟 | 不超过 200 毫秒 |
 | CLS | 累积布局偏移 | 不超过 0.1 |
 
-超过良好阈值并不等于页面不可用，但说明需要继续优化；指标要结合设备、网络和真实用户分布判断。可以用 `web-vitals` 采集浏览器数据：
+超过"良好"阈值不代表页面不能用，只是说明还要继续优化；指标要结合设备、网络和真实用户的分布来看。可以用 `web-vitals` 采集浏览器数据：
 
 ```tsx
 'use client';
@@ -258,14 +258,18 @@ onINP(report);
 onLCP(report);
 ```
 
-数据接收接口要限制频率、校验字段，并避免把完整 URL、用户输入或身份信息无条件写入分析系统。实验室工具和真实用户数据各有用途：Lighthouse、PageSpeed Insights 适合定位问题，CrUX 或自有 RUM 适合观察真实设备，Search Console 适合检查索引与搜索表现。
+接收数据的接口要限频、校验字段，别把完整 URL、用户输入或身份信息不加筛选地写进分析系统。实验室工具和真实用户数据各有用处：
+
+- Lighthouse、PageSpeed Insights 适合定位问题
+- CrUX 或自建的 RUM 适合观察真实设备
+- Search Console 适合检查索引和搜索表现
 
 ## 8. 发布前检查清单
 
 - 每个重要页面都有唯一、准确的 title 和 description。
-- canonical、语言 URL、站点域名和 Open Graph URL 使用同一套规范。
-- `robots.txt` 没有误禁首页、CSS、JS 或需要抓取的公开内容。
-- sitemap 只包含公开、规范、可访问的 URL。
-- JSON-LD 与页面可见内容一致，并通过结构化数据测试。
-- 首屏图片有稳定尺寸，字体和第三方脚本不会制造明显布局偏移。
-- 通过真实设备检查 LCP、INP、CLS，而不只看本地开发环境。
+- canonical、语言 URL、站点域名和 Open Graph URL 用同一套规范。
+- `robots.txt` 没有误禁首页、CSS、JS 或需要被抓取的公开内容。
+- sitemap 只包含公开、规范、能访问的 URL。
+- JSON-LD 和页面可见内容一致，并通过了结构化数据测试。
+- 首屏图片有稳定的尺寸，字体和第三方脚本不会造成明显的布局偏移。
+- 在真实设备上检查 LCP、INP、CLS，不要只看本地开发环境。
