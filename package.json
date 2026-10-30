@@ -55,10 +55,5 @@
     "test:watch": "pnpm -F @woodfish-nest/blog test:watch",
     "test:e2e": "pnpm -F @woodfish-nest/blog test:e2e"
   },
-  "packageManager": "pnpm@10.11.0",
-  "pnpm": {
-    "patchedDependencies": {
-      "h3@2.0.1-rc.22": "patches/h3@2.0.1-rc.22.patch"
-    }
-  }
+  "packageManager": "pnpm@11.11.0"
 }

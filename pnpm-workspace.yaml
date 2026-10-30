@@ -1,10 +1,12 @@
 packages:
   - apps/*
   - packages/*
+# The h3 2.x patch is kept for when h3 2.x returns; pnpm 11 fails on unused patches by default.
+allowUnusedPatches: true
 patchedDependencies:
   h3@2.0.1-rc.22: patches/h3@2.0.1-rc.22.patch
-onlyBuiltDependencies:
-  - "@parcel/watcher"
-  - better-sqlite3
-  - esbuild
-  - sharp
+allowBuilds:
+  "@parcel/watcher": true
+  better-sqlite3: true
+  esbuild: true
+  sharp: true

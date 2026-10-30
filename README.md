@@ -65,7 +65,7 @@ Markdown source ─────► content-tools ──────────�
 
 ## 快速开始
 
-需要 **Node.js 22** 与 **pnpm 10.11.0**。从仓库根目录启动博客：
+需要 **Node.js 22** 与 **pnpm 11.11.0**。从仓库根目录启动博客：
 
 ```bash
 pnpm install

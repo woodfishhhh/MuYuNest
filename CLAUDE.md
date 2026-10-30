@@ -60,7 +60,7 @@ currently stale.
 
 Use `pnpm`, not `npm`.
 
-- Root `package.json` declares `packageManager: "pnpm@10.11.0"`.
+- Root `package.json` declares `packageManager: "pnpm@11.11.0"`.
 - Root scripts delegate through `pnpm -F ...`.
 - CI uses `pnpm/action-setup@v4` and `pnpm install --frozen-lockfile`.
 - `deploy/deploy.ps1` must use `pnpm build:deploy` and `pnpm verify:dist`.

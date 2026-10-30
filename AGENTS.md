@@ -25,7 +25,7 @@ woodfish-nest/
 
 ## Package Manager
 
-**pnpm workspaces** — `packageManager: "pnpm@10.11.0"`.
+**pnpm workspaces** — `packageManager: "pnpm@11.11.0"`.
 
 All install / workspace commands must be run from the **repo root** unless otherwise noted.
 
