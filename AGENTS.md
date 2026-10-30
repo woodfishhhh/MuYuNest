@@ -75,7 +75,12 @@ pnpm add <pkg> -F @woodfish-nest/blog           # add a dep to a specific worksp
 
 ## Branch / Worktree Convention
 
-Main development branch: `main`. Feature work is done on short-lived branches or git worktrees.
+Main development branch: `main`. Feature work is done on short-lived branches in this checkout. If a task needs a git worktree, create it in the system temp directory, and once the work is merged or dropped run `git worktree remove` and `git worktree prune`. Do not keep sibling folders like `VueCubeBlog.worktrees/`.
+
+## Finishing a Task
+
+- Before you finish, delete what the task left behind: debug scripts, root `*.log` / `.tmp-*.log` / `.codex-*.log` files, screenshots, `.playwright-mcp/`, `.playwright-cli/`, `test-results/`, `.tmp/`, and temporary worktrees. Keep evidence you need in `docs/screenshots/` or the ignored `output/`, not at the repo root.
+- Record what you confirmed, the pitfalls you hit, and the user's stated preferences in the matching entry of this file, `CLAUDE.md`, or `docs/`. Rewrite existing entries and drop stale ones rather than appending a log.
 
 ## Deployment
 

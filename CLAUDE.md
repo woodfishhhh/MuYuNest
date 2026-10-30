@@ -28,8 +28,7 @@ over speculative architecture.
 
 ## Current Workspace Memory
 
-- Current repository path:
-  `C:\Users\woodfish\Desktop\前端\three.js.learn\VueCubeBlog`.
+- Current repository path: `D:\Coding\blog`.
 - Current canonical GitHub repository:
   `https://github.com/woodfishhhh/MuYuNest.git`.
 - The old remote `woodfishhhh/VueThreeBlog` redirects, but `origin` should point
