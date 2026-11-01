@@ -8,3 +8,9 @@ ON CONFLICT(visitor_id) DO NOTHING;
 
 -- name: IncrementVisitorTotal :exec
 UPDATE visitor_counter SET total = total + 1 WHERE id = 1;
+
+-- name: ListVisitorIDs :many
+SELECT visitor_id FROM visitors ORDER BY visitor_id;
+
+-- name: SetVisitorTotal :exec
+UPDATE visitor_counter SET total = ? WHERE id = 1;

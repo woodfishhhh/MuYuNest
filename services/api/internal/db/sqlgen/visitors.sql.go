@@ -18,6 +18,33 @@ func (q *Queries) IncrementVisitorTotal(ctx context.Context) error {
 	return err
 }
 
+const listVisitorIDs = `-- name: ListVisitorIDs :many
+SELECT visitor_id FROM visitors ORDER BY visitor_id
+`
+
+func (q *Queries) ListVisitorIDs(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listVisitorIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var visitor_id string
+		if err := rows.Scan(&visitor_id); err != nil {
+			return nil, err
+		}
+		items = append(items, visitor_id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const registerVisitor = `-- name: RegisterVisitor :execrows
 INSERT INTO visitors (visitor_id, first_seen_at)
 VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
@@ -30,6 +57,15 @@ func (q *Queries) RegisterVisitor(ctx context.Context, visitorID string) (int64,
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const setVisitorTotal = `-- name: SetVisitorTotal :exec
+UPDATE visitor_counter SET total = ? WHERE id = 1
+`
+
+func (q *Queries) SetVisitorTotal(ctx context.Context, total int64) error {
+	_, err := q.db.ExecContext(ctx, setVisitorTotal, total)
+	return err
 }
 
 const visitorTotal = `-- name: VisitorTotal :one

@@ -46,4 +46,19 @@ that documented difference. A valid visitor cookie takes precedence over a valid
 header, while an invalid supplied header is still rejected. Only the exact
 `X-Visitor-Counted: 1` value suppresses the initial increment. The proxy must
 overwrite `X-Forwarded-Proto`, which controls the persistent cookie's Secure flag.
-No import or production cutover has been performed yet.
+No production import or cutover has been performed yet.
+
+To rehearse visitor migration on a backup (from `services/api`):
+
+```sh
+go run ./cmd/import-visitors --source /path/to/visitor-count.json --dry-run
+go run ./cmd/import-visitors --source /path/to/visitor-count.json --database /path/to/rehearsal-muyu.db
+```
+
+Dry-run validates and summarizes only the source; it does not open the target.
+For a real cutover, stop registrations, back up both sides, take the final legacy
+snapshot, then import. Repeating the same snapshot adds no visitors. An incremental
+snapshot must include every existing target identity and must not lower its total;
+otherwise the transaction is rejected. IDs are imported as existing SHA-256
+digests, without rehashing or exposing them in reports. A failed write rolls back
+both the identity inserts and total update. Analytics migration is still pending.
