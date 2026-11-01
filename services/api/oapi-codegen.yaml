@@ -10,3 +10,6 @@ output-options:
     - getHealth
     - getVisitorCount
     - registerVisit
+    - getAnalyticsHealth
+    - collectAnalytics
+    - getAnalyticsSummary

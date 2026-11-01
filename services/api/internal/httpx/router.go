@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/woodfishhhh/MuYuNest/services/api/internal/analytics"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/api"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/db"
 )
@@ -18,7 +19,7 @@ func Error(c *gin.Context, status int, code, message string) {
 	c.AbortWithStatusJSON(status, gin.H{"error": gin.H{"code": code, "message": message, "requestId": c.GetString("requestId")}})
 }
 
-func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, imageRoot, version, commit string) *gin.Engine {
+func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, imageRoot, version, commit string, analyticsSecret []byte) *gin.Engine {
 	r := gin.New()
 	r.HandleMethodNotAllowed = true
 	// Public proxies must be configured explicitly when deployment is wired up.
@@ -38,6 +39,9 @@ func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, i
 		c.Next()
 	})
 	r.Use(func(c *gin.Context) {
+		if analyticsBoundary(c, origins) {
+			return
+		}
 		if c.Request.URL.Path == "/api/visitor-count" || c.Request.URL.Path == "/api/visitor-count/visit" {
 			c.Header("Cache-Control", "no-store")
 			if c.Request.Method == http.MethodOptions {
@@ -73,10 +77,10 @@ func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, i
 		logger.Error("API handler failed", "request_id", c.GetString("requestId"), "error", err)
 		Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
 	}
-	api.RegisterHandlers(r, api.NewStrictHandlerWithOptions(&healthHandler{logger, mainDB, analyticsDB, imageRoot, version, commit}, nil, api.StrictGinServerOptions{
+	api.RegisterHandlersWithOptions(r, api.NewStrictHandlerWithOptions(&healthHandler{logger, mainDB, analyticsDB, imageRoot, version, commit, analytics.New(analyticsDB, analyticsSecret)}, nil, api.StrictGinServerOptions{
 		HandlerErrorFunc: serverError, ResponseErrorHandlerFunc: serverError,
 		RequestErrorHandlerFunc: func(c *gin.Context, err error) { Error(c, http.StatusBadRequest, "INVALID_REQUEST", err.Error()) },
-	}))
+	}), api.GinServerOptions{ErrorHandler: func(c *gin.Context, err error, status int) { Error(c, status, "INVALID_REQUEST", err.Error()) }})
 	r.NoMethod(func(c *gin.Context) {
 		Error(c, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
 	})

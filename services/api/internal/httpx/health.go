@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/woodfishhhh/MuYuNest/services/api/internal/analytics"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/api"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/db"
 )
@@ -14,6 +15,7 @@ type healthHandler struct {
 	logger                     *slog.Logger
 	mainDB, analyticsDB        *db.Store
 	imageRoot, version, commit string
+	analytics                  *analytics.Store
 }
 
 var _ api.StrictServerInterface = (*healthHandler)(nil)

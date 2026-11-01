@@ -23,13 +23,14 @@ Each database has a single writer and four query-only reader connections. Every 
 ```sh
 docker build -t muyu-api:local services/api
 docker run --rm --read-only -p 127.0.0.1:8080:8080 \
+  -e VISITOR_ANALYTICS_SECRET=development-only-secret \
   --tmpfs /srv/muyu-data:uid=65532,gid=65532 \
   --tmpfs /srv/muyu-images:uid=65532,gid=65532 muyu-api:local
 ```
 
 The tmpfs example is disposable verification storage, not a production persistence setup. Production migration must back up and rehearse on copies before using existing data directories. The runtime image uses UID 65532.
 
-OpenAPI lives in `packages/api-contract/openapi.yaml`. Go generation selects health and visitor operations; expand the operation list as handlers are implemented. Do not hand-edit `internal/api/gen.go`, `internal/db/sqlgen`, or the TypeScript schema. CI checks regeneration drift, build, vet, lint, race tests and the container build.
+OpenAPI lives in `packages/api-contract/openapi.yaml`. Go generation selects health, visitor and analytics operations; expand the operation list as handlers are implemented. Do not hand-edit `internal/api/gen.go`, `internal/db/sqlgen`, or the TypeScript schema. CI checks regeneration drift, build, vet, lint, race tests and the container build.
 
 pnpm 11 script-time dependency verification is configured to **error**, not auto-install: implicit non-frozen installs otherwise upgrade the Nuxt nightly dependency graph. Resolve dependency-state errors with an explicit frozen install.
 
@@ -71,7 +72,7 @@ when comparing `data_json`; stored values are compared semantically. The existin
 180-day retention boundary is preserved. Summary parity covers empty data,
 bounded day ranges, distinct visitors/sessions, 30-minute activity, session
 durations, bounce rate, filled daily series, ranked groups and Web Vitals.
-Analytics HTTP routes are still pending. sqlc queries are grouped under
+Analytics HTTP routes are wired. sqlc queries are grouped under
 `queries/muyu` and `queries/analytics`, with separate generated packages.
 
 To rehearse analytics migration on a consistent SQLite backup:
@@ -90,3 +91,14 @@ retention cleanup removed previously imported rows requires reconciliation or a
 fresh rehearsal target. Source and target must be different files. Stop writes
 and take consistent backups of both databases before a real cutover; copying a
 live SQLite main file without its WAL is not a consistent backup.
+
+Startup now requires `VISITOR_ANALYTICS_SECRET_FILE` or `VISITOR_ANALYTICS_SECRET`.
+Production must mount the original Python secret file: changing it changes daily
+visitor identities. A configured file takes precedence and file errors never fall
+back to the environment. Local development can use the explicit example secret.
+Analytics collection preserves the 16 KiB body limit, bot filtering and stricter
+Origin requirement (including missing Origin); visitor registration still permits
+missing Origin. Summary day ranges clamp to 1–365. The proxy must overwrite
+X-Forwarded-For, protect summary/dashboard access with the existing panel
+authentication, and serve the dashboard static files. Those deployment changes,
+full Python HTTP replay and production cutover remain pending.

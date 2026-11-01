@@ -14,11 +14,38 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for AnalyticsSummaryWebVitalsName.
+const (
+	CLS  AnalyticsSummaryWebVitalsName = "CLS"
+	FCP  AnalyticsSummaryWebVitalsName = "FCP"
+	LCP  AnalyticsSummaryWebVitalsName = "LCP"
+	TTFB AnalyticsSummaryWebVitalsName = "TTFB"
+)
+
+// Valid indicates whether the value is a known member of the AnalyticsSummaryWebVitalsName enum.
+func (e AnalyticsSummaryWebVitalsName) Valid() bool {
+	switch e {
+	case CLS:
+		return true
+	case FCP:
+		return true
+	case LCP:
+		return true
+	case TTFB:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for HealthStatus.
 const (
@@ -34,6 +61,69 @@ func (e HealthStatus) Valid() bool {
 		return false
 	}
 }
+
+// Defines values for GetAnalyticsHealth200JSONResponseBodyStorage.
+const (
+	Sqlite GetAnalyticsHealth200JSONResponseBodyStorage = "sqlite"
+)
+
+// Valid indicates whether the value is a known member of the GetAnalyticsHealth200JSONResponseBodyStorage enum.
+func (e GetAnalyticsHealth200JSONResponseBodyStorage) Valid() bool {
+	switch e {
+	case Sqlite:
+		return true
+	default:
+		return false
+	}
+}
+
+// AnalyticsEvent Go preserves the raw payload for legacy normalization and bot filtering before field validation.
+type AnalyticsEvent = json.RawMessage
+
+// AnalyticsGroups defines model for AnalyticsGroups.
+type AnalyticsGroups = []struct {
+	Label string `json:"label"`
+	Value int    `json:"value"`
+}
+
+// AnalyticsSummary defines model for AnalyticsSummary.
+type AnalyticsSummary struct {
+	Browsers         AnalyticsGroups `json:"browsers"`
+	CustomEvents     AnalyticsGroups `json:"customEvents"`
+	Devices          AnalyticsGroups `json:"devices"`
+	GeneratedAt      time.Time       `json:"generatedAt"`
+	Languages        AnalyticsGroups `json:"languages"`
+	OperatingSystems AnalyticsGroups `json:"operatingSystems"`
+	RangeDays        int             `json:"rangeDays"`
+	Referrers        AnalyticsGroups `json:"referrers"`
+	TimeSeries       []struct {
+		Label     openapi_types.Date `json:"label"`
+		Pageviews int                `json:"pageviews"`
+		Visitors  int                `json:"visitors"`
+	} `json:"timeSeries"`
+	Timezones AnalyticsGroups `json:"timezones"`
+	TopPages  AnalyticsGroups `json:"topPages"`
+	Totals    struct {
+		ActiveVisitors30m int     `json:"activeVisitors30m"`
+		AvgSessionSeconds int     `json:"avgSessionSeconds"`
+		BounceRate        float32 `json:"bounceRate"`
+		Events            int     `json:"events"`
+		Pageviews         int     `json:"pageviews"`
+		Sessions          int     `json:"sessions"`
+		Visitors          int     `json:"visitors"`
+	} `json:"totals"`
+	WebVitals []struct {
+		Average          float32                       `json:"average"`
+		Good             int                           `json:"good"`
+		Name             AnalyticsSummaryWebVitalsName `json:"name"`
+		NeedsImprovement int                           `json:"needsImprovement"`
+		Poor             int                           `json:"poor"`
+		Samples          int                           `json:"samples"`
+	} `json:"webVitals"`
+}
+
+// AnalyticsSummaryWebVitalsName defines model for AnalyticsSummary.WebVitals.Name.
+type AnalyticsSummaryWebVitalsName string
 
 // ErrorEnvelope defines model for ErrorEnvelope.
 type ErrorEnvelope struct {
@@ -65,6 +155,15 @@ type Id = string
 // Error defines model for Error.
 type Error = ErrorEnvelope
 
+// GetAnalyticsHealth200JSONResponseBodyStorage defines parameters for GetAnalyticsHealth.
+type GetAnalyticsHealth200JSONResponseBodyStorage string
+
+// GetAnalyticsSummaryParams defines parameters for GetAnalyticsSummary.
+type GetAnalyticsSummaryParams struct {
+	// Days Clamped to 1 through 365, matching the legacy service.
+	Days *int `form:"days,omitempty" json:"days,omitempty"`
+}
+
 // RegisterVisitParams defines parameters for RegisterVisit.
 type RegisterVisitParams struct {
 	XVisitorID *string `json:"X-Visitor-ID,omitempty"`
@@ -73,8 +172,20 @@ type RegisterVisitParams struct {
 	XVisitorCounted *string `json:"X-Visitor-Counted,omitempty"`
 }
 
+// CollectAnalyticsJSONRequestBody defines body for CollectAnalytics for application/json ContentType.
+type CollectAnalyticsJSONRequestBody = AnalyticsEvent
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /api/analytics/collect)
+	CollectAnalytics(c *gin.Context)
+
+	// (GET /api/analytics/health)
+	GetAnalyticsHealth(c *gin.Context)
+
+	// (GET /api/analytics/summary)
+	GetAnalyticsSummary(c *gin.Context, params GetAnalyticsSummaryParams)
 
 	// (GET /api/health)
 	GetHealth(c *gin.Context)
@@ -94,6 +205,59 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// CollectAnalytics operation middleware
+func (siw *ServerInterfaceWrapper) CollectAnalytics(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CollectAnalytics(c)
+}
+
+// GetAnalyticsHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsHealth(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAnalyticsHealth(c)
+}
+
+// GetAnalyticsSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetAnalyticsSummary(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetAnalyticsSummaryParams
+
+	// ------------- Optional query parameter "days" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "days", c.Request.URL.Query(), &params.Days, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter days: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetAnalyticsSummary(c, params)
+}
 
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
@@ -207,12 +371,169 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/api/analytics/health", wrapper.GetAnalyticsHealth)
+	router.POST(options.BaseURL+"/api/analytics/collect", wrapper.CollectAnalytics)
+	router.GET(options.BaseURL+"/api/analytics/summary", wrapper.GetAnalyticsSummary)
 	router.GET(options.BaseURL+"/api/health", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/api/visitor-count", wrapper.GetVisitorCount)
 	router.POST(options.BaseURL+"/api/visitor-count/visit", wrapper.RegisterVisit)
 }
 
 type ErrorJSONResponse ErrorEnvelope
+
+type CollectAnalyticsRequestObject struct {
+	Body *CollectAnalyticsJSONRequestBody
+}
+
+type CollectAnalyticsResponseObject interface {
+	VisitCollectAnalyticsResponse(w http.ResponseWriter) error
+}
+
+type CollectAnalytics202JSONResponse struct {
+	Accepted bool `json:"accepted"`
+}
+
+func (response CollectAnalytics202JSONResponse) VisitCollectAnalyticsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CollectAnalytics400JSONResponse struct{ ErrorJSONResponse }
+
+func (response CollectAnalytics400JSONResponse) VisitCollectAnalyticsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CollectAnalytics403JSONResponse ErrorEnvelope
+
+func (response CollectAnalytics403JSONResponse) VisitCollectAnalyticsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CollectAnalytics413JSONResponse ErrorEnvelope
+
+func (response CollectAnalytics413JSONResponse) VisitCollectAnalyticsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CollectAnalytics500JSONResponse ErrorEnvelope
+
+func (response CollectAnalytics500JSONResponse) VisitCollectAnalyticsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsHealthRequestObject struct {
+}
+
+type GetAnalyticsHealthResponseObject interface {
+	VisitGetAnalyticsHealthResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsHealth200JSONResponse struct {
+	Ok      bool                                         `json:"ok"`
+	Storage GetAnalyticsHealth200JSONResponseBodyStorage `json:"storage"`
+}
+
+func (response GetAnalyticsHealth200JSONResponse) VisitGetAnalyticsHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsSummaryRequestObject struct {
+	Params GetAnalyticsSummaryParams
+}
+
+type GetAnalyticsSummaryResponseObject interface {
+	VisitGetAnalyticsSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetAnalyticsSummary200JSONResponse AnalyticsSummary
+
+func (response GetAnalyticsSummary200JSONResponse) VisitGetAnalyticsSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsSummary400JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetAnalyticsSummary400JSONResponse) VisitGetAnalyticsSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAnalyticsSummary500JSONResponse ErrorEnvelope
+
+func (response GetAnalyticsSummary500JSONResponse) VisitGetAnalyticsSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GetHealthRequestObject struct {
 }
@@ -364,6 +685,15 @@ func (response RegisterVisit500JSONResponse) VisitRegisterVisitResponse(w http.R
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (POST /api/analytics/collect)
+	CollectAnalytics(ctx context.Context, request CollectAnalyticsRequestObject) (CollectAnalyticsResponseObject, error)
+
+	// (GET /api/analytics/health)
+	GetAnalyticsHealth(ctx context.Context, request GetAnalyticsHealthRequestObject) (GetAnalyticsHealthResponseObject, error)
+
+	// (GET /api/analytics/summary)
+	GetAnalyticsSummary(ctx context.Context, request GetAnalyticsSummaryRequestObject) (GetAnalyticsSummaryResponseObject, error)
+
 	// (GET /api/health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
 
@@ -429,6 +759,98 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictGinServerOptions
+}
+
+// CollectAnalytics operation middleware
+func (sh *strictHandler) CollectAnalytics(ctx *gin.Context) {
+	var request CollectAnalyticsRequestObject
+
+	var body CollectAnalyticsJSONRequestBody
+	var err error
+	// A request validator built on kin-openapi's openapi3filter with
+	// KeepValidatedValue leaves the value it validated on the body. Bind
+	// that value, matching member names exactly, so the handler receives
+	// what was validated instead of a second, case-insensitive decode.
+	if vb, ok := ctx.Request.Body.(interface{ ValidatedValue() any }); !ok || runtime.BindJSONValue(vb.ValidatedValue(), &body) != nil {
+		err = ctx.ShouldBindJSON(&body)
+	} else if binding.Validator != nil {
+		// ShouldBindJSON runs the struct validator after decoding; keep that.
+		err = binding.Validator.ValidateStruct(&body)
+	}
+	if err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CollectAnalytics(ctx, request.(CollectAnalyticsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CollectAnalytics")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CollectAnalyticsResponseObject); ok {
+		if err := validResponse.VisitCollectAnalyticsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsHealth operation middleware
+func (sh *strictHandler) GetAnalyticsHealth(ctx *gin.Context) {
+	var request GetAnalyticsHealthRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsHealth(ctx, request.(GetAnalyticsHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsHealth")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetAnalyticsHealthResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsHealthResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAnalyticsSummary operation middleware
+func (sh *strictHandler) GetAnalyticsSummary(ctx *gin.Context, params GetAnalyticsSummaryParams) {
+	var request GetAnalyticsSummaryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAnalyticsSummary(ctx, request.(GetAnalyticsSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAnalyticsSummary")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetAnalyticsSummaryResponseObject); ok {
+		if err := validResponse.VisitGetAnalyticsSummaryResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetHealth operation middleware
@@ -510,21 +932,37 @@ func (sh *strictHandler) RegisterVisit(ctx *gin.Context, params RegisterVisitPar
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

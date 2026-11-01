@@ -49,7 +49,7 @@ func run() error {
 	}
 	server := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           httpx.New(logger, cfg.AllowedOrigins, mainDB, analyticsDB, cfg.ImageRoot, version, commit),
+		Handler:           httpx.New(logger, cfg.AllowedOrigins, mainDB, analyticsDB, cfg.ImageRoot, version, commit, cfg.AnalyticsSecret),
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}

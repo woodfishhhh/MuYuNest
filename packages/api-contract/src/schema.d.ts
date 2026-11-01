@@ -411,6 +411,7 @@ export interface components {
             /** @enum {string} */
             defaultVariant: "webp" | "original";
         };
+        /** @description Go preserves the raw payload for legacy normalization and bot filtering before field validation. */
         AnalyticsEvent: {
             /** @enum {string} */
             type: "event" | "pageview" | "performance";
@@ -982,11 +983,13 @@ export interface operations {
             400: components["responses"]["Error"];
             403: components["responses"]["Error"];
             413: components["responses"]["Error"];
+            500: components["responses"]["Error"];
         };
     };
     getAnalyticsSummary: {
         parameters: {
             query?: {
+                /** @description Clamped to 1 through 365, matching the legacy service. */
                 days?: number;
             };
             header?: never;
@@ -1005,6 +1008,7 @@ export interface operations {
                 };
             };
             400: components["responses"]["Error"];
+            500: components["responses"]["Error"];
         };
     };
     getHealth: {

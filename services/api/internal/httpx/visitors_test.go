@@ -38,7 +38,7 @@ func TestVisitorHTTPPythonParity(t *testing.T) {
 	}
 	defer analyticsDB.Close()
 	const origin = "https://blog.woodfish.site"
-	goServer := httptest.NewServer(New(slog.New(slog.NewTextHandler(io.Discard, nil)), []string{origin}, mainDB, analyticsDB, dir, "test", "test"))
+	goServer := httptest.NewServer(New(slog.New(slog.NewTextHandler(io.Discard, nil)), []string{origin}, mainDB, analyticsDB, dir, "test", "test", []byte("test-secret")))
 	defer goServer.Close()
 	python := "python3"
 	if runtime.GOOS == "windows" {
@@ -182,7 +182,7 @@ func TestVisitorGeneratedIdentityAndStorageFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer database.Close()
-	router := New(slog.New(slog.NewTextHandler(io.Discard, nil)), nil, database, database, dir, "test", "test")
+	router := New(slog.New(slog.NewTextHandler(io.Discard, nil)), nil, database, database, dir, "test", "test", []byte("test-secret"))
 	request := func(method, path, cookie string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, nil)
 		if cookie != "" {
