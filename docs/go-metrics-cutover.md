@@ -8,6 +8,30 @@ Its executable lives at `/opt/blog-stack/services/muyu-api-shadow/api`.
 Systemd `LoadCredential` supplies the original HMAC secret without changing its
 permissions or printing it. Install only the binary from a verified revision.
 
+## Verified parallel deployment
+
+Revision `3ae92d3` passed CI run `41300631565` and was installed on the VPS on
+2026-11-01. `/api/health` reports that revision and `stage2-shadow`; listeners
+confirm Go on `127.0.0.1:3012` and the original Python service on `0.0.0.0:3011`.
+No nginx upstream was changed and the shadow unit is not enabled at boot.
+
+The restricted VPS snapshot `/opt/blog-stack/rehearsals/metrics-3ae92d3`
+contains 1,585 total visits, 151 visitor digests and 8,460 events. Imported visitor
+identities and every event row matched the snapshot. Full summary responses for
+1, 30 and 365 days matched Python, excluding only the response generation time.
+`rehearsal-complete.json` records the aggregate results without identities.
+
+A synthetic registration and event were then sent **only to shadow**. Its export
+contained total 1,586, 152 digests and 8,461 events. Python resumed from that export:
+the repeated visitor was not counted again, a new visitor incremented once, the
+test event remained, and the next event ID exceeded the exported high-water mark.
+`rollback/rollback-rehearsal-complete.json` records these checks. Both services
+were active afterward. Shadow now contains synthetic rows; **do not use its state
+for production cutover**. The final import requires clean production databases.
+
+The browser E2E, production proxy/dashboard changes and one-week observation are
+still outstanding. These rehearsal results do not constitute production cutover.
+
 ## Parallel rehearsal
 
 1. Build the Linux amd64 API and both import commands from the reviewed revision.
