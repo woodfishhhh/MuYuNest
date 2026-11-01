@@ -8,3 +8,13 @@ type HealthProbe struct {
 	ID        int64  `json:"id"`
 	CheckedAt string `json:"checked_at"`
 }
+
+type Visitor struct {
+	VisitorID   string `json:"visitor_id"`
+	FirstSeenAt string `json:"first_seen_at"`
+}
+
+type VisitorCounter struct {
+	ID    int64 `json:"id"`
+	Total int64 `json:"total"`
+}

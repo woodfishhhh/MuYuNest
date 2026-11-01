@@ -349,13 +349,16 @@ paths:
           $ref: '#/components/responses/Error'
         '413':
           $ref: '#/components/responses/Error'
+        '500':
+          $ref: '#/components/responses/Error'
   /api/analytics/summary:
     get:
       operationId: getAnalyticsSummary
       parameters:
         - in: query
           name: days
-          schema: {type: integer, minimum: 1, maximum: 365, default: 30}
+          description: Clamped to 1 through 365, matching the legacy service.
+          schema: {type: integer, default: 30}
       responses:
         '200':
           description: Aggregated analytics
@@ -364,6 +367,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/AnalyticsSummary'
         '400':
+          $ref: '#/components/responses/Error'
+        '500':
           $ref: '#/components/responses/Error'
   /api/health:
     get:
@@ -387,6 +392,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VisitorCount'
+        '500': {$ref: '#/components/responses/Error'}
   /api/visitor-count/visit:
     post:
       operationId: registerVisit
@@ -397,9 +403,9 @@ paths:
             type: string
         - in: header
           name: X-Visitor-Counted
+          description: Only the exact value '1' suppresses incrementing for a previously counted browser.
           schema:
             type: string
-            enum: ['1']
       responses:
         '200':
           description: Registered visitor, with a persistent HttpOnly visitor cookie.
@@ -421,6 +427,7 @@ paths:
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '500': {$ref: '#/components/responses/Error'}
 components:
   parameters:
     Id:
@@ -555,6 +562,8 @@ components:
         createdAt: {type: string, format: date-time}
         defaultVariant: {type: string, enum: [webp, original]}
     AnalyticsEvent:
+      x-go-type: json.RawMessage
+      description: Go preserves the raw payload for legacy normalization and bot filtering before field validation.
       type: object
       required: [type, sessionId]
       properties:

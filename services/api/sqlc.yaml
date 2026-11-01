@@ -2,9 +2,18 @@ version: "2"
 sql:
   - engine: sqlite
     schema: migrations/muyu
-    queries: queries
+    queries: queries/muyu
     gen:
       go:
         package: sqlgen
         out: internal/db/sqlgen
         emit_json_tags: true
+  - engine: sqlite
+    schema: migrations/analytics
+    queries: queries/analytics
+    gen:
+      go:
+        package: analyticssql
+        out: internal/db/analyticssql
+        emit_json_tags: true
+        emit_empty_slices: true
