@@ -44,3 +44,13 @@ test("the film plays forward and back as a function of scroll", async ({ page })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(1);
   expect(errors).toEqual([]);
 });
+
+test("mobile toolbox retains visible icons when labels are hidden", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await scrollToFilmChapter(page, "tools", 0.5);
+  const icons = page.locator(".film-tools__item img");
+  expect(await icons.count()).toBeGreaterThan(0);
+  const widths = await icons.evaluateAll((images) => images.map((image) => image.getBoundingClientRect().width));
+  expect(widths.every((width) => width > 10)).toBe(true);
+});

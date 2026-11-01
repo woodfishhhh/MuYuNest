@@ -156,6 +156,8 @@ const rings = computed(() => {
 }
 
 .film-tools__item img {
+  flex: none;
+  max-width: none;
   width: 1.3em;
   height: 1.3em;
   object-fit: contain;
