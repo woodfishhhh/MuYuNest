@@ -387,6 +387,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VisitorCount'
+        '500': {$ref: '#/components/responses/Error'}
   /api/visitor-count/visit:
     post:
       operationId: registerVisit
@@ -397,9 +398,9 @@ paths:
             type: string
         - in: header
           name: X-Visitor-Counted
+          description: Only the exact value '1' suppresses incrementing for a previously counted browser.
           schema:
             type: string
-            enum: ['1']
       responses:
         '200':
           description: Registered visitor, with a persistent HttpOnly visitor cookie.
@@ -421,6 +422,7 @@ paths:
           $ref: '#/components/responses/Error'
         '403':
           $ref: '#/components/responses/Error'
+        '500': {$ref: '#/components/responses/Error'}
 components:
   parameters:
     Id:

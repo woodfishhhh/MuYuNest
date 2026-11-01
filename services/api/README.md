@@ -1,6 +1,6 @@
 # MuYu API
 
-Stage 0 foundation: Gin, Go 1.27.3, modernc SQLite, independent embedded goose migrations, sqlc and OpenAPI generation. Currently only `/api/health` is implemented; other contract routes describe later migration stages and are not registered.
+Gin, Go 1.27.3, modernc SQLite, independent embedded goose migrations, sqlc and OpenAPI generation. Implemented routes are `/api/health`, `GET /api/visitor-count` and `POST /api/visitor-count/visit`; other contract routes describe later migration stages and are not registered.
 
 From the repository root:
 
@@ -29,12 +29,21 @@ docker run --rm --read-only -p 127.0.0.1:8080:8080 \
 
 The tmpfs example is disposable verification storage, not a production persistence setup. Production migration must back up and rehearse on copies before using existing data directories. The runtime image uses UID 65532.
 
-OpenAPI lives in `packages/api-contract/openapi.yaml`. Go generation currently selects `getHealth`; expand the operation list as handlers are implemented. Do not hand-edit `internal/api/gen.go`, `internal/db/sqlgen`, or the TypeScript schema. CI checks regeneration drift, build, vet, lint, race tests and the container build.
+OpenAPI lives in `packages/api-contract/openapi.yaml`. Go generation selects health and visitor operations; expand the operation list as handlers are implemented. Do not hand-edit `internal/api/gen.go`, `internal/db/sqlgen`, or the TypeScript schema. CI checks regeneration drift, build, vet, lint, race tests and the container build.
 
 pnpm 11 script-time dependency verification is configured to **error**, not auto-install: implicit non-frozen installs otherwise upgrade the Nuxt nightly dependency graph. Resolve dependency-state errors with an explicit frozen install.
 
-Stage 2 visitor storage is being migrated independently of HTTP routing. Its
+Stage 2 visitor storage and HTTP routing preserve the legacy registration semantics. The
 parity test runs the existing Python `JsonCounterStore` with the same registration
 sequence and compares both responses and stored identities. Tests require
 `python` on Windows or `python3` on Linux. Temporary SQLite databases also verify
 concurrent deduplication and transaction rollback; no production files are used.
+
+HTTP parity runs the Python service and Go router on isolated loopback ports.
+It compares 15 request cases, cookie attributes and persisted SHA-256 identities.
+Error messages use the new API's structured envelope; the parity test normalizes
+that documented difference. A valid visitor cookie takes precedence over a valid
+header, while an invalid supplied header is still rejected. Only the exact
+`X-Visitor-Counted: 1` value suppresses the initial increment. The proxy must
+overwrite `X-Forwarded-Proto`, which controls the persistent cookie's Secure flag.
+No import or production cutover has been performed yet.

@@ -17,6 +17,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 )
 
 // Defines values for HealthStatus.
@@ -53,17 +54,36 @@ type Health struct {
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// VisitorCount defines model for VisitorCount.
+type VisitorCount struct {
+	Total int64 `json:"total"`
+}
+
 // Id defines model for Id.
 type Id = string
 
 // Error defines model for Error.
 type Error = ErrorEnvelope
 
+// RegisterVisitParams defines parameters for RegisterVisit.
+type RegisterVisitParams struct {
+	XVisitorID *string `json:"X-Visitor-ID,omitempty"`
+
+	// XVisitorCounted Only the exact value '1' suppresses incrementing for a previously counted browser.
+	XVisitorCounted *string `json:"X-Visitor-Counted,omitempty"`
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
 	// (GET /api/health)
 	GetHealth(c *gin.Context)
+
+	// (GET /api/visitor-count)
+	GetVisitorCount(c *gin.Context)
+
+	// (POST /api/visitor-count/visit)
+	RegisterVisit(c *gin.Context, params RegisterVisitParams)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -86,6 +106,78 @@ func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
 	}
 
 	siw.Handler.GetHealth(c)
+}
+
+// GetVisitorCount operation middleware
+func (siw *ServerInterfaceWrapper) GetVisitorCount(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetVisitorCount(c)
+}
+
+// RegisterVisit operation middleware
+func (siw *ServerInterfaceWrapper) RegisterVisit(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RegisterVisitParams
+
+	headers := c.Request.Header
+
+	// ------------- Optional header parameter "X-Visitor-ID" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Visitor-ID")]; found {
+		var XVisitorID string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Visitor-ID, got %d", n), http.StatusBadRequest)
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Visitor-ID", valueList[0], &XVisitorID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Visitor-ID: %w", err), http.StatusBadRequest)
+			return
+		}
+
+		params.XVisitorID = &XVisitorID
+
+	}
+
+	// ------------- Optional header parameter "X-Visitor-Counted" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Visitor-Counted")]; found {
+		var XVisitorCounted string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandler(c, fmt.Errorf("Expected one value for X-Visitor-Counted, got %d", n), http.StatusBadRequest)
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Visitor-Counted", valueList[0], &XVisitorCounted, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter X-Visitor-Counted: %w", err), http.StatusBadRequest)
+			return
+		}
+
+		params.XVisitorCounted = &XVisitorCounted
+
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.RegisterVisit(c, params)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -116,6 +208,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	}
 
 	router.GET(options.BaseURL+"/api/health", wrapper.GetHealth)
+	router.GET(options.BaseURL+"/api/visitor-count", wrapper.GetVisitorCount)
+	router.POST(options.BaseURL+"/api/visitor-count/visit", wrapper.RegisterVisit)
 }
 
 type ErrorJSONResponse ErrorEnvelope
@@ -155,11 +249,129 @@ func (response GetHealth503JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	return err
 }
 
+type GetVisitorCountRequestObject struct {
+}
+
+type GetVisitorCountResponseObject interface {
+	VisitGetVisitorCountResponse(w http.ResponseWriter) error
+}
+
+type GetVisitorCount200JSONResponse VisitorCount
+
+func (response GetVisitorCount200JSONResponse) VisitGetVisitorCountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVisitorCount500JSONResponse struct{ ErrorJSONResponse }
+
+func (response GetVisitorCount500JSONResponse) VisitGetVisitorCountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterVisitRequestObject struct {
+	Params RegisterVisitParams
+}
+
+type RegisterVisitResponseObject interface {
+	VisitRegisterVisitResponse(w http.ResponseWriter) error
+}
+
+type RegisterVisit200ResponseHeaders struct {
+	SetCookie *string
+}
+
+type RegisterVisit200JSONResponse struct {
+	Body struct {
+		Counted bool  `json:"counted"`
+		Total   int64 `json:"total"`
+	}
+	Headers RegisterVisit200ResponseHeaders
+}
+
+func (response RegisterVisit200JSONResponse) VisitRegisterVisitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterVisit400JSONResponse struct{ ErrorJSONResponse }
+
+func (response RegisterVisit400JSONResponse) VisitRegisterVisitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterVisit403JSONResponse ErrorEnvelope
+
+func (response RegisterVisit403JSONResponse) VisitRegisterVisitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterVisit500JSONResponse ErrorEnvelope
+
+func (response RegisterVisit500JSONResponse) VisitRegisterVisitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
 	// (GET /api/health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+
+	// (GET /api/visitor-count)
+	GetVisitorCount(ctx context.Context, request GetVisitorCountRequestObject) (GetVisitorCountResponseObject, error)
+
+	// (POST /api/visitor-count/visit)
+	RegisterVisit(ctx context.Context, request RegisterVisitRequestObject) (RegisterVisitResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx *gin.Context, request any) (any, error)
@@ -243,22 +455,76 @@ func (sh *strictHandler) GetHealth(ctx *gin.Context) {
 	}
 }
 
+// GetVisitorCount operation middleware
+func (sh *strictHandler) GetVisitorCount(ctx *gin.Context) {
+	var request GetVisitorCountRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetVisitorCount(ctx, request.(GetVisitorCountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVisitorCount")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetVisitorCountResponseObject); ok {
+		if err := validResponse.VisitGetVisitorCountResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterVisit operation middleware
+func (sh *strictHandler) RegisterVisit(ctx *gin.Context, params RegisterVisitParams) {
+	var request RegisterVisitRequestObject
+
+	request.Params = params
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterVisit(ctx, request.(RegisterVisitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterVisit")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(RegisterVisitResponseObject); ok {
+		if err := validResponse.VisitRegisterVisitResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"rFVLb9s4EP4rwuweFcubYC+6ZYFg60OBokULFEEOtDiWJxEfIYcuDEP/vRjRtuRY7aW5JNI8vscMKR+g",
-	"ccY7i5Yj1AfwKiiDjGF4W2n5SxZq8Iq3UIJVBqEG0lBCwNdEATXUHBKWEJstGiUdvPdSFTmQbaHveymO",
-	"3tmIA+5DCC7IQ+Mso2V5VN531CgmZ6vn6KzERsS/A26ghr+qUW6Vs7Ea0B7sDjvnMbNpjE0gL2BQw2d8",
-	"TRi52CjqUIMUHHvPYs7tMoPgPAamrBVPWi/DjdM4Y7UEgzGqdj4XspCVnsn204E+ZvwRbdr7VJ563foZ",
-	"G77qzZKvy0r4gKrj7ZwbY4hnNUdWnPIkbDIC714m2GPhDkOkvLffWzsijh3liX/WWcQmBeL9F1lZlrtG",
-	"FTDcp2xl2KU05TCcQbbMPp8HshsnpZfn4qulDaEu1p1ri/tPq0XxjSKxC0VwiTEWKmBBxndo0DLqgmxh",
-	"qA3DIS38VkUsbhfCR9wJ4cf0PQnQxFsNy8U/i6UMyHm0yhPUcLdYLu6gHC7VYKhSniplVbdnamLVuK4T",
-	"+/WhL9/mtqcVXqdiMkaF/TSXNPFN59o4CZ4RoMVh53ISBk9yMOF/5OMxeXNrb5fLd7uzR4aZy/qf422h",
-	"Fau1irICqwsyqsUisgvyX5byIxCrdYcLmeu/y7tf0Z3154+E8J2mMIBOx5ID1YF0//ZL+PgeH8GnM5Hd",
-	"EV9S58jAXWmKYm1Gw5zDsaRaaRhJDE7wA7YUGcMkxO4FbbwKZAkBd+7lTxUk3zmlJwwp5p+Vi/f39LzL",
-	"t/emcclOL89FPL9Jtu9/DgA=",
+	"tFbfb9s2EP5XCG5AX2TLbbo96K3LitUPQ4cWGzYUeaCls3QNRbLHozsj8P8+kLQtOVIyZM1eEov367vv",
+	"Pp50J2vbO2vAsJfVnXSKVA8MlJ7WTfyLRlbSKe5kIY3qQVYSG1lIgi8BCRpZMQUopK876FWM4L2LXp4J",
+	"TSsPh0N09s4aDynvWyJL8UdtDYPh+FM5p7FWjNaUn7018WzI+D3BVlbyu3KAW2arL1O2t2YH2jrI1Rrw",
+	"NaGLyWQlP8CXAJ7FVqGGRkaHY+wZzDk8ckDWATFmrHDCenlc2wZmWi1kD96rdt5GGci6mbEexoR+yvmH",
+	"bOPYm+IUazefoeZJbIY8dSvkO1Cau7lu+h55FrNnxSEzYUIf09vbUe7BcQfkMc/t8daOGYeI4lR/DvIf",
+	"6JEtXdtgeAqcLSsdf2wt9YplJdHwj68jc2iwj4BX56RoGFqgCaCcZJZWD3Ug5P3HqJdccgOKgN6EzGMS",
+	"UgzKx/KcpGN2WYxotja6Xoryd4NbhEZstG3Fm9/WS3HsVJANDF4oAoG909CDYWgEGtFjS+mGCNcpD+LV",
+	"MtZD1rHgr+GvEBONiK3kavlyuYo0WgdGOZSVvFqulleySDc6NVQqh6UySu8Za1/WVuvYfnV3KO7bupN+",
+	"piYf+l7RfmwLDfJC29aPDs8ZZAtpnnGaqad4K+QvwEeN3lsZr1arZ1sYxwozm+Iny51oFKuN8nEEphHY",
+	"qxaEZ0vxfxzKV0JWGw3LyOsPq6uHyp3x5w0V651YSEnHtOSD8g6bw/01/Ok5NvDNuZDZIV+Wziepdtmg",
+	"j63NYJjrcHAp140civQwyk/Qomeg0RHbWzB+cpAhEOzs7bciCE5b1YwqBJ/faRfPz9nzLt/eRX1aVA/p",
+	"+2Kh/Y8qv6gzo/XrQASGRd5+Scqr/yDli77zU2LS+pn2Pxy1kLClHTTVeQeqARqU/ufi2Mli/bN8TOPF",
+	"/RX73ui94A4E/K1qFjulA4gXL18IH5wj8PGKo6kpbVg0rdhaEko4gh3a4PVepKbikib71QPFdfsvGK9z",
+	"xKNAb75x6krr99sHBTo//2L6ys9AB3wbazUoM/Mpkj2nL8ib2Y+tPGJoxFEahfiK3EVigXy0GRbvmF0a",
+	"z9FH1NbeIkSCM7cJ40fgxXUyXBIw+b48FPL1E9Qbva+e4P3Em3E4/DMA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

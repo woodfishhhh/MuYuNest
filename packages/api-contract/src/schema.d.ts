@@ -1046,6 +1046,7 @@ export interface operations {
                     "application/json": components["schemas"]["VisitorCount"];
                 };
             };
+            500: components["responses"]["Error"];
         };
     };
     registerVisit: {
@@ -1053,7 +1054,8 @@ export interface operations {
             query?: never;
             header?: {
                 "X-Visitor-ID"?: string;
-                "X-Visitor-Counted"?: "1";
+                /** @description Only the exact value '1' suppresses incrementing for a previously counted browser. */
+                "X-Visitor-Counted"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1074,6 +1076,7 @@ export interface operations {
             };
             400: components["responses"]["Error"];
             403: components["responses"]["Error"];
+            500: components["responses"]["Error"];
         };
     };
 }

@@ -20,6 +20,7 @@ func Error(c *gin.Context, status int, code, message string) {
 
 func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, imageRoot, version, commit string) *gin.Engine {
 	r := gin.New()
+	r.HandleMethodNotAllowed = true
 	// Public proxies must be configured explicitly when deployment is wired up.
 	r.SetTrustedProxies(nil)
 	r.Use(func(c *gin.Context) {
@@ -37,11 +38,23 @@ func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, i
 		c.Next()
 	})
 	r.Use(func(c *gin.Context) {
+		if c.Request.URL.Path == "/api/visitor-count" || c.Request.URL.Path == "/api/visitor-count/visit" {
+			c.Header("Cache-Control", "no-store")
+			if c.Request.Method == http.MethodOptions {
+				Error(c, http.StatusNotFound, "NOT_FOUND", "not found")
+				return
+			}
+			// Legacy reads and wrong-method responses do not require an Origin.
+			if c.Request.Method != http.MethodPost || c.Request.URL.Path != "/api/visitor-count/visit" {
+				c.Next()
+				return
+			}
+		}
 		origin := c.GetHeader("Origin")
 		c.Header("Vary", "Origin")
 		if origin != "" {
 			if !slices.Contains(origins, origin) {
-				Error(c, http.StatusForbidden, "AUTH_FORBIDDEN", "Origin is not allowed")
+				Error(c, http.StatusForbidden, "AUTH_FORBIDDEN", "origin not allowed")
 				return
 			}
 			c.Header("Access-Control-Allow-Origin", origin)
@@ -50,13 +63,23 @@ func New(logger *slog.Logger, origins []string, mainDB, analyticsDB *db.Store, i
 		}
 		if c.Request.Method == http.MethodOptions {
 			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-CSRF-Token, X-Visitor-ID")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-CSRF-Token, X-Visitor-ID, X-Visitor-Counted")
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 		c.Next()
 	})
-	api.RegisterHandlers(r, api.NewStrictHandler(&healthHandler{logger, mainDB, analyticsDB, imageRoot, version, commit}, nil))
+	serverError := func(c *gin.Context, err error) {
+		logger.Error("API handler failed", "request_id", c.GetString("requestId"), "error", err)
+		Error(c, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
+	}
+	api.RegisterHandlers(r, api.NewStrictHandlerWithOptions(&healthHandler{logger, mainDB, analyticsDB, imageRoot, version, commit}, nil, api.StrictGinServerOptions{
+		HandlerErrorFunc: serverError, ResponseErrorHandlerFunc: serverError,
+		RequestErrorHandlerFunc: func(c *gin.Context, err error) { Error(c, http.StatusBadRequest, "INVALID_REQUEST", err.Error()) },
+	}))
+	r.NoMethod(func(c *gin.Context) {
+		Error(c, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "method not allowed")
+	})
 	r.NoRoute(func(c *gin.Context) { Error(c, http.StatusNotFound, "NOT_FOUND", "Route not found") })
 	return r
 }
