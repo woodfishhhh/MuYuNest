@@ -342,7 +342,7 @@ function stripInlineMarkdown(value: string) {
     .replace(/`([^`]+)`/g, "$1");
 }
 
-function stripFencedCodeBlocks(markdown: string) {
+export function stripFencedCodeBlocks(markdown: string) {
   const output: string[] = [];
   let activeFence: { marker: "`" | "~"; length: number } | null = null;
 
@@ -404,7 +404,7 @@ function resolvePostType(value: unknown) {
   return readString(value).trim() || "Notes";
 }
 
-function createSearchText(options: {
+export function createSearchText(options: {
   title: string;
   type: string;
   categories: string[];
@@ -425,7 +425,7 @@ function createSearchText(options: {
     .trim();
 }
 
-function estimateReadingMinutes(markdown: string) {
+export function estimateReadingMinutes(markdown: string) {
   const plainText = toSearchablePlainText(markdown);
 
   if (!plainText) {
@@ -445,7 +445,7 @@ function estimateReadingMinutes(markdown: string) {
   return Math.max(1, Math.ceil((cjkCount + wordCount) / 220));
 }
 
-function toSearchablePlainText(markdown: string) {
+export function toSearchablePlainText(markdown: string) {
   return stripFencedCodeBlocks(markdown)
     .replace(/`[^`]+`/g, " ")
     .replace(/!\[[^\]]*\]\([^)]+\)/g, " ")
@@ -696,7 +696,7 @@ async function normalizeSkills(
   );
 }
 
-function readString(value: unknown) {
+export function readString(value: unknown) {
   if (typeof value === "string") {
     return value.trim();
   }
@@ -712,7 +712,7 @@ function readString(value: unknown) {
   return "";
 }
 
-function toStringArray(value: unknown) {
+export function toStringArray(value: unknown) {
   if (!Array.isArray(value)) {
     return [];
   }
