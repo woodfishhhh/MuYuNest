@@ -1,6 +1,6 @@
 # MuYu API
 
-Gin, Go 1.27.3, modernc SQLite, independent embedded goose migrations, sqlc and OpenAPI generation. Implemented routes are `/api/health`, `GET /api/visitor-count` and `POST /api/visitor-count/visit`; other contract routes describe later migration stages and are not registered.
+Gin, Go 1.27.3, modernc SQLite, independent embedded goose migrations, sqlc and OpenAPI generation. Implemented routes are `/api/health`, `GET /api/visitor-count`, `POST /api/visitor-count/visit`, and analytics collect/health/summary; other contract routes describe later migration stages and are not registered.
 
 From the repository root:
 
@@ -106,3 +106,9 @@ against isolated Python and Go servers, comparing status, response values,
 cache/Allow headers and stored event fields (except wall-clock timestamps).
 Blank/repeated/space-padded day parameters follow Python parsing; invalid values
 return the documented error envelope with the legacy message.
+
+The [metrics runbook](../../docs/go-metrics-cutover.md) covers isolated VPS
+rehearsal and rollback with registrations received after cutover.
+`deploy/export-go-metrics.py` exports stopped Go databases into a new directory
+that the original Python stores can resume without duplicate counting or reused
+event IDs. It never installs files into a live service directory.
