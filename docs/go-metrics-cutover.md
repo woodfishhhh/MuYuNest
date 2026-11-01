@@ -29,8 +29,33 @@ test event remained, and the next event ID exceeded the exported high-water mark
 were active afterward. Shadow now contains synthetic rows; **do not use its state
 for production cutover**. The final import requires clean production databases.
 
-The browser E2E, production proxy/dashboard changes and one-week observation are
-still outstanding. These rehearsal results do not constitute production cutover.
+Desktop E2E against the Go binary, production Nuxt output and an authenticated
+nginx dashboard passed: PWA navigation/cache exclusion, real collection/summary,
+multi-tab deduplication, counted-browser migration, cookie recovery and lost-response
+retry. Production proxy/dashboard changes and one-week observation remain pending.
+These rehearsal results do not constitute production cutover.
+
+All seven desktop metrics cases have passed, including anonymous 401 checks for
+the dashboard/summary and public collection preflight. An anonymous Playwright
+request context must explicitly set `httpCredentials: undefined`; otherwise it
+inherits the suite's Basic Auth configuration and silently authenticates.
+
+## Local browser integration
+
+From the repository root, build the production blog output once, then:
+
+```sh
+docker compose -f deploy/metrics-e2e/compose.yaml up -d --build
+pnpm -F @woodfish-nest/blog exec playwright test --config playwright.metrics.config.ts
+docker compose -f deploy/metrics-e2e/compose.yaml down
+```
+
+Set `METRICS_E2E_DIST` to an absolute path to reuse an existing verified root-base
+production build. The Go databases are disposable tmpfs mounts; restart the API
+container for an empty database. Port 4183 and the public `e2e/e2e` Basic Auth
+credential belong only to this local fixture. The suite deliberately writes
+synthetic metrics and must never target a production database. Screenshots and
+failure traces are kept under ignored `output/metrics-e2e`.
 
 ## Parallel rehearsal
 

@@ -23,3 +23,46 @@ test("a PWA-controlled blog opens the real analytics dashboard without caching i
   });
   expect(cachedPrivateUrls).toEqual([]);
 });
+
+test("PWA collection reaches the real backend and appears in its summary", async ({ page, request }) => {
+  test.skip(!process.env.COUNTER_INTEGRATION, "Synthetic writes require the isolated metrics backend.");
+  const before = await (await request.get("/api/analytics/summary?days=1")).json();
+  await page.goto("/blog");
+  await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
+  const sessionId = `e2e-${Date.now()}`;
+  const responses = await page.evaluate(async (sessionId) => {
+    const results = [];
+    for (const payload of [
+      { type: "pageview", sessionId, path: "/blog", title: "Metrics integration" },
+      { type: "event", sessionId, path: "/blog", name: "metrics-e2e" },
+    ]) {
+      const response = await fetch("/api/analytics/collect", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      results.push({ status: response.status, body: await response.json() });
+    }
+    return results;
+  }, sessionId);
+  expect(responses).toEqual([
+    { status: 202, body: { accepted: true } },
+    { status: 202, body: { accepted: true } },
+  ]);
+  const after = await (await request.get("/api/analytics/summary?days=1")).json();
+  expect(after.totals.pageviews).toBe(before.totals.pageviews + 1);
+  expect(after.totals.events).toBe(before.totals.events + 1);
+  const previousEvents = before.customEvents.find((event: { label: string; value: number }) => event.label === "metrics-e2e")?.value ?? 0;
+  expect(after.customEvents).toContainEqual({ label: "metrics-e2e", value: previousEvents + 1 });
+});
+
+test("anonymous requests cannot read the analytics dashboard or summary", async ({ playwright, baseURL }) => {
+  test.skip(!process.env.COUNTER_INTEGRATION, "Requires the isolated authenticated metrics fixture.");
+  const anonymous = await playwright.request.newContext({ baseURL, httpCredentials: undefined });
+  try {
+    expect((await anonymous.get("/analytics/")).status()).toBe(401);
+    expect((await anonymous.get("/api/analytics/summary")).status()).toBe(401);
+    expect((await anonymous.fetch("/api/analytics/collect", { method: "OPTIONS" })).status()).toBe(204);
+  } finally {
+    await anonymous.dispose();
+  }
+});
