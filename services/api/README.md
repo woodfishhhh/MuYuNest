@@ -101,4 +101,8 @@ Origin requirement (including missing Origin); visitor registration still permit
 missing Origin. Summary day ranges clamp to 1–365. The proxy must overwrite
 X-Forwarded-For, protect summary/dashboard access with the existing panel
 authentication, and serve the dashboard static files. Those deployment changes,
-full Python HTTP replay and production cutover remain pending.
+production cutover remain pending. Analytics HTTP parity now replays 24 requests
+against isolated Python and Go servers, comparing status, response values,
+cache/Allow headers and stored event fields (except wall-clock timestamps).
+Blank/repeated/space-padded day parameters follow Python parsing; invalid values
+return the documented error envelope with the legacy message.

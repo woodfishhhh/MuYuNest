@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -30,8 +31,27 @@ func analyticsBoundary(c *gin.Context, origins []string) bool {
 	}
 	c.Header("Cache-Control", "no-store")
 	if (c.Request.Method == http.MethodGet && path == "/api/analytics/collect") || (c.Request.Method == http.MethodPost && path != "/api/analytics/collect") || c.Request.Method == http.MethodOptions {
+		c.Writer.Header().Del("Allow")
 		Error(c, http.StatusNotFound, "NOT_FOUND", "not found")
 		return true
+	}
+	if c.Request.Method == http.MethodGet && path == "/api/analytics/summary" {
+		// Python parse_qs ignores blanks and uses the first remaining value.
+		query := c.Request.URL.Query()
+		days := "30"
+		for _, value := range query["days"] {
+			if value != "" {
+				days = strings.TrimSpace(value)
+				break
+			}
+		}
+		number, err := strconv.Atoi(days)
+		if err != nil {
+			Error(c, http.StatusBadRequest, "INVALID_REQUEST", "invalid days")
+			return true
+		}
+		query.Set("days", strconv.Itoa(number))
+		c.Request.URL.RawQuery = query.Encode()
 	}
 	if c.Request.Method == http.MethodPost && path == "/api/analytics/collect" {
 		if len(origins) > 0 && !slices.Contains(origins, c.GetHeader("Origin")) {
