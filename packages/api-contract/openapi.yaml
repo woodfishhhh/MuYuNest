@@ -1,0 +1,667 @@
+openapi: 3.0.3
+info:
+  title: MuYu API
+  version: 0.1.0
+  description: Unified blog API. Visitor routes are implemented in migration phase 2.
+paths:
+  /api/me:
+    get:
+      operationId: getMe
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Me'}
+        '401': {$ref: '#/components/responses/Error'}
+  /api/register:
+    post:
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inviteCode, displayName]
+              properties:
+                inviteCode: {type: string}
+                displayName: {type: string, minLength: 2, maxLength: 80}
+                email: {type: string, nullable: true}
+      responses:
+        '201':
+          description: Account and initial token created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, tokenId, user]
+                properties:
+                  token: {type: string}
+                  tokenId: {type: string}
+                  user: {$ref: '#/components/schemas/Me'}
+        '400': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/Error'}
+  /api/tokens:
+    get:
+      operationId: listTokens
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Tokens visible to caller (tokens:manage scope)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/TokenRecord'}}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+    post:
+      operationId: createToken
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, scopes]
+              properties:
+                name: {type: string, minLength: 2, maxLength: 80}
+                scopes: {type: array, items: {$ref: '#/components/schemas/TokenScope'}}
+                expiresAt: {type: string, format: date-time, nullable: true}
+      responses:
+        '201':
+          description: Raw token is disclosed only on creation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, record]
+                properties:
+                  token: {type: string}
+                  record: {$ref: '#/components/schemas/TokenRecord'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/tokens/{id}/revoke:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      operationId: revokeToken
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, revokedAt, ok]
+                properties:
+                  id: {type: string}
+                  revokedAt: {type: string, format: date-time}
+                  ok: {type: boolean}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/invites:
+    get:
+      operationId: listInvites
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Invitations (invites:manage scope)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/InviteRecord'}}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+    post:
+      operationId: createInvite
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [maxUses]
+              properties:
+                maxUses: {type: integer, minimum: 1, maximum: 10000}
+                expiresAt: {type: string, format: date-time, nullable: true}
+      responses:
+        '201':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [inviteCode, record]
+                properties:
+                  inviteCode: {type: string}
+                  record: {$ref: '#/components/schemas/InviteRecord'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/invites/{id}/disable:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      operationId: disableInvite
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Disabled'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/users:
+    get:
+      operationId: listUsers
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Users with token and image counts (admin only)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      allOf:
+                        - {$ref: '#/components/schemas/Me'}
+                        - type: object
+                          required: [tokenCount, imageCount]
+                          properties:
+                            tokenCount: {type: integer}
+                            imageCount: {type: integer}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/users/{id}/disable:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      operationId: disableUser
+      security: [{bearerAuth: []}]
+      responses:
+        '200': {$ref: '#/components/responses/Disabled'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/audit-logs:
+    get:
+      operationId: listAuditLogs
+      security: [{bearerAuth: []}]
+      parameters:
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 500, default: 100}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          description: Audit records (admin only)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/AuditLog'}}
+                  nextCursor: {type: string, nullable: true}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+  /api/upload:
+    post:
+      operationId: uploadImage
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+                source: {$ref: '#/components/schemas/ImageSource'}
+      responses:
+        '201':
+          description: Image stored (upload scope required)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/UploadImageResponse'}
+        '400': {$ref: '#/components/responses/Error'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '413': {$ref: '#/components/responses/Error'}
+        '415': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/Error'}
+        '500': {$ref: '#/components/responses/Error'}
+  /api/images:
+    get:
+      operationId: listImages
+      security: [{bearerAuth: []}]
+      parameters:
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+        - in: query
+          name: cursor
+          schema: {type: string}
+      responses:
+        '200':
+          description: Visible images owned by the caller, or all images for administrators (images:read scope).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/ImageRecord'}
+                  nextCursor: {type: string, nullable: true}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '429': {$ref: '#/components/responses/Error'}
+  /api/images/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema: {type: string}
+    get:
+      operationId: getImage
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Image metadata (images:read scope)
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ImageRecord'}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+    delete:
+      operationId: deleteImage
+      security: [{bearerAuth: []}]
+      responses:
+        '200':
+          description: Soft-deleted image (images:delete scope)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, id, deletedAt]
+                properties:
+                  ok: {type: boolean}
+                  id: {type: string}
+                  deletedAt: {type: string, format: date-time}
+        '401': {$ref: '#/components/responses/Error'}
+        '403': {$ref: '#/components/responses/Error'}
+        '404': {$ref: '#/components/responses/Error'}
+  /api/analytics/health:
+    get:
+      operationId: getAnalyticsHealth
+      responses:
+        '200':
+          description: Analytics storage available
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, storage]
+                properties:
+                  ok: {type: boolean}
+                  storage: {type: string, enum: [sqlite]}
+  /api/analytics/collect:
+    post:
+      operationId: collectAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyticsEvent'
+      responses:
+        '202':
+          description: Accepted indicates whether the event was stored (bots are ignored).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accepted]
+                properties:
+                  accepted: {type: boolean}
+        '400':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '413':
+          $ref: '#/components/responses/Error'
+  /api/analytics/summary:
+    get:
+      operationId: getAnalyticsSummary
+      parameters:
+        - in: query
+          name: days
+          schema: {type: integer, minimum: 1, maximum: 365, default: 30}
+      responses:
+        '200':
+          description: Aggregated analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
+        '400':
+          $ref: '#/components/responses/Error'
+  /api/health:
+    get:
+      operationId: getHealth
+      responses:
+        '200':
+          description: Both databases and image storage are writable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          $ref: '#/components/responses/Error'
+  /api/visitor-count:
+    get:
+      operationId: getVisitorCount
+      responses:
+        '200':
+          description: Current total
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitorCount'
+  /api/visitor-count/visit:
+    post:
+      operationId: registerVisit
+      parameters:
+        - in: header
+          name: X-Visitor-ID
+          schema:
+            type: string
+        - in: header
+          name: X-Visitor-Counted
+          schema:
+            type: string
+            enum: ['1']
+      responses:
+        '200':
+          description: Registered visitor, with a persistent HttpOnly visitor cookie.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/VisitorCount'
+                  - type: object
+                    required: [counted]
+                    properties:
+                      counted:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+components:
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: {type: string}
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    Disabled:
+      description: Resource disabled
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [id, disabledAt, ok]
+            properties:
+              id: {type: string}
+              disabledAt: {type: string, format: date-time}
+              ok: {type: boolean}
+    Error:
+      description: Request failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+  schemas:
+    Me:
+      type: object
+      required: [id, email, displayName, role, createdAt, disabledAt]
+      properties:
+        id: {type: string}
+        email: {type: string, nullable: true}
+        displayName: {type: string}
+        role: {type: string, enum: [admin, member]}
+        createdAt: {type: string, format: date-time}
+        disabledAt: {type: string, format: date-time, nullable: true}
+    TokenScope:
+      type: string
+      enum: [upload, 'images:read', 'images:delete', 'tokens:manage', 'invites:manage', admin]
+    TokenRecord:
+      type: object
+      required: [id, userId, name, scopes, createdAt, lastUsedAt, expiresAt, revokedAt]
+      properties:
+        id: {type: string}
+        userId: {type: string}
+        name: {type: string}
+        scopes: {type: array, items: {$ref: '#/components/schemas/TokenScope'}}
+        createdAt: {type: string, format: date-time}
+        lastUsedAt: {type: string, format: date-time, nullable: true}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        revokedAt: {type: string, format: date-time, nullable: true}
+    InviteRecord:
+      type: object
+      required: [id, createdByUserId, maxUses, usedCount, expiresAt, disabledAt, createdAt]
+      properties:
+        id: {type: string}
+        createdByUserId: {type: string}
+        maxUses: {type: integer}
+        usedCount: {type: integer}
+        expiresAt: {type: string, format: date-time, nullable: true}
+        disabledAt: {type: string, format: date-time, nullable: true}
+        createdAt: {type: string, format: date-time}
+    AuditLog:
+      type: object
+      required: [id, actorUserId, tokenId, action, targetType, targetId, ip, userAgent, metadataJson, createdAt]
+      properties:
+        id: {type: string}
+        actorUserId: {type: string, nullable: true}
+        tokenId: {type: string, nullable: true}
+        action: {type: string}
+        targetType: {type: string}
+        targetId: {type: string}
+        ip: {type: string, nullable: true}
+        userAgent: {type: string, nullable: true}
+        metadataJson: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+    ImageSource:
+      type: string
+      enum: [web, typora, cli, api, migration]
+      default: api
+    ImageVariant:
+      type: object
+      required: [kind, mime, relativePath, publicUrl, width, height, sizeBytes]
+      properties:
+        kind: {type: string, enum: [original, webp, thumb]}
+        mime: {type: string}
+        relativePath: {type: string}
+        publicUrl: {type: string}
+        width: {type: integer, nullable: true}
+        height: {type: integer, nullable: true}
+        sizeBytes: {type: integer, format: int64}
+    ImageRecord:
+      type: object
+      required: [id, ownerUserId, displayName, altText, source, hash, originalMime, originalExt, width, height, sizeBytes, defaultVariant, createdAt, deletedAt, variants]
+      properties:
+        id: {type: string}
+        ownerUserId: {type: string}
+        displayName: {type: string}
+        altText: {type: string, nullable: true}
+        source: {$ref: '#/components/schemas/ImageSource'}
+        hash: {type: string}
+        originalMime: {type: string}
+        originalExt: {type: string}
+        width: {type: integer}
+        height: {type: integer}
+        sizeBytes: {type: integer, format: int64}
+        defaultVariant: {type: string, enum: [original, webp, thumb]}
+        createdAt: {type: string, format: date-time}
+        deletedAt: {type: string, format: date-time, nullable: true}
+        variants:
+          type: array
+          items: {$ref: '#/components/schemas/ImageVariant'}
+    UploadImageResponse:
+      type: object
+      required: [id, displayName, width, height, sizeBytes, mime, hash, url, originalUrl, thumbnailUrl, markdown, createdAt, defaultVariant]
+      properties:
+        id: {type: string}
+        displayName: {type: string}
+        width: {type: integer}
+        height: {type: integer}
+        sizeBytes: {type: integer, format: int64}
+        mime: {type: string}
+        hash: {type: string}
+        url: {type: string}
+        originalUrl: {type: string}
+        thumbnailUrl: {type: string, nullable: true}
+        markdown: {type: string}
+        createdAt: {type: string, format: date-time}
+        defaultVariant: {type: string, enum: [webp, original]}
+    AnalyticsEvent:
+      type: object
+      required: [type, sessionId]
+      properties:
+        type: {type: string, enum: [event, pageview, performance]}
+        sessionId: {type: string, maxLength: 80, pattern: '^[A-Za-z0-9._:-]+$'}
+        name:
+          type: string
+          maxLength: 80
+          description: Required for event and performance types.
+        path: {type: string}
+        title: {type: string, maxLength: 200}
+        referrer: {type: string}
+        language: {type: string, maxLength: 32}
+        timezone: {type: string, maxLength: 64}
+        data:
+          type: object
+          maxProperties: 16
+          description: Performance requires metric (CLS/FCP/LCP/TTFB), value (0–600000), and optional rating.
+          additionalProperties:
+            oneOf:
+              - {type: string, maxLength: 160}
+              - {type: number}
+              - {type: boolean}
+    AnalyticsGroups:
+      type: array
+      items:
+        type: object
+        required: [label, value]
+        properties:
+          label: {type: string}
+          value: {type: integer, minimum: 0}
+    AnalyticsSummary:
+      type: object
+      required: [rangeDays, generatedAt, totals, timeSeries, topPages, referrers, devices, browsers, operatingSystems, languages, timezones, customEvents, webVitals]
+      properties:
+        rangeDays: {type: integer, minimum: 1, maximum: 365}
+        generatedAt: {type: string, format: date-time}
+        totals:
+          type: object
+          required: [pageviews, visitors, sessions, events, activeVisitors30m, bounceRate, avgSessionSeconds]
+          properties:
+            pageviews: {type: integer, minimum: 0}
+            visitors: {type: integer, minimum: 0}
+            sessions: {type: integer, minimum: 0}
+            events: {type: integer, minimum: 0}
+            activeVisitors30m: {type: integer, minimum: 0}
+            bounceRate: {type: number, minimum: 0, maximum: 100}
+            avgSessionSeconds: {type: integer, minimum: 0}
+        timeSeries:
+          type: array
+          items:
+            type: object
+            required: [label, pageviews, visitors]
+            properties:
+              label: {type: string, format: date}
+              pageviews: {type: integer, minimum: 0}
+              visitors: {type: integer, minimum: 0}
+        topPages: {$ref: '#/components/schemas/AnalyticsGroups'}
+        referrers: {$ref: '#/components/schemas/AnalyticsGroups'}
+        devices: {$ref: '#/components/schemas/AnalyticsGroups'}
+        browsers: {$ref: '#/components/schemas/AnalyticsGroups'}
+        operatingSystems: {$ref: '#/components/schemas/AnalyticsGroups'}
+        languages: {$ref: '#/components/schemas/AnalyticsGroups'}
+        timezones: {$ref: '#/components/schemas/AnalyticsGroups'}
+        customEvents: {$ref: '#/components/schemas/AnalyticsGroups'}
+        webVitals:
+          type: array
+          items:
+            type: object
+            required: [name, average, samples, good, needsImprovement, poor]
+            properties:
+              name: {type: string, enum: [CLS, FCP, LCP, TTFB]}
+              average: {type: number}
+              samples: {type: integer}
+              good: {type: integer}
+              needsImprovement: {type: integer}
+              poor: {type: integer}
+    Health:
+      type: object
+      required: [status, version, commit]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+        commit:
+          type: string
+    VisitorCount:
+      type: object
+      required: [total]
+      properties:
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string

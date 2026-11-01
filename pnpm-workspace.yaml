@@ -1,6 +1,8 @@
 packages:
   - apps/*
   - packages/*
+# Never let a script implicitly re-resolve the Nuxt nightly dependency tree.
+verifyDepsBeforeRun: error
 # The h3 2.x patch is kept for when h3 2.x returns; pnpm 11 fails on unused patches by default.
 allowUnusedPatches: true
 patchedDependencies:

@@ -1,0 +1,13 @@
+{
+  "name": "@woodfish-nest/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "types": "./src/schema.d.ts",
+  "scripts": {
+    "generate": "openapi-typescript openapi.yaml -o src/schema.d.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
+  }
+}
