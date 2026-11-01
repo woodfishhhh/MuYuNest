@@ -6,6 +6,11 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_preview:
+        description: Deploy the Vue SPA to /next/ instead of production
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -117,10 +122,13 @@ jobs:
         run: pnpm -F @woodfish-nest/blog build:deploy:dist
 
       - name: Verify Vue migration
+        env:
+          VITE_BASE_URL: /next/
         run: |
           pnpm blog-web:typecheck
           pnpm blog-web:test
-          pnpm blog-web:build
+          pnpm -F @woodfish-nest/blog-web build
+          pnpm -F @woodfish-nest/blog-web verify:dist --base-path /next/
 
       - name: Upload Vue preview artifact
         uses: actions/upload-artifact@v4
@@ -146,9 +154,37 @@ jobs:
           retention-days: 1
           compression-level: 0
 
+  deploy-preview:
+    name: Deploy Vue preview
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_preview
+    needs: [verify-and-build, api, contract]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v4
+        with:
+          name: blog-web-dist
+          path: apps/blog-web/dist
+      - name: Configure SSH
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: bash deploy/configure-blog-ssh.sh
+      - name: Publish preview with rollback
+        env:
+          DEPLOY_REMOTE: ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
+          DEPLOY_DIR: /opt/blog-stack/sites/next
+          DEPLOY_DIST_DIR: apps/blog-web/dist
+          DEPLOY_SKIP_BUILD: '1'
+          DEPLOY_CONTAINER: blog-nginx
+          VITE_BASE_PATH: /next/
+          DEPLOY_MOUNT_PATH: /next/
+          DEPLOY_SITE_URL: https://blog.woodfish.site/next/
+        run: bash deploy/deploy.sh
+
   deploy:
     name: Deploy to VPS
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !inputs.deploy_preview
     needs: verify-and-build
     runs-on: ubuntu-latest
     env:
