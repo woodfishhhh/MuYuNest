@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import DOMPurify from "isomorphic-dompurify";
 import { renderArticleMarkdown } from "../src/content/markdown-renderer.js";
 import {
   sanitizeArticleHtml,
@@ -6,6 +7,13 @@ import {
 } from "../src/content/render-sanitizer.js";
 
 describe("article Markdown renderer", () => {
+  it("preserves replacement-token dollar sequences inside protected code", async () => {
+    const code = "// $& $$ $' $`";
+    const result = await renderArticleMarkdown(`before\n\n\`\`\`text\n${code}\n\`\`\`\n\nafter`);
+    const root = DOMPurify.sanitize(result.html, { RETURN_DOM: true });
+    expect(root.querySelector("pre code")?.textContent).toBe(`${code}\n`);
+    expect(root.querySelectorAll("p")).toHaveLength(2);
+  });
   it("renders the reported sentence with inline math inside Chinese emphasis", async () => {
     const result = await renderArticleMarkdown(
       String.raw`$\theta$为**等号$=$**的连接，即筛选$A=B$的元组，**保留重复属性列**。`,
