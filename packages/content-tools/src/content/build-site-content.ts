@@ -377,7 +377,7 @@ export function stripFencedCodeBlocks(markdown: string) {
   return output.join("\n");
 }
 
-function createExcerpt(markdown: string, title: string) {
+export function createExcerpt(markdown: string, title: string) {
   const tokens = MarkdownIt({ html: true }).parse(markdown, {});
   const paragraphs = tokens.flatMap((token, index) => {
     if (token.type !== "paragraph_open" || tokens[index + 1]?.type !== "inline") {
