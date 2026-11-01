@@ -71,5 +71,22 @@ when comparing `data_json`; stored values are compared semantically. The existin
 180-day retention boundary is preserved. Summary parity covers empty data,
 bounded day ranges, distinct visitors/sessions, 30-minute activity, session
 durations, bounce rate, filled daily series, ranked groups and Web Vitals.
-Analytics HTTP routes and the legacy SQLite importer are still pending. sqlc queries are grouped under
+Analytics HTTP routes are still pending. sqlc queries are grouped under
 `queries/muyu` and `queries/analytics`, with separate generated packages.
+
+To rehearse analytics migration on a consistent SQLite backup:
+
+```sh
+go run ./cmd/import-analytics --source /path/to/analytics.sqlite3 --dry-run
+go run ./cmd/import-analytics --source /path/to/analytics.sqlite3 --database /path/to/rehearsal-analytics.db
+```
+
+The source is opened read-only and never migrated. Dry-run does not open the
+target. Import preserves all event columns, IDs and the AUTOINCREMENT high-water
+mark, including deleted IDs. Repeating a snapshot adds nothing; a later snapshot
+can add rows only when every existing target row still matches. Divergent rows
+or a target sequence ahead of the source reject the transaction. A source whose
+retention cleanup removed previously imported rows requires reconciliation or a
+fresh rehearsal target. Source and target must be different files. Stop writes
+and take consistent backups of both databases before a real cutover; copying a
+live SQLite main file without its WAL is not a consistent backup.
