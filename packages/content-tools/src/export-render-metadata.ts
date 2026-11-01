@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { gzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import matter from "gray-matter";
 import { createSearchText, estimateReadingMinutes, readString, stripFencedCodeBlocks, toSearchablePlainText, toStringArray } from "./content/build-site-content.js";
 import { normalizeMarkdownBody } from "./content/generator-core.js";
@@ -34,6 +34,13 @@ for (const [name, markdown] of Object.entries({
   wordBoundary: "word ".repeat(221),
 })) add(`edge/${name}`, markdown, "Fixture title", { categories: ["parity", " 中文 "], tags: ["Go", " TypeScript "] });
 const destination = path.join(root, "services/api/internal/render/testdata/metadata.json.gz");
-await mkdir(path.dirname(destination), { recursive: true });
-await writeFile(destination, gzipSync(JSON.stringify(cases), { level: 9 }));
+const serialized = JSON.stringify(cases);
+if (process.argv.includes("--check")) {
+  if (gunzipSync(await readFile(destination)).toString("utf8") !== serialized) {
+    throw new Error("Metadata oracle differs from the current TypeScript output; regenerate it.");
+  }
+} else {
+  await mkdir(path.dirname(destination), { recursive: true });
+  await writeFile(destination, gzipSync(serialized, { level: 9 }));
+}
 console.log(JSON.stringify({ articles: paths.length, edgeCases: cases.length - paths.length, destination }));
