@@ -61,4 +61,13 @@ snapshot, then import. Repeating the same snapshot adds no visitors. An incremen
 snapshot must include every existing target identity and must not lower its total;
 otherwise the transaction is rejected. IDs are imported as existing SHA-256
 digests, without rehashing or exposing them in reports. A failed write rolls back
-both the identity inserts and total update. Analytics migration is still pending.
+both the identity inserts and total update.
+
+Analytics event storage now uses the legacy `analytics_events` schema in the
+separate analytics database. Fixed-time Python parity covers event acceptance,
+bot filtering, daily HMAC identities, user-agent classification, Unicode field
+limits and metric validation. JSON object ordering/Unicode escapes are normalized
+when comparing `data_json`; stored values are compared semantically. The existing
+180-day retention boundary is preserved. Summary queries, HTTP routes and the
+legacy SQLite importer are still pending. sqlc queries are grouped under
+`queries/muyu` and `queries/analytics`, with separate generated packages.
