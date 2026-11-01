@@ -199,8 +199,13 @@ export default defineNuxtConfig({
         // Photo cards load on demand, including during service-worker installation.
         "**/*.webp",
       ],
-      navigateFallbackDenylist: [/\/analytics(?:[/?]|$)/i, /\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
+      navigateFallbackDenylist: [/\/next(?:[/?]|$)/i, /\/analytics(?:[/?]|$)/i, /\/api\//i, /\/articles\//i, /\/post-index\.json$/i],
       runtimeCaching: [
+        {
+          // The parallel Vue app owns its document and worker under /next/.
+          urlPattern: /\/next(?:[/?]|$)/i,
+          handler: "NetworkOnly" as const,
+        },
         {
           // The private dashboard and APIs must never use the public SPA shell or cache.
           urlPattern: /\/(?:analytics(?:[/?]|$)|api\/)/i,
