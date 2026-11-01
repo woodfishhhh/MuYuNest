@@ -16,3 +16,4 @@ sql:
         package: analyticssql
         out: internal/db/analyticssql
         emit_json_tags: true
+        emit_empty_slices: true

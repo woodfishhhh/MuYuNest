@@ -68,6 +68,8 @@ separate analytics database. Fixed-time Python parity covers event acceptance,
 bot filtering, daily HMAC identities, user-agent classification, Unicode field
 limits and metric validation. JSON object ordering/Unicode escapes are normalized
 when comparing `data_json`; stored values are compared semantically. The existing
-180-day retention boundary is preserved. Summary queries, HTTP routes and the
-legacy SQLite importer are still pending. sqlc queries are grouped under
+180-day retention boundary is preserved. Summary parity covers empty data,
+bounded day ranges, distinct visitors/sessions, 30-minute activity, session
+durations, bounce rate, filled daily series, ranked groups and Web Vitals.
+Analytics HTTP routes and the legacy SQLite importer are still pending. sqlc queries are grouped under
 `queries/muyu` and `queries/analytics`, with separate generated packages.

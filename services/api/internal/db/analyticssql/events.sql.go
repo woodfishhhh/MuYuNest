@@ -82,7 +82,7 @@ func (q *Queries) ListEvents(ctx context.Context) ([]AnalyticsEvent, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AnalyticsEvent
+	items := []AnalyticsEvent{}
 	for rows.Next() {
 		var i AnalyticsEvent
 		if err := rows.Scan(
