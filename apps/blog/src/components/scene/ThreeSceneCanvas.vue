@@ -39,6 +39,8 @@ import {
   shouldSkipSceneFrame,
   type AdaptivePixelRatio,
 } from "@/components/scene/scene-frame-budget";
+import { shotToCamera } from "@/components/home/film/film-script";
+import { isFilmIntroHeld, readHomeFilm } from "@/components/scene/home-film-signal";
 import { getSceneThemeActivity } from "@/components/scene/scene-theme-activity";
 import {
   resolveSceneWarpPulse,
@@ -80,7 +82,11 @@ const { theme } = useTheme();
 // only drifts, so it does not need the display's full frame rate.
 const isCalmRoute = computed(() => route.name === "blog" || route.name === "post");
 
-const homeFlightVisible = computed(() => store.mode === "home" && !store.isFocusing && store.homeExperience === "collect");
+const homeFlightVisible = computed(
+  () => store.mode === "home" && store.homeFilmChapter === "collect" && !store.isFocusing,
+);
+// Only the film's opening lets a click on the geometry take over the screen.
+const geometryFocusable = computed(() => store.homeFilmChapter === "opening");
 const homeFlightReady = ref(false);
 const homeStarVisible = ref(false);
 const homeCardHovered = ref(false);
@@ -114,7 +120,6 @@ const onPointerUp = () => {
 const onPointerLeave = () => {
   isDragging.value = false;
   pointerInsideCanvas = false;
-  lensPointerActive = false;
   clearSceneMagneticPointerTarget();
   if (!worksOrbitCards?.isInteracting() && !homeCardFlight?.isInteracting()) pointer.set(0, 0);
 };
@@ -149,9 +154,9 @@ const INACTIVE_SCALE = 0.001;
 const CALM_ROUTE_SETTLE_SECONDS = 1.2;
 const DOCK_REMEASURE_INTERVAL = 0.5;
 const MAX_WARP_PULSES = 3;
-const LENS_FADE_IN_RATE = 5;
-const LENS_FADE_OUT_RATE = 8;
-const LENS_FOLLOW_RATE = 14;
+const HOME_FILM_WARP_RATE = 6;
+// Home shows the hypercube in its textbook pose; elsewhere it turns through 4D.
+const HYPERCUBE_CANONICAL_RATE = 3;
 
 const defaultRotations = {
   night: { x: 0.5, y: 0.5, z: 0 },
@@ -188,8 +193,6 @@ let sceneRect: DockRect | null = null;
 let lastDockMeasureAt = Number.NEGATIVE_INFINITY;
 let pointerInsideCanvas = false;
 let homeWheelListening = false;
-let lensPointerActive = false;
-let lensStrength = 0;
 let suppressNextCanvasClick = false;
 let sceneDisposed = false;
 let adaptivePixelRatio: AdaptivePixelRatio | null = null;
@@ -197,6 +200,8 @@ let lastRenderedAt: number | null = null;
 let lastFrameWasCapped = false;
 let calmRouteSince = 0;
 let worksRitualIntensity = 0;
+let homeFilmWarp = 0;
+let hypercubeCanonical = 0;
 let warpPulses: { pulse: SceneWarpPulse; startedAt: number }[] = [];
 
 const raycaster = new THREE.Raycaster();
@@ -206,7 +211,6 @@ const geometryWorldCenter = new THREE.Vector3();
 const cameraTargetPosition = new THREE.Vector3();
 const cameraTargetLook = new THREE.Vector3();
 const cameraLookDirection = new THREE.Vector3();
-const lensCenter = new THREE.Vector2();
 const worksViewport = { height: 0, width: 0 };
 
 let introStartTime: number | null = null;
@@ -425,24 +429,10 @@ function updateGeometryTransform(immediate = false) {
   if (!threeScene || !hypercube || !mobius || !container.value) return;
   immediate ||= prefersReducedMotion;
 
-  const width = container.value.clientWidth;
-  const height = container.value.clientHeight;
-  let splitCenterOffset = 0;
-
-  if (supportsContentLayout(width)) {
-    const aspect = width / Math.max(height, 1);
-    const distance = 12;
-    // For author view, panel is exactly 50vw wide, so left side bounds are 50vw. Center of that is 0.5.
-    const halfScreenCenterNdc = 0.5;
-    const halfFovRad = THREE.MathUtils.degToRad(threeScene.camera.fov / 2);
-    splitCenterOffset = halfScreenCenterNdc * distance * Math.tan(halfFovRad) * aspect;
-  }
-  const inwardOffset = splitCenterOffset * 0.9;
   const target = getGeometryTransformTarget({
     mode: store.mode,
     isFocusing: store.isFocusing,
     isMobile: isMobile.value,
-    inwardOffset,
   });
 
   const targetPosition = new THREE.Vector3(target.x, target.y, target.z);
@@ -502,7 +492,6 @@ function handleResize() {
   worksViewport.height = height;
   sceneViewport.width = width;
   sceneViewport.height = height;
-  store.syncHomeExperience(width);
   isMobile.value = !supportsContentLayout(width);
   measureSceneRect();
   measureBlogDock();
@@ -526,8 +515,6 @@ function handleReducedMotionChange(event: MediaQueryListEvent) {
   if (prefersReducedMotion) {
     // Stop decorative motion now rather than letting it play out.
     warpPulses = [];
-    lensStrength = 0;
-    starField?.setLens(lensCenter, 0, 1);
   }
   updateBlogDock(true);
   updateGeometryTransform(true);
@@ -608,29 +595,16 @@ function getStarWarpIntensity(elapsed: number) {
       pulseIntensity += sampleSceneWarpPulse(pulse, elapsed - startedAt);
     }
   }
-  return Math.abs(pulseIntensity) > worksRitualIntensity ? pulseIntensity : worksRitualIntensity;
+  return [pulseIntensity, worksRitualIntensity, homeFilmWarp].reduce((strongest, intensity) =>
+    Math.abs(intensity) > Math.abs(strongest) ? intensity : strongest,
+  );
 }
 
-function updateStarLens(delta: number) {
-  if (!starField) return;
-  const target =
-    lensPointerActive &&
-    !prefersReducedMotion &&
-    !isCalmRoute.value &&
-    !store.isFocusing &&
-    !worksOrbitCards?.isInteracting() &&
-    !homeCardFlight?.isInteracting()
-      ? 1
-      : 0;
-  if (target === 0 && lensStrength === 0) return;
-
-  // Appear under the pointer instead of sliding in from the last exit point.
-  if (lensStrength === 0) lensCenter.copy(pointer);
-  else if (target > 0) lensCenter.lerp(pointer, 1 - Math.exp(-delta * LENS_FOLLOW_RATE));
-  const rate = target > lensStrength ? LENS_FADE_IN_RATE : LENS_FADE_OUT_RATE;
-  lensStrength += (target - lensStrength) * (1 - Math.exp(-delta * rate));
-  if (target === 0 && lensStrength < 0.002) lensStrength = 0;
-  starField.setLens(lensCenter, lensStrength, sceneViewport.width / Math.max(sceneViewport.height, 1));
+// Crossing a chapter seam of the home film streams the stars past the camera.
+function updateHomeFilmWarp(delta: number, warp: number) {
+  const target = store.mode === "home" && !store.isFocusing && !prefersReducedMotion ? warp : 0;
+  homeFilmWarp += (target - homeFilmWarp) * (1 - Math.exp(-delta * HOME_FILM_WARP_RATE));
+  if (target === 0 && Math.abs(homeFilmWarp) < 0.002) homeFilmWarp = 0;
 }
 
 function getSceneFrameInterval(now: number) {
@@ -706,8 +680,6 @@ function updatePointerFromEvent(event: PointerEvent | MouseEvent) {
 
 function handlePointerMove(event: PointerEvent) {
   pointerInsideCanvas = true;
-  // Touch has no hover; a lens stuck under a lifted finger would read as a glitch.
-  lensPointerActive = event.pointerType === "mouse";
   updatePointerFromEvent(event);
   if (homeFlightVisible.value && homeCardFlight) {
     if (homeCardFlight.isInteracting()) {
@@ -850,7 +822,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     return;
   }
 
-  if (!shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, store.homeExperience)) {
+  if (!shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, geometryFocusable.value)) {
     return;
   }
 
@@ -866,7 +838,7 @@ function handleCanvasPointerDown(event: PointerEvent) {
     hasWorksActionHit: false,
     hasWorksCardHit: false,
     hasGeometryHit: intersects.length > 0,
-    homeExperience: store.homeExperience,
+    geometryFocusable: geometryFocusable.value,
   });
 
   if (action !== "focus-geometry") return;
@@ -889,7 +861,6 @@ onMounted(async () => {
   const height = container.value.clientHeight;
   sceneViewport.width = width;
   sceneViewport.height = height;
-  store.syncHomeExperience(width);
   isMobile.value = !supportsContentLayout(width);
   supportsWorksOrbit.value = supportsWorksOrbitViewport(width);
   worksViewport.width = width;
@@ -1009,8 +980,16 @@ onMounted(async () => {
     lastFrameWasCapped = frameCapped;
     if (nextPixelRatio !== null) threeScene.renderer.setPixelRatio(nextPixelRatio);
 
+    const homeFilm = readHomeFilm();
+    updateHomeFilmWarp(delta, homeFilm.warp);
     const activeGeometry = getActiveGeometry();
     hypercube.setDockProgress(blogDock.progress);
+    const canonicalTarget = store.mode === "home" ? 1 : 0;
+    hypercubeCanonical = prefersReducedMotion
+      ? canonicalTarget
+      : hypercubeCanonical + (canonicalTarget - hypercubeCanonical) * (1 - Math.exp(-delta * HYPERCUBE_CANONICAL_RATE));
+    if (Math.abs(canonicalTarget - hypercubeCanonical) < 0.001) hypercubeCanonical = canonicalTarget;
+    hypercube.setCanonicalProgress(hypercubeCanonical);
     activeGeometry?.update(prefersReducedMotion ? 0 : delta);
 
     if (
@@ -1028,23 +1007,31 @@ onMounted(async () => {
     if (store.isFocusing) {
       controls?.update();
     } else {
-      if (introStartTime === null) {
+      if (introStartTime === null && !isFilmIntroHeld()) {
         introStartTime = elapsed;
       }
 
       cameraTargetPosition.set(0, 0, 10);
       cameraTargetLook.set(0, 0, 0);
 
-      if (store.mode === "blog" || store.mode === "author" || store.mode === "friend" || store.mode === "works") {
+      if (store.mode === "blog" || store.mode === "friend" || store.mode === "works") {
         cameraTargetPosition.set(0, 0, 12);
       } else if (store.mode === "reading") {
         cameraTargetPosition.set(0, 0, 15);
+      } else if (store.mode === "home" && homeFilm.shot) {
+        const aspect = sceneViewport.width / Math.max(sceneViewport.height, 1);
+        const placement = shotToCamera(homeFilm.shot, threeScene.camera.fov, aspect);
+        cameraTargetPosition.fromArray(placement.position);
+        cameraTargetLook.fromArray(placement.look);
       }
 
       if (prefersReducedMotion) {
         introCompleted = true;
         threeScene.camera.position.copy(cameraTargetPosition);
         threeScene.camera.lookAt(cameraTargetLook);
+      } else if (!introCompleted && introStartTime === null) {
+        threeScene.camera.position.copy(CAMERA_INTRO_START_POSITION);
+        threeScene.camera.lookAt(CAMERA_INTRO_START_LOOK);
       } else if (!introCompleted && introStartTime !== null) {
         const introProgress = (elapsed - introStartTime) / CAMERA_INTRO_DURATION;
         const normalizedProgress = Math.min(Math.max(introProgress, 0), 1);
@@ -1071,7 +1058,6 @@ onMounted(async () => {
 
     starField.setCollectMode(homeFlightVisible.value, prefersReducedMotion);
     starField.setWarpIntensity(getStarWarpIntensity(elapsed));
-    updateStarLens(delta);
     starField.update(prefersReducedMotion ? 0 : delta, { camera: threeScene.camera, ...sceneViewport, pointer: smoothedPointer });
     applyBlogDock(elapsed);
     homeCardFlight?.update(delta, homeFlightVisible.value, prefersReducedMotion);
@@ -1110,7 +1096,7 @@ onMounted(async () => {
 
     const canRaycastSceneGeometry =
       activeRaycastGeometry &&
-      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, store.homeExperience);
+      shouldRaycastSceneGeometry(store.mode, store.worksViewMode, store.isFocusing, isMobile.value, geometryFocusable.value);
     if (
       canRaycastSceneGeometry &&
       shouldRunSceneHoverRaycast(elapsed, lastGeometryHoverRaycastAt)
@@ -1170,7 +1156,7 @@ watch(
   },
 );
 watch(
-  () => store.homeExperience,
+  homeFlightVisible,
   () => {
     updateBlogDock();
     void ensureHomeCardFlight();
@@ -1303,7 +1289,7 @@ onBeforeUnmount(() => {
   <div
     ref="container"
     :data-blog-entry="isBlogDocking ? 'shrinking' : 'idle'"
-    :data-home-experience="store.homeExperience"
+    :data-home-film-chapter="store.homeFilmChapter"
     :data-star-clock="homeFlightVisible ? 'collect' : 'roam'"
     :data-home-flight="homeFlightVisible ? 'active' : 'inactive'"
     :data-home-flight-ready="homeFlightReady"

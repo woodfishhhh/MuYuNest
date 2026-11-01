@@ -7,24 +7,19 @@ export interface SceneWarpPulse {
 }
 
 // Same order as the site navigation; articles lie beyond every panel.
-const PANEL_ORDER: readonly string[] = ["home", "works", "blog", "author", "friend"];
+const PANEL_ORDER: readonly string[] = ["home", "works", "blog", "friend"];
 const ARTICLE_ROUTE = "post";
 const PANEL_STRENGTH = 0.32;
 const PANEL_STRENGTH_PER_STEP = 0.06;
 const ATTACK_SHARE = 0.24;
-
-function toPlace(routeName: string | null) {
-  // Author pages paginate inside one panel.
-  return routeName === "author-page" || routeName === "author-page-root" ? "author" : routeName;
-}
 
 /** Route names come from vue-router; anything outside the scene returns null. */
 export function resolveSceneWarpPulse(
   fromRouteName: string | null,
   toRouteName: string | null,
 ): SceneWarpPulse | null {
-  const from = toPlace(fromRouteName);
-  const to = toPlace(toRouteName);
+  const from = fromRouteName;
+  const to = toRouteName;
   if (!from || !to || from === to) return null;
   if (to === ARTICLE_ROUTE) return { direction: 1, strength: 0.62, duration: 1.15 };
   if (from === ARTICLE_ROUTE) return { direction: -1, strength: 0.42, duration: 1 };

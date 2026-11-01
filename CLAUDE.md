@@ -140,6 +140,10 @@ pnpm -F @woodfish-nest/content-tools test
   decorative motion.
 - For scroll surfaces, prefer native browser scrolling. Avoid custom smooth
   scroll loops unless there is strong evidence they are required and harmless.
+  The one deliberate exception is the Home film's damped wheel scroll
+  (`useDampedScroll`), which the user asked for; keep it scoped to Home.
+- Home is a scroll-driven film around the central geometry; see
+  `apps/blog/AGENTS.md` → "Home film" before changing it.
 - The friend page intentionally uses a regular native two-column waterfall, not
   infinite cloned loops.
 - Friend cards use pointer-driven pseudo-3D tilt. Keep this scoped to cards and
@@ -353,6 +357,11 @@ Durable lessons:
 
 - `AGENTS.md` currently says npm workspaces and `npm@11.14.1`; actual repo state
   is pnpm. Follow `package.json`, CI, and this file.
+- `pnpm add` / `pnpm remove` here re-resolve the whole lockfile (they bumped
+  nuxt-nightly and friends). To drop a dependency, delete its entries from
+  `pnpm-lock.yaml` by hand and confirm with `pnpm install --frozen-lockfile`.
+- Some iconify URLs in `_data/about.yml` used `prefix:name.svg`, which the API
+  now 404s; use `prefix/name.svg`.
 - Nuxt SPA `import.meta.env.BASE_URL` may resolve to build assets directory, not
   app base. Use `getBaseUrl()`.
 - PWA service worker can cache stale local preview assets. When DevTools computed

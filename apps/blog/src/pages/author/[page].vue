@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import HomeView from "~/views/HomeView.vue";
-
-import { isValidAuthorPageParam } from "@/utils/author-route";
-
+// Author lives on the home page now; keep old links working.
 definePageMeta({
   name: "author-page",
-  validate: (route) => isValidAuthorPageParam(route.params.page),
+  redirect: { path: "/", hash: "#about" },
 });
 </script>
 
 <template>
-  <HomeView />
+  <div />
 </template>

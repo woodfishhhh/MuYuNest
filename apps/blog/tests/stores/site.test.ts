@@ -33,34 +33,20 @@ describe("site store", () => {
     expect(store.worksViewMode).toBe("case");
   });
 
-  it("defaults to collection on desktop and roaming on phones", () => {
+  it("starts the home film at its opening and follows the chapter on screen", () => {
     const store = useSiteStore();
-    store.syncHomeExperience(390);
-    expect(store.homeExperience).toBe("roam");
-    store.syncHomeExperience(1280);
-    expect(store.homeExperience).toBe("collect");
-    store.syncHomeExperience(767);
-    expect(store.homeExperience).toBe("roam");
-  });
+    expect(store.homeFilmChapter).toBe("opening");
 
-  it("keeps a manual Home choice across navigation and resizing", () => {
-    const store = useSiteStore();
-    store.syncHomeExperience(1440);
-    store.setHomeExperience("roam");
-    store.goBlog();
-    store.goHome();
-    store.syncHomeExperience(1440);
-    expect(store.homeExperience).toBe("roam");
-    store.setHomeExperience("collect");
-    store.syncHomeExperience(390);
-    expect(store.homeExperience).toBe("collect");
+    store.setHomeFilmChapter("collect");
+
+    expect(store.homeFilmChapter).toBe("collect");
   });
 
   it("keeps the Blog scroll position while navigating through other modes", () => {
     const store = useSiteStore();
 
     store.setBlogScrollTop(640);
-    store.goAuthor();
+    store.goFriend();
     store.goBlog();
 
     expect(store.blogScrollTop).toBe(640);

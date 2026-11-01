@@ -12,7 +12,6 @@ function createTestRouter() {
     routes: [
       { path: "/", name: "home", component: { template: "<div />" } },
       { path: "/blog", name: "blog", component: { template: "<div />" } },
-      { path: "/author", name: "author", component: { template: "<div />" } },
       { path: "/friend", name: "friend", component: { template: "<div />" } },
     ],
   });
@@ -24,11 +23,11 @@ describe("SlideController", () => {
     document.body.innerHTML = "";
   });
 
-  it.each(["collect", "roam"] as const)("leaves Home wheel input available in %s mode", async experience => {
+  it.each(["opening", "collect"] as const)("leaves Home wheel input to the film in its %s chapter", async chapter => {
     const router = createTestRouter();
     await router.push({ name: "home" }); await router.isReady();
     const siteStore = useSiteStore();
-    siteStore.goHome(); siteStore.setHomeExperience(experience);
+    siteStore.goHome(); siteStore.setHomeFilmChapter(chapter);
     const push = vi.spyOn(router, "push");
     const wrapper = mount(SlideController, { global: { plugins: [router] } });
     try {
@@ -42,39 +41,23 @@ describe("SlideController", () => {
     } finally { wrapper.unmount(); }
   });
 
-  it("does not hijack author wheel scrolling once GSAP owns the author surface", async () => {
+  it("leaves Home touch swipes to the native page scroll", async () => {
     const router = createTestRouter();
-    await router.push({ name: "author" });
+    await router.push({ name: "home" });
     await router.isReady();
+    useSiteStore().goHome();
+    const push = vi.spyOn(router, "push");
+    const wrapper = mount(SlideController, { global: { plugins: [router] } });
 
-    const siteStore = useSiteStore();
-    siteStore.goAuthor();
+    try {
+      window.dispatchEvent(new TouchEvent("touchstart", { touches: [{ clientY: 600 } as Touch] }));
+      window.dispatchEvent(new TouchEvent("touchmove", { touches: [{ clientY: 200 } as Touch] }));
 
-    const authorScroll = document.createElement("div");
-    authorScroll.id = "author-scroll-container";
-    const scrollBy = vi.fn();
-    authorScroll.scrollBy = scrollBy;
-    document.body.appendChild(authorScroll);
-
-    mount(SlideController, {
-      slots: {
-        default: "<div />",
-      },
-      global: {
-        plugins: [router],
-      },
-    });
-
-    const event = new WheelEvent("wheel", {
-      deltaY: 120,
-      bubbles: true,
-      cancelable: true,
-    });
-
-    window.dispatchEvent(event);
-
-    expect(scrollBy).not.toHaveBeenCalled();
-    expect(router.currentRoute.value.name).toBe("author");
+      expect(push).not.toHaveBeenCalled();
+      expect(router.currentRoute.value.name).toBe("home");
+    } finally {
+      wrapper.unmount();
+    }
   });
 
   it("does not hijack friend wheel scrolling so the native panel scroll stays responsive", async () => {

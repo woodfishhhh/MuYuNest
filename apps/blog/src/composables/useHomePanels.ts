@@ -71,7 +71,7 @@ export function useHomePanels(mode: Ref<SiteMode>) {
         void ensurePostsLoaded();
       }
 
-      if (nextMode === "author") {
+      if (nextMode === "home") {
         void ensureAuthorLoaded();
       }
 

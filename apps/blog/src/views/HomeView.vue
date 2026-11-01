@@ -10,33 +10,34 @@ import {
   watch,
 } from "vue";
 
-import HomeModeToggle from "@/components/home/HomeModeToggle.vue";
 import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
 import SlideController from "@/components/home/SlideController.vue";
-import VisitorCountBadge from "@/components/home/VisitorCountBadge.vue";
+import { hasSplashPlayed, markSplashPlayed, setFilmIntroHold } from "@/components/scene/home-film-signal";
 import { useHomePanels } from "@/composables/useHomePanels";
 import { useTheme } from "@/composables/useTheme";
 import { useVisitorCount } from "@/composables/useVisitorCount";
 import { useSiteStore, type SiteMode } from "@/stores/site";
 
-const AuthorPanel = defineAsyncComponent(() => import("@/components/home/AuthorPanel.vue"));
+const HomeFilm = defineAsyncComponent(() => import("@/components/home/film/HomeFilm.vue"));
 const FriendPanel = defineAsyncComponent(() => import("@/components/home/FriendPanel.vue"));
 const PostPanel = defineAsyncComponent(() => import("@/components/home/PostPanel.vue"));
 const WorksPanel = defineAsyncComponent(() => import("@/components/home/WorksPanel.vue"));
 
 const siteStore = useSiteStore();
+// The film's splash only opens a visit that starts on Home. Hold the camera's
+// fly-in now: the scene can mount before the film's data has loaded.
+if (siteStore.mode !== "home") markSplashPlayed();
+else if (!hasSplashPlayed() && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) setFilmIntroHold(true);
 const { theme } = useTheme();
 const currentMode = computed(() => siteStore.mode);
 type CachedPanelMode = Exclude<SiteMode, "home" | "reading">;
 const cachedPanelModes = reactive(new Set<CachedPanelMode>());
 const blogScrollContainerRef = useTemplateRef<HTMLElement>("blogScrollContainer");
-const { posts, author, friendLinks, works, isPostsLoading, postsLoadFailed, retryPosts, isAuthorLoading, isFriendLinksLoading } =
+const { posts, author, friendLinks, works, isPostsLoading, postsLoadFailed, retryPosts, isFriendLinksLoading } =
   useHomePanels(currentMode);
 
-const homeHint = computed(() => siteStore.mode === "home" && !siteStore.isFocusing);
 const focusHint = computed(() => siteStore.isFocusing);
 const focusHintTarget = computed(() => (theme.value === "day" ? "莫比乌斯带" : "超立方体"));
-const showVisitorCount = computed(() => siteStore.mode === "home");
 const {
   total: visitorCountTotal,
   isLoading: visitorCountLoading,
@@ -193,27 +194,25 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main data-home-stage class="relative h-dvh overflow-hidden text-[var(--stage-fg)]">
-    <HomeModeToggle
-      v-if="homeHint"
-      :model-value="siteStore.homeExperience"
-      @update:model-value="siteStore.setHomeExperience"
+  <!-- Home scrolls the document over the fixed scene; every other panel is a fixed overlay. -->
+  <main
+    data-home-stage
+    class="relative text-[var(--stage-fg)]"
+    :class="siteStore.mode === 'home' ? 'min-h-dvh' : 'h-dvh overflow-hidden'"
+  >
+    <HomeFilm
+      v-if="siteStore.mode === 'home' && author"
+      data-panel-layer="home"
+      data-panel-active="true"
+      :author="author"
+      :works="works"
+      :visitor-total="visitorCountTotal"
+      :visitor-loading="visitorCountLoading"
+      :visitor-error="visitorCountError"
     />
 
     <SlideController :blog-scroll-container="blogScrollContainerRef">
       <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
-        <Transition name="home-hint" mode="out-in">
-          <div v-if="homeHint" class="pointer-events-auto absolute bottom-24 flex w-full justify-center sm:bottom-8">
-            <div class="motion-safe:animate-bounce text-sm tracking-widest text-[var(--stage-hint)] opacity-70">
-              <div v-if="siteStore.homeExperience === 'collect'" class="text-center">
-                <p>抓住一张卡片，读一段时光</p>
-                <p class="mt-1 text-xs tracking-wide">鼠标滚轮调整卡片大小</p>
-              </div>
-              <template v-else>点击{{ focusHintTarget }}进行探索</template>
-            </div>
-          </div>
-        </Transition>
-
         <Transition name="focus-hint" mode="out-in">
           <div v-if="focusHint" class="pointer-events-auto absolute bottom-8 flex w-full justify-center">
             <button
@@ -226,19 +225,6 @@ onBeforeUnmount(() => {
           </div>
         </Transition>
 
-        <div v-if="showVisitorCount" class="pointer-events-auto absolute bottom-6 left-6 z-20">
-          <VisitorCountBadge
-            :total="visitorCountTotal"
-            :is-loading="visitorCountLoading"
-            :has-error="visitorCountError"
-          />
-        </div>
-        <div
-          v-if="siteStore.mode === 'home'"
-          data-panel-layer="home"
-          data-panel-active="true"
-          class="pointer-events-none absolute inset-0"
-        />
 
         <div
           v-if="isPanelCached('blog')"
@@ -273,33 +259,6 @@ onBeforeUnmount(() => {
               <button v-if="postsLoadFailed" type="button" class="mt-4 text-[var(--accent)]" @click="retryPosts">
                 重新加载
               </button>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="isPanelCached('author')"
-          data-panel-layer="author"
-          :data-panel-active="siteStore.mode === 'author' ? 'true' : 'false'"
-          :aria-hidden="siteStore.mode === 'author' ? undefined : 'true'"
-          class="home-panel-cache pointer-events-auto absolute inset-0"
-        >
-          <div class="flex h-full w-full items-center justify-center">
-            <AuthorPanel v-if="author" :active="siteStore.mode === 'author'" :author="author" />
-            <div
-              v-else
-              class="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-6 py-7 text-[var(--stage-hint)]"
-            >
-              <div class="text-[11px] uppercase tracking-[0.36em] text-[var(--stage-hint)]">
-                {{ isAuthorLoading ? "Loading profile" : "Profile standby" }}
-              </div>
-              <p class="mt-4 max-w-md text-sm leading-7 text-[var(--stage-hint)]">
-                {{
-                  isAuthorLoading
-                    ? "作者资料正在按需同步，面板即将展开。"
-                    : "作者资料会在你进入 Author 面板时即时载入。"
-                }}
-              </p>
             </div>
           </div>
         </div>

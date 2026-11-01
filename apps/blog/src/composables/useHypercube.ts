@@ -25,6 +25,8 @@ export interface Hypercube {
   setOpacity: (alpha: number) => void;
   setPointScale: (scale: number) => void;
   setDockProgress: (progress: number) => void;
+  /** 1 shows the textbook tesseract: a cube centred in a cube, no 4D turn. */
+  setCanonicalProgress: (progress: number) => void;
   setInteractionIntensity: (value: number) => void;
   dispose: () => void;
 }
@@ -156,15 +158,18 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
   let jitterTime = 0;
   let interactionIntensity = 0;
   let dockProgress = 0;
+  let canonicalProgress = 0;
   let projectionDirty = false;
 
   function update(delta: number) {
     const intensity = interactionIntensity;
-    const motion = (1 - intensity) * (1 - dockProgress);
+    // Docking and the canonical pose both settle on the unrotated projection.
+    const settle = Math.max(dockProgress, canonicalProgress);
+    const motion = (1 - intensity) * (1 - settle);
     jitterTime += delta;
     alphaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.alpha * motion;
     betaRot += delta * HYPERCUBE_PROJECTION_ROTATION_SPEED.beta * motion;
-    if (!projectionDirty && (delta === 0 || dockProgress === 1)) return;
+    if (!projectionDirty && (delta === 0 || settle === 1)) return;
     projectionDirty = false;
     const cosA = Math.cos(alphaRot);
     const sinA = Math.sin(alphaRot);
@@ -182,13 +187,13 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
       const jitter = Math.sin(jitterTime * 8 + i * 1.7) * 0.024 * intensity;
 
       positions[offset] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(x1 * scale, basePositions[offset] + jitter, intensity), basePositions[offset], dockProgress,
+        THREE.MathUtils.lerp(x1 * scale, basePositions[offset] + jitter, intensity), basePositions[offset], settle,
       );
       positions[offset + 1] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(y * scale, basePositions[offset + 1] - jitter, intensity), basePositions[offset + 1], dockProgress,
+        THREE.MathUtils.lerp(y * scale, basePositions[offset + 1] - jitter, intensity), basePositions[offset + 1], settle,
       );
       positions[offset + 2] = THREE.MathUtils.lerp(
-        THREE.MathUtils.lerp(z1 * scale, basePositions[offset + 2] + jitter, intensity), basePositions[offset + 2], dockProgress,
+        THREE.MathUtils.lerp(z1 * scale, basePositions[offset + 2] + jitter, intensity), basePositions[offset + 2], settle,
       );
     }
     positionAttribute.needsUpdate = true;
@@ -218,6 +223,12 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
     dockProgress = next;
   }
 
+  function setCanonicalProgress(progress: number) {
+    const next = THREE.MathUtils.clamp(progress, 0, 1);
+    projectionDirty ||= next !== canonicalProgress;
+    canonicalProgress = next;
+  }
+
   function setPointScale(scale: number) {
     // Point sprites do not inherit the parent group's scale.
     pointsMaterial.size = Math.max(0.018, 0.15 * scale);
@@ -244,6 +255,7 @@ export function useHypercube(circleTexture: THREE.CanvasTexture): Hypercube {
     setOpacity,
     setPointScale,
     setDockProgress,
+    setCanonicalProgress,
     setInteractionIntensity,
     dispose,
   };
