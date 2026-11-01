@@ -32,3 +32,9 @@ The tmpfs example is disposable verification storage, not a production persisten
 OpenAPI lives in `packages/api-contract/openapi.yaml`. Go generation currently selects `getHealth`; expand the operation list as handlers are implemented. Do not hand-edit `internal/api/gen.go`, `internal/db/sqlgen`, or the TypeScript schema. CI checks regeneration drift, build, vet, lint, race tests and the container build.
 
 pnpm 11 script-time dependency verification is configured to **error**, not auto-install: implicit non-frozen installs otherwise upgrade the Nuxt nightly dependency graph. Resolve dependency-state errors with an explicit frozen install.
+
+Stage 2 visitor storage is being migrated independently of HTTP routing. Its
+parity test runs the existing Python `JsonCounterStore` with the same registration
+sequence and compares both responses and stored identities. Tests require
+`python` on Windows or `python3` on Linux. Temporary SQLite databases also verify
+concurrent deduplication and transaction rollback; no production files are used.
