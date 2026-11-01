@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
@@ -15,9 +16,10 @@ type Config struct {
 	ImageRoot       string
 	AllowedOrigins  []string
 	LogLevel        slog.Level
+	AnalyticsSecret []byte
 }
 
-// Load validates only configuration consumed by the foundation service.
+// Load validates configuration consumed by the implemented service routes.
 // Authentication and media settings become required when those routes land.
 func Load() (Config, error) {
 	c := Config{
@@ -27,6 +29,18 @@ func Load() (Config, error) {
 		ImageRoot:       value("IMAGE_ROOT", "data/images"),
 	}
 	var err error
+	if path := os.Getenv("VISITOR_ANALYTICS_SECRET_FILE"); path != "" {
+		secret, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return c, fmt.Errorf("VISITOR_ANALYTICS_SECRET_FILE: %w", readErr)
+		}
+		c.AnalyticsSecret = bytes.TrimSpace(secret)
+	} else {
+		c.AnalyticsSecret = []byte(os.Getenv("VISITOR_ANALYTICS_SECRET"))
+	}
+	if len(c.AnalyticsSecret) == 0 {
+		return c, fmt.Errorf("set VISITOR_ANALYTICS_SECRET_FILE or VISITOR_ANALYTICS_SECRET")
+	}
 	c.DBPath, err = filepath.Abs(c.DBPath)
 	if err != nil {
 		return c, fmt.Errorf("MUYU_DB_PATH: %w", err)

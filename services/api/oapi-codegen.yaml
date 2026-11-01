@@ -8,3 +8,8 @@ output: internal/api/gen.go
 output-options:
   include-operation-ids:
     - getHealth
+    - getVisitorCount
+    - registerVisit
+    - getAnalyticsHealth
+    - collectAnalytics
+    - getAnalyticsSummary

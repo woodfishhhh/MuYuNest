@@ -117,7 +117,9 @@ Generated files must NOT be committed except via the CI content-generation step.
 
 ## PWA
 
-`@vite-pwa/nuxt` with Workbox `generateSW` strategy. The service worker precaches all dist assets. Config lives in `nuxt.config.ts` under `pwa:`.
+`@vite-pwa/nuxt` with Workbox `generateSW` strategy. Config lives in `nuxt.config.ts` under `pwa:`; large photos and content assets load on demand. The root worker must exclude `/next/` from navigation fallback and caching so an already-installed PWA can open the parallel Vue preview. Keep the matching nginx route when deploying the legacy app.
+
+The Home film's display font is `public/fonts/anton-latin.woff2`, with its license alongside it. Required fonts must be tracked so clean-checkout CI builds match local previews.
 
 ## Testing
 

@@ -26,7 +26,7 @@ func TestHealthAndOrigins(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer analyticsDB.Close()
-	router := New(slog.New(slog.NewJSONHandler(io.Discard, nil)), []string{"https://blog.woodfish.site"}, mainDB, analyticsDB, dir, "test", "abc")
+	router := New(slog.New(slog.NewJSONHandler(io.Discard, nil)), []string{"https://blog.woodfish.site"}, mainDB, analyticsDB, dir, "test", "abc", []byte("test-secret"))
 	request := func(origin string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 		if origin != "" {
