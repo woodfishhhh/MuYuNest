@@ -76,6 +76,33 @@ failure traces are kept under ignored `output/metrics-e2e`.
 
 ## Final cutover gates
 
+The production candidate `muyu-api.service` is prepared but off traffic on the
+verified Docker gateway `172.18.0.1:3013`. The nginx container can reach it and its
+counter remains zero. Its separate state is `/var/lib/muyu-api`; do not confuse
+it with shadow. `/srv/muyu-data` currently belongs to the live image-bed service
+and contains `muyu.sqlite` plus WAL/SHM. Preserve its ownership and files during
+stage 2. Unify storage paths during the image-bed migration, after its import and
+rollback gates have passed.
+
+The candidate `deploy/nginx.conf` keeps existing Basic Auth, serves the dashboard
+from `/opt/blog-stack/sites/analytics-dashboard` through the existing sites mount,
+and selects port 3013. A marker at host path
+`/opt/blog-stack/nginx/conf.d/metrics-write-gate` causes registration and collection
+to return 503 with Retry-After 30; reads and authentication remain available.
+Both marker states were checked in isolated nginx containers on the VPS, without
+changing the active proxy. A nested bind into a read-only directory needs an
+existing mountpoint; the gate test used a separate temporary config directory.
+
+**Do not merge the candidate nginx configuration before final import and manual
+cutover:** merging triggers the site's normal deployment. First validate CI, save
+the live nginx config, install a gated version still pointing to Python, and stop
+the writers. Import the final snapshots into the clean production Go databases,
+start/check Go, then install the candidate while the write gate remains present.
+After read/auth checks, remove the gate and record the baseline and timestamp.
+Only then merge so subsequent site deployments preserve the selected backend.
+Also merge the updated main into the parallel Vue branch before another preview
+deployment; its old nginx file would otherwise restore port 3011.
+
 - CI, Python parity, import/export rehearsal and browser analytics/visitor E2E pass.
 - Preserve existing nginx Basic Auth for analytics health/summary and the dashboard;
   only collect remains public. Serve dashboard files from nginx after Python stops.
@@ -98,9 +125,9 @@ Gate metric writes and stop Go and Python before exporting. On the VPS:
 
 ```sh
 python3 deploy/export-go-metrics.py \
-  --database /srv/muyu-data/muyu.db \
-  --analytics /srv/muyu-data/analytics.db \
-  --output /srv/muyu-data/rollback-YYYYMMDD-HHMMSS
+  --database /var/lib/muyu-api/muyu.db \
+  --analytics /var/lib/muyu-api/analytics.db \
+  --output /opt/blog-stack/rehearsals/rollback-YYYYMMDD-HHMMSS
 ```
 
 The new directory contains `visitor-count.json`, `analytics.sqlite3`, and a final
