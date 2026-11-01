@@ -69,7 +69,7 @@ func TestHealthAndOrigins(t *testing.T) {
 
 func validateResponse(t *testing.T, res *httptest.ResponseRecorder, schema string) {
 	t.Helper()
-	spec, err := api.GetSwagger()
+	spec, err := api.GetSpec()
 	if err != nil {
 		t.Fatal(err)
 	}
