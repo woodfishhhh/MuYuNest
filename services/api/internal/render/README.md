@@ -10,6 +10,7 @@ Regenerate the committed compressed metadata oracle from the repository root:
 ```sh
 pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-metadata.ts
 pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-slugs.ts
+pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-sanitizer.ts
 go -C services/api test ./internal/render
 ```
 
@@ -46,3 +47,15 @@ Excerpt selection follows the first nonempty paragraph (including list/quote
 paragraphs), skips `[toc]` and image-only paragraphs, and uses the original regex
 stripping rules rather than rendered text. Truncation counts JavaScript UTF-16
 units at 150; reading-time counting continues to count Unicode runes separately.
+
+`SanitizeArticleHTML` parses HTML fragments before applying the original article
+allowlist with bluemonday 1.0.27. It preserves DOMPurify's URI rules, aria
+attributes, blocked subtrees and DOM-name protections. The generated blocked-ID
+table comes from the same jsdom/DOMPurify dependency as the TS renderer; it is
+checked in CI. Upstream DOMPurify attribution and license are retained.
+
+Sanitizer parity compares parsed structure and sorted attributes for all 246
+articles rendered with ordinary markdown-it, plus 12 security/HTML edge cases.
+Only attribute order and serialization details are normalized; text is retained.
+The original trusted-fragment policy for Shiki/MathJax is separate and has not
+been ported here. Full highlighted/math-rendered HTML equivalence remains pending.
