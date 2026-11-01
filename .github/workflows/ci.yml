@@ -33,7 +33,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm contract:generate
       - run: pnpm api:sqlc
-      - run: pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-metadata.ts
+      - run: pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-metadata.ts --check
+      - run: pnpm -F @woodfish-nest/content-tools exec tsx src/export-render-slugs.ts --check
       - run: git diff --exit-code -- packages/api-contract/src services/api/internal/api services/api/internal/db services/api/internal/render/testdata
 
   api:
