@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/oapi-codegen/runtime v1.8.0
 	github.com/pressly/goose/v3 v3.29.0
+	github.com/yuin/goldmark v1.8.7
 	golang.org/x/text v0.43.0
 	modernc.org/sqlite v1.61.1
 )
