@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WoodFishNest | 木鱼的鱼窝</title>
+    <link rel="icon" href="%BASE_URL%favicon.png" />
+    <link rel="apple-touch-icon" href="%BASE_URL%favicon.png" />
+    <meta name="description" content="木鱼的鱼窝 | Vue-powered immersive 3D blog experience" />
+    <meta name="theme-color" content="#050510" />
+    <meta name="travellings" content="https://www.travellings.cn/go.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="木鱼的鱼窝 | WoodFishNest" />
+    <meta property="og:description" content="木鱼的鱼窝 | Vue-powered immersive 3D blog experience." />
+    <meta property="og:url" content="https://blog.woodfish.site/" />
+    <meta property="og:image" content="https://blog.woodfish.site/favicon.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="木鱼的鱼窝 | WoodFishNest" />
+    <meta name="twitter:description" content="木鱼的鱼窝 | Vue-powered immersive 3D blog experience." />
+    <meta name="twitter:image" content="https://blog.woodfish.site/favicon.png" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https:; connect-src 'self'; base-uri 'self'; form-action 'self' https://github.com;" />
+    <style>
+      :root { --stage-bg: #050510; --stage-fg: #f6f8ff; color-scheme: dark; }
+      :root[data-theme="day"] { --stage-bg: #fafaf7; --stage-fg: #17191f; color-scheme: light; }
+      body { background-color: var(--stage-bg); color: var(--stage-fg); margin: 0; }
+      #app { min-height: 100vh; }
+    </style>
+    <script>
+      (() => {
+        let theme = "night";
+        try { if (localStorage.getItem("vuecubeblog-theme") === "day") theme = "day"; }
+        catch { /* Storage can be disabled; the default theme remains usable. */ }
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme === "day" ? "light" : "dark";
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -116,6 +116,21 @@ jobs:
       - name: Dist build
         run: pnpm -F @woodfish-nest/blog build:deploy:dist
 
+      - name: Verify Vue migration
+        run: |
+          pnpm blog-web:typecheck
+          pnpm blog-web:test
+          pnpm blog-web:build
+
+      - name: Upload Vue preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blog-web-dist
+          path: apps/blog-web/dist
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+
       - name: Assemble verifiable static release
         run: bash deploy/assemble-static-release.sh "$GITHUB_SHA"
 
