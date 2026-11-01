@@ -57,7 +57,8 @@ src/
 │   └── main.css              # Tailwind v4 entry + global styles
 ├── components/
 │   ├── layout/               # RouteTransitionShell, SiteNav, SiteBackground
-│   ├── home/                 # Panel components: HeroBanner, SlideController, etc.
+│   ├── home/                 # Panel components (SlideController, Friend/Works/Post panels)
+│   │   └── film/             # The Home page: a scroll-driven film around the central geometry
 │   ├── post/                 # Post list, post detail components
 │   └── scene/                # Three.js scene components (ThreeSceneCanvas, etc.)
 ├── composables/              # Vue composables (useTheme, useScrollLock, etc.)
@@ -71,7 +72,7 @@ src/
 │   ├── index.vue             # → name:"home"
 │   ├── blog.vue              # → name:"blog"
 │   ├── works.vue             # → name:"works"
-│   ├── author.vue            # → name:"author"
+│   ├── author.vue            # → redirects to /#about (Author merged into Home)
 │   ├── friend.vue            # → name:"friend"
 │   └── posts/[slug].vue      # → name:"post"
 ├── plugins/
@@ -87,7 +88,19 @@ src/
 
 ## Routing
 
-Multi-panel home: `/`, `/blog`, `/works`, `/author`, `/friend` all render `HomeView.vue`. The active panel is driven by `SitePanelMode` Pinia store, updated by `plugins/site-mode.client.ts` on every navigation.
+Multi-panel home: `/`, `/works`, `/friend` render `HomeView.vue` (`/blog` and posts use the docs layout). The active panel is driven by `SitePanelMode` Pinia store, updated by `plugins/site-mode.client.ts` on every navigation. The site has four pages — Home, Works, Blog, Friend; the old `/author`, `/author/:n` and `/1`–`/4` links redirect to `/#about`.
+
+## Home film
+
+Home (`components/home/film/`) is one scroll-driven film around the hypercube (night) / Möbius strip (day):
+
+- Scroll position is the playhead. Every motion is a function of it, so scrolling up replays the film in reverse. `HomeFilm.vue` writes each chapter's local progress to `--t` on its section; chapter CSS reads `--t`. Do not add one-shot "play once" scroll animations.
+- `film-script.ts` holds the chapters and camera shots (pure, unit-tested). The page publishes the current shot through `scene/home-film-signal.ts`; `ThreeSceneCanvas` reads it each frame. The scene never imports the film components.
+- Keep each chapter to one signature motion plus the shared camera move; the user rejected busy pages with many unrelated effects.
+- The falling cards (`home-card-flight`) run only in the `collect` chapter (second to last); the geometry can be focused only in the `opening` chapter.
+- Wheel scrolling on Home is damped by `useDampedScroll` (Home only; reduced motion, touch, keys and scrollbar stay native). Everywhere else keep native scrolling.
+- e2e: use `scrollToFilmChapter()` from `tests/e2e/home-card-helpers.ts` instead of assuming content is on the first screen.
+- On Home the hypercube holds the textbook nested-cube pose (`setCanonicalProgress`); it only turns through 4D elsewhere. The pointer "black hole" star lens and the opening's rotating sticker were removed at the user's request; don't bring them back.
 
 `/posts/:slug` route uses the `resolve-post-slug` middleware to redirect alias slugs to canonical ones.
 

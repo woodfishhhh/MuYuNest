@@ -44,7 +44,6 @@ const navItems = [
   { id: "home", label: "Home", to: getRouteLocationForSiteMode("home") },
   { id: "works", label: "Works", to: getRouteLocationForSiteMode("works") },
   { id: "blog", label: "Blog", to: getRouteLocationForSiteMode("blog") },
-  { id: "author", label: "Author", to: getRouteLocationForSiteMode("author") },
   { id: "friend", label: "Friend", to: getRouteLocationForSiteMode("friend") },
 ] as const;
 

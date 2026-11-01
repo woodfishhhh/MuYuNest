@@ -25,9 +25,10 @@ test("Blog restores scroll after searching and going back", async ({ page }) => 
   await expect.poll(() => main.evaluate((el) => el.scrollTop)).toBeCloseTo(before, -1);
 });
 
-test("a cached Author panel does not block Friend wheel scrolling", async ({ page }) => {
-  await page.goto("/author");
-  await expect(page.locator("[data-testid='author-panel-root']")).toBeVisible();
+test("leaving a scrolled Home film does not block Friend wheel scrolling", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByTestId("home-film")).toBeAttached();
+  await page.evaluate(() => window.scrollTo(0, window.innerHeight * 6));
 
   await page.getByRole("link", { name: "Friend", exact: true }).click();
   await expect(page).toHaveURL(/\/friend$/);

@@ -7,8 +7,6 @@ import type { StarMotionSettings } from "./star-motion";
 export const STAR_FIELD_BACK_Z = -40;
 export const STAR_FIELD_FRONT_Z = 8;
 const STAR_FIELD_DEPTH = STAR_FIELD_FRONT_Z - STAR_FIELD_BACK_Z;
-// Einstein radius of the pointer lens, in half-viewport-height units.
-export const STAR_LENS_RADIUS = 0.09;
 // Depth over which warped stars fade at each wrap plane.
 const STAR_WRAP_FADE_DEPTH = 6;
 // Fully fade the wrap planes from a quarter of full warp; slow drift barely wraps.
@@ -18,35 +16,16 @@ const STAR_VERTEX_PARS = /* glsl */ `
 attribute float starOpacity;
 attribute float starSize;
 varying float vStarOpacity;
-uniform vec2 uLensCenter;
-uniform float uLensStrength;
-uniform float uLensAspect;
 uniform float uWarpFade;
 `;
 
-// Runs after <project_vertex>. Everything here is per-vertex GPU work, so the
-// lens costs no CPU time regardless of the star count.
-const STAR_LENS_VERTEX = /* glsl */ `
+// Runs after <project_vertex>, as per-vertex GPU work.
+const STAR_WRAP_VERTEX = /* glsl */ `
 // Warped stars jump between the far and near wrap planes (local z). Fading
 // them near both planes keeps them from popping in front of the camera.
 float starWrapFade = smoothstep(${STAR_FIELD_BACK_Z.toFixed(1)}, ${(STAR_FIELD_BACK_Z + STAR_WRAP_FADE_DEPTH).toFixed(1)}, transformed.z)
   * (1.0 - smoothstep(${(STAR_FIELD_FRONT_Z - STAR_WRAP_FADE_DEPTH).toFixed(1)}, ${STAR_FIELD_FRONT_Z.toFixed(1)}, transformed.z));
 vStarOpacity *= mix(1.0, starWrapFade, uWarpFade);
-float starLensGain = 1.0;
-if (uLensStrength > 0.001 && gl_Position.w > 0.0) {
-  vec2 lensAxis = vec2(uLensAspect, 1.0);
-  vec2 lensOffset = (gl_Position.xy / gl_Position.w - uLensCenter) * lensAxis;
-  float lensBeta = length(lensOffset);
-  float lensEinstein = ${STAR_LENS_RADIUS.toFixed(3)} * uLensStrength;
-  // Primary image of a point-mass lens: stars part around the pointer and
-  // crowd onto an Einstein ring, leaving distant stars almost untouched.
-  float lensTheta = 0.5 * (lensBeta + sqrt(lensBeta * lensBeta + 4.0 * lensEinstein * lensEinstein));
-  vec2 lensDirection = lensBeta > 1e-5 ? lensOffset / lensBeta : vec2(0.0, 1.0);
-  gl_Position.xy = (uLensCenter + lensDirection * lensTheta / lensAxis) * gl_Position.w;
-  float lensU = lensBeta / lensEinstein;
-  float lensMagnification = (lensU * lensU + 2.0) / max(lensU * sqrt(lensU * lensU + 4.0), 1e-3);
-  starLensGain = min(sqrt(lensMagnification), 1.8);
-}
 `;
 
 function wrapStarZ(value: number) {
@@ -66,8 +45,6 @@ export interface StarField {
   setOpacity: (alpha: number) => void;
   /** Signed: positive flies toward the camera, negative backs away. */
   setWarpIntensity: (value: number) => void;
-  /** Bends stars around `center` (NDC); strength 0 disables the lens. */
-  setLens: (center: THREE.Vector2, strength: number, aspect: number) => void;
   setCollectMode: (active: boolean, reducedMotion?: boolean) => void;
   update: (delta: number, view?: StarClockView) => void;
   dispose: () => void;
@@ -112,17 +89,14 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, s
     blending: THREE.AdditiveBlending,
   });
   const starUniforms = {
-    uLensCenter: { value: new THREE.Vector2() },
-    uLensStrength: { value: 0 },
-    uLensAspect: { value: 1 },
     uWarpFade: { value: 0 },
   };
   material.onBeforeCompile = shader => {
     Object.assign(shader.uniforms, starUniforms);
     shader.vertexShader = STAR_VERTEX_PARS + shader.vertexShader;
     shader.vertexShader = shader.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvStarOpacity = starOpacity;");
-    shader.vertexShader = shader.vertexShader.replace("#include <project_vertex>", "#include <project_vertex>\n" + STAR_LENS_VERTEX);
-    shader.vertexShader = shader.vertexShader.replace("gl_PointSize = size;", "gl_PointSize = size * starSize * starLensGain;");
+    shader.vertexShader = shader.vertexShader.replace("#include <project_vertex>", "#include <project_vertex>\n" + STAR_WRAP_VERTEX);
+    shader.vertexShader = shader.vertexShader.replace("gl_PointSize = size;", "gl_PointSize = size * starSize;");
     shader.fragmentShader = "varying float vStarOpacity;\n" + shader.fragmentShader;
     shader.fragmentShader = shader.fragmentShader.replace("#include <alphatest_fragment>", "diffuseColor.a *= vStarOpacity;\n#include <alphatest_fragment>");
   };
@@ -148,12 +122,6 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, s
 
   function setWarpIntensity(value: number) {
     warpIntensity = THREE.MathUtils.clamp(value, -1, 1);
-  }
-
-  function setLens(center: THREE.Vector2, strength: number, aspect: number) {
-    starUniforms.uLensCenter.value.copy(center);
-    starUniforms.uLensStrength.value = THREE.MathUtils.clamp(strength, 0, 1);
-    starUniforms.uLensAspect.value = aspect > 0 ? aspect : 1;
   }
 
   function setCollectMode(active: boolean, reduced = false) {
@@ -191,5 +159,5 @@ export function useStarField(circleTexture: THREE.CanvasTexture, count = 5000, s
     material.dispose();
   }
 
-  return { group, setColor, setOpacity, setWarpIntensity, setLens, setCollectMode, update, dispose };
+  return { group, setColor, setOpacity, setWarpIntensity, setCollectMode, update, dispose };
 }

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import HomeView from "@/views/HomeView.vue";
 import { useSiteStore } from "@/stores/site";
-import type { PostSummary } from "@/types/content";
+import type { AuthorProfileData, PostSummary } from "@/types/content";
 
 interface MutableRef<T> {
   value: T;
@@ -20,6 +20,7 @@ const visitorMock = vi.hoisted(() => ({
 }));
 
 const homePanelsMock = vi.hoisted(() => ({
+  author: null as MutableRef<AuthorProfileData | null> | null,
   isPostsLoading: null as MutableRef<boolean> | null,
   posts: null as MutableRef<PostSummary[]> | null,
 }));
@@ -44,18 +45,32 @@ vi.mock("@/composables/useHomePanels", async () => {
   const { shallowRef } = await import("vue");
   const posts = shallowRef<PostSummary[]>([]);
   const isPostsLoading = shallowRef(false);
+  const author = shallowRef<AuthorProfileData | null>(null);
   homePanelsMock.posts = posts;
   homePanelsMock.isPostsLoading = isPostsLoading;
+  homePanelsMock.author = author;
 
   return {
     useHomePanels: () => ({
       posts,
-      author: shallowRef(null),
+      author,
       friendLinks: shallowRef([]),
       works: shallowRef([]),
       isPostsLoading,
       isAuthorLoading: shallowRef(false),
       isFriendLinksLoading: shallowRef(false),
+    }),
+  };
+});
+
+vi.mock("@/components/home/film/HomeFilm.vue", async () => {
+  const { defineComponent: define } = await import("vue");
+  return {
+    __esModule: true,
+    default: define({
+      name: "HomeFilm",
+      props: { author: Object, works: Array, visitorTotal: Number, visitorLoading: Boolean, visitorError: Boolean },
+      template: "<div data-testid='home-film-stub'>{{ visitorTotal }}</div>",
     }),
   };
 });
@@ -94,6 +109,7 @@ describe("HomeView", () => {
     visitorMock.theme.value = "night";
     homePanelsMock.posts!.value = [];
     homePanelsMock.isPostsLoading!.value = false;
+    homePanelsMock.author!.value = null;
     setActivePinia(createPinia());
   });
 
@@ -128,12 +144,13 @@ describe("HomeView", () => {
     wrapper.unmount();
   }
 
-  it("hydrates the visitor count on mount and shows the badge on home mode", async () => {
+  it("hydrates the visitor count on mount and hands it to the home film", async () => {
+    homePanelsMock.author!.value = { name: "woodfish" } as AuthorProfileData;
     const wrapper = mountHomeView();
     await flushPromises();
 
     expect(visitorMock.hydrateMock).toHaveBeenCalledTimes(1);
-    expect(wrapper.get("[data-testid='visitor-count-badge']").text()).toContain("32");
+    expect(wrapper.get("[data-testid='home-film-stub']").text()).toContain("32");
   });
 
   it("does not contain a home-backdrop element (scene is hosted in RouteTransitionShell)", () => {
@@ -143,14 +160,15 @@ describe("HomeView", () => {
     expect(wrapper.find("[data-testid='home-backdrop']").exists()).toBe(false);
   });
 
-  it("hides the visitor badge outside home mode", async () => {
+  it("unmounts the home film outside home mode", async () => {
+    homePanelsMock.author!.value = { name: "woodfish" } as AuthorProfileData;
     const siteStore = useSiteStore();
     siteStore.goBlog();
 
     const wrapper = mountHomeView();
     await flushPromises();
 
-    expect(wrapper.find("[data-testid='visitor-count-badge']").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='home-film-stub']").exists()).toBe(false);
   });
 
   it("keeps the Blog panel mounted and restores scrollTop after switching away and back", async () => {
@@ -165,7 +183,7 @@ describe("HomeView", () => {
     blogPanel.element.scrollTop = 640;
     await blogPanel.trigger("scroll");
 
-    siteStore.goAuthor();
+    siteStore.goFriend();
     await nextTick();
     expect(wrapper.find("[data-blog-scroll-container]").exists()).toBe(true);
     expect(wrapper.get<HTMLElement>("[data-blog-scroll-container]").element.style.display).not.toBe(
