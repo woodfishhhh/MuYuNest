@@ -18,7 +18,7 @@
     "isomorphic-dompurify": "^3.9.0",
     "js-yaml": "^4.1.1",
     "markdown-it": "^14.1.1",
-    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-anchor": "^10.0.0",
     "markdown-it-cjk-friendly": "^3.0.0",
     "markdown-it-mathjax3": "^4.3.2",
     "playwright": "^1.60.0",
