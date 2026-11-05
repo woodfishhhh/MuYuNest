@@ -4,10 +4,10 @@ import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
 const auditWidths = [320, 375, 768, 1024, 1280, 1440, 1920, 2560] as const;
-const auditRoutes = ["works", "home", "friend", "blog"] as const;
-const routePaths = { home: "/", works: "/works", friend: "/friend", blog: "/blog" } as const;
+const auditRoutes = ["works", "author", "friend", "blog"] as const;
 const routeReadyTestIds = {
-  home: "home-film",
+  author: "author-panel-root",
+  blog: "blog-editorial-layout",
   friend: "friend-panel-root",
   works: "works-view-case",
 } as const;
@@ -35,11 +35,9 @@ test("captures the standard responsive matrix without horizontal overflow", asyn
     for (const [index, width] of auditWidths.entries()) {
       await page.setViewportSize({ height: 900, width });
       if (index === 0) {
-        await page.goto(routePaths[route]);
+        await page.goto(`/${route}`);
         await expect(page.getByTestId("site-nav-compact")).toBeAttached();
-        await expect(
-          route === "blog" ? page.locator(".docs-index-grid") : page.getByTestId(routeReadyTestIds[route]),
-        ).toBeVisible();
+        await expect(page.getByTestId(routeReadyTestIds[route])).toBeVisible();
       }
 
       await page.waitForTimeout(180);

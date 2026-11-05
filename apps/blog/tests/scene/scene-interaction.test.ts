@@ -74,17 +74,17 @@ describe("scene interaction routing", () => {
     expect(shouldRaycastSceneGeometry("home", "orbit", false, false)).toBe(true);
   });
 
-  it.each([false, true])("only focuses the geometry where the home film allows it on mobile=%s", (isMobile) => {
-    for (const geometryFocusable of [false, true]) {
-      expect(shouldRaycastSceneGeometry("home", "orbit", false, isMobile, geometryFocusable)).toBe(geometryFocusable);
+  it.each([false, true])("disables collect geometry focus on mobile=%s while retaining roam", (isMobile) => {
+    for (const homeExperience of ["collect", "roam"] as const) {
+      expect(shouldRaycastSceneGeometry("home", "orbit", false, isMobile, homeExperience)).toBe(homeExperience === "roam");
       expect(resolveScenePointerDownAction({ mode: "home", worksViewMode: "orbit", isFocusing: false,
-        isMobile, geometryFocusable, hasWorksActionHit: false, hasWorksCardHit: false, hasGeometryHit: true,
-      })).toBe(geometryFocusable ? "focus-geometry" : "none");
+        isMobile, homeExperience, hasWorksActionHit: false, hasWorksCardHit: false, hasGeometryHit: true,
+      })).toBe(homeExperience === "collect" ? "none" : "focus-geometry");
     }
   });
 
   it("blocks geometry focus and hover raycast on every non-home panel", () => {
-    for (const mode of ["blog", "friend", "reading"] as const) {
+    for (const mode of ["blog", "author", "friend", "reading"] as const) {
       expect(
         resolveScenePointerDownAction({
           mode,

@@ -1,4 +1,4 @@
-import type { SiteMode, WorksViewMode } from "@/stores/site";
+import type { HomeExperience, SiteMode, WorksViewMode } from "@/stores/site";
 import { supportsWideLayout } from "@/utils/responsive";
 
 export const SCENE_HOVER_RAYCAST_INTERVAL = 1 / 30;
@@ -13,8 +13,7 @@ export interface ScenePointerDownActionOptions {
   hasWorksActionHit: boolean;
   hasWorksCardHit: boolean;
   hasGeometryHit: boolean;
-  /** Home only lets the geometry take focus while the film's opening is on screen. */
-  geometryFocusable?: boolean;
+  homeExperience?: HomeExperience;
 }
 
 export function isDesktopWorksOrbitMode(
@@ -34,9 +33,9 @@ export function shouldRaycastSceneGeometry(
   _worksViewMode: WorksViewMode,
   isFocusing: boolean,
   _isMobile: boolean,
-  geometryFocusable = true,
+  homeExperience: HomeExperience = "roam",
 ) {
-  return mode === "home" && !isFocusing && geometryFocusable;
+  return mode === "home" && !isFocusing && homeExperience === "roam";
 }
 
 export function shouldRunSceneHoverRaycast(elapsed: number, lastRunAt: number) {
@@ -55,7 +54,7 @@ export function resolveScenePointerDownAction({
   hasWorksActionHit,
   hasWorksCardHit,
   hasGeometryHit,
-  geometryFocusable = true,
+  homeExperience = "roam",
 }: ScenePointerDownActionOptions): ScenePointerDownAction {
   if (isFocusing) return "none";
   if (mode === "works" && !isMobile) {
@@ -64,7 +63,7 @@ export function resolveScenePointerDownAction({
     return "none";
   }
 
-  if (!shouldRaycastSceneGeometry(mode, worksViewMode, isFocusing, isMobile, geometryFocusable)) {
+  if (!shouldRaycastSceneGeometry(mode, worksViewMode, isFocusing, isMobile, homeExperience)) {
     return "none";
   }
 
