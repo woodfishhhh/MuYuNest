@@ -1,19 +1,21 @@
 import { expect, test } from "@playwright/test";
-import { hoverCard, scrollToFilmChapter } from "./home-card-helpers";
+import { hoverCard } from "./home-card-helpers";
 
-test("the wheel resizes a held card instead of scrolling the film", async ({ page }) => {
+test("Home wheel stays on the page and smoothly resizes the held card", async ({ page }) => {
   await page.setViewportSize({ width: 1651, height: 871 });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => { Math.random = () => 0.5; });
   await page.goto("/");
   const flight = page.locator("[data-home-flight]");
-  await scrollToFilmChapter(page, "collect");
   await expect(flight).toHaveAttribute("data-home-flight-ready", "true");
   await expect(page.locator("[data-magnetic-pointer-overlay]")).toHaveCount(0);
   await expect(page.getByText("抓住一张卡片，读一段时光", { exact: true })).toBeVisible();
-  await expect(page.getByText("拖拽卡片 · 滚轮调整大小", { exact: true })).toBeVisible();
+  await expect(page.getByText("鼠标滚轮调整卡片大小", { exact: true })).toBeVisible();
+  await page.mouse.move(700, 300);
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(200);
+  await expect(page).toHaveURL(/\/$/);
   await hoverCard(page); await page.mouse.down();
-  const scrollWhileHeld = await page.evaluate(() => window.scrollY);
   await page.mouse.move(1050, 550, { steps: 12 });
   await expect(flight).toHaveAttribute("data-home-card-dragging", "true");
   await page.mouse.wheel(0, -240);
@@ -26,13 +28,12 @@ test("the wheel resizes a held card instead of scrolling the film", async ({ pag
   await page.screenshot({ path: "../../experiments/selected-rays/evidence/wheel-smaller.png" });
   await expect(flight).toHaveAttribute("data-home-card-dragging", "true");
   await expect(page).toHaveURL(/\/$/);
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollWhileHeld);
   await page.mouse.up();
   const releasedScale = await flight.getAttribute("data-home-card-scale");
   await page.mouse.wheel(0, -240);
   await page.waitForTimeout(200);
   await expect(flight).toHaveAttribute("data-home-card-scale", releasedScale!);
   await expect(page).toHaveURL(/\/$/);
-  await page.locator('[data-nav-item="friend"]').first().click();
-  await expect(page).toHaveURL(/\/friend$/);
+  await page.locator('[data-nav-item="author"]').first().click();
+  await expect(page).toHaveURL(/\/author$/);
 });

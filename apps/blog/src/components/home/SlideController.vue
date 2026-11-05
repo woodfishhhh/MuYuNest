@@ -14,7 +14,7 @@ const router = useRouter();
 let touchStartY = 0;
 let isAnimating = false;
 
-function setModeWithLock(nextMode: "home") {
+function setModeWithLock(nextMode: "home" | "author") {
   if (isAnimating || siteStore.mode === nextMode) {
     return;
   }
@@ -63,6 +63,11 @@ function handleWheel(event: WheelEvent) {
       return;
     }
   }
+
+  if (siteStore.mode === "author") {
+    return;
+  }
+
 }
 
 function handleTouchStart(event: TouchEvent) {
@@ -96,6 +101,14 @@ function handleTouchMove(event: TouchEvent) {
       }
       return;
     }
+  }
+
+  if (siteStore.mode === "author") {
+    return;
+  }
+
+  if (diff > 0 && siteStore.mode === "home") {
+    setModeWithLock("author");
   }
 }
 

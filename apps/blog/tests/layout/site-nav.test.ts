@@ -63,7 +63,7 @@ describe("SiteNav", () => {
     const wrapper = mountNav();
     const desktopLinks = wrapper.findAll("[data-nav-group='desktop'] [data-nav-item]");
 
-    expect(desktopLinks.map((link) => link.text())).toEqual(["Home", "Works", "Blog", "Friend"]);
+    expect(desktopLinks.map((link) => link.text())).toEqual(["Home", "Works", "Blog", "Author", "Friend"]);
     expect(wrapper.find("[data-nav-group='desktop'] [data-nav-item='works']").attributes("aria-current")).toBe("page");
     expect(wrapper.findAll("[data-nav-group='desktop'] [data-testid='nav-active-indicator']")).toHaveLength(1);
   });

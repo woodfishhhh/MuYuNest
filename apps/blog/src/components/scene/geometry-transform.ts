@@ -7,6 +7,7 @@ export interface GeometryTransformTargetOptions {
   mode: SiteMode;
   isFocusing: boolean;
   isMobile: boolean;
+  inwardOffset: number;
 }
 
 export interface GeometryTransformTarget {
@@ -26,6 +27,7 @@ export function getGeometryTransformTarget({
   mode,
   isFocusing,
   isMobile,
+  inwardOffset,
 }: GeometryTransformTargetOptions): GeometryTransformTarget {
   const target: GeometryTransformTarget = {
     x: 0,
@@ -36,6 +38,12 @@ export function getGeometryTransformTarget({
 
   if (isFocusing) {
     target.z = 2;
+    return target;
+  }
+
+  if (mode === "author") {
+    if (isMobile) target.y = 3;
+    else target.x = -inwardOffset;
     return target;
   }
 
