@@ -1,0 +1,144 @@
+import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
+import { defineComponent, reactive } from "vue";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import RouteTransitionShell from "@/components/layout/RouteTransitionShell.vue";
+
+const navigation = vi.hoisted(() => ({
+  guard: null as null | ((to: { name: string; path: string }, from: { name: string; path: string }) => unknown),
+}));
+
+const routeState = reactive({
+  name: "post",
+  query: {},
+  hash: "",
+  params: {},
+  get path() {
+    return this.fullPath.split("?")[0];
+  },
+  fullPath: "/posts/orbiting-interfaces",
+});
+
+vi.mock("vue-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("vue-router")>()),
+  useRoute: () => routeState,
+  useRouter: () => ({
+    beforeEach: (guard: typeof navigation.guard) => {
+      navigation.guard = guard;
+      return () => {};
+    },
+    push: vi.fn(),
+  }),
+}));
+
+vi.mock("@/composables/useRouteTransitionOrchestrator", () => ({
+  playRouteTransition: vi.fn(),
+}));
+
+vi.mock("@/motion/route-transition-intent", () => ({
+  resolveTransitionIntent: () => ({ type: "none" }),
+}));
+
+vi.mock("@/components/scene/ThreeSceneCanvas.vue", () => ({
+  __esModule: true,
+  default: defineComponent({
+    name: "ThreeSceneCanvas",
+    template: '<div data-testid="three-scene-canvas-stub" />',
+  }),
+}));
+
+vi.mock("@/views/HomeView.vue", () => ({
+  __esModule: true,
+  default: defineComponent({
+    name: "HomeView",
+    template: '<div data-testid="home-view-stub" />',
+  }),
+}));
+
+const PageStub = defineComponent({
+  name: "PageStub",
+  template: '<div data-testid="page-stub" />',
+});
+
+const RouterViewStub = defineComponent({
+  name: "RouterView",
+  components: { PageStub },
+  setup() {
+    return { PageStub, routeState };
+  },
+  template: '<div data-testid="router-view-stub"><slot :Component="PageStub" :route="routeState" /></div>',
+});
+
+describe("RouteTransitionShell", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routeState.name = "post";
+    routeState.fullPath = "/posts/orbiting-interfaces";
+    setActivePinia(createPinia());
+  });
+
+  it("does not delay Blog navigation for the scene animation", async () => {
+    routeState.name = "home";
+    routeState.fullPath = "/";
+    const wrapper = mount(RouteTransitionShell, { global: { stubs: { RouterView: RouterViewStub } } });
+    await flushPromises();
+    expect(navigation.guard!({ name: "blog", path: "/blog" }, { name: "home", path: "/" })).toBeUndefined();
+    routeState.name = "blog";
+    routeState.fullPath = "/blog";
+    await flushPromises();
+    expect(wrapper.find(".docs-app").exists()).toBe(true);
+    expect(wrapper.find("[data-scene-layer]").exists()).toBe(true);
+    wrapper.unmount();
+  });
+
+  it("keeps the Three.js scene mounted behind article routes", async () => {
+    const wrapper = mount(RouteTransitionShell, {
+      global: {
+        stubs: {
+          RouterView: RouterViewStub,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(wrapper.get("[data-scene-layer]")).toBeTruthy();
+    expect(wrapper.get("[data-testid='three-scene-canvas-stub']")).toBeTruthy();
+    expect(wrapper.get("[data-testid='page-stub']")).toBeTruthy();
+  });
+
+  it("keeps one HomeView instance mounted across home-family routes", async () => {
+    routeState.name = "works";
+    routeState.fullPath = "/works";
+    const wrapper = mount(RouteTransitionShell, {
+      global: {
+        stubs: {
+          RouterView: RouterViewStub,
+        },
+      },
+    });
+
+    await flushPromises();
+    const homeView = wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element;
+    homeView.dataset.instanceMarker = "preserved";
+    expect(wrapper.find("[data-testid='page-stub']").exists()).toBe(false);
+
+    routeState.name = "friend";
+    routeState.fullPath = "/friend";
+    await flushPromises();
+
+    expect(wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element).toBe(homeView);
+    expect(wrapper.get<HTMLElement>("[data-testid='home-view-stub']").element.dataset.instanceMarker).toBe("preserved");
+  });
+  it("renders Blog as an independent documentation page", async () => {
+    routeState.name = "blog";
+    routeState.fullPath = "/blog";
+    const wrapper = mount(RouteTransitionShell, { global: { stubs: { RouterView: RouterViewStub } } });
+    await flushPromises();
+    expect(wrapper.find("[data-testid='home-view-stub']").exists()).toBe(false);
+    expect(wrapper.find("[data-testid='page-stub']").exists()).toBe(true);
+    expect(wrapper.find("[data-scene-layer]").exists()).toBe(true);
+    wrapper.unmount();
+  });
+});

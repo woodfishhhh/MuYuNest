@@ -1,0 +1,153 @@
+/* Shared language of the home film. Every motion below reads --t, the local
+   scroll progress of its chapter (0 → 1), so scrolling back reverses it. */
+
+@font-face {
+  font-family: "Anton";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/anton-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+2000-206F, U+2190-2193;
+}
+
+.home-film {
+  --film-display: "Anton", Impact, "Arial Narrow", sans-serif;
+  --film-heading-cn: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  --film-gutter: clamp(1.25rem, 6vw, 6.5rem);
+  --film-warm: #ffd36a;
+  position: relative;
+  pointer-events: none;
+}
+
+:root[data-theme="day"] .home-film {
+  --film-warm: #9b6518;
+}
+
+.film-chapter {
+  --t: 0;
+  --fade: 1;
+  position: relative;
+  height: calc(var(--len) * 100vh);
+}
+
+.film-stage {
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+  height: 100vh;
+  height: 100lvh;
+  opacity: var(--fade);
+}
+
+.film-display {
+  font-family: var(--film-display);
+  font-weight: 400;
+  line-height: 0.86;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+
+/* Stroke takes the element's color, so components tint outlines with `color`. */
+.film-outline {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px currentColor;
+}
+
+.film-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--stage-hint);
+}
+
+.film-kicker b {
+  font-weight: 400;
+  color: var(--accent);
+}
+
+/* Rises in as the chapter's playhead passes --at. */
+.film-cue {
+  --k: clamp(0, (var(--t) - var(--at, 0)) / var(--span, 0.12), 1);
+  opacity: var(--k);
+  transform: translate3d(0, calc((1 - var(--k)) * 2.6rem), 0);
+}
+
+/* Pops out past full size and settles, like a sticker slapped on. */
+.film-pop {
+  --k: clamp(0, (var(--t) - var(--at, 0)) / var(--span, 0.1), 1);
+  opacity: var(--k);
+  scale: calc(var(--k) + sin(calc(var(--k) * 3.14159rad)) * 0.32);
+}
+
+/* Partial glitch: a short burst when its chapter comes on screen, and on hover. */
+.film-glitch {
+  position: relative;
+  display: inline-block;
+}
+
+.film-glitch::before,
+.film-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.film-glitch::before {
+  color: var(--accent);
+}
+
+.film-glitch::after {
+  color: #ff4d7d;
+}
+
+.film-glitch.is-glitching::before,
+.film-glitch:hover::before {
+  animation: film-glitch-a 620ms steps(1) both;
+}
+
+.film-glitch.is-glitching::after,
+.film-glitch:hover::after {
+  animation: film-glitch-b 620ms steps(1) both;
+}
+
+.film-glitch.is-glitching {
+  animation: film-glitch-jitter 620ms steps(1) both;
+}
+
+@keyframes film-glitch-a {
+  0% { opacity: 1; clip-path: inset(10% 0 72% 0); transform: translate(-0.04em, 0); }
+  20% { clip-path: inset(58% 0 12% 0); transform: translate(0.05em, 0); }
+  40% { clip-path: inset(30% 0 46% 0); transform: translate(-0.03em, 0); }
+  60% { clip-path: inset(82% 0 4% 0); transform: translate(0.02em, 0); }
+  80% { clip-path: inset(4% 0 86% 0); transform: translate(-0.02em, 0); }
+  100% { opacity: 0; }
+}
+
+@keyframes film-glitch-b {
+  0% { opacity: 1; clip-path: inset(64% 0 18% 0); transform: translate(0.04em, 0); }
+  20% { clip-path: inset(12% 0 70% 0); transform: translate(-0.05em, 0); }
+  40% { clip-path: inset(44% 0 34% 0); transform: translate(0.03em, 0); }
+  60% { clip-path: inset(2% 0 90% 0); transform: translate(-0.02em, 0); }
+  80% { clip-path: inset(76% 0 8% 0); transform: translate(0.02em, 0); }
+  100% { opacity: 0; }
+}
+
+@keyframes film-glitch-jitter {
+  0%, 100% { transform: none; }
+  20% { transform: translate(0.01em, -0.01em) skewX(-4deg); }
+  40% { transform: translate(-0.01em, 0.01em); }
+  60% { transform: skewX(3deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-glitch.is-glitching,
+  .film-glitch.is-glitching::before,
+  .film-glitch.is-glitching::after,
+  .film-glitch:hover::before,
+  .film-glitch:hover::after {
+    animation: none;
+  }
+}

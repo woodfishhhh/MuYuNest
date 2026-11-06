@@ -1,0 +1,323 @@
+<script setup lang="ts">
+import {
+  computed,
+  defineAsyncComponent,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  useTemplateRef,
+  watch,
+} from "vue";
+
+import ReadingOverlay from "@/components/home/ReadingOverlay.vue";
+import SlideController from "@/components/home/SlideController.vue";
+import { hasSplashPlayed, markSplashPlayed, setFilmIntroHold } from "@/components/scene/home-film-signal";
+import { useHomePanels } from "@/composables/useHomePanels";
+import { useTheme } from "@/composables/useTheme";
+import { useVisitorCount } from "@/composables/useVisitorCount";
+import { useSiteStore, type SiteMode } from "@/stores/site";
+
+const HomeFilm = defineAsyncComponent(() => import("@/components/home/film/HomeFilm.vue"));
+const FriendPanel = defineAsyncComponent(() => import("@/components/home/FriendPanel.vue"));
+const PostPanel = defineAsyncComponent(() => import("@/components/home/PostPanel.vue"));
+const WorksPanel = defineAsyncComponent(() => import("@/components/home/WorksPanel.vue"));
+
+const siteStore = useSiteStore();
+// The film's splash only opens a visit that starts on Home. Hold the camera's
+// fly-in now: the scene can mount before the film's data has loaded.
+if (siteStore.mode !== "home") markSplashPlayed();
+else if (!hasSplashPlayed() && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) setFilmIntroHold(true);
+const { theme } = useTheme();
+const currentMode = computed(() => siteStore.mode);
+type CachedPanelMode = Exclude<SiteMode, "home" | "reading">;
+const cachedPanelModes = reactive(new Set<CachedPanelMode>());
+const blogScrollContainerRef = useTemplateRef<HTMLElement>("blogScrollContainer");
+const { posts, author, friendLinks, works, isPostsLoading, postsLoadFailed, retryPosts, isFriendLinksLoading } =
+  useHomePanels(currentMode);
+
+const focusHint = computed(() => siteStore.isFocusing);
+const focusHintTarget = computed(() => (theme.value === "day" ? "莫比乌斯带" : "超立方体"));
+const {
+  total: visitorCountTotal,
+  isLoading: visitorCountLoading,
+  hasError: visitorCountError,
+  hydrate: hydrateVisitorCount,
+} = useVisitorCount();
+const MAX_BLOG_SCROLL_RESTORE_FRAMES = 120;
+let pendingBlogScrollTop: number | null = null;
+let blogScrollRestoreFrame: number | null = null;
+let blogScrollRestoreFrameCount = 0;
+
+function cachePanelMode(mode: SiteMode) {
+  if (mode !== "home" && mode !== "reading") {
+    cachedPanelModes.add(mode);
+  }
+}
+
+function isPanelCached(mode: CachedPanelMode) {
+  return cachedPanelModes.has(mode);
+}
+
+function clearPendingBlogScrollRestore() {
+  if (blogScrollRestoreFrame !== null) {
+    cancelAnimationFrame(blogScrollRestoreFrame);
+  }
+
+  blogScrollRestoreFrame = null;
+  blogScrollRestoreFrameCount = 0;
+  pendingBlogScrollTop = null;
+}
+
+function finishBlogScrollRestore(container: HTMLElement, target: number) {
+  const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  if (target > maxScrollTop + 1) {
+    return false;
+  }
+
+  const expectedScrollTop = Math.min(target, maxScrollTop);
+  if (Math.abs(container.scrollTop - expectedScrollTop) > 1) {
+    return false;
+  }
+
+  clearPendingBlogScrollRestore();
+  siteStore.setBlogScrollTop(container.scrollTop);
+  return true;
+}
+
+function scheduleBlogScrollRestore(target: number) {
+  if (blogScrollRestoreFrame !== null || blogScrollRestoreFrameCount >= MAX_BLOG_SCROLL_RESTORE_FRAMES) {
+    return;
+  }
+
+  blogScrollRestoreFrame = requestAnimationFrame(() => {
+    blogScrollRestoreFrame = null;
+    blogScrollRestoreFrameCount += 1;
+    attemptBlogScrollRestore(target);
+  });
+}
+
+function attemptBlogScrollRestore(target: number) {
+  if (pendingBlogScrollTop !== target || currentMode.value !== "blog") {
+    return;
+  }
+
+  const container = blogScrollContainerRef.value;
+  if (!container) {
+    scheduleBlogScrollRestore(target);
+    return;
+  }
+
+  container.scrollTo({ top: target, behavior: "auto" });
+  if (!finishBlogScrollRestore(container, target)) {
+    scheduleBlogScrollRestore(target);
+  }
+}
+
+async function replayPendingBlogScrollPosition() {
+  const target = pendingBlogScrollTop;
+  if (target === null || currentMode.value !== "blog") {
+    return;
+  }
+
+  await nextTick();
+
+  attemptBlogScrollRestore(target);
+}
+
+function saveBlogScrollPosition() {
+  const container = blogScrollContainerRef.value;
+  if (container && pendingBlogScrollTop === null) {
+    siteStore.setBlogScrollTop(container.scrollTop);
+  }
+}
+
+function cancelPendingBlogScrollRestore() {
+  clearPendingBlogScrollRestore();
+  saveBlogScrollPosition();
+}
+
+function handleBlogScroll(event: Event) {
+  const container = event.currentTarget as HTMLElement;
+  if (pendingBlogScrollTop !== null) {
+    finishBlogScrollRestore(container, pendingBlogScrollTop);
+    return;
+  }
+
+  siteStore.setBlogScrollTop(container.scrollTop);
+}
+
+watch(
+  currentMode,
+  (mode) => {
+    cachePanelMode(mode);
+  },
+  { immediate: true },
+);
+
+watch(
+  currentMode,
+  async (nextMode, previousMode) => {
+    if (previousMode === "blog") {
+      saveBlogScrollPosition();
+    }
+
+    if (nextMode === "blog") {
+      clearPendingBlogScrollRestore();
+      pendingBlogScrollTop = siteStore.blogScrollTop > 0 ? siteStore.blogScrollTop : null;
+      await replayPendingBlogScrollPosition();
+    } else {
+      clearPendingBlogScrollRestore();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  [() => posts.value.length, () => isPostsLoading.value],
+  () => {
+    if (currentMode.value === "blog" && pendingBlogScrollTop !== null) {
+      void replayPendingBlogScrollPosition();
+    }
+  },
+  { flush: "post" },
+);
+
+onMounted(() => {
+  void hydrateVisitorCount();
+});
+
+onBeforeUnmount(() => {
+  saveBlogScrollPosition();
+  clearPendingBlogScrollRestore();
+});
+</script>
+
+<template>
+  <!-- Home scrolls the document over the fixed scene; every other panel is a fixed overlay. -->
+  <main
+    data-home-stage
+    class="relative text-[var(--stage-fg)]"
+    :class="siteStore.mode === 'home' ? 'min-h-dvh' : 'h-dvh overflow-hidden'"
+  >
+    <HomeFilm
+      v-if="siteStore.mode === 'home' && author"
+      data-panel-layer="home"
+      data-panel-active="true"
+      :author="author"
+      :works="works"
+      :visitor-total="visitorCountTotal"
+      :visitor-loading="visitorCountLoading"
+      :visitor-error="visitorCountError"
+    />
+
+    <SlideController :blog-scroll-container="blogScrollContainerRef">
+      <div class="pointer-events-none fixed inset-0 z-10 flex h-full w-full">
+        <Transition name="focus-hint" mode="out-in">
+          <div v-if="focusHint" class="pointer-events-auto absolute bottom-8 flex w-full justify-center">
+            <button
+              class="motion-safe:animate-bounce cursor-pointer text-sm tracking-widest text-[var(--stage-hint)] transition-colors hover:text-[var(--stage-fg)]"
+              type="button"
+              @click="siteStore.exitFocus()"
+            >
+              沉浸模式（{{ focusHintTarget }}），点此返回
+            </button>
+          </div>
+        </Transition>
+
+
+        <div
+          v-if="isPanelCached('blog')"
+          ref="blogScrollContainer"
+          data-blog-scroll-container
+          data-panel-layer="blog"
+          :data-panel-active="siteStore.mode === 'blog' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'blog' ? undefined : 'true'"
+          data-testid="blog-panel-overlay"
+          class="home-panel-cache stage-panel-gradient stage-panel-gradient--blog pointer-events-auto absolute inset-0 h-full w-full overflow-y-auto overscroll-contain p-4 pt-20 sm:p-6 sm:pt-24 md:p-8 md:pt-24 md:pl-16 lg:p-10 lg:pt-24 lg:pl-20"
+          @pointerdown.capture="cancelPendingBlogScrollRestore"
+          @scroll.passive="handleBlogScroll"
+          @touchstart.capture.passive="cancelPendingBlogScrollRestore"
+          @wheel.capture.passive="cancelPendingBlogScrollRestore"
+        >
+          <div class="flex min-h-full w-full flex-col justify-start">
+            <PostPanel v-if="posts.length > 0" :posts="posts" />
+            <div
+              v-else
+              class="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-6 py-7 text-[var(--stage-hint)]"
+            >
+              <div class="text-[11px] uppercase tracking-[0.36em] text-[var(--stage-hint)]">
+                {{ postsLoadFailed ? "Archive unavailable" : "Loading archive" }}
+              </div>
+              <p class="mt-4 w-full text-xs sm:text-sm max-w-md leading-7 text-[var(--stage-hint)]">
+                {{
+                  postsLoadFailed
+                    ? "文章目录加载失败，请重试。"
+                    : "正在装载文章目录，马上就能进入阅读。"
+                }}
+              </p>
+              <button v-if="postsLoadFailed" type="button" class="mt-4 text-[var(--accent)]" @click="retryPosts">
+                重新加载
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="isPanelCached('friend')"
+          data-panel-layer="friend"
+          :data-panel-active="siteStore.mode === 'friend' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'friend' ? undefined : 'true'"
+          class="home-panel-cache stage-panel-gradient stage-panel-gradient--friend pointer-events-auto absolute inset-0 overflow-hidden"
+        >
+          <FriendPanel v-if="friendLinks.length > 0" :links="friendLinks" />
+          <div
+            v-else
+            class="rounded-[28px] border border-[var(--border-subtle)] bg-[var(--surface-soft)] px-6 py-7 text-[var(--stage-hint)]"
+          >
+            <div class="text-[11px] uppercase tracking-[0.36em] text-[var(--stage-hint)]">
+              {{ isFriendLinksLoading ? "Loading network" : "Network standby" }}
+            </div>
+            <p class="mt-4 max-w-md text-sm leading-7 text-[var(--stage-hint)]">
+              {{
+                isFriendLinksLoading
+                  ? "友情链接正在按需接入，稍后会完整出现。"
+                  : "友情链接会在你进入 Friend 面板时即时载入。"
+              }}
+            </p>
+          </div>
+        </div>
+
+        <div
+          v-if="isPanelCached('works')"
+          data-panel-layer="works"
+          :data-panel-active="siteStore.mode === 'works' ? 'true' : 'false'"
+          :aria-hidden="siteStore.mode === 'works' ? undefined : 'true'"
+          class="home-panel-cache stage-panel-gradient--works pointer-events-none absolute inset-0"
+        >
+          <WorksPanel :works="works" />
+        </div>
+      </div>
+
+      <ReadingOverlay />
+    </SlideController>
+  </main>
+</template>
+
+<style scoped>
+/* Keep the scene's navigation-sized geometry above the archive background. */
+.stage-panel-gradient--blog {
+  mask-image: linear-gradient(to bottom, transparent 3.75rem, #000 5rem);
+}
+
+.home-panel-cache[data-panel-active="false"] {
+  content-visibility: hidden;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* liquid-gl draws in a body-level canvas, so panel visibility alone cannot suspend its lenses. */
+.home-panel-cache[data-panel-active="false"] :deep([data-liquid-gl-target]) {
+  display: none;
+}
+</style>
