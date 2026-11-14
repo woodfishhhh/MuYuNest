@@ -22,10 +22,9 @@ GitHub Actions CI/CD workflow definitions for automated testing, building, and d
 - Fails fast on test or typecheck errors
 
 ### Deploy Workflow
-- Triggers: push to `main` (after CI passes)
-- Steps: checkout → setup Node.js → `npm ci` → `npm run build:with-content` → deploy artifacts to VPS
-- Uses SSH key for VPS authentication
-- Copies `dist/` directory to VPS web root
-- Optionally restarts nginx (see `deploy/nginx.conf`)
+- Job `deploy` in `ci.yml`; runs on push to `main` after `verify-and-build`
+- Uses secret `BLOG_DEPLOY_SSH_KEY` for the restricted host user `blog-deploy` (rrsync into `/opt/blog-stack/deploy-incoming/blog` only)
+- Rsyncs `apps/blog/dist/` to `release/`, writes the commit SHA to `READY`; the host's `blog-activate.path` validates and swaps it into `/opt/blog-stack/sites/newBlog`
+- Does not push nginx config (managed on the host; `deploy-image-bed.yml` still pushes `deploy/nginx.conf` as root)
 
 <!-- MANUAL: -->

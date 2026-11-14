@@ -156,19 +156,27 @@ pnpm -F @woodfish-nest/content-tools test
 
 ### GitHub Actions Deploy
 
-Main workflow: `.github/workflows/deploy-vps.yml`.
+Main workflow: `.github/workflows/ci.yml`, job `deploy`.
 
 Important behavior:
 
-- `push` to `main` triggers blog deploy.
-- Build order is install, generate content, typecheck, build deploy artifact,
-  package archive, upload chunks, verify remote archive, upload nginx config,
-  activate release, smoke test live site.
-- Site archive upload is chunked into 1 MB parts and recombined remotely. This
-  replaced a previous raw SSH pipe upload that repeatedly timed out and produced
-  truncated archives.
-- Do not replace chunked upload with `cat archive | ssh "cat > file"` unless
-  there is new evidence that the network issue is gone.
+- `push` to `main` triggers blog deploy after `verify-and-build` passes.
+- The deploy job uses secret `BLOG_DEPLOY_SSH_KEY`, which belongs to the
+  restricted host user `blog-deploy` (since 2026-11-15). That user can only
+  rsync into `/opt/blog-stack/deploy-incoming/blog` (rrsync); it has no shell,
+  no docker and no access to `sites/` or nginx config.
+- The job rsyncs `apps/blog/dist/` to `release/`, then writes the commit SHA to
+  `READY`. The host's root-owned `blog-activate.path` copies the upload as
+  `root:root`, rejects symlinks, re-checks `REVISION` and
+  `release.manifest.sha256`, and swaps it into `/opt/blog-stack/sites/newBlog`
+  (previous release kept at `newBlog.prev`). The smoke test waits until the
+  live `REVISION` equals the commit.
+- This workflow no longer pushes `deploy/nginx.conf`. Host nginx config is
+  managed on the host (`deploy-image-bed.yml` and the manual scripts still
+  push it as root); keep `deploy/nginx.conf` identical to the host's
+  `conf.d/default.conf`. It relies on `log_format vhost` from the host's
+  `conf.d/00-woodfish-http.conf`.
+- If activation fails, read `journalctl -u blog-activate` on the host.
 - After pushing, check Actions at roughly one-minute intervals when actively
   debugging. Do not wait 45 minutes before checking failure state.
 
