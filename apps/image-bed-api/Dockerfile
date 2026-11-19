@@ -11,7 +11,8 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 WORKDIR /app
-COPY . .
+COPY apps/image-bed-api/ apps/image-bed-api/
+COPY packages/shared/ packages/shared/
 RUN pnpm shared:build
 RUN pnpm image-bed:api:build
 
