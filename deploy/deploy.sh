@@ -77,7 +77,7 @@ rollback() {
 
 rm -rf "$release_dir"
 mkdir -p "$release_dir"
-tar -xzf "$REMOTE_ARCHIVE" -C "$release_dir"
+tar --no-same-owner -xzf "$REMOTE_ARCHIVE" -C "$release_dir"
 
 test -f "$release_dir/index.html"
 test -f "$release_dir/sw.js"

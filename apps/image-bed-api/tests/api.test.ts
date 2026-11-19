@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import sharp from "sharp";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { createApp } from "../src/app";
 import { hashToken } from "../src/auth";
@@ -153,6 +153,7 @@ describe("image-bed-api", () => {
   const cleanups: Array<() => Promise<void>> = [];
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     const cleanup = cleanups.pop();
     if (cleanup) {
       await cleanup();
@@ -160,14 +161,14 @@ describe("image-bed-api", () => {
   });
 
   it("health route succeeds", async () => {
+    const revision = "a".repeat(40);
+    vi.stubEnv("MUYU_RELEASE_SHA", revision);
     const fixture = await createFixture();
     cleanups.push(fixture.cleanup);
 
     const response = await fixture.request("http://local/api/health");
     expect(response.status).toBe(200);
-    const body = (await response.json()) as { service: string; db: string };
-    expect(body.service).toBe("ok");
-    expect(body.db).toBe("ok");
+    expect(await response.json()).toMatchObject({ service: "ok", db: "ok", revision });
   });
 
   it("upload requires a valid token and rejects revoked tokens", async () => {

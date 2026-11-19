@@ -126,6 +126,7 @@ export async function renderArticleMarkdown(
     await languageLoads.get(language);
   }
   const diagnostics: RenderDiagnostic[] = [];
+  const mathSources: { tex: string; block: boolean }[] = [];
   const fragments = new Map<string, string>();
   const prefix = `render-${randomUUID()}-`;
   function protect(html: string, block = false) {
@@ -137,7 +138,7 @@ export async function renderArticleMarkdown(
   function finish(html: string) {
     let sanitized = sanitizeArticleHtml(html);
     for (const [marker, fragment] of fragments)
-      sanitized = sanitized.replaceAll(marker, fragment);
+      sanitized = sanitized.replaceAll(marker, () => fragment);
     return sanitized;
   }
   const md = new MarkdownIt(options);
@@ -181,6 +182,7 @@ export async function renderArticleMarkdown(
       const token = tokens[index];
       if (token.meta?.renderedMarker) return token.meta.renderedMarker;
       const block = type === "math_block";
+      mathSources.push({ tex: token.content, block });
       let html: string;
       try {
         const output = render(tokens, index, renderOptions, env, renderer);
@@ -267,5 +269,5 @@ export async function renderArticleMarkdown(
       ),
     ).replace(/<\/?a\b[^>]*>/gi, "");
   }
-  return { html: finish(rawHtml), toc, diagnostics };
+  return { html: finish(rawHtml), toc, diagnostics, mathSources };
 }

@@ -53,12 +53,21 @@ and installed PWAs can retain the old URLs.
 The blog's public base and storage mount are deliberately independent:
 
 - `VITE_BASE_PATH=/` controls generated browser URLs.
-- `DEPLOY_DIR=/opt/blog-stack/sites/newBlog` controls the host release directory.
-- `DEPLOY_MOUNT_PATH=/newBlog/` controls the container-side validation path.
+- The host release directory is fixed at `/opt/blog-stack/sites/newBlog`; CI
+  uploads to `/opt/blog-stack/deploy-incoming/blog` as the restricted user
+  `blog-deploy`, and the host's `blog-activate` swaps the release in.
 
 Never derive the storage directory from the public URL base. A release must pass
-dist verification, `nginx -t`, container-side file verification, and an HTTPS
-smoke test before the previous release is removed.
+dist verification, host-side checks (`REVISION`, `release.manifest.sha256`, no
+symlinks), container-side `REVISION` verification, and an HTTPS smoke test. The
+previous release is kept at `newBlog.prev`.
+
+The image-bed workflow uploads admin files and `READY` to
+`/opt/blog-stack/deploy-incoming/image-bed` as `imgbed-deploy`. The host
+activates admin files at `/opt/blog-stack/sites/admin` and the API from the
+commit-tagged GHCR image; CI checks `/admin/`, `/admin/REVISION`, and the
+revision in `/api/health`. nginx remains host-managed. `/o/` serves the existing
+image directory directly and does not depend on the API container.
 
 ## Acceptance Checks
 

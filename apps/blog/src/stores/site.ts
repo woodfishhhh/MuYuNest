@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
+import { supportsContentLayout } from "@/utils/responsive";
 
-import type { FilmChapterId } from "@/components/home/film/film-script";
-
-export type SiteMode = "home" | "blog" | "friend" | "works" | "reading";
+export type SiteMode = "home" | "blog" | "author" | "friend" | "works" | "reading";
 export type SitePanelMode = Exclude<SiteMode, "reading">;
 export type WorksViewMode = "orbit" | "case";
+export type HomeExperience = "collect" | "roam";
 
 interface SiteState {
   mode: SiteMode;
@@ -13,8 +13,8 @@ interface SiteState {
   blogScrollTop: number;
   cubeStep: number;
   worksViewMode: WorksViewMode;
-  /** The home film chapter on screen; it decides when cards fall and the geometry can be focused. */
-  homeFilmChapter: FilmChapterId;
+  homeExperience: HomeExperience;
+  hasHomeExperienceChoice: boolean;
 }
 
 export const useSiteStore = defineStore("site", {
@@ -25,9 +25,19 @@ export const useSiteStore = defineStore("site", {
     blogScrollTop: 0,
     cubeStep: 0,
     worksViewMode: "orbit",
-    homeFilmChapter: "opening",
+    homeExperience: "roam",
+    hasHomeExperienceChoice: false,
   }),
   actions: {
+    syncHomeExperience(width: number) {
+      if (!this.hasHomeExperienceChoice) {
+        this.homeExperience = supportsContentLayout(width) ? "collect" : "roam";
+      }
+    },
+    setHomeExperience(experience: HomeExperience) {
+      this.homeExperience = experience;
+      this.hasHomeExperienceChoice = true;
+    },
     setPanelMode(mode: SitePanelMode) {
       this.mode = mode;
       this.isFocusing = false;
@@ -48,11 +58,11 @@ export const useSiteStore = defineStore("site", {
     goBlog() {
       this.setPanelMode("blog");
     },
-    setHomeFilmChapter(chapter: FilmChapterId) {
-      this.homeFilmChapter = chapter;
-    },
     setBlogScrollTop(scrollTop: number) {
       this.blogScrollTop = Number.isFinite(scrollTop) ? Math.max(0, scrollTop) : 0;
+    },
+    goAuthor() {
+      this.setPanelMode("author");
     },
     goFriend() {
       this.setPanelMode("friend");

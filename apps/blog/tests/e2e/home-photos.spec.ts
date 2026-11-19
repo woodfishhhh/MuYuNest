@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-import { scrollToFilmChapter } from "./home-card-helpers";
-
 const evidence = "../../experiments/wodniack-cards/evidence/photo-cards";
 
 test("photo descriptions, WebP assets and the alternating gallery render correctly", async ({ page }) => {
@@ -39,7 +37,6 @@ test("Home decodes only its first photo and periodically drops a solid star", as
   });
   await page.goto("/");
   const flight = page.locator("[data-home-flight]");
-  await scrollToFilmChapter(page, "collect");
   await expect(flight).toHaveAttribute("data-home-flight-ready", "true");
   await expect.poll(() => photos.size).toBe(1);
   await page.waitForTimeout(300);
@@ -50,7 +47,7 @@ test("Home decodes only its first photo and periodically drops a solid star", as
   await page.screenshot({ path: `${evidence}/falling-star.png` });
   await page.waitForTimeout(700);
   await page.screenshot({ path: `${evidence}/falling-star-near.png` });
-  await scrollToFilmChapter(page, "poem");
+  await page.getByRole("switch", { name: "拾光模式" }).click();
   await expect(flight).toHaveAttribute("data-home-flight", "inactive");
   await expect(flight).toHaveAttribute("data-home-falling-star", "false");
 });

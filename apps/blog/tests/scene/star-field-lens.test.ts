@@ -121,3 +121,41 @@ describe("star field navigation warp", () => {
     }
   });
 });
+
+describe("star field pointer lens", () => {
+  it("injects the lens after projection and scales point size by its gain", () => {
+    const { dispose, material } = createField();
+    try {
+      const shader = compile(material);
+      const projectIndex = shader.vertexShader.indexOf("#include <project_vertex>");
+      const lensIndex = shader.vertexShader.indexOf("float starLensGain");
+
+      expect(projectIndex).toBeGreaterThan(-1);
+      expect(lensIndex).toBeGreaterThan(projectIndex);
+      expect(shader.vertexShader).toContain("gl_PointSize = size * starSize * starLensGain;");
+      expect(shader.fragmentShader).toContain("diffuseColor.a *= vStarOpacity;");
+    } finally {
+      dispose();
+    }
+  });
+
+  it("drives the compiled shader uniforms without recompiling", () => {
+    const { dispose, field, material } = createField();
+    try {
+      const shader = compile(material);
+      const version = material.version;
+      field.setLens(new THREE.Vector2(0.25, -0.5), 2, 16 / 9);
+
+      expect(shader.uniforms.uLensCenter.value.toArray()).toEqual([0.25, -0.5]);
+      expect(shader.uniforms.uLensStrength.value).toBe(1);
+      expect(shader.uniforms.uLensAspect.value).toBeCloseTo(16 / 9);
+      expect(material.version).toBe(version);
+
+      field.setLens(new THREE.Vector2(), -1, 0);
+      expect(shader.uniforms.uLensStrength.value).toBe(0);
+      expect(shader.uniforms.uLensAspect.value).toBe(1);
+    } finally {
+      dispose();
+    }
+  });
+});

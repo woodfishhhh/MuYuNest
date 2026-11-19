@@ -20,7 +20,7 @@ describe("scene warp pulse", () => {
   it("follows the navigation order between panels", () => {
     expect(resolveSceneWarpPulse("home", "blog")?.direction).toBe(1);
     expect(resolveSceneWarpPulse("friend", "works")?.direction).toBe(-1);
-    expect(resolveSceneWarpPulse("works", "friend")?.direction).toBe(1);
+    expect(resolveSceneWarpPulse("works", "author-page")?.direction).toBe(1);
   });
 
   it("travels farther for distant panels without exceeding an article jump", () => {
@@ -35,6 +35,8 @@ describe("scene warp pulse", () => {
   it("stays still for moves within a place or outside the scene", () => {
     expect(resolveSceneWarpPulse("blog", "blog")).toBeNull();
     expect(resolveSceneWarpPulse("post", "post")).toBeNull();
+    expect(resolveSceneWarpPulse("author", "author-page")).toBeNull();
+    expect(resolveSceneWarpPulse("author-page-root", "author")).toBeNull();
     expect(resolveSceneWarpPulse(null, "home")).toBeNull();
     expect(resolveSceneWarpPulse("home", "star-clusters-playground")).toBeNull();
   });

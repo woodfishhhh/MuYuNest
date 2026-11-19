@@ -1,11 +1,9 @@
 <script setup lang="ts">
-// Author lives on the home page now; keep old links working.
-definePageMeta({
-  name: "author",
-  redirect: { path: "/", hash: "#about" },
-});
+import HomeView from "~/views/HomeView.vue";
+
+definePageMeta({ name: "author" });
 </script>
 
 <template>
-  <div />
+  <HomeView />
 </template>

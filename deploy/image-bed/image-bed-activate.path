@@ -1,0 +1,8 @@
+[Unit]
+Description=Watch for image-bed releases from imgbed-deploy
+
+[Path]
+PathExists=/opt/blog-stack/deploy-incoming/image-bed/READY
+
+[Install]
+WantedBy=paths.target

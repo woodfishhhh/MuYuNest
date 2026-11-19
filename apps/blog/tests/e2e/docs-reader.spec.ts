@@ -104,11 +104,12 @@ test("empty search and unknown article remain navigable", async ({ page }) => {
   await expect(page.locator(".docs-topic-card")).toHaveCount(8);
 });
 
-test("site navigation still reaches home, works and friends", async ({ page }) => {
+test("site navigation still reaches home, works, author and friends", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   for (const [name, path] of [
     ["Home", "/"],
     ["Works", "/works"],
+    ["Author", "/author"],
     ["Friend", "/friend"],
   ]) {
     await page.goto("/blog");
