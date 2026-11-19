@@ -32,6 +32,8 @@ COPY --from=build /app/apps/image-bed-api/package.json ./apps/image-bed-api/pack
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
 WORKDIR /app/apps/image-bed-api
+ARG RELEASE_SHA
+ENV MUYU_RELEASE_SHA=$RELEASE_SHA
 EXPOSE 3000
 USER node
 CMD ["node", "dist/server.js"]

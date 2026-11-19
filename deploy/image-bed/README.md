@@ -1,5 +1,63 @@
 # Muyu Image Bed VPS Deploy
 
+## Automated deploy host setup
+
+Actions uploads only to `/opt/blog-stack/deploy-incoming/image-bed` over SSH
+as `imgbed-deploy`. No CI credential can run a shell or Docker on the host.
+The existing production Compose file, environment, data, and nginx routes stay
+host-managed. The GHCR package must allow anonymous pulls.
+
+Before enabling the units, keep a root-only copy of the nginx configuration,
+production Compose file, and `/opt/blog-stack/sites/admin`. Record and tag
+the running API's image ID, and take a SQLite online backup (`sqlite3 .backup`)
+before deploying any change that includes migrations.
+
+As root on the host (from this directory; account creation is one-time):
+
+```bash
+useradd --system --home-dir /var/lib/imgbed-deploy --shell /bin/sh --no-create-home imgbed-deploy
+install -d -o root -g root -m 0755 /var/lib/imgbed-deploy/.ssh
+install -d -o imgbed-deploy -g imgbed-deploy -m 0750 /opt/blog-stack/deploy-incoming/image-bed
+install -d -o root -g root -m 0700 /opt/blog-stack/.image-bed-activate
+install -m 0755 image-bed-activate.sh /usr/local/sbin/image-bed-activate
+install -m 0755 image-bed-exchange.py /usr/local/sbin/image-bed-exchange
+install -m 0644 image-bed-activate.{path,service} /etc/systemd/system/
+systemd-analyze verify /etc/systemd/system/image-bed-activate.{path,service}
+systemctl daemon-reload
+systemctl enable --now image-bed-activate.path
+```
+
+Generate a dedicated ed25519 key. Install its public key in
+`/var/lib/imgbed-deploy/.ssh/authorized_keys` (root:root, mode 0644), prefixed
+with `restrict,command="/usr/bin/rrsync -wo -munge /opt/blog-stack/deploy-incoming/image-bed"`
+and a space. Put only the private key in `IMAGE_BED_DEPLOY_SSH_KEY` using
+`gh secret set IMAGE_BED_DEPLOY_SSH_KEY --repo woodfishhhh/MuYuNest < keyfile`.
+Keep the verified SSH host key in `deploy/blog-host-key.pub`.
+
+The watcher consumes `READY` after upload, verifies the complete frontend
+manifest, anonymously pulls the commit-tagged image before replacing the API,
+and atomically exchanges the admin directory. The single API container can be
+unavailable briefly during recreation; `/o/` continues serving files from
+nginx. The host publishes `<commit> <run>.<attempt> <result>` at
+`/admin/DEPLOY_STATUS`. Check `journalctl -u image-bed-activate` for failures.
+
+For manual recovery, stop the path unit and let any in-flight activation finish.
+Use `image-bed-exchange /opt/blog-stack/sites/admin /opt/blog-stack/.image-bed-activate/admin.prev`
+to restore the previous frontend (use a copy of the initial backup if needed).
+Recreate the API using its recorded previous tag (normally
+`muyu-image-bed-api:rollback`):
+
+```bash
+MUYU_API_IMAGE=muyu-image-bed-api:rollback docker compose -p image-bed \
+  -f /opt/muyu-image-bed/deploy/image-bed/docker-compose.prod.yml up -d --pull never --no-deps image-bed-api
+curl -fsS https://img.woodfish.site/api/health
+curl -fsS https://img.woodfish.site/admin/ > /dev/null
+```
+
+For code-only rollback, do not overwrite live SQLite data. Keep future schema
+migrations compatible with the previous API; restoring a database snapshot is
+a separate operation and could discard writes made after the backup.
+
 ## 1) DNS + TLS
 
 1. Point `img.woodfish.site` A/AAAA record to VPS.

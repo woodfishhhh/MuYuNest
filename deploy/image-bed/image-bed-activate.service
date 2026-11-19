@@ -1,0 +1,8 @@
+[Unit]
+Description=Activate an image-bed release
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/image-bed-activate

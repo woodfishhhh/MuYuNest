@@ -132,6 +132,7 @@ export function createApp(options: CreateAppOptions) {
     return c.json({
       db: healthy ? "ok" : "down",
       requestId: c.get("requestId"),
+      revision: process.env.MUYU_RELEASE_SHA ?? null,
       service: "ok",
     });
   });

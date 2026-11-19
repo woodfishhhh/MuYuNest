@@ -171,14 +171,21 @@ Important behavior:
   `release.manifest.sha256`, and swaps it into `/opt/blog-stack/sites/newBlog`
   (previous release kept at `newBlog.prev`). The smoke test waits until the
   live `REVISION` equals the commit.
-- This workflow no longer pushes `deploy/nginx.conf`. Host nginx config is
-  managed on the host (`deploy-image-bed.yml` and the manual scripts still
-  push it as root); keep `deploy/nginx.conf` identical to the host's
+- Neither automated deploy workflow pushes `deploy/nginx.conf`. Host config is
+  managed on the host (the manual blog scripts still push it as root); keep
+  `deploy/nginx.conf` identical to the host's
   `conf.d/default.conf`. It relies on `log_format vhost` from the host's
   `conf.d/00-woodfish-http.conf`.
 - If activation fails, read `journalctl -u blog-activate` on the host.
 - After pushing, check Actions at roughly one-minute intervals when actively
   debugging. Do not wait 45 minutes before checking failure state.
+
+Image-bed workflow: `.github/workflows/deploy-image-bed.yml`. Its dedicated
+`imgbed-deploy` key only uploads `web/` and `READY` via rrsync. The host's
+`image-bed-activate` verifies the frontend manifest, pulls the public GHCR
+image by commit SHA, and rolls back a failed API update. The workflow waits
+for `/admin/DEPLOY_STATUS` for its own run, then verifies `/admin/REVISION`
+and `/api/health`. See [host setup](deploy/image-bed/README.md#automated-deploy-host-setup).
 
 ### Local VPS Deploy
 

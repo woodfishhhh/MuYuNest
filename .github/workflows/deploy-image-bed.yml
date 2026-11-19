@@ -2,8 +2,7 @@ name: Deploy Image Bed
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - ".github/workflows/deploy-image-bed.yml"
       - "apps/image-bed-web/**"
@@ -11,8 +10,11 @@ on:
       - "packages/shared/**"
       - "package.json"
       - "pnpm-workspace.yaml"
+      - "pnpm-lock.yaml"
       - ".npmrc"
       - "patches/**"
+      - "deploy/configure-blog-ssh.sh"
+      - "deploy/blog-host-key.pub"
       - "deploy/image-bed/**"
   workflow_dispatch:
 
@@ -20,221 +22,105 @@ permissions:
   contents: read
   packages: write
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: image-bed-deploy
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy-web:
-    name: Deploy Web Frontend
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared
-        run: pnpm shared:build
-
-      - name: Typecheck image-bed-web
-        run: pnpm image-bed:web:typecheck
-
-      - name: Test image-bed-web
-        run: pnpm image-bed:web:test
-
-      - name: Build image-bed-web
-        run: pnpm image-bed:web:build
-
-      - name: Configure SSH
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Deploy to VPS
-        run: |
-          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" "mkdir -p /opt/blog-stack/sites/admin/assets"
-          rsync -avz --delete \
-            apps/image-bed-web/dist/ \
-            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/blog-stack/sites/admin/"
-
-      - name: Upload nginx config
-        run: |
-          scp \
-            -o BatchMode=yes \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            deploy/nginx.conf \
-            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp/default.conf"
-
-      - name: Activate nginx config
-        run: |
-          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" <<'EOF'
-            set -eu
-
-            container="blog-nginx"
-            config_path="/opt/blog-stack/nginx/conf.d/default.conf"
-            config_backup="${config_path}.bak.${{ github.run_id }}"
-
-            test -f /etc/letsencrypt/live/img.woodfish.site/fullchain.pem
-            test -f /etc/letsencrypt/live/img.woodfish.site/privkey.pem
-            mkdir -p "$(dirname "$config_path")"
-
-            if [ -f "$config_path" ]; then
-              cp "$config_path" "$config_backup"
-            fi
-
-            rollback() {
-              if [ -f "$config_backup" ]; then
-                mv "$config_backup" "$config_path"
-              else
-                rm -f "$config_path"
-              fi
-              docker exec "$container" nginx -s reload >/dev/null 2>&1 || true
-            }
-
-            cat /tmp/default.conf > "$config_path"
-            if ! docker exec "$container" nginx -t; then
-              rollback
-              exit 1
-            fi
-
-            if ! docker exec "$container" nginx -s reload; then
-              rollback
-              exit 1
-            fi
-
-            rm -f "$config_backup" /tmp/default.conf
-          EOF
-
-      - name: Verify deployment
-        run: |
-          html="$(curl -kfsSL "https://img.woodfish.site/admin/")"
-          printf '%s' "$html" | grep -q '<title>Muyu Admin</title>'
-          printf '%s' "$html" | grep -q '/admin/assets/'
-          echo "Web frontend deployed successfully"
-
-  deploy-api:
-    name: Deploy API Service
-    runs-on: ubuntu-latest
-    needs: deploy-web
+  deploy:
     if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      MUYU_API_IMAGE: ghcr.io/woodfishhhh/muyu-image-bed-api:latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Verify and build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm shared:build
+          pnpm image-bed:web:typecheck
+          pnpm image-bed:web:test
+          pnpm image-bed:web:build
+          pnpm image-bed:api:typecheck
+          pnpm image-bed:api:test
+          pnpm image-bed:api:build
+          cd apps/image-bed-web/dist
+          printf '%s\n' "$GITHUB_SHA" > REVISION
+          find . -type f ! -path ./release.manifest.sha256 -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > release.manifest.sha256
 
-      - name: Build shared
-        run: pnpm shared:build
+      - name: Configure runner-only GHCR push auth
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          umask 077
+          config="$RUNNER_TEMP/image-bed-docker"
+          mkdir "$config"
+          jq -n '{auths: {"ghcr.io": {auth: ((env.GITHUB_ACTOR + ":" + env.GHCR_TOKEN) | @base64)}}}' > "$config/config.json"
+          printf 'DOCKER_CONFIG=%s\n' "$config" >> "$GITHUB_ENV"
 
-      - name: Typecheck image-bed-api
-        run: pnpm image-bed:api:typecheck
-
-      - name: Build image-bed-api
-        run: pnpm image-bed:api:build
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push API image
+      - uses: docker/setup-buildx-action@v4
+      - name: Push API image
         uses: docker/build-push-action@v7
         with:
           context: .
           file: apps/image-bed-api/Dockerfile
           push: true
+          build-args: RELEASE_SHA=${{ github.sha }}
           tags: |
-            ghcr.io/woodfishhhh/muyu-image-bed-api:latest
             ghcr.io/woodfishhhh/muyu-image-bed-api:${{ github.sha }}
+            ghcr.io/woodfishhhh/muyu-image-bed-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Configure SSH
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: Upload compose config
-        run: |
-          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" "mkdir -p /opt/muyu-image-bed/deploy/image-bed"
-          scp \
-            -o BatchMode=yes \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            deploy/image-bed/docker-compose.prod.yml \
-            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/muyu-image-bed/deploy/image-bed/docker-compose.prod.yml"
-
-      - name: Login VPS to GitHub Container Registry
+      - name: Configure SSH with pinned host key
         env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.IMAGE_BED_DEPLOY_SSH_KEY }}
+        run: bash deploy/configure-blog-ssh.sh
+
+      - name: Upload release to the restricted inbox
+        timeout-minutes: 15
+        env:
+          SSH_DEST: imgbed-deploy@${{ secrets.SSH_HOST }}
         run: |
-          printf '%s\n' "$GHCR_TOKEN" | ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" \
-            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+          rsync -rtz --delete --timeout=120 apps/image-bed-web/dist/ "$SSH_DEST:web/"
+          printf '%s %s.%s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > "$RUNNER_TEMP/READY"
+          rsync --timeout=60 "$RUNNER_TEMP/READY" "$SSH_DEST:READY"
 
-      - name: Rolling update on VPS
+      - name: Verify activation and live revisions
         run: |
-          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}" <<'EOF'
-            set -euo pipefail
-
-            # Pull latest image and restart
-            cd /opt/muyu-image-bed || exit 1
-            MUYU_API_IMAGE="ghcr.io/woodfishhhh/muyu-image-bed-api:latest" docker compose -f deploy/image-bed/docker-compose.prod.yml pull
-            docker rm -f muyu-image-bed-api >/dev/null 2>&1 || true
-            MUYU_API_IMAGE="ghcr.io/woodfishhhh/muyu-image-bed-api:latest" docker compose -f deploy/image-bed/docker-compose.prod.yml up -d
-
-            # Wait for healthcheck
-            for i in {1..30}; do
-              if curl -fsSL http://172.18.0.1:3000/api/health >/dev/null 2>&1; then
-                echo "API health check passed"
-                exit 0
-              fi
-              sleep 2
-            done
-
-            echo "API health check failed"
-            MUYU_API_IMAGE="ghcr.io/woodfishhhh/muyu-image-bed-api:latest" docker compose -f deploy/image-bed/docker-compose.prod.yml logs --tail=50
+          base=https://img.woodfish.site
+          release="$GITHUB_SHA $GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"
+          status=""
+          for _ in $(seq 1 100); do
+            if status=$(curl -fsS --max-time 5 "$base/admin/DEPLOY_STATUS?run=$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"); then
+              case "$status" in
+                "$release ok") break ;;
+                "$release "*) echo "Host activation failed: $status" >&2; exit 1 ;;
+              esac
+            fi
+            sleep 3
+          done
+          if [ "$status" != "$release ok" ]; then
+            echo 'Host did not confirm activation; check journalctl -u image-bed-activate' >&2
             exit 1
-          EOF
-
-      - name: Smoke test API
-        run: |
-          curl -kfsSL "https://img.woodfish.site/api/health"
-          echo "API deployed successfully"
+          fi
+          html=$(curl -fsS --max-time 10 "$base/admin/")
+          grep -Fq '<title>Muyu Admin</title>' <<< "$html"
+          grep -Fq '/admin/assets/' <<< "$html"
+          test "$(curl -fsS --max-time 10 "$base/admin/REVISION?sha=$GITHUB_SHA")" = "$GITHUB_SHA"
+          curl -fsS --max-time 10 "$base/api/health?sha=$GITHUB_SHA" |
+            jq -e --arg sha "$GITHUB_SHA" '.db == "ok" and .service == "ok" and .revision == $sha'
