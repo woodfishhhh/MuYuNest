@@ -92,7 +92,25 @@ fi
 # Never use any pre-existing Docker credentials on the host.
 mkdir "$work/docker"
 printf '%s\n' '{"auths":{}}' > "$work/docker/config.json"
-docker --config "$work/docker" pull "$image"
+
+# ghcr.io reaches this host at about 27 KB/s in the evening: on 2026-11-19 a changed
+# 110 MB dependency layer failed with "unexpected EOF" after an hour. The NJU mirror
+# served it in 67 s. Pulling by the digest ghcr.io reports keeps the mirror untrusted.
+mirror=ghcr.nju.edu.cn
+pull_via_mirror() {
+  local repo=${registry#ghcr.io/} token digest
+  token=$(curl -fsS --max-time 20 "https://ghcr.io/token?scope=repository:$repo:pull" | jq -er .token) || return 1
+  digest=$(curl -fsSI --max-time 20 -H "Authorization: Bearer $token" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' \
+    "https://ghcr.io/v2/$repo/manifests/$sha" | tr -d '\r' | awk -F': ' 'tolower($1) == "docker-content-digest" {print $2}')
+  [[ $digest =~ ^sha256:[0-9a-f]{64}$ ]] || return 1
+  timeout 1200 docker --config "$work/docker" pull "$mirror/$repo@$digest" || return 1
+  docker image tag "$mirror/$repo@$digest" "$image"
+}
+if ! pull_via_mirror; then
+  echo "Mirror pull failed; pulling $image from ghcr.io" >&2
+  docker --config "$work/docker" pull "$image"
+fi
 docker image inspect --format '{{json .Config.Env}}' "$image" |
   jq -e --arg revision "MUYU_RELEASE_SHA=$sha" 'index($revision) != null' >/dev/null
 old_id=$(docker inspect --type container --format '{{.Image}}' "$container")

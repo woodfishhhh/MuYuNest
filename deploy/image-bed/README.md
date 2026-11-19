@@ -36,7 +36,11 @@ Keep the verified SSH host key in `deploy/blog-host-key.pub`.
 
 The watcher consumes `READY` after upload, verifies the complete frontend
 manifest, anonymously pulls the commit-tagged image before replacing the API,
-and atomically exchanges the admin directory. The single API container can be
+and atomically exchanges the admin directory. The pull asks ghcr.io for the
+tag's digest and fetches that digest from the NJU mirror (`ghcr.nju.edu.cn`),
+because ghcr.io reaches the host at tens of KB/s in the evening. The mirror
+only speeds up the transfer: the digest pins the content, and a mirror failure
+falls back to ghcr.io. The single API container can be
 unavailable briefly during recreation; `/o/` continues serving files from
 nginx. The host publishes `<commit> <run>.<attempt> <result>` at
 `/admin/DEPLOY_STATUS`. Check `journalctl -u image-bed-activate` for failures.
