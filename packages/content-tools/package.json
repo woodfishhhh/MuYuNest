@@ -20,7 +20,7 @@
     "markdown-it": "^14.1.1",
     "markdown-it-anchor": "^9.2.0",
     "markdown-it-cjk-friendly": "^3.0.0",
-    "markdown-it-mathjax3": "^4.3.2",
+    "markdown-it-mathjax3": "^5.2.0",
     "playwright": "^1.60.0",
     "sharp": "^0.34.5",
     "shiki": "^4.5.0",
