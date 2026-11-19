@@ -66,7 +66,7 @@ function languageOf(info: string) {
 }
 
 /** The legacy parser owns anchors: adding math tokens must not change shared URLs. */
-function legacyHeadings(markdown: string) {
+export function legacyHeadings(markdown: string) {
   const slugger = new GithubSlugger();
   const md = applyPlugin(new MarkdownIt(options), markdownItAnchor, {
     level: [2, 3, 4],
