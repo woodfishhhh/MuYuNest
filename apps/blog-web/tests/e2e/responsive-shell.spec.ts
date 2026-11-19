@@ -14,11 +14,11 @@ for (const width of transitionWidths) {
     await expect(page.getByTestId("works-view-case")).toBeVisible({ visible: !wide });
 
     await page.goto("/author");
-    await expect(page).toHaveURL(/\/#about$/);
-    const filmStageWidth = await page
-      .locator("[data-film-chapter='roles'] .film-stage")
+    const authorPanelWidth = await page
+      .locator(".author-screen__panel")
+      .first()
       .evaluate((element) => element.getBoundingClientRect().width);
-    expect(filmStageWidth).toBeCloseTo(width, -1);
+    expect(authorPanelWidth).toBeCloseTo(wide ? width / 2 : width, -1);
 
     await page.goto("/friend");
     await expect(page.getByTestId("friend-panel-application")).toBeVisible({ visible: wide });

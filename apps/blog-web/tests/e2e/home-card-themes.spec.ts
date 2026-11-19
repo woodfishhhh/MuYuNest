@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { hoverCard, scrollToFilmChapter } from "./home-card-helpers";
+import { hoverCard } from "./home-card-helpers";
 
 test("Home switches a held card theme without releasing or restarting it", async ({ page }) => {
   await page.setViewportSize({ width: 1651, height: 871 });
@@ -9,7 +9,6 @@ test("Home switches a held card theme without releasing or restarting it", async
     Math.random = () => 0.5;
   });
   await page.goto("/");
-  await scrollToFilmChapter(page, "collect");
   const flight = page.locator("[data-home-flight]");
   await expect(flight).toHaveAttribute("data-home-flight-ready", "true");
   await hoverCard(page);

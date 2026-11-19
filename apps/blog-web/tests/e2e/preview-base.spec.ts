@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { hoverCard, scrollToFilmChapter } from "./home-card-helpers";
+import { hoverCard } from "./home-card-helpers";
 
 test.skip(!process.env.PREVIEW_BASE_PATH, "Requires a subpath production preview.");
 test.use({ serviceWorkers: "block", reducedMotion: "reduce" });
@@ -8,9 +8,6 @@ test("subpath Home can grab a loaded photo card", async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.addInitScript(() => { Math.random = () => 0.5; });
   await page.goto(process.env.PREVIEW_BASE_PATH!);
-  await expect(page.getByTestId("home-film")).toBeVisible();
-  await expect(page.locator(".film-splash")).toHaveCount(0);
-  await scrollToFilmChapter(page, "collect");
   const flight = page.locator("[data-home-flight]");
   await expect(flight).toHaveAttribute("data-home-flight-ready", "true");
   await hoverCard(page);

@@ -38,25 +38,6 @@ describe("useHypercube", () => {
     texture.dispose();
   });
 
-  it("holds the textbook nested-cube pose on Home and resumes its 4D turn afterwards", () => {
-    const texture = new THREE.CanvasTexture(document.createElement("canvas"));
-    const cube = useHypercube(texture);
-    const positions = cube.line.geometry.attributes.position.array as Float32Array;
-    cube.update(10);
-    cube.setCanonicalProgress(1);
-    cube.update(1);
-    const canonical = positions.slice();
-    expect(Math.abs(canonical[0])).toBeCloseTo(4 / 3.5);
-    expect(Math.abs(canonical[24])).toBeCloseTo(4 / 1.5);
-    cube.update(100);
-    expect(positions).toEqual(canonical);
-    cube.setCanonicalProgress(0);
-    cube.update(1);
-    expect(positions).not.toEqual(canonical);
-    cube.dispose();
-    texture.dispose();
-  });
-
   it("fixes only the docked projection as nested cubes and resumes morphing on exit", () => {
     const texture = new THREE.CanvasTexture(document.createElement("canvas"));
     const cube = useHypercube(texture);
