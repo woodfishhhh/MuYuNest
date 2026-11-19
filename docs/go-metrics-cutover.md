@@ -1,12 +1,35 @@
 # Go metrics rehearsal and rollback
 
-The draft Go metrics implementation does not change nginx or stop Python.
-Use `deploy/muyu-api-shadow.service` for parallel testing on **127.0.0.1:3012**.
-The existing Python service remains on port 3011. The shadow service has separate
+Production metrics switched to Go on 2026-11-01; the observation period is still
+open. Use `deploy/muyu-api-shadow.service` for parallel testing on **127.0.0.1:3012**.
+The retained Python service remains on port 3011, off main-site traffic. Shadow has separate
 state in `/var/lib/muyu-api-shadow`; it must never point at the Python data files.
 Its executable lives at `/opt/blog-stack/services/muyu-api-shadow/api`.
 Systemd `LoadCredential` supplies the original HMAC secret without changing its
 permissions or printing it. Install only the binary from a verified revision.
+
+## Production cutover and observation
+
+Cutover completed at **2026-11-01 11:32:01 UTC** (19:32 Beijing time), using nginx
+candidate `f3de1e3` and API binary `3ae92d3`. CI `41301913982` passed before the
+operation. The write gate lasted **2.205 seconds**. Final baseline was total
+**1,585**, **151** deduplication identities and **8,460** events; every stored row
+and complete 1/30/365-day summary matched Python before opening Go writes.
+Public GET returned the unchanged total and a Go request ID. No synthetic
+registration or event was sent to production.
+
+The production service is enabled at boot and nginx selects `172.18.0.1:3013`.
+Python remains running off traffic for rollback readiness. PR #71 merged as
+`dc7a772`; the parallel Vue branch has synchronized the same nginx configuration.
+Restricted backups and the completion report are under
+`/opt/blog-stack/rehearsals/cutover-20261101-f3de1e3` (mode 0700), including the
+original nginx config, Python unit, secret and consistent data snapshots.
+
+Observe through **2026-11-08 11:32 UTC** before retiring Python. Retain the legacy
+unit/data backups through at least **2026-12-01 11:32 UTC**. Check actual Go health,
+public counter continuity, collection errors and authenticated dashboard data
+during observation; elapsed time alone is not acceptance. Post-cutover rollback
+must export the latest Go state first, following the procedure below.
 
 ## Verified parallel deployment
 
@@ -76,9 +99,8 @@ failure traces are kept under ignored `output/metrics-e2e`.
 
 ## Final cutover gates
 
-The production candidate `muyu-api.service` is prepared but off traffic on the
-verified Docker gateway `172.18.0.1:3013`. The nginx container can reach it and its
-counter remains zero. Its separate state is `/var/lib/muyu-api`; do not confuse
+The production `muyu-api.service` uses the verified Docker gateway
+`172.18.0.1:3013`. Its separate state is `/var/lib/muyu-api`; do not confuse
 it with shadow. `/srv/muyu-data` currently belongs to the live image-bed service
 and contains `muyu.sqlite` plus WAL/SHM. Preserve its ownership and files during
 stage 2. Unify storage paths during the image-bed migration, after its import and
@@ -93,8 +115,8 @@ Both marker states were checked in isolated nginx containers on the VPS, without
 changing the active proxy. A nested bind into a read-only directory needs an
 existing mountpoint; the gate test used a separate temporary config directory.
 
-**Do not merge the candidate nginx configuration before final import and manual
-cutover:** merging triggers the site's normal deployment. First validate CI, save
+For future migrations, do not merge a new upstream configuration before its final
+import and manual cutover: merging triggers site deployment. First validate CI, save
 the live nginx config, install a gated version still pointing to Python, and stop
 the writers. Import the final snapshots into the clean production Go databases,
 start/check Go, then install the candidate while the write gate remains present.

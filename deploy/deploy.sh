@@ -24,7 +24,14 @@ trap cleanup EXIT
 
 echo "==> 1. 构建项目..."
 cd "$(dirname "$0")/.."
-VITE_BASE_PATH="$BASE_PATH" pnpm build:deploy
+if [ "${DEPLOY_SKIP_BUILD:-0}" = "1" ]; then
+  # CI already built and verified this artifact using its deployment base.
+  test -f "$DIST_DIR/index.html"
+  test -f "$DIST_DIR/sw.js"
+  grep -q "${BASE_PATH}assets/" "$DIST_DIR/index.html"
+else
+  VITE_BASE_PATH="$BASE_PATH" pnpm build:deploy
+fi
 
 archive="$(mktemp -t woodfishnest.XXXXXX.tar.gz)"
 deploy_id="$(date +%Y%m%d%H%M%S)"
