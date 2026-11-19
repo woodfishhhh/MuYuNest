@@ -7,7 +7,6 @@ const auditWidths = [320, 375, 768, 1024, 1280, 1440, 1920, 2560] as const;
 const auditRoutes = ["works", "author", "friend", "blog"] as const;
 const routeReadyTestIds = {
   author: "author-panel-root",
-  blog: "blog-editorial-layout",
   friend: "friend-panel-root",
   works: "works-view-case",
 } as const;
@@ -37,7 +36,10 @@ test("captures the standard responsive matrix without horizontal overflow", asyn
       if (index === 0) {
         await page.goto(`/${route}`);
         await expect(page.getByTestId("site-nav-compact")).toBeAttached();
-        await expect(page.getByTestId(routeReadyTestIds[route])).toBeVisible();
+        // /blog is the knowledge base here, not apps/blog's post panel.
+        await expect(
+          route === "blog" ? page.locator(".docs-index-grid") : page.getByTestId(routeReadyTestIds[route]),
+        ).toBeVisible();
       }
 
       await page.waitForTimeout(180);
