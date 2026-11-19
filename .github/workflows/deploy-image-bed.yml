@@ -101,11 +101,14 @@ jobs:
           rsync --timeout=60 "$RUNNER_TEMP/READY" "$SSH_DEST:READY"
 
       - name: Verify activation and live revisions
+        timeout-minutes: 16
         run: |
           base=https://img.woodfish.site
           release="$GITHUB_SHA $GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"
           status=""
-          for _ in $(seq 1 100); do
+          # A cold pull on the VPS can take several minutes before the API restarts.
+          deadline=$((SECONDS + 900))
+          while (( SECONDS < deadline )); do
             if status=$(curl -fsS --max-time 5 "$base/admin/DEPLOY_STATUS?run=$GITHUB_RUN_ID.$GITHUB_RUN_ATTEMPT"); then
               case "$status" in
                 "$release ok") break ;;
