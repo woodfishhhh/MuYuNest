@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/config"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/db"
 	"github.com/woodfishhhh/MuYuNest/services/api/internal/httpx"
+	"github.com/woodfishhhh/MuYuNest/services/api/internal/obituary"
 )
 
 var version = "dev"
@@ -47,9 +49,27 @@ func run() error {
 	if err := os.MkdirAll(cfg.ImageRoot, 0750); err != nil {
 		return err
 	}
+	router := httpx.New(logger, cfg.AllowedOrigins, mainDB, analyticsDB, cfg.ImageRoot, version, commit, cfg.AnalyticsSecret)
+	if path := os.Getenv("OBITUARY_STATS_SECRET_FILE"); path != "" {
+		key, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if len(key) != 32 {
+			return errors.New("invalid obituary credential length")
+		}
+		statsDB, err := db.Open(ctx, filepath.Join(filepath.Dir(cfg.AnalyticsDBPath), "obituary-stats.db"), "obituary")
+		if err != nil {
+			return err
+		}
+		defer statsDB.Close()
+		stats := obituary.Stats{DB: statsDB, Key: key}
+		httpx.RegisterObituary(router, stats)
+		go stats.Maintain(ctx, func(err error) { logger.Error("obituary retention failed", "error", err) })
+	}
 	server := &http.Server{
 		Addr:              cfg.Addr,
-		Handler:           httpx.New(logger, cfg.AllowedOrigins, mainDB, analyticsDB, cfg.ImageRoot, version, commit, cfg.AnalyticsSecret),
+		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
