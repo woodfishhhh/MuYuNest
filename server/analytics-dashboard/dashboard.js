@@ -1,5 +1,6 @@
 const state = {
   data: null,
+  obituary: null,
   metric: "pageviews",
 };
 
@@ -50,7 +51,7 @@ function renderRankList(selector, rows, fallback = "暂无数据") {
   target.innerHTML = rows
     .map(
       (row) => `<div class="rank-row">
-        <span class="rank-label" title="${escapeHtml(row.label)}">${escapeHtml(row.label)}</span>
+        <span class="rank-label" title="${escapeHtml(row.label).replaceAll('"', '&quot;')}">${escapeHtml(row.label)}</span>
         <span class="rank-value">${numberFormatter.format(row.value)}</span>
       </div>`,
     )
@@ -76,8 +77,12 @@ function renderVitals(rows) {
 }
 
 function renderChart() {
-  if (!state.data) return;
-  const canvas = document.querySelector("#trend-chart");
+  if (state.data) drawChart("#trend-chart", state.data.timeSeries, state.metric, "label");
+  if (state.obituary) drawChart("#obituary-chart", state.obituary.daily_active, "count", "date");
+}
+
+function drawChart(selector, series, metric, dateKey) {
+  const canvas = document.querySelector(selector);
   const bounds = canvas.getBoundingClientRect();
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
   canvas.width = Math.max(Math.round(bounds.width * ratio), 1);
@@ -90,7 +95,7 @@ function renderChart() {
   const padding = { top: 18, right: 12, bottom: 30, left: 42 };
   const plotWidth = Math.max(width - padding.left - padding.right, 1);
   const plotHeight = Math.max(height - padding.top - padding.bottom, 1);
-  const values = state.data.timeSeries.map((row) => Number(row[state.metric] || 0));
+  const values = series.map((row) => row[metric]);
   const maximum = Math.max(...values, 1);
   const styles = getComputedStyle(document.documentElement);
   const gridColor = styles.getPropertyValue("--line").trim();
@@ -113,10 +118,11 @@ function renderChart() {
     context.fillText(numberFormatter.format(label), 2, y + 4);
   }
 
-  const points = values.map((value, index) => ({
+  // Days before coverage are null, not zero; keep their space on the time axis.
+  const points = values.flatMap((value, index) => value == null ? [] : [{
     x: padding.left + (plotWidth * index) / Math.max(values.length - 1, 1),
     y: padding.top + plotHeight - (plotHeight * value) / maximum,
-  }));
+  }]);
   const gradient = context.createLinearGradient(0, padding.top, 0, height - padding.bottom);
   gradient.addColorStop(0, `${accentColor}55`);
   gradient.addColorStop(1, `${accentColor}00`);
@@ -139,15 +145,24 @@ function renderChart() {
     context.lineWidth = 2;
     context.lineJoin = "round";
     context.stroke();
+    if (points.length === 1) {
+      context.beginPath();
+      context.arc(points[0].x, points[0].y, 3, 0, 2 * Math.PI);
+      context.fillStyle = accentColor;
+      context.fill();
+    }
+  } else {
+    context.textAlign = "center";
+    context.fillText("暂无已覆盖日期", padding.left + plotWidth / 2, height / 2);
   }
 
   const labelIndexes = [...new Set([0, Math.floor((values.length - 1) / 2), values.length - 1])];
   context.fillStyle = mutedColor;
   context.textAlign = "center";
   for (const index of labelIndexes) {
-    const row = state.data.timeSeries[index];
+    const row = series[index];
     if (!row) continue;
-    const label = row.label.slice(5).replace("-", "/");
+    const label = row[dateKey].slice(5).replace("-", "/");
     const x = padding.left + (plotWidth * index) / Math.max(values.length - 1, 1);
     context.fillText(label, x, height - 7);
   }
@@ -185,8 +200,33 @@ async function loadData() {
   }
 }
 
+async function loadObituary() {
+  const content = document.querySelector("#obituary-data");
+  const status = document.querySelector("#obituary-status");
+  try {
+    const response = await fetch("/analytics/api/obituary/summary", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    for (const [id, value] of [["week", data.weekly_active], ["month", data.monthly_active], ["total", data.cumulative_installs]]) {
+      document.querySelector(`#obituary-${id}`).textContent = numberFormatter.format(value);
+    }
+    for (const key of ["version", "os", "language", "channel"]) {
+      const rows = Object.entries(data.distributions[key]).map(([label, value]) => ({ label, value }));
+      renderRankList(`#obituary-${key}`, rows.sort((a, b) => b.value - a.value || a.label.localeCompare(b.label)));
+    }
+    state.obituary = data;
+    content.hidden = false;
+    status.textContent = `活跃统计截至 ${data.as_of}（UTC）`;
+    drawChart("#obituary-chart", data.daily_active, "count", "date");
+  } catch (error) {
+    state.obituary = null;
+    content.hidden = true;
+    status.textContent = `安装统计读取失败：${error.message}`;
+  }
+}
+
 document.querySelector("#range-select").addEventListener("change", loadData);
-document.querySelector("#refresh-button").addEventListener("click", loadData);
+document.querySelector("#refresh-button").addEventListener("click", () => { loadData(); loadObituary(); });
 document.querySelectorAll("[data-chart-metric]").forEach((button) => {
   button.addEventListener("click", () => {
     state.metric = button.dataset.chartMetric;
@@ -197,3 +237,4 @@ document.querySelectorAll("[data-chart-metric]").forEach((button) => {
 window.addEventListener("resize", renderChart);
 
 loadData();
+loadObituary();

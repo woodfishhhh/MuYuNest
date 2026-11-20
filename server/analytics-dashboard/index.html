@@ -81,6 +81,28 @@
           <div id="web-vitals" class="vitals-grid"></div>
         </article>
       </section>
+      <section id="obituary" aria-labelledby="obituary-heading">
+        <h2 id="obituary-heading">讣告</h2>
+        <p id="obituary-status" class="status-row" role="status">正在读取安装统计…</p>
+        <div id="obituary-data" hidden>
+          <div class="kpi-grid obituary-kpis">
+            <article class="kpi"><span class="kpi-label">周活跃安装 · 7 天</span><strong id="obituary-week" class="kpi-value"></strong></article>
+            <article class="kpi"><span class="kpi-label">月活跃安装 · 30 天</span><strong id="obituary-month" class="kpi-value"></strong></article>
+            <article class="kpi"><span class="kpi-label">累计安装 · 含今天</span><strong id="obituary-total" class="kpi-value"></strong></article>
+          </div>
+          <article class="panel chart-panel">
+            <h3>每日活跃安装 · 近 90 天</h3>
+            <div class="chart-wrap"><canvas id="obituary-chart" role="img" aria-label="最近 90 个完整 UTC 日的活跃安装数，空白表示尚未覆盖"></canvas></div>
+          </article>
+          <h3 class="distribution-title">活跃安装分布 · 近 30 天</h3>
+          <div class="dashboard-grid">
+            <article class="panel"><h3>版本</h3><div id="obituary-version" class="rank-list"></div></article>
+            <article class="panel"><h3>系统</h3><div id="obituary-os" class="rank-list"></div></article>
+            <article class="panel"><h3>语言</h3><div id="obituary-language" class="rank-list"></div></article>
+            <article class="panel"><h3>渠道</h3><div id="obituary-channel" class="rank-list"></div></article>
+          </div>
+        </div>
+      </section>
     </main>
     <script src="./dashboard.js" defer></script>
   </body>

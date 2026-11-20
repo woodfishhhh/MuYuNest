@@ -12,6 +12,8 @@ The live `muyu-api` process also handles `POST /api/obituary/ping`. It accepts a
 
 Only `/var/lib/muyu-api/obituary-stats.db` holds these data. Daily activity expires after 400 UTC dates, including today; only keyed installation digests, first/last dates, aggregate channel counts and the service coverage date persist. Back up via SQLite backup with restrictive permissions. Roll back the executable, systemd unit and nginx config, not the live databases. See `go-metrics-cutover.md` for the current Go topology; the Python installer below is legacy and must not be used for production.
 
+The private dashboard's 讣告 section uses the summary above. It leaves uncovered dates blank and uses 30-day installation counts (not lifetime report counts) for the channel breakdown. Updates to its static assets only require backing up and replacing `index.html`, `dashboard.css`, and `dashboard.js` in `/opt/blog-stack/sites/analytics-dashboard`; restore those three files to roll back without touching metrics data or restarting services.
+
 ## Architecture
 
 - `blog.woodfish.site/api/analytics/collect` is the only public collection endpoint.
