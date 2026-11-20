@@ -10,6 +10,8 @@ StateDirectory=muyu-api
 StateDirectoryMode=0700
 WorkingDirectory=/var/lib/muyu-api
 LoadCredential=analytics-secret:/etc/woodfish/analytics-secret
+LoadCredential=obituary-stats:/etc/woodfish/obituary-stats-secret
+Environment=OBITUARY_STATS_SECRET_FILE=%d/obituary-stats
 Environment=MUYU_ADDR=172.18.0.1:3013
 Environment=MUYU_DB_PATH=/var/lib/muyu-api/muyu.db
 Environment=MUYU_ANALYTICS_DB_PATH=/var/lib/muyu-api/analytics.db

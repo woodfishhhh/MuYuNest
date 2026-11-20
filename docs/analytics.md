@@ -4,6 +4,14 @@ The blog uses a lightweight, first-party analytics service rather than a
 separate PostgreSQL-backed analytics stack. The existing Python visitor-counter
 process also accepts analytics events and stores them in SQLite.
 
+## Obituary installation statistics
+
+The live `muyu-api` process also handles `POST /api/obituary/ping`. It accepts at most 1 KiB of JSON with `install_id` (32 lowercase hex digits), `version`, `os`, `arch`, `language` and `channel`. A valid report returns 204. nginx rate-limits in memory, disables request/error logging for this route, and forwards neither client addresses nor user agents. The Go handler never logs payloads. The root-only 32-byte `/etc/woodfish/obituary-stats-secret` is delivered with systemd `LoadCredential`; it is independent of the blog's analytics key. Do not rotate it routinely: that breaks historical deduplication.
+
+`GET /analytics/api/obituary/summary` uses the dashboard's nginx Basic authentication. `as_of` is the most recent completed UTC date. `daily_active` contains 90 `{date,count}` entries (null before coverage, zero on observed days without reports). `weekly_active` / `monthly_active` count distinct installations over 7 / 30 completed UTC days. `distributions` maps `version`, `os`, `arch`, `language`, `channel` to label/count objects using the last observation per installation in that 30-day window. `cumulative_installs` and `channel_reports` are lifetime totals, including today. No identifiers are returned. Existing PWA NetworkOnly and navigation exclusions cover `/analytics/` and `/api/`.
+
+Only `/var/lib/muyu-api/obituary-stats.db` holds these data. Daily activity expires after 400 UTC dates, including today; only keyed installation digests, first/last dates, aggregate channel counts and the service coverage date persist. Back up via SQLite backup with restrictive permissions. Roll back the executable, systemd unit and nginx config, not the live databases. See `go-metrics-cutover.md` for the current Go topology; the Python installer below is legacy and must not be used for production.
+
 ## Architecture
 
 - `blog.woodfish.site/api/analytics/collect` is the only public collection endpoint.
