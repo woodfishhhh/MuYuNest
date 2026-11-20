@@ -108,13 +108,14 @@ function drawChart(selector, series, metric, dateKey) {
   context.strokeStyle = gridColor;
   context.lineWidth = 1;
 
-  for (let index = 0; index <= 4; index += 1) {
-    const y = padding.top + (plotHeight * index) / 4;
+  const intervals = Math.min(4, maximum);
+  for (let index = 0; index <= intervals; index += 1) {
+    const y = padding.top + (plotHeight * index) / intervals;
     context.beginPath();
     context.moveTo(padding.left, y);
     context.lineTo(width - padding.right, y);
     context.stroke();
-    const label = Math.round(maximum * (1 - index / 4));
+    const label = Math.round(maximum * (1 - index / intervals));
     context.fillText(numberFormatter.format(label), 2, y + 4);
   }
 
@@ -158,11 +159,11 @@ function drawChart(selector, series, metric, dateKey) {
 
   const labelIndexes = [...new Set([0, Math.floor((values.length - 1) / 2), values.length - 1])];
   context.fillStyle = mutedColor;
-  context.textAlign = "center";
   for (const index of labelIndexes) {
     const row = series[index];
     if (!row) continue;
     const label = row[dateKey].slice(5).replace("-", "/");
+    context.textAlign = index === values.length - 1 ? "right" : "center";
     const x = padding.left + (plotWidth * index) / Math.max(values.length - 1, 1);
     context.fillText(label, x, height - 7);
   }
