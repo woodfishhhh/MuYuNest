@@ -1,0 +1,146 @@
+---
+title: "中小型 Web 项目前期规划：用户故事、状态流与模块划分"
+slug: "web-project-architecture-planning"
+date: 2025-12-26 02:38:44
+categories:
+  - "工程实践"
+tags:
+  - "项目规划"
+  - "用户故事"
+  - "架构设计"
+  - "状态流"
+  - "Web开发"
+---
+
+动手写中小型 Web 应用时，最常见的返工往往源于一上来就新建一个 `app.js` 堆全局变量和事件回调——写到五百行以后，表单校验、网络请求、地图/图表渲染和本地缓存全搅在一起，改一处动全身。开发前花一小时把**用户故事、事件驱动状态流和模块边界**拆干净，远比边写边补洞省时间。
+
+## 为什么中小型项目同样需要先规划
+
+大型企业系统需要多轮架构评审与 RFC，而个人或小团队开发的中小型交互应用（例如带地图轨迹标记的运动记录工具、本地待办看板或数据仪表盘）最怕两种极端：要么毫无设计直接硬写，导致后期加一个“编辑/筛选”功能就得重写一半 DOM 事件；要么过度设计，在只需要几百行代码的工具里硬套复杂的跨层框架。
+
+**中小型项目规划的黄金投入是一张“功能清单 + 一张事件状态流图 + 一份模块职责表”，目标是在第一行代码落地前确定数据流向和状态归属。**
+
+下面以一个典型的“户外运动地图轨迹记录应用”（支持在地图上点击记录跑步/骑行数据、查看历史列表并持久化到本地）为例，拆解落地的四个实操步骤。
+
+## 第一步：用用户故事把需求翻译成功能点
+
+跳过“我要做个炫酷的运动 App”这类空泛描述，用标准用户故事模板把所有交互约束清楚：
+
+> **模板**：作为 `[某类用户]`，我想 `[执行某个具体动作]`，以便 `[获得明确的业务结果]`。
+
+| 编号 | 用户故事 | 推导出的技术功能与数据需求 |
+| --- | --- | --- |
+| 1 | 作为用户，我想在地图上点击选点并记录跑步的距离、时长和步频 | 地图交互选点（Leaflet/Mapbox）+ 跑步表单 + 地理坐标绑定 |
+| 2 | 作为用户，我想区分记录骑行的距离、时长和海拔爬升 | 与跑步差异化的动态表单字段及派生指标（配速 vs 均速） |
+| 3 | 作为用户，我想在侧边栏和地图标记上同时看到所有历史记录 | 记录列表渲染 + 地图 Marker 同步绘制 |
+| 4 | 作为用户，我想点击列表中的某条记录时地图自动平滑定位到该位置 | 列表事件委托 + 通过记录 `id` 反查坐标触发地图视图移动 |
+| 5 | 作为用户，我想刷新或重新打开页面后之前的运动记录依然存在 | 浏览器 `localStorage` 持久化读写与反序列化还原 |
+
+这一步的价值在于直接暴露出“差异化字段”（跑步看步频、骑行看海拔爬升）和“跨组件联动”（点列表移动地图），避免写到半路才发现数据结构没预留类型区分字段。
+
+## 第二步：以事件为起点绘制状态与异步流图
+
+很多流程图画到一半就乱，是因为试图按静态页面区块去画。**Web 应用的状态流图必须从“触发事件”出发**——只有用户交互（点击、提交）或系统生命周期（页面加载）能驱动状态变化，顺着事件把同步渲染和异步等待标出来，依赖顺序立刻一目了然。
+
+建议在草图上用三类颜色或标签区分操作性质：
+- **事件触发（Action）**：页面 `load`、点击地图、表单 `submit`、点击列表项。
+- **异步等待（Async）**：调用 `navigator.geolocation` 定位、发起 HTTP 请求、大体积存储读写。
+- **界面渲染（Render）**：初始化地图、展示表单、重绘列表与地图标记。
+
+以运动记录应用的三条核心流程为例，梳理出严格的数据流依赖：
+
+```text
+[流程 A：页面启动]
+页面加载 -> (异步) 请求浏览器 Geolocation 定位
+         -> 拿到坐标后渲染地图中心点（同步/依赖定位结果）
+         -> 读取 localStorage 历史记录 -> 批量渲染侧栏列表 + 地图 Marker
+
+[流程 B：新增一条记录]
+用户点击地图 -> 记录临时坐标 (lat, lng) 并展开表单
+             -> 用户选择类型、填写数值并提交 -> 字段合法性校验（失败则提示不落库）
+             -> 生成 Workout 实例并推入内存数组 -> 同步渲染列表项 + 地图标记
+             -> 序列化写入 localStorage -> 收起并重置表单
+
+[流程 C：列表定位联动]
+点击侧栏记录卡片 -> 事件委托读取 data-id -> 查找对应记录坐标 -> 平滑移动地图视野
+```
+
+**画完流程图最直接的收益是识别异步竞态与前置条件：例如“必须在地图实例初始化完成后，才能往地图上批量渲染从缓存读出的历史 Marker”。**
+
+## 第三步：确定代码组织架构与数据模型
+
+流程清楚后，把代码按“**数据模型层 + 应用控制与界面交互层**”切开，彻底告别“全塞在全局作用域里”的写法。
+
+### 用类建模业务实体与派生字段
+
+对于存在共有字段和差异化分支的业务数据（如所有运动都有 `id`、`coords`、`distance`、`duration`，而跑步与骑行各自计算步速或均速），用基类 + 子类封装干净得多：
+
+```javascript
+class Workout {
+  date = new Date();
+  id = crypto.randomUUID();
+
+  constructor(coords, distance, duration) {
+    this.coords = coords;     // [lat, lng]
+    this.distance = distance; // km
+    this.duration = duration; // min
+  }
+}
+
+class Running extends Workout {
+  type = "running";
+  constructor(coords, distance, duration, cadence) {
+    super(coords, distance, duration);
+    this.cadence = cadence;
+    this.pace = duration / distance; // min/km
+  }
+}
+
+class Cycling extends Workout {
+  type = "cycling";
+  constructor(coords, distance, duration, elevationGain) {
+    super(coords, distance, duration);
+    this.elevationGain = elevationGain;
+    this.speed = distance / (duration / 60); // km/h
+  }
+}
+```
+
+### 用控制器封装内部状态与事件入口
+
+应用主逻辑统一收进一个 `App` 类（或 ES Module 私有模块变量），用 `#` 私有字段保护地图实例 `#map`、当前选点事件 `#mapEvent` 和记录数组 `#workouts`不被外部脚本误修改；所有异步初始化与事件监听在 `constructor` 中集中挂接：
+
+```javascript
+class WorkoutApp {
+  #map = null;
+  #mapEvent = null;
+  #workouts = [];
+
+  constructor() {
+    this.#loadFromStorage();
+    this.#initGeolocation();
+    formEl.addEventListener("submit", this.#handleCreateWorkout.bind(this));
+    listEl.addEventListener("click", this.#handleMoveToPopup.bind(this));
+  }
+
+  #initGeolocation() { /* 获取定位后初始化地图并恢复历史 Marker */ }
+  #handleCreateWorkout(e) { /* 校验表单 -> 实例化 Running/Cycling -> 渲染并落盘 */ }
+  #handleMoveToPopup(e) { /* 事件委托读取 data-id -> 移动地图视角 */ }
+  #saveToStorage() { localStorage.setItem("workouts", JSON.stringify(this.#workouts)); }
+  #loadFromStorage() { /* 读取并容错解析 JSON */ }
+}
+```
+
+如果后期项目继续膨胀需要按多页面或多成员协作拆分，直接把 storage、form validator、map adapter 拆成独立 ES Module 文件即可，类内部的私有方法边界几乎可以原封不动平移过去。
+
+## 第四步：开发落地顺序与反例避坑
+
+进入编码前，先把关键技术依赖（第三方库 CDN 或 npm 包、浏览器权限 API）和统一的 JSON 存储 schema 锁定，按**最小闭环先行**的顺序迭代：
+
+1. **先打通主链路 MVP**：只做“地图加载 + 点击弹表单 + 提交后在列表和地图上渲染出一条记录”，先不急着做复杂的筛选、动画和主题切换。
+2. **再补齐持久化与边界兜底**：接入 `localStorage` 恢复、Geolocation 拒绝授权时的默认兜底坐标、以及 `JSON.parse` 反序列化后原型方法丢失的处理（注意：从 `localStorage` 恢复出来的对象只是普通 JSON 字面量，不再拥有 `Running`/`Cycling` 原型上的方法，如需调用实例方法要重新实例化或写成纯函数）。
+3. **随开发同步修订架构图**：一旦在编码中发现遗漏了“表单输入负数校验”或“清空全部记录”需求，先补全对应分支的状态流，再修改模块代码，避免临时打补丁破坏原有职责边界。
+
+### 避坑反例：为什么不要把状态全挂在全局数组里
+
+直接把 `let workouts = []` 和十几个全局函数平铺在顶层脚本里，初期看似少写了几十行封装代码，但很快会遇到三个问题：同名全局变量与其他脚本冲突、DOM 事件回调里直接散落修改 `workouts` 导致找不到数据是在哪一步被改坏的、想要做本地缓存同步或单元测试时无从切入。哪怕是不使用 Vue/React 的纯原生 JS 小项目，坚持用模块私有状态 + 单一应用协调器管理状态变更，也能把后续维护成本压到最低。
