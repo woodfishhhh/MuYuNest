@@ -2,27 +2,15 @@
 title: "Go Context 实现原理：取消传播、超时控制与 Value 链"
 slug: golang-context-internals
 date: "2026-10-14"
-updated: "2026-10-14"
-categories:
-  - Go语言
-tags:
-  - Go
-  - Context
-  - 并发
-  - 源码分析
-source:
-  - https://github.com/golang/go/blob/go1.26.4/src/context/context.go
-  - https://pkg.go.dev/context@go1.26.4
-draft: false
+categories: ["编程语言"]
+tags: ["Go", "Context", "并发", "Runtime", "源码分析"]
 ---
-
-# Go Context 实现原理：取消传播、超时控制与 Value 链
 
 一个请求可能同时发起数据库查询、远程调用和后台计算。请求超时了，这些工作要尽快停；调用链上还要共享请求 ID 这类少量信息。`context` 把取消信号、截止时间和请求范围内的值放进同一个接口，沿着函数调用往下传。
 
-注意 `cancel()` 不会强行杀掉 goroutine。它只改变 Context 的状态，再关闭 `Done` channel 通知使用者。使用者检查到取消后，自己决定返回、释放资源还是结束循环。
+**`cancel()` 永远不会从外部强行杀掉 goroutine，它只负责改变 Context 状态并关闭 `Done` channel 发出广播通知，业务方必须主动监听信号再自行退出。**
 
-源码基线是 **Go 1.26.4** 的 `src/context/context.go`。配图用的是所附材料的原图，有些字段和流程属于旧版实现，差异在对应位置标出。看取消通知之前，可以先看 [Go Channel 实现原理](https://blog.woodfish.site/posts/golang-channel-internals)，这里靠的就是“关闭 channel 后，所有等待的接收者都能被唤醒”。
+源码基线是 **Go 1.26.4** 的 `src/context/context.go`。配图沿用原版示意图，部分字段与分支属于旧版实现，差异已在对应章节逐一标出。理解取消通知机制前，建议先对照 [Go Channel 实现原理](/posts/golang-channel-internals) 中“关闭 channel 后所有等待接收者都会被唤醒”的广播机制。
 
 ## 1. 先看 cancel 怎样让一个 goroutine 退出
 
@@ -32,35 +20,35 @@ draft: false
 package main
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 )
 
 func produce(ctx context.Context, out chan<- int) error {
-    for n := 0; ; n++ {
-        select {
-        case <-ctx.Done():
-            return ctx.Err()
-        case out <- n:
-        }
-    }
+	for n := 0; ; n++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case out <- n:
+		}
+	}
 }
 
 func main() {
-    ctx, cancel := context.WithCancel(context.Background())
-    defer cancel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-    out := make(chan int)
-    finished := make(chan error, 1)
-    go func() {
-        finished <- produce(ctx, out)
-    }()
+	out := make(chan int)
+	finished := make(chan error, 1)
+	go func() {
+		finished <- produce(ctx, out)
+	}()
 
-    for i := 0; i < 3; i++ {
-        fmt.Println(<-out)
-    }
-    cancel()
-    fmt.Println("worker:", <-finished)
+	for i := 0; i < 3; i++ {
+		fmt.Println(<-out)
+	}
+	cancel()
+	fmt.Println("worker:", <-finished)
 }
 ```
 
@@ -79,22 +67,24 @@ worker: context canceled
 2. `produce` 自己执行 `return ctx.Err()`，结束这段工作。
 3. 主 goroutine 从 `finished` 接收结果，确认工作函数已经返回。
 
-`cancel()` 本身不等工作完成。例子里主 goroutine 读完三个数就不再接收 `out`，发送分支完成不了，worker 会从取消分支退出。实际程序里如果发送和取消两个分支同时就绪，`select` 不保证优先选取消分支。
+`cancel()` 本身不等工作完成。例子里主 goroutine 读完三个数就不再接收 `out`，发送分支完成不了，worker 会从取消分支退出。实际程序里如果发送和取消两个分支同时就绪，`select` 会在两个就绪分支间随机挑选，未必优先选中取消分支。
 
 要是把 `produce` 换成一段从不检查 Context 的无限计算，或者调用一个不支持取消的阻塞函数，Context 没法从外部强制中止它。
 
 ## 2. Context 的四个方法分别回答什么
 
+**`Context` 接口由 `Deadline`、`Done`、`Err`、`Value` 四个只读方法组成，内部状态天然并发安全，但存进 `Value` 的引用对象仍需调用方自己加锁保护。**
+
 ```go
 type Context interface {
-    Deadline() (deadline time.Time, ok bool)
-    Done() <-chan struct{}
-    Err() error
-    Value(key any) any
+	Deadline() (deadline time.Time, ok bool)
+	Done() <-chan struct{}
+	Err() error
+	Value(key any) any
 }
 ```
 
-![Context 接口的 Deadline、Done、Err 和 Value 四个方法](assets/go-context/01-context-interface.png)
+![Context 接口的 Deadline、Done、Err 和 Value 四个方法](./assets/go-context/01-context-interface.png)
 
 | 方法 | 回答的问题 | 返回值的边界 |
 | --- | --- | --- |
@@ -146,7 +136,7 @@ func TODO() Context       { return todoCtx{} }
 | `Err()` | nil |
 | `Value(key)` | nil |
 
-旧材料里的 `type emptyCtx int`、`new(emptyCtx)` 和全局 `background` / `todo` 指针是旧版布局。现在两者是不同的结构体值，基础行为相同，区别主要在用途：
+早期版本里的 `type emptyCtx int`、`new(emptyCtx)` 和全局 `background` / `todo` 指针已是旧版布局。现在两者是不同的空结构体值，基础行为相同，区别主要在语义：
 
 - `Background()`：明确的根 Context，比如程序入口、初始化、测试，或者确实没有上游请求的任务。
 - `TODO()`：这里应该有一个 Context，但还没确定从哪里拿，或者调用链还没改造完。
@@ -160,15 +150,17 @@ func TODO() Context       { return todoCtx{} }
 ```go
 select {
 case <-ctx.Done():
-    return ctx.Err()
+	return ctx.Err()
 case item := <-jobs:
-    return handle(item)
+	return handle(item)
 }
 ```
 
 这是局部用法片段，`jobs` 是业务任务 channel，`handle` 是处理函数。`ctx.Done()` 为 nil 时，照样能从 `jobs` 接收任务；整个 `select` 不会因为包含 nil channel 就一定阻塞。
 
 ## 4. 派生 Context：取消向下，查询向上
+
+**Context 包装链具有严格的单向性：父节点取消沿子树向下传播，`Value` 查询沿包装链向上回溯，派生节点通过匿名嵌入 `Context` 自动委托未重写的方法。**
 
 每调用一次 `WithCancel`、`WithTimeout` 或 `WithValue`，一般就在已有 Context 外面再包一层：
 
@@ -204,13 +196,13 @@ Go 1.26.4 里和取消相关的字段：
 
 ```go
 type cancelCtx struct {
-    Context
+	Context
 
-    mu       sync.Mutex
-    done     atomic.Value
-    children map[canceler]struct{}
-    err      atomic.Value
-    cause    error
+	mu       sync.Mutex
+	done     atomic.Value
+	children map[canceler]struct{}
+	err      atomic.Value
+	cause    error
 }
 ```
 
@@ -225,14 +217,14 @@ type cancelCtx struct {
 
 下面的原图可以帮助理解字段之间的关系，但图里的 `done chan struct{}`、`err error` 是简化或旧版写法；当前类型以表格和代码为准，另外还有 `cause` 字段。
 
-![旧版 cancelCtx 示意图：父 Context、锁、通知 channel、子取消节点集合与错误状态](assets/go-context/02-cancelctx-legacy.png)
+![旧版 cancelCtx 示意图：父 Context、锁、通知 channel、子取消节点集合与错误状态](./assets/go-context/02-cancelctx-legacy.png)
 
-`children` 的 key 是内部接口 `canceler`，不是随便一个 `context.Context`：
+`children` 的 key 是内部接口 `canceler`，需要实现取消方法而非任意 `context.Context`：
 
 ```go
 type canceler interface {
-    cancel(removeFromParent bool, err, cause error)
-    Done() <-chan struct{}
+	cancel(removeFromParent bool, err, cause error)
+	Done() <-chan struct{}
 }
 ```
 
@@ -240,25 +232,27 @@ type canceler interface {
 
 ## 6. Done 与 Err：懒加载和取消状态的发布
 
+**`Done()` 采用“无锁原子快读 + 双重检查加锁懒创建”避免无谓分配 channel；`Err()` 在读到非空错误后会先接收一次 `Done()`，确保错误可见时关闭信号也已发布。**
+
 ### 6.1 Done 不必一开始就分配 channel
 
 `Done()` 的核心逻辑，保留成下面这个源码片段：
 
 ```go
 func (c *cancelCtx) Done() <-chan struct{} {
-    d := c.done.Load()
-    if d != nil {
-        return d.(chan struct{})
-    }
+	d := c.done.Load()
+	if d != nil {
+		return d.(chan struct{})
+	}
 
-    c.mu.Lock()
-    defer c.mu.Unlock()
-    d = c.done.Load()
-    if d == nil {
-        d = make(chan struct{})
-        c.done.Store(d)
-    }
-    return d.(chan struct{})
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	d = c.done.Load()
+	if d == nil {
+		d = make(chan struct{})
+		c.done.Store(d)
+	}
+	return d.(chan struct{})
 }
 ```
 
@@ -266,7 +260,7 @@ func (c *cancelCtx) Done() <-chan struct{} {
 
 **下面原图有个箭头要改：第一次检查发现 channel 已存在，就直接返回；这条分支没加锁，也就不会执行 unlock。只有走了加锁路径，返回时才需要解锁。**
 
-![Done 的原始懒加载示意图；首次命中后的 unlock 箭头应按正文修正为直接返回](assets/go-context/03-done-lazy-legacy.png)
+![Done 的原始懒加载示意图；首次命中后的 unlock 箭头应按正文修正为直接返回](./assets/go-context/03-done-lazy-legacy.png)
 
 如果第一次调用 `Done()` 之前 Context 就已经被取消，实现会让 `done` 保存一条共享的、已经关闭的 `closedchan`。之后调用 `Done()` 照样能立即看到取消，也省得再给这个已经结束的 Context 单独分配一条 channel。
 
@@ -276,11 +270,11 @@ Go 1.26.4 的实现：
 
 ```go
 func (c *cancelCtx) Err() error {
-    if err := c.err.Load(); err != nil {
-        <-c.Done()
-        return err.(error)
-    }
-    return nil
+	if err := c.err.Load(); err != nil {
+		<-c.Done()
+		return err.(error)
+	}
+	return nil
 }
 ```
 
@@ -291,6 +285,8 @@ func (c *cancelCtx) Err() error {
 `Err()` 读到 nil，只说明那次观察还没发现取消。返回之后，其他 goroutine 随时可能调用 `cancel()`。
 
 ## 7. WithCancel 怎样把父子 Context 连起来
+
+**标准 Context 链通过向上查找底层 `cancelCtx` 并登记到 `children` 集合传播取消，无需额外启动协程；只有遇到自定义父 Context 时才会走 `AfterFunc` 或桥接 goroutine 后备路径。**
 
 当前版本的主调用链：
 
@@ -319,11 +315,11 @@ WithCancel(parent)
 | 不能使用上述集合，但父实现了 `AfterFunc` 方法 | 注册取消回调，并保存用于撤销回调的 stop 函数 |
 | 其余可取消的自定义父 Context | 启动一个桥接 goroutine，等待父取消或子节点自己结束 |
 
-所以 `WithCancel` 不是每次都会启动一个“守护协程”。常见的标准 Context 链靠子节点集合传播，只有后备路径才需要额外的等待 goroutine。
+所以 `WithCancel` 不会每次都启动一个“守护协程”。常见的标准 Context 链靠子节点集合传播，只有后备路径才需要额外的等待 goroutine。
 
-下面是旧版传播图，能说明“登记子节点”和“启动桥接协程”两条路径，但没画当前版本的 AfterFunc 分支。图里的“parent is cancelCtx”要理解成“能安全找到底层的标准取消节点”，不只是对 parent 做一次直接类型断言。
+下面是旧版传播图，能说明“登记子节点”和“启动桥接协程”两条路径，但没画当前版本的 AfterFunc 分支。图里的“parent is cancelCtx”要理解成“能安全找到底层的标准取消节点”，要沿链查找而不是只对 parent 做一次直接类型断言。
 
-![旧版取消传播图：父节点不可取消、已经取消、登记子节点或使用桥接 goroutine](assets/go-context/04-propagate-cancel-legacy.png)
+![旧版取消传播图：父节点不可取消、已经取消、登记子节点或使用桥接 goroutine](./assets/go-context/04-propagate-cancel-legacy.png)
 
 ### 7.2 为什么 parentCancelCtx 要同时检查内部节点和 Done
 
@@ -333,7 +329,7 @@ WithCancel(parent)
 *valueCtx → *valueCtx → *cancelCtx → Background
 ```
 
-最外层不是 `*cancelCtx`，取消关系照样能登记到里面的标准节点。实现会用一个私有 key `&cancelCtxKey` 沿 `Value` 链找到它，再比较两条 channel：
+最外层是 `*valueCtx`，取消关系照样能登记到里面的标准节点。实现会用一个私有 key `&cancelCtxKey` 沿 `Value` 链找到它，再比较两条 channel：
 
 ```text
 parent.Done() == 找到的 cancelCtx 保存的 done
@@ -341,7 +337,7 @@ parent.Done() == 找到的 cancelCtx 保存的 done
 
 两者相同，才能确认最外层暴露的取消信号确实由这个节点负责。自定义包装器改写了 `Done()` 的话，就不能只因为还能查到内部 `cancelCtx`，就绕过包装器自己的行为。
 
-`parentCancelCtx` 里的 `done == closedchan` 比较的是是不是那一条共享 channel，不是通用地判断“channel 是否已关闭”。父节点是否已经取消，在传播流程前面的接收检查里另外处理。
+`parentCancelCtx` 里的 `done == closedchan` 比较的是是不是那一条共享 channel，用来区分是否共享了已关闭通道，而非通用地判断任意 channel 是否关闭。父节点是否已经取消，在传播流程前面的接收检查里另外处理。
 
 ### 7.3 检查完父状态后，为什么登记前还要再检查
 
@@ -355,19 +351,21 @@ parent.Done() == 找到的 cancelCtx 保存的 done
 
 ```go
 go func() {
-    select {
-    case <-parent.Done():
-        child.cancel(false, parent.Err(), Cause(parent))
-    case <-child.Done():
-    }
+	select {
+	case <-parent.Done():
+		child.cancel(false, parent.Err(), Cause(parent))
+	case <-child.Done():
+	}
 }()
 ```
 
-这是 `context` 包内部的源码片段，`child.cancel` 和 `Cause` 不是业务代码里另外建的一套接口。第二个分支让桥接协程在子节点先结束时退出。只监听父节点的话，子工作早就结束了、父节点却长期不取消，这个等待者就可能一直留着。
+这是 `context` 包内部的源码片段，`child.cancel` 和 `Cause` 是内部协作实现。第二个分支让桥接协程在子节点先结束时退出。只监听父节点的话，子工作早就结束了、父节点却长期不取消，这个等待者就可能一直留着。
 
 `AfterFunc` 分支保存的 stop 函数也负责类似的清理：子节点主动结束时，解除不再需要的回调关联。
 
 ## 8. cancel 怎样关闭通知、取消子树并解除关联
+
+**`cancel` 通过锁内幂等检查保证只生效一次，关闭 `done` 广播全部监听者；父节点向下遍历子集合时传入 `removeFromParent = false`，避免子节点反向争抢父锁死锁。**
 
 Go 1.26.4 的内部方法签名多了 `cause` 参数：
 
@@ -393,7 +391,7 @@ func (c *cancelCtx) cancel(removeFromParent bool, err, cause error)
 
 下面原图画的是主要顺序，但方法签名和字段是旧版写法；当前实现还会保存并向下传递 `cause`。
 
-![旧版 cancel 流程：检查状态、关闭 Done、取消子节点、解锁并按需从父节点移除](assets/go-context/05-cancel-flow-legacy.png)
+![旧版 cancel 流程：检查状态、关闭 Done、取消子节点、解锁并按需从父节点移除](./assets/go-context/05-cancel-flow-legacy.png)
 
 图里的“err 不能为 nil”是内部方法的检查。公共 API `WithCancelCause` 返回的取消函数可以接收 nil：调用 `cancelCause(nil)` 是合法的，这时标准状态和原因都用 `context.Canceled`。
 
@@ -413,7 +411,7 @@ func (c *cancelCtx) cancel(removeFromParent bool, err, cause error)
 
 主动取消的路径会先释放自己的锁，再尝试拿父锁执行 `removeChild`，这样向下取消和向上解除关联的锁操作才能配合上。
 
-当前版本的 `removeChild` 还会检查父包装是不是 `stopCtx`：是的话，调用保存的 stop 函数，解除之前登记的取消回调；不是再尝试从标准父节点的 `children` 里删除。
+当前版本的 `removeChild` 还会检查父包装是不是 `stopCtx`：是的话，调用保存的 stop 函数，解除之前登记的取消回调；否则再尝试从标准父节点的 `children` 里删除。
 
 ### 8.3 验证子取消不会向上或横向传播
 
@@ -423,28 +421,28 @@ func (c *cancelCtx) cancel(removeFromParent bool, err, cause error)
 package main
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 )
 
 func main() {
-    parent, cancelParent := context.WithCancel(context.Background())
-    defer cancelParent()
-    child, cancelChild := context.WithCancel(parent)
-    defer cancelChild()
-    grandchild, cancelGrandchild := context.WithCancel(child)
-    defer cancelGrandchild()
-    sibling, cancelSibling := context.WithCancel(parent)
-    defer cancelSibling()
+	parent, cancelParent := context.WithCancel(context.Background())
+	defer cancelParent()
+	child, cancelChild := context.WithCancel(parent)
+	defer cancelChild()
+	grandchild, cancelGrandchild := context.WithCancel(child)
+	defer cancelGrandchild()
+	sibling, cancelSibling := context.WithCancel(parent)
+	defer cancelSibling()
 
-    cancelChild()
-    fmt.Println("child:", child.Err())
-    fmt.Println("grandchild:", grandchild.Err())
-    fmt.Println("parent:", parent.Err())
-    fmt.Println("sibling:", sibling.Err())
+	cancelChild()
+	fmt.Println("child:", child.Err())
+	fmt.Println("grandchild:", grandchild.Err())
+	fmt.Println("parent:", parent.Err())
+	fmt.Println("sibling:", sibling.Err())
 
-    cancelParent()
-    fmt.Println("sibling after parent:", sibling.Err())
+	cancelParent()
+	fmt.Println("sibling after parent:", sibling.Err())
 }
 ```
 
@@ -462,23 +460,25 @@ sibling after parent: context canceled
 
 ## 9. timerCtx 怎样把截止时间接入取消流程
 
+**`timerCtx` 嵌入 `cancelCtx` 并绑定 `time.Timer`，子 Context 的有效截止时间永远不能晚于父节点；即使配置了超时，用完也必须调用 `defer cancel()` 提前释放定时器与父节点引用。**
+
 `timerCtx` 嵌入 `cancelCtx`，再加上定时器和截止时间：
 
 ```go
 type timerCtx struct {
-    cancelCtx
-    timer    *time.Timer
-    deadline time.Time
+	cancelCtx
+	timer    *time.Timer
+	deadline time.Time
 }
 
 func (c *timerCtx) Deadline() (time.Time, bool) {
-    return c.deadline, true
+	return c.deadline, true
 }
 ```
 
-![timerCtx 通过嵌入 cancelCtx 复用取消能力，并持有定时器与截止时间](assets/go-context/06-timerctx.png)
+![timerCtx 通过嵌入 cancelCtx 复用取消能力，并持有定时器与截止时间](./assets/go-context/06-timerctx.png)
 
-图里的“继承”按复用来理解就行，Go 代码里用的是结构体嵌入；实际的定时器字段是 `*time.Timer`。`timerCtx` 的 `Done`、`Err` 等方法来自嵌入的取消节点，它自己提供具体的 `Deadline`。
+图里的“继承”按组合复用来理解，Go 代码里用的是结构体嵌入；实际的定时器字段是 `*time.Timer`。`timerCtx` 的 `Done`、`Err` 等方法来自嵌入的取消节点，它自己提供具体的 `Deadline`。
 
 ### 9.1 WithTimeout 最终把相对时长换成绝对时刻
 
@@ -499,25 +499,25 @@ WithTimeout(parent, duration)
 
 子 Context 的有效截止时间不会晚于父 Context。给子节点设更长的超时，也延长不了整条请求链原来的时间预算。
 
-父节点的截止时间更早时，就不用再创建一个更晚的定时器。也因为这个优化，`WithTimeout` 返回的不一定是 `*timerCtx`；业务代码只依赖接口行为就好。
+父节点的截止时间更早时，就不用再创建一个更晚的定时器。也因为这个优化，`WithTimeout` 返回的可能是普通 `*cancelCtx`；业务代码只依赖接口行为就好。
 
-定时器到期也不代表工作就在那一纳秒停下：回调、goroutine 调度、业务代码检查取消的时机，都会影响实际退出时间。
+定时器到期后，工作退出仍受回调触发、goroutine 调度和业务代码检查取消的时机影响。
 
 ### 9.2 timerCtx 取消时还要处理定时器
 
 当前的 `timerCtx.cancel` 先复用 `cancelCtx.cancel(false, err, cause)`，再按需把自己从父节点里移除，最后在锁内停止定时器并清空字段。
 
-这里解除关联时，移除的是完整的 `timerCtx` 节点：父集合登记的就是这个对象，不是里面的 `&cancelCtx` 字段。
+这里解除关联时，移除的是完整的 `timerCtx` 节点：父集合登记的就是这个对象，而不仅仅是里面的 `&cancelCtx` 字段。
 
-不管是主动取消、父节点取消还是自身超时，保留的都是第一次到达的取消结果。定时器回调已经开始运行的话，`Stop` 不负责等它结束；重复取消的幂等检查保证结果不会被后来的取消覆盖。
+不管是主动取消、父节点取消还是自身超时，保留的都是第一次到达的取消结果。定时器回调已经开始运行的话，`Stop` 不会等待它结束；重复取消的幂等检查保证结果不会被后来的取消覆盖。
 
 ### 9.3 有超时也仍然要调用 cancel
 
 ```go
 func query(ctx context.Context) error {
-    queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-    defer cancel()
-    return doQuery(queryCtx)
+	queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	return doQuery(queryCtx)
 }
 ```
 
@@ -533,28 +533,28 @@ func query(ctx context.Context) error {
 package main
 
 import (
-    "context"
-    "fmt"
-    "time"
+	"context"
+	"fmt"
+	"time"
 )
 
 func main() {
-    parent, cancelParent := context.WithTimeout(context.Background(), 30*time.Millisecond)
-    defer cancelParent()
-    child, cancelChild := context.WithTimeout(parent, time.Hour)
-    defer cancelChild()
+	parent, cancelParent := context.WithTimeout(context.Background(), 30*time.Millisecond)
+	defer cancelParent()
+	child, cancelChild := context.WithTimeout(parent, time.Hour)
+	defer cancelChild()
 
-    parentDeadline, _ := parent.Deadline()
-    childDeadline, _ := child.Deadline()
-    fmt.Println("same deadline:", parentDeadline.Equal(childDeadline))
+	parentDeadline, _ := parent.Deadline()
+	childDeadline, _ := child.Deadline()
+	fmt.Println("same deadline:", parentDeadline.Equal(childDeadline))
 
-    <-child.Done()
-    fmt.Println("child:", child.Err())
-    fmt.Println("parent:", parent.Err())
+	<-child.Done()
+	fmt.Println("child:", child.Err())
+	fmt.Println("parent:", parent.Err())
 
-    expired, cancelExpired := context.WithDeadline(context.Background(), time.Unix(1, 0))
-    defer cancelExpired()
-    fmt.Println("expired:", expired.Err())
+	expired, cancelExpired := context.WithDeadline(context.Background(), time.Unix(1, 0))
+	defer cancelExpired()
+	fmt.Println("expired:", expired.Err())
 }
 ```
 
@@ -571,16 +571,18 @@ expired: context deadline exceeded
 
 ## 10. valueCtx 怎样沿包装链查询
 
+**每个 `valueCtx` 节点只挂一个不可变键值对，`Value(key)` 查找是最坏 `O(n)` 的沿链回溯；必须使用包私有不可比较冲突的 key 类型，且仅限存放请求级少量元数据。**
+
 `WithValue` 创建的节点只保存一个键值对：
 
 ```go
 type valueCtx struct {
-    Context
-    key, val any
+	Context
+	key, val any
 }
 ```
 
-![valueCtx 保存父 Context 与一组 key、value](assets/go-context/07-valuectx.png)
+![valueCtx 保存父 Context 与一组 key、value](./assets/go-context/07-valuectx.png)
 
 这个节点只重新实现了 `Value`，其他方法通过嵌入字段委托给父 Context。所以包一层 Value 不会凭空多出一份独立的取消状态或截止时间。
 
@@ -588,10 +590,10 @@ type valueCtx struct {
 
 ```go
 func (c *valueCtx) Value(key any) any {
-    if c.key == key {
-        return c.val
-    }
-    return value(c.Context, key)
+	if c.key == key {
+		return c.val
+	}
+	return value(c.Context, key)
 }
 ```
 
@@ -603,7 +605,7 @@ func (c *valueCtx) Value(key any) any {
 - 遇到其他自定义 Context：调用它自己的 `Value` 方法。
 - 遇到 `withoutCancelCtx`：普通请求值继续往父层找，但和取消原因相关的内部查询被隔断。
 
-![Value 从当前节点向父节点查询；相同 key 返回离调用点最近的值](assets/go-context/08-value-lookup.png)
+![Value 从当前节点向父节点查询；相同 key 返回离调用点最近的值](./assets/go-context/08-value-lookup.png)
 
 图里的 `emptyCtx` 是空根节点；当前版本里这个角色由 `backgroundCtx` 或 `todoCtx` 承担。
 
@@ -627,33 +629,33 @@ root.Value(key) → nil
 package main
 
 import (
-    "context"
-    "fmt"
+	"context"
+	"fmt"
 )
 
 type requestIDKey struct{}
 
 func withRequestID(ctx context.Context, id string) context.Context {
-    return context.WithValue(ctx, requestIDKey{}, id)
+	return context.WithValue(ctx, requestIDKey{}, id)
 }
 
 func requestID(ctx context.Context) (string, bool) {
-    id, ok := ctx.Value(requestIDKey{}).(string)
-    return id, ok
+	id, ok := ctx.Value(requestIDKey{}).(string)
+	return id, ok
 }
 
 func main() {
-    root := context.Background()
-    first := withRequestID(root, "req-A")
-    second := withRequestID(first, "req-B")
+	root := context.Background()
+	first := withRequestID(root, "req-A")
+	second := withRequestID(first, "req-B")
 
-    firstID, _ := requestID(first)
-    secondID, _ := requestID(second)
-    _, found := requestID(root)
-    fmt.Println("first:", firstID)
-    fmt.Println("second:", secondID)
-    fmt.Println("root has value:", found)
-    fmt.Println("same Done:", second.Done() == first.Done())
+	firstID, _ := requestID(first)
+	secondID, _ := requestID(second)
+	_, found := requestID(root)
+	fmt.Println("first:", firstID)
+	fmt.Println("second:", secondID)
+	fmt.Println("root has value:", found)
+	fmt.Println("same Done:", second.Done() == first.Done())
 }
 ```
 
@@ -678,7 +680,7 @@ same Done: true
 
 ## 11. Err 与 Cause：保留具体的取消原因
 
-`Err()` 负责稳定地区分主动取消和截止时间到期；`Cause()` 提供更具体的原因。两者别混用。
+**`Err()` 保持 `Canceled` / `DeadlineExceeded` 两种标准契约稳定不变，而 `context.Cause(ctx)` 负责透传业务自定义的真实取消诱因。**
 
 | 创建方式与取消来源 | `ctx.Err()` | `context.Cause(ctx)` |
 | --- | --- | --- |
@@ -695,24 +697,24 @@ same Done: true
 package main
 
 import (
-    "context"
-    "errors"
-    "fmt"
+	"context"
+	"errors"
+	"fmt"
 )
 
 func main() {
-    parent, cancelParent := context.WithCancelCause(context.Background())
-    defer cancelParent(nil)
-    child, cancelChild := context.WithCancelCause(parent)
-    defer cancelChild(nil)
+	parent, cancelParent := context.WithCancelCause(context.Background())
+	defer cancelParent(nil)
+	child, cancelChild := context.WithCancelCause(parent)
+	defer cancelChild(nil)
 
-    cancelChild(errors.New("child rejected input"))
-    cancelParent(errors.New("request disconnected"))
+	cancelChild(errors.New("child rejected input"))
+	cancelParent(errors.New("request disconnected"))
 
-    fmt.Println("parent Err:", parent.Err())
-    fmt.Println("parent Cause:", context.Cause(parent))
-    fmt.Println("child Err:", child.Err())
-    fmt.Println("child Cause:", context.Cause(child))
+	fmt.Println("parent Err:", parent.Err())
+	fmt.Println("parent Cause:", context.Cause(parent))
+	fmt.Println("child Err:", child.Err())
+	fmt.Println("child Cause:", context.Cause(child))
 }
 ```
 
@@ -733,7 +735,7 @@ child Cause: child rejected input
 
 `context.WithoutCancel(parent)` 返回的 Context 还能沿父链读取 Value，但它的 `Done()` 为 nil，`Err()` 和 `Cause()` 为 nil，`Deadline()` 的 `ok` 为 false。父节点取消或超时，都不会取消这个包装结果。
 
-它不是“暂停父超时、以后继续计时”，原来的截止时间不再对外提供。这项独立工作如果还需要有个结束时间，得重新给它加一个自己的超时：
+它也不会暂停父超时并在以后继续计时，而是直接将原来的截止时间清零。这项独立工作如果还需要有个结束时间，得重新给它加一个自己的超时：
 
 ```go
 detached := context.WithoutCancel(requestCtx)
@@ -749,26 +751,26 @@ return runTask(taskCtx)
 ```go
 callbackDone := make(chan struct{})
 stop := context.AfterFunc(ctx, func() {
-    cleanup()
-    close(callbackDone)
+	cleanup()
+	close(callbackDone)
 })
 ```
 
 这是局部片段，`cleanup` 是取消后要执行的操作。Context 取消时，回调在它自己的 goroutine 里运行；注册时已经取消的话，也会安排回调运行。
 
-返回的 `stop()` 用来解除还没开始的回调关联：返回 true 表示成功阻止它开始；返回 false 可能是回调已经开始，也可能是之前已经停止过。**false 不能直接理解成“回调已经执行完”。** 要确认完成，还是得通过类似 `callbackDone` 的机制协调；成功停止的那个分支，别再去等一个永远不会执行的回调来关闭 channel。
+返回的 `stop()` 用来解除还没开始的回调关联：返回 true 表示成功阻止它开始；返回 false 可能是回调已经开始，也可能是之前已经停止过。**`stop()` 返回 false 只表示回调已经启动或早已停止，绝不能直接理解成“回调已经执行完毕”；要确认收尾完成，仍需通过类似 `callbackDone` 的信号同步。** 成功停止的那个分支，别再去等一个永远不会执行的回调来关闭 channel。
 
 `AfterFunc` 不在 `Context` 的四方法接口里。标准库的包级函数 `context.AfterFunc`，和 `propagateCancel` 里探测某个自定义父对象的同名方法，是两个层面的入口。
 
 ## 13. 从源码落实到调用链的用法
 
-一般把 Context 当第一个参数，由调用者传入，处理过程中继续往下传：
+**始终把 `ctx` 作为函数第一个参数沿调用链透传，不在长期存活的结构体里固化单次请求的 Context，也不在中间层随手用 `context.Background()` 截断上游取消树。**
 
 ```go
 func loadProfile(ctx context.Context, userID int64) error {
-    queryCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-    defer cancel()
-    return queryProfile(queryCtx, userID)
+	queryCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancel()
+	return queryProfile(queryCtx, userID)
 }
 ```
 
@@ -791,11 +793,11 @@ func loadProfile(ctx context.Context, userID int64) error {
 
 ## 参考资料与版本说明
 
-这篇根据所附《Golang context 实现原理》文本整理，并对照 Go 1.26.4 修订。八张原图保留了原有内容和水印，水印是“小徐先生的编程世界”；材料没附原文链接。图里的旧版字段、遗漏分支和错误箭头都在附近注明了。
+本文源码基线为 Go 1.26.4，示意图保留原作者“小徐先生的编程世界”水印，图中旧版字段、遗漏分支与箭头差异已在对应正文中逐一订正。
 
 - [Go 1.26.4：context/context.go](https://github.com/golang/go/blob/go1.26.4/src/context/context.go)：本文所用的完整源码基线。
 - [Go 1.26.4：Context 包文档](https://pkg.go.dev/context@go1.26.4)：接口、取消函数、Cause、AfterFunc 和 WithoutCancel 的公开契约。
 - [Go 源码许可证](https://github.com/golang/go/blob/go1.26.4/LICENSE)：源码片段版权归 The Go Authors，采用 BSD 许可。
-- [上一篇：Go Channel 实现原理](https://blog.woodfish.site/posts/golang-channel-internals)：关闭 channel、广播通知与 goroutine 唤醒。
+- [Go Channel 实现原理](/posts/golang-channel-internals)：关闭 channel、广播通知与 goroutine 唤醒。
 
-源码片段依赖 `context` 包的内部类型，不能单独复制成业务包使用。文中五个标了文件名的完整程序用来验证公开行为，不拿 goroutine 数量、内部指针或某次调度时序做断言。
+源码片段依赖 `context` 包内部类型，完整可运行验证代码为文中五个独立示例程序。

@@ -2,23 +2,9 @@
 title: "Go Channel 实现原理：从环形缓冲区到协程唤醒"
 slug: golang-channel-internals
 date: "2026-10-13"
-updated: "2026-10-13"
-categories:
-  - Go语言
-tags:
-  - Go
-  - Channel
-  - 并发
-  - Runtime
-source:
-  - https://github.com/golang/go/blob/go1.26.4/src/runtime/chan.go
-  - https://github.com/golang/go/blob/go1.26.4/src/runtime/runtime2.go
-  - https://github.com/golang/go/blob/go1.26.4/src/runtime/select.go
-  - https://github.com/golang/go/blob/go1.26.4/src/cmd/compile/internal/walk/select.go
-draft: false
+categories: ["编程语言"]
+tags: ["Go", "Channel", "并发", "Runtime", "源码分析"]
 ---
-
-# Go Channel 实现原理：从环形缓冲区到协程唤醒
 
 `ch <- value` 的数据不一定先进缓冲区：已经有接收者在等，runtime 会把值直接交给它；没有接收者、缓冲区又放不下，发送者才进等待队列。
 
@@ -30,14 +16,16 @@ draft: false
 
 `close` 和 `select` 是在这套机制上加了状态变化和多路选择。
 
-源码基线是 **Go 1.26.4** 的普通 `make(chan T, n)`。结构体只列相关字段，流程图和伪代码省略了 race 检测、性能采样、定时器和 `synctest` 分支。这些内部布局不是稳定 API，语言层面的行为以 [Go 规范](https://go.dev/ref/spec#Channel_types)为准。
+源码基线是 **Go 1.26.4** 的普通 `make(chan T, n)`。结构体只列相关字段，流程图和伪代码省略了 race 检测、性能采样、定时器和 `synctest` 分支，语言层面的行为约定以 [Go 规范](https://go.dev/ref/spec#Channel_types)为准。
 
 ## 1. 先区分 nil、无缓冲、有缓冲和已关闭
 
+**`nil` channel 与容量为 0 的无缓冲 channel 的 `len` 和 `cap` 都是 0，但前者永久阻塞收发、后者负责发送与接收同步配对。**
+
 ```go
-var nilCh chan int          // nil：还没有关联到 channel 对象
-unbuffered := make(chan int) // 已创建，容量为 0
-buffered := make(chan int, 3) // 已创建，容量为 3
+var nilCh chan int             // nil：还没有关联到 channel 对象
+unbuffered := make(chan int)   // 已创建，容量为 0
+buffered := make(chan int, 3)  // 已创建，容量为 3
 signal := make(chan struct{}, 3) // 元素大小为 0，但逻辑容量仍为 3
 ```
 
@@ -51,7 +39,7 @@ signal := make(chan struct{}, 3) // 元素大小为 0，但逻辑容量仍为 3
 | 已关闭、缓冲区还有值 | panic | 继续读出原有值，`ok == true` | panic |
 | 已关闭、缓冲区已空 | panic | 立即得到元素类型零值，`ok == false` | panic |
 
-这里的“阻塞”是指当前 goroutine 暂停执行。整个程序都没法继续推进时，runtime 才可能报死锁。一个 goroutine 等在 nil channel 上，不代表其他 goroutine 都不能运行。
+这里的“阻塞”是指当前 goroutine 暂停执行，一个 goroutine 等在 nil channel 上时，其他 goroutine 依然可以正常运行；整个程序都无法继续推进时，runtime 才会报死锁。
 
 `len(ch)` 是当时缓冲区里还没取走的元素数，不算等待发送者手里的值。别用它判断下一次发送会不会阻塞：刚查完，其他 goroutine 就可能改了 channel 状态。
 
@@ -59,7 +47,7 @@ signal := make(chan struct{}, 3) // 元素大小为 0，但逻辑容量仍为 3
 
 普通 channel 的运行时状态都在 `hchan` 里。把 channel 赋给另一个变量，两个变量指向的还是同一个 channel 对象，不会复制出一份独立队列。
 
-![hchan 管理缓冲区、发送等待队列和接收等待队列；sudog 关联 goroutine 与待传输数据](assets/go-channel/01-structure.svg)
+![hchan 管理缓冲区、发送等待队列和接收等待队列；sudog 关联 goroutine 与待传输数据](./assets/go-channel/01-structure.svg)
 
 ### 2.1 hchan：缓冲区与通信状态
 
@@ -67,19 +55,19 @@ signal := make(chan struct{}, 3) // 元素大小为 0，但逻辑容量仍为 3
 
 ```go
 type hchan struct {
-    qcount   uint           // 缓冲区中已有的元素数
-    dataqsiz uint           // 缓冲区容量
-    buf      unsafe.Pointer // 环形缓冲区的起始地址
-    elemsize uint16         // 一个元素占用的字节数
-    closed   uint32         // 是否已关闭
-    elemtype *_type         // 元素的运行时类型信息
+	qcount   uint           // 缓冲区中已有的元素数
+	dataqsiz uint           // 缓冲区容量
+	buf      unsafe.Pointer // 环形缓冲区的起始地址
+	elemsize uint16         // 一个元素占用的字节数
+	closed   uint32         // 是否已关闭
+	elemtype *_type         // 元素的运行时类型信息
 
-    sendx uint  // 下一次入队使用的下标
-    recvx uint  // 下一次出队使用的下标
-    recvq waitq // 等待接收的节点队列
-    sendq waitq // 等待发送的节点队列
+	sendx uint  // 下一次入队使用的下标
+	recvx uint  // 下一次出队使用的下标
+	recvq waitq // 等待接收的节点队列
+	sendq waitq // 等待发送的节点队列
 
-    lock mutex  // 保护 channel 状态及相关等待节点
+	lock mutex  // 保护 channel 状态及相关等待节点
 }
 ```
 
@@ -96,8 +84,8 @@ type hchan struct {
 
 ```go
 type waitq struct {
-    first *sudog
-    last  *sudog
+	first *sudog
+	last  *sudog
 }
 ```
 
@@ -105,7 +93,7 @@ type waitq struct {
 
 ### 2.3 sudog：一次等待关系的记录
 
-`sudog` 可以理解成一条“某个 goroutine 正在某个同步操作上等待”的记录。它不是 goroutine 本身，一个 goroutine 也不是只对应一个 sudog。
+`sudog` 可以理解成一条“某个 goroutine 正在某个同步操作上等待”的记录。它不是 goroutine 本身，一个 goroutine 也可能同时关联多个 sudog。
 
 | 相关字段 | 含义 |
 | --- | --- |
@@ -116,9 +104,9 @@ type waitq struct {
 | `isSelect` | 是否属于 `select` 的候选通信 |
 | `success` | 是否因为成功通信而恢复；因关闭解除等待时为 false |
 
-Go 1.26.4 里 `elem` 和 `c` 用的是内部指针包装类型，源码通过 `.get()`、`.set()` 访问。旧文章直接写 `unsafe.Pointer` 或 `*hchan`，拿来理解关系可以，但不是当前版本的完整声明。
+Go 1.26.4 里 `elem` 和 `c` 用的是内部指针包装类型，源码通过 `.get()`、`.set()` 访问。早期资料直接写 `unsafe.Pointer` 或 `*hchan` 可以拿来理解关系，具体声明以 Go 1.26.4 源码为准。
 
-`select` 可能让一个 goroutine 同时等多个 case，这时就对应多个 `sudog`；某个 case 胜出后，其余等待关系要撤销。节点还会复用，`acquireSudog` / `releaseSudog` 不是每次都向系统申请、释放内存。
+`select` 可能让一个 goroutine 同时等多个 case，这时就对应多个 `sudog`；某个 case 胜出后，其余等待关系要撤销。节点还会复用，`acquireSudog` / `releaseSudog` 不会每次都向系统申请或释放内存。
 
 ### 2.4 两条能解释收发分支的不变量
 
@@ -127,11 +115,13 @@ Go 1.26.4 里 `elem` 和 `c` 用的是内部指针包装类型，源码通过 `.
 - `qcount > 0` 时，`recvq` 为空：缓冲区里已经有值，接收者就不该再排队等。
 - `qcount < dataqsiz` 时，`sendq` 为空：缓冲区还有空位，发送者就不该再排队等。
 
-所以，**有缓冲 channel 有等待的发送者时，缓冲区一定是满的；有等待的接收者时，缓冲区一定是空的。**
+**有缓冲 channel 存在等待发送者时，缓冲区一定是满的；存在等待接收者时，缓冲区一定是空的。**
 
 普通配对场景下，`sendq` 和 `recvq` 不会同时非空。源码特意留了个例外：一个 goroutine 在无缓冲 channel 的同一条 `select` 里同时注册发送和接收 case。所以等待节点不能简单等同于不同的 goroutine。
 
 ## 3. makechan 怎样分配内存
+
+**`makechan` 按 `mem == 0`、无指针元素、含指针元素三条路径分配内存，决定因素是元素内部是否含 GC 需要追踪的指针，而非外层是不是结构体。**
 
 `make(chan T, n)` 时，runtime 先算缓冲区的字节数：
 
@@ -149,7 +139,7 @@ mem = 元素大小 × 容量
 | `mem > 0`，元素不含 GC 需要追踪的指针 | 将头部与缓冲区放在同一次分配中 | `chan int`、`chan [8]byte`、`chan struct{ N int }` |
 | `mem > 0`，元素含有指针 | 分别分配头部与按元素类型描述的缓冲区 | `chan *User`、`chan string`、`chan []byte`、`chan struct{ P *int }` |
 
-分类看的是元素含不含指针，不是“struct 型”和“pointer 型”。结构体也可能含指针，字符串和切片的值内部也有指向底层数据的指针。
+分类看的是元素含不含指针，跟外层写成 `struct` 还是指针无关——结构体里可能嵌了指针，字符串和切片描述符内部也带着指向底层数据的指针。
 
 `mem == 0` 也不代表无缓冲，比如：
 
@@ -163,9 +153,11 @@ ch <- struct{}{}
 
 元素本身不占存储字节，但 channel 照样记录数量、容量和等待关系，通信行为不会消失。
 
-channel 头部大小由 `unsafe.Sizeof(hchan{})` 结合对齐算出来，跟 Go 版本和平台有关，旧文章里“固定 96 字节”的说法不通用。[源码位置：`makechan`](https://github.com/golang/go/blob/go1.26.4/src/runtime/chan.go)。
+channel 头部大小由 `unsafe.Sizeof(hchan{})` 结合对齐算出来，随 Go 版本和平台变化，“固定 96 字节”的说法已经过时。[源码位置：`makechan`](https://github.com/golang/go/blob/go1.26.4/src/runtime/chan.go)。
 
 ## 4. 环形缓冲区怎样保持 FIFO
+
+**缓冲区通过 `sendx` 和 `recvx` 下标绕回实现逻辑 FIFO，出队时必须清零原槽位以防止指针元素被缓冲区无意保活。**
 
 缓冲区底层是一段按元素大小划分的连续存储，第 `i` 个槽位的地址可以这样理解：
 
@@ -204,9 +196,11 @@ qcount--
 
 下标会绕回，逻辑上的 FIFO 顺序不变。注意最后一行 `sendx == recvx`，缓冲区却是满的，要结合 `qcount` 判断。
 
-这里的 FIFO 只是值的入队、出队顺序。它不保证多个并发发送者按 goroutine 创建顺序执行，也不保证被唤醒的 goroutine 马上拿到 CPU。
+这里的 FIFO 只是值的入队、出队顺序。多个并发发送者未必按 goroutine 创建顺序入队，被唤醒的 goroutine 也未必立刻拿到 CPU。
 
 ## 5. 发送流程：先找接收者，再看缓冲区
+
+**`chansend` 的核心分支依次是：检查关闭状态、直接交付给 `recvq` 中的等待接收者、写入空闲缓冲区、打包 `sudog` 进 `sendq` 挂起。**
 
 普通发送语句的调用链：
 
@@ -218,7 +212,7 @@ ch <- value
 
 `ep` 是待发送值的地址，`block` 表示不能立即完成时能不能挂起当前 goroutine。
 
-![发送流程：nil 处理、关闭检查、直接交付、写入缓冲区以及进入 sendq 等待](assets/go-channel/03-send.svg)
+![发送流程：nil 处理、关闭检查、直接交付、写入缓冲区以及进入 sendq 等待](./assets/go-channel/03-send.svg)
 
 ### 5.1 nil 与已关闭 channel
 
@@ -226,7 +220,7 @@ nil channel 没有可配对的通信对象。普通发送会永久挂起当前 g
 
 非 nil channel 加锁后先检查关闭状态。已关闭就解锁并触发 `send on closed channel`，缓冲区有空位也不让继续发。
 
-源码在一定条件下还会走无锁快速路径，提前判断非阻塞操作成功不了，省掉不必要的加锁。图里只保留了主干逻辑，不是逐条指令展开。
+源码在一定条件下还会走无锁快速路径，提前判断非阻塞操作成功不了，省掉不必要的加锁。图里只保留了主干逻辑，没有逐条指令展开。
 
 ### 5.2 已有接收者等待：直接交付
 
@@ -244,7 +238,7 @@ nil channel 没有可配对的通信对象。普通发送会永久挂起当前 g
 
 `qcount < dataqsiz` 时，把值复制到 `sendx` 槽位，推进 `sendx`、增加 `qcount`，然后解锁返回。
 
-发送返回只说明值已经交付或入队。对有缓冲 channel，它**不保证接收者已经取走，更不保证接收者已经处理完**。要确认业务处理完成，得另外设计响应或完成信号。
+**对于有缓冲 channel，发送返回只说明值已经交付或入队，接收者可能还没取走，更谈不上已经处理完；要确认业务处理完成，得另外设计响应或完成信号。**
 
 ### 5.4 既不能交付，也不能入队
 
@@ -268,6 +262,8 @@ nil channel 没有可配对的通信对象。普通发送会永久挂起当前 g
 
 ## 6. 接收流程：等待发送者与缓冲区怎样配合
 
+**有缓冲 channel 满载且 `sendq` 非空时，接收者必须先取 `recvx` 队头旧值，再把等待发送者的值补进同一槽位，以维持全局 FIFO 顺序。**
+
 普通接收有两种入口：
 
 ```text
@@ -286,7 +282,7 @@ value, ok := <-ch  → chanrecv2 → chanrecv(..., block=true)
 | 成功接收到一个发送值 | true | true |
 | channel 已关闭且缓冲区已空 | true | false |
 
-![接收流程：关闭后先区分有无剩余值，未关闭时处理等待发送者、缓冲区或 recvq 等待](assets/go-channel/04-receive.svg)
+![接收流程：关闭后先区分有无剩余值，未关闭时处理等待发送者、缓冲区或 recvq 等待](./assets/go-channel/04-receive.svg)
 
 ### 6.1 已关闭：先判断缓冲区是否已经读空
 
@@ -298,11 +294,10 @@ value, ok := <-ch  → chanrecv2 → chanrecv(..., block=true)
 
 这时调用 `recv`，要分容量是不是 0。
 
-**无缓冲 channel：** 把等待发送者的值直接复制到当前接收位置，再释放锁、标记成功、唤醒发送者。没有“先把值放进容量为 0 的缓冲区”这一步。
+- **无缓冲 channel**：把等待发送者的值直接复制到当前接收位置，再释放锁、标记成功、唤醒发送者，没有“先把值放进容量为 0 的缓冲区”这一步。
+- **有缓冲 channel**：按前面的不变量，这时缓冲区一定是满的。当前接收者要先拿最早入队的值，不能越过它直接拿等待发送者的新值。
 
-**有缓冲 channel：** 按前面的不变量，这时缓冲区一定是满的。当前接收者要先拿最早入队的值，不能越过它直接拿等待发送者的新值。
-
-![满缓冲区接收时先取 A，再把等待发送者的 D 放到同一个物理槽位，逻辑顺序变为 B、C、D](assets/go-channel/02-buffer-handoff.svg)
+![满缓冲区接收时先取 A，再把等待发送者的 D 放到同一个物理槽位，逻辑顺序变为 B、C、D](./assets/go-channel/02-buffer-handoff.svg)
 
 假设容量为 3，缓冲区是 `[A, B, C]`，D 的发送者已经排队：
 
@@ -327,6 +322,8 @@ value, ok := <-ch  → chanrecv2 → chanrecv(..., block=true)
 
 ## 7. 为什么不能简单写成“解锁，然后睡眠”
 
+**`gopark` 与回调 `chanparkcommit` 保证了“等待节点入队、标记挂起状态、释放 `hchan.lock`”的原子交接，防止唤醒信号在解锁与睡眠间隙丢失。**
+
 阻塞流程最关键的，是入队、释放锁、进入等待状态这几步之间怎么协调。
 
 如果先释放锁、再随便执行一个睡眠动作：对端可能正好在这两步中间找到等待节点、完成通信并尝试唤醒，本方之后才真正睡下，这次唤醒就可能丢了。
@@ -343,13 +340,15 @@ Go 用 `gopark` 和 `chanparkcommit` 协调这个过程：等待节点先在持�
 | `goready` | 等待者恢复为可运行状态，等待调度 |
 | 真正继续执行 | 调度器安排该 goroutine 获得执行机会 |
 
-所以源码分析里说的“唤醒”一般不是立即执行，也不能写成“睡眠期间一直持锁，醒来后才解锁”。一直持锁的话，对端就进不了 channel 完成交接。
+所以源码分析里说的“唤醒”一般指变为可运行状态，随后才由调度器安排继续执行，也不能写成“睡眠期间一直持锁，醒来后才解锁”。一直持锁的话，对端就进不了 channel 完成交接。
 
 ## 8. close 做了什么，为什么不会清空缓冲区
 
+**`closechan` 只置位关闭标记并唤醒 `recvq`/`sendq` 中全部等待协程，已写入缓冲区的有效元素继续保留供接收方消费。**
+
 `close(ch)` 的入口是 `closechan`。它的意思是“以后不再发送”，不会销毁 channel，也不会立即释放缓冲区内存。
 
-![close 先标记关闭，再处理两类等待者，解锁后统一唤醒；缓冲区中的已发送数据保留](assets/go-channel/05-close.svg)
+![close 先标记关闭，再处理两类等待者，解锁后统一唤醒；缓冲区中的已发送数据保留](./assets/go-channel/05-close.svg)
 
 主干流程：
 
@@ -360,7 +359,7 @@ Go 用 `gopark` 和 `chanparkcommit` 协调这个过程：等待节点先在持�
 5. 取出发送等待节点，设置 `success = false`，同样放进唤醒列表；这些发送者恢复后会 panic。
 6. 释放 channel 锁，再逐个 `goready`。
 
-普通有缓冲 channel 如果有阻塞的接收者，缓冲区本来就是空的。所以“解除等待的接收者拿到零值”和“缓冲区原有数据还能继续读”不冲突。
+普通有缓冲 channel 如果有阻塞的接收者，缓冲区本来就是空的。所以“解除等待的接收者拿到零值”和“缓冲区原有数据还能继续读”完全兼容。
 
 完整例子：保存为 `close_buffer.go`，运行 `go run close_buffer.go`。
 
@@ -370,15 +369,15 @@ package main
 import "fmt"
 
 func main() {
-    ch := make(chan int, 2)
-    ch <- 10
-    ch <- 20
-    close(ch)
+	ch := make(chan int, 2)
+	ch <- 10
+	ch <- 20
+	close(ch)
 
-    for i := 0; i < 4; i++ {
-        value, ok := <-ch
-        fmt.Println(value, ok)
-    }
+	for i := 0; i < 4; i++ {
+		value, ok := <-ch
+		fmt.Println(value, ok)
+	}
 }
 ```
 
@@ -391,11 +390,13 @@ func main() {
 0 false
 ```
 
-关闭后的 channel 不是“读一次就失效”：读空之后，每次接收都立即返回零值和 false。`for value := range ch` 会一直读出剩余的值，channel 关闭且读空才退出；只是暂时为空，`range` 不会结束。
+关闭后的 channel 每次在读空之后接收都会立即返回零值和 false。`for value := range ch` 会一直读出剩余的值，channel 关闭且读空才退出；只是暂时为空，`range` 不会结束。
 
 一般由负责结束发送的一方关闭 channel。多个发送者一起写的话，先等所有发送完成，再由协调者统一关闭。`sync.Once` 只能防止重复关闭，“并发发送与关闭”不会因此变安全。也别用 `len(ch)` 或一次试探接收来判断能不能安全发送。
 
 ## 9. select 不等于“把所有收发都改成非阻塞”
+
+**多分支 `select` 通过 `selectgo` 实现候选随机化、按地址加锁与多 `sudog` 撤销，单通信分支带 `default` 才走 `selectnbsend` / `selectnbrecv` 快捷路径。**
 
 普通 `ch <- value` 和 `<-ch` 不能立即完成就会阻塞。`select` 等不等，要看有没有 `default`、有没有可执行的 case，以及编译器走哪条路径。
 
@@ -407,7 +408,7 @@ func main() {
 | 多个通信 case，没有 default | 等到某个 case 可以执行 | 通常进入 `selectgo`，必要时登记多个等待节点并挂起 |
 | `select {}` | 永久阻塞当前 goroutine | 永久等待路径 |
 
-“单个通信 case + default”确实会复用 `chansend(..., block=false)` 或 `chanrecv(..., block=false)`。但一般的多 case `select` 有自己的锁定、候选选择、入队和清理逻辑，不是挨个调用这两个非阻塞包装函数。[编译器分支](https://github.com/golang/go/blob/go1.26.4/src/cmd/compile/internal/walk/select.go)、[runtime 选择流程](https://github.com/golang/go/blob/go1.26.4/src/runtime/select.go)。
+“单个通信 case + default”确实会复用 `chansend(..., block=false)` 或 `chanrecv(..., block=false)`。但一般的多 case `select` 有自己的锁定、候选选择、入队和清理逻辑，会绕开逐个轮询非阻塞包装函数的路径。[编译器分支](https://github.com/golang/go/blob/go1.26.4/src/cmd/compile/internal/walk/select.go)、[runtime 选择流程](https://github.com/golang/go/blob/go1.26.4/src/runtime/select.go)。
 
 ### 9.1 default 只负责“暂时没有可执行通信”
 
@@ -419,29 +420,29 @@ package main
 import "fmt"
 
 func main() {
-    var nilCh chan int
-    select {
-    case <-nilCh:
-        fmt.Println("不会执行")
-    default:
-        fmt.Println("nil: default")
-    }
+	var nilCh chan int
+	select {
+	case <-nilCh:
+		fmt.Println("不会执行")
+	default:
+		fmt.Println("nil: default")
+	}
 
-    ch := make(chan int)
-    select {
-    case ch <- 1:
-        fmt.Println("不会执行：此时没有接收者")
-    default:
-        fmt.Println("open: default")
-    }
+	ch := make(chan int)
+	select {
+	case ch <- 1:
+		fmt.Println("不会执行：此时没有接收者")
+	default:
+		fmt.Println("open: default")
+	}
 
-    close(ch)
-    select {
-    case value, ok := <-ch:
-        fmt.Println("closed:", value, ok)
-    default:
-        fmt.Println("不会执行：关闭且读空的 channel 可立即接收")
-    }
+	close(ch)
+	select {
+	case value, ok := <-ch:
+		fmt.Println("closed:", value, ok)
+	default:
+		fmt.Println("不会执行：关闭且读空的 channel 可立即接收")
+	}
 }
 ```
 
@@ -472,26 +473,28 @@ default:
 
 ```go
 for left != nil || right != nil {
-    select {
-    case value, ok := <-left:
-        if !ok {
-            left = nil // 后续 select 不再选择这一支
-            continue
-        }
-        consume(value)
-    case value, ok := <-right:
-        if !ok {
-            right = nil
-            continue
-        }
-        consume(value)
-    }
+	select {
+	case value, ok := <-left:
+		if !ok {
+			left = nil // 后续 select 不再选择这一支
+			continue
+		}
+		consume(value)
+	case value, ok := <-right:
+		if !ok {
+			right = nil
+			continue
+		}
+		consume(value)
+	}
 }
 ```
 
 这是个局部用法片段：`left`、`right` 是元素类型相同的 channel，`consume` 是业务处理函数。循环条件保证两个都变成 nil 后，不会再进入一个永远等不到结果的 `select`。把变量设成 nil，也不会改变其他变量引用的原 channel 对象。
 
 ## 10. Channel 还建立了哪些内存顺序
+
+**Channel 的“发送先于对应接收完成”以及“关闭先于零值返回”两条内存模型规则，为跨 goroutine 状态发布建立了无需额外加锁的可见性保证。**
 
 Channel 除了搬运值，还提供 goroutine 之间的同步关系。语言用 *synchronized before* 描述这些跨 goroutine 的先后约束，再和程序内的执行顺序一起建立 *happens before*。
 
@@ -501,7 +504,7 @@ Channel 除了搬运值，还提供 goroutine 之间的同步关系。语言用 
 2. 关闭 channel 同步先于某个因关闭而返回零值的接收操作。
 3. 容量为 C 的 channel，第 k 次接收同步先于第 k+C 次发送的完成。C 为 0 时，就是无缓冲 channel 里接收与对应发送完成之间的同步关系。
 
-规则出自 [Go 内存模型的 Channel communication](https://go.dev/ref/mem#chan)。这不代表任意共享变量都自动安全了：接收完成以后，双方要是继续并发修改同一份数据，还是得自己做同步。
+规则出自 [Go 内存模型的 Channel communication](https://go.dev/ref/mem#chan)。接收完成以后，双方要是继续并发修改同一份共享数据，还是得自己做同步。
 
 保存为 `publish_result.go`，运行 `go run publish_result.go`：
 
@@ -511,16 +514,16 @@ package main
 import "fmt"
 
 func main() {
-    done := make(chan struct{})
-    var result string
+	done := make(chan struct{})
+	var result string
 
-    go func() {
-        result = "ready"
-        close(done)
-    }()
+	go func() {
+		result = "ready"
+		close(done)
+	}()
 
-    <-done
-    fmt.Println(result)
+	<-done
+	fmt.Println(result)
 }
 ```
 
@@ -538,34 +541,34 @@ package main
 import "fmt"
 
 func main() {
-    ch := make(chan string, 3)
-    ch <- "A"
-    ch <- "B"
-    ch <- "C"
+	ch := make(chan string, 3)
+	ch <- "A"
+	ch <- "B"
+	ch <- "C"
 
-    entered := make(chan struct{})
-    sent := make(chan struct{})
-    go func() {
-        close(entered)
-        ch <- "D"
-        close(sent)
-    }()
+	entered := make(chan struct{})
+	sent := make(chan struct{})
+	go func() {
+		close(entered)
+		ch <- "D"
+		close(sent)
+	}()
 
-    <-entered
-    select {
-    case <-sent:
-        panic("尚未接收，满缓冲区中的 D 不可能发送完成")
-    default:
-        fmt.Println("D 尚未完成发送")
-    }
+	<-entered
+	select {
+	case <-sent:
+		panic("尚未接收，满缓冲区中的 D 不可能发送完成")
+	default:
+		fmt.Println("D 尚未完成发送")
+	}
 
-    fmt.Println("第一次接收:", <-ch)
-    <-sent // 等 D 完成交付，才关闭 channel
-    close(ch)
+	fmt.Println("第一次接收:", <-ch)
+	<-sent // 等 D 完成交付，才关闭 channel
+	close(ch)
 
-    for value := range ch {
-        fmt.Println("后续接收:", value)
-    }
+	for value := range ch {
+		fmt.Println("后续接收:", value)
+	}
 }
 ```
 
@@ -587,7 +590,7 @@ D 尚未完成发送
 
 它没用 `time.Sleep` 去猜调度时机。
 
-注意 `entered` 只说明发送 goroutine 已经跑到发送之前，不保证它已经进了 `sendq`。所以光看输出，证明不了某次执行一定走了“从等待发送者补位”这条内部路径。那条路径靠 `recv` 的源码解释，要验证还得用运行时跟踪或专门的调度控制。
+**`entered` 只能说明发送 goroutine 已经跑到发送之前，此时它可能尚未进入 `sendq`，因此单靠控制台输出无法证明内部走了哪条补位分支；要观测运行时内部路径，需要借助 runtime trace 或调度控制。**
 
 ## 12. 阅读源码时要避开的几个结论
 
@@ -606,8 +609,6 @@ D 尚未完成发送
 
 ## 参考资料
 
-这篇根据《Golang Channel 实现原理》的粘贴材料整理。原材料没有保留作者、原文链接和图片文件；文中示意图是重新画的，并对照下面的官方资料修订了版本差异和行为细节。
-
 - [Go 1.26.4：runtime/chan.go](https://github.com/golang/go/blob/go1.26.4/src/runtime/chan.go)：`hchan`、`makechan`、收发、关闭、等待队列。
 - [Go 1.26.4：runtime/runtime2.go](https://github.com/golang/go/blob/go1.26.4/src/runtime/runtime2.go)：`sudog` 与 goroutine 相关结构。
 - [Go 1.26.4：runtime/select.go](https://github.com/golang/go/blob/go1.26.4/src/runtime/select.go)：一般 `select` 的候选、锁定、等待与清理。
@@ -615,4 +616,4 @@ D 尚未完成发送
 - [Go 语言规范](https://go.dev/ref/spec)：Channel types、Send statements、Receive operator、Close、Select statements。
 - [Go 内存模型](https://go.dev/ref/mem#chan)：channel 通信的同步关系。
 
-文中四个完整程序在 Go 1.26.4 / Windows amd64 下跑过验证；流程片段和结构体摘录只用来读源码，不是能独立编译的 runtime 替代实现。
+文中四个完整示例程序在 Go 1.26.4 下实测通过，流程片段和结构体摘录用于辅助对照 `runtime` 源码。
