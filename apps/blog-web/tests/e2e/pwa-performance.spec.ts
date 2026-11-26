@@ -18,11 +18,11 @@ test("PWA caches only visited articles and can reopen them offline", async ({ pa
   expect(precacheUrls.some(url => url.startsWith(`${base}articles/`))).toBe(false);
   expect(requests.filter(url => /\/(post-index\.json|articles\/)/.test(url))).toEqual([]);
 
-  await page.goto(`${base}posts/go-basics-02-input-output`);
+  await page.goto(`${base}posts/go-collections-arrays-slices-maps`);
   await expect(page.getByTestId("post-view-article")).toBeVisible();
   await expect.poll(() => page.evaluate(async () =>
     (await (await caches.open("article-content-cache")).keys()).map(request => new URL(request.url).pathname),
-  )).toEqual([`${base}articles/go-basics-02-input-output.json`]);
+  )).toEqual([`${base}articles/go-collections-arrays-slices-maps.json`]);
   await expect.poll(() => page.evaluate(async () =>
     (await (await caches.open("post-index-cache")).keys()).length,
   )).toBe(1);
@@ -30,5 +30,5 @@ test("PWA caches only visited articles and can reopen them offline", async ({ pa
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByTestId("post-view-article")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("输入与输出");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("数组、切片扩容陷阱");
 });

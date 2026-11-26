@@ -5,35 +5,35 @@ test.use({ serviceWorkers: "block" });
 test("knowledge base, topic navigation, search and return context", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/blog");
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
   await page.locator(".docs-topic-card").filter({ hasText: "编程语言" }).click();
   await expect(page).toHaveURL(/topic=languages/);
   await expect(page.locator('.docs-sidebar .docs-tree__row button[aria-label="收起编程语言"]')).toBeVisible();
   await page
     .getByRole("textbox", { name: "搜索文章" })
     .or(page.getByRole("searchbox", { name: "搜索文章", exact: true }))
-    .fill("输入与输出");
+    .fill("函数、闭包、init");
   const result = page.locator(".docs-article-row");
   await expect(result).toHaveCount(1);
-  await expect(result).toContainText("Go 基础课程");
+  await expect(result).toContainText("Go 语言核心与源码原理");
   await result.click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("输入与输出");
-  await expect(page.locator('.docs-sidebar [aria-current="page"]')).toContainText("输入与输出");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("函数、闭包、init");
+  await expect(page.locator('.docs-sidebar [aria-current="page"]')).toContainText("函数、闭包、init");
   await page.getByTestId("post-view-back-link").click();
-  await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue("输入与输出");
+  await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue("函数、闭包、init");
   await expect(page.locator(".docs-article-row")).toHaveCount(1);
   await page.getByRole("button", { name: "清除筛选" }).click();
-  await expect(page).toHaveURL(/series=go-basics/);
+  await expect(page).toHaveURL(/series=go/);
   await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue("");
 });
 
 test("outline anchors, syntax colors, clipboard and curriculum neighbors", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/posts/go-basics-02-input-output");
+  await page.goto("/posts/go-collections-arrays-slices-maps");
   const code = page.locator("#article-container pre code").first();
   await expect(code).toBeVisible();
-  await expect.poll(() => page.locator(".article-toc--desktop [aria-current=location]").textContent()).toBe("变量定义");
+  await expect.poll(() => page.locator(".article-toc--desktop [aria-current=location]").textContent()).toBe("数组是固定长度的值类型");
   const original = await code.textContent();
   await page.getByRole("button", { name: "复制 Go 代码", exact: true }).first().click();
   await expect(page.getByRole("button", { name: "复制 Go 代码", exact: true }).first()).toHaveText("已复制");
@@ -45,17 +45,17 @@ test("outline anchors, syntax colors, clipboard and curriculum neighbors", async
     keyword: getComputedStyle(el.querySelector('span[style*="--shiki"]')!).color,
   }));
   expect(colors.keyword).not.toBe(colors.plain);
-  await page.locator(".article-toc--desktop").getByRole("button", { name: "输出", exact: true }).click();
-  await expect(page).toHaveURL(/#%E8%BE%93%E5%87%BA$/);
-  await expect.poll(() => page.locator('.article-toc--desktop [aria-current="location"]').textContent()).toBe("输出");
+  await page.locator(".article-toc--desktop").getByRole("button", { name: "Map 初始化、遍历随机性与并发禁忌", exact: true }).click();
+  await expect(page).toHaveURL(/#map-/);
+  await expect.poll(() => page.locator('.article-toc--desktop [aria-current="location"]').textContent()).toBe("Map 初始化、遍历随机性与并发禁忌");
   await page.reload();
   await expect.poll(() => page.locator(".docs-main").evaluate((el) => el.scrollTop)).toBeGreaterThan(1000);
-  await expect.poll(() => page.locator("#输出").evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(80);
+  await expect.poll(() => page.locator("#map-初始化遍历随机性与并发禁忌").evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThan(80);
   await page.getByTestId("post-view-next-link").click();
-  await expect(page).toHaveURL(/go-basics-03-data-types/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("基本数据类型");
+  await expect(page).toHaveURL(/go-functions-init-and-defer/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("函数");
   await page.getByTestId("post-view-previous-link").click();
-  await expect(page).toHaveURL(/go-basics-02-input-output/);
+  await expect(page).toHaveURL(/go-collections-arrays-slices-maps/);
 });
 
 for (const width of [1440, 1024, 390]) {
@@ -101,7 +101,7 @@ test("empty search and unknown article remain navigable", async ({ page }) => {
   await page.goto("/posts/does-not-exist-xyz");
   await expect(page.getByRole("heading", { name: "文章不存在" })).toBeVisible();
   await page.getByTestId("post-view-back-link").click();
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
 });
 
 test("site navigation still reaches home, works, author and friends", async ({ page }) => {
@@ -123,11 +123,11 @@ test("site navigation still reaches home, works, author and friends", async ({ p
 });
 
 test("course overview Markdown links open local canonical articles", async ({ page }) => {
-  await page.goto("/posts/readme-fd3ae1bb");
-  const link = page.locator('#article-container a[href="/posts/01-vue3-ce7a3dbf"]');
+  await page.goto("/posts/vue3-reactivity-and-rendering");
+  const link = page.locator('#article-container a[href="/posts/vue3-components-and-communication"]');
   await expect(link).toHaveCount(1);
   await link.click();
-  await expect(page).toHaveURL(/\/posts\/01-vue3-ce7a3dbf/);
+  await expect(page).toHaveURL(/\/posts\/vue3-components-and-communication/);
   await expect(page.getByRole("heading", { level: 1 }).first()).toContainText("Vue");
 });
 
@@ -138,7 +138,7 @@ test("one persistent site navigation connects Home, Blog and articles", async ({
   await expect(nav).toHaveCount(1);
   await nav.evaluate((element) => element.setAttribute("data-instance-marker", "shared"));
   await page.getByTestId("site-nav-wide").getByRole("link", { name: "Blog", exact: true }).click();
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
   await expect(nav).toHaveAttribute("data-instance-marker", "shared");
   await expect(page.getByTestId("site-nav-wide").locator('[data-nav-item="blog"]')).toHaveAttribute(
     "aria-current",
@@ -146,10 +146,10 @@ test("one persistent site navigation connects Home, Blog and articles", async ({
   );
   await expect(page.getByText("THE KNOWLEDGE GARDEN", { exact: true })).toHaveCount(0);
   await expect(page.getByText("不必一次读完。", { exact: false })).toHaveCount(0);
-  await page.locator('.docs-sidebar input[aria-label="搜索知识库"]').fill("输入与输出");
+  await page.locator('.docs-sidebar input[aria-label="搜索知识库"]').fill("函数、闭包、init");
   await page.locator('.docs-sidebar button[aria-label="提交搜索"]').click();
   await page.locator(".docs-article-row").click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("输入与输出");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("函数、闭包、init");
   await expect(nav).toHaveAttribute("data-instance-marker", "shared");
   await expect(page.getByTestId("site-nav-wide").locator('[data-nav-item="blog"]')).toHaveAttribute(
     "aria-current",
@@ -167,13 +167,13 @@ test("one persistent site navigation connects Home, Blog and articles", async ({
 
 test("mobile site menu keeps the original navigation on Blog and article pages", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/posts/go-basics-02-input-output");
+  await page.goto("/posts/go-collections-arrays-slices-maps");
   await expect(page.getByTestId("site-nav")).toHaveCount(1);
   await page.getByRole("button", { name: "Toggle Menu" }).click();
   const menu = page.locator("#site-navigation-menu");
   await expect(menu.locator('[data-nav-item="blog"]')).toHaveAttribute("aria-current", "page");
   await menu.getByRole("link", { name: "Blog", exact: true }).click();
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
   await expect(menu).toHaveCount(0);
   await expect(page.getByRole("button", { name: "☰ 文档目录" })).toBeVisible();
 });

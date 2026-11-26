@@ -32,7 +32,7 @@ test("subpath preview keeps author redirects and article navigation inside its b
   page.on("pageerror", error => errors.push(error.message));
   await page.goto(`${base}author/2`);
   await expect(page).toHaveURL(new RegExp(`${base}#about$`));
-  await page.goto(`${base}posts/go-basics-02-input-output?topic=languages`);
+  await page.goto(`${base}posts/go-collections-arrays-slices-maps?topic=languages`);
   await expect(page.getByTestId("post-view-article")).toBeVisible();
   await page.getByTestId("post-view-next-link").click();
   await expect(page).toHaveURL(new RegExp(`${base}posts/.*topic=languages`));

@@ -1,6 +1,8 @@
 ---
 title: "应用层核心协议：DHCP、DNS、FTP 与 HTTP"
 slug: "net-application-layer-protocols"
+aliases:
+  - "network-application-layer"
 date: 2025-12-28 04:22:12
 categories:
   - "计算机基础"

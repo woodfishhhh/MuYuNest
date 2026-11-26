@@ -1,0 +1,75 @@
+{
+  "canonicalSlug": "browser-network-request-lifecycle",
+  "aliases": [],
+  "title": "浏览器网络全链路：从输入 URL 到缓存、跨域、SSE 与 JWT",
+  "publishedAt": "2026-04-22T22:00:00.000Z",
+  "publishedLabel": "Apr 22, 2026",
+  "excerpt": "在浏览器地址栏敲下回车后，请求要依次穿过 URL 解析、DNS 寻址、传输层建连、HTTP 缓存判定、同源跨域检查和身份鉴权，才能最终把数据安全送到页面手里。任何一环出现阻塞或策略配置失误——例如预检请求没放行、强缓存没设对指纹、JWT 存错了位置——都会直接反映为页面白屏、接口报错或账号凭证泄漏。",
+  "type": "Notes",
+  "searchText": "浏览器网络全链路：从输入 URL 到缓存、跨域、SSE 与 JWT Notes 计算机基础 计算机网络 HTTP 浏览器缓存 跨域 JWT 在浏览器地址栏敲下回车后，请求要依次穿过 URL 解析、DNS 寻址、传输层建连、HTTP 缓存判定、同源跨域检查和身份鉴权，才能最终把数据安全送到页面手里。任何一环出现阻塞或策略配置失误——例如预检请求没放行、强缓存没设对指纹、JWT 存错了位置——都会直接反映为页面白屏、接口报错或账号凭证泄漏。 URL 解析与 DNS 域名寻址 浏览器首先拆解 URL 的六个组成部分： 。协议、域名和端口共同唯一确定一个“源（Origin）”以及请求打向哪台服务器；路径和查询参数发往服务端定位资源， 仅在浏览器本地消费， 不会随 HTTP 请求发给服务器 。 拿到域名后，浏览器按“由近及远”的顺序查出目标 IP（DNS 解析）： 1. 本地查找链 ：依次检查浏览器自身 DNS 缓存 → 操作系统缓存 → 本地 文件。 2. 远程递归与迭代查询 ：本地未命中时请求本地配置的递归 DNS 解析器（如运营商或公共 DNS），由它逐级向根域名服务器、顶级域（TLD）服务器与权威域名服务器查询，最终返回 IP 并按 TTL 缓存。 TCP 建连、四次挥手与 HTTP 协议演进 在 HTTP/1.1 与 HTTP/2 下，浏览器通过 TCP 建立可靠字节流连接（HTTPS 则在 TCP 之上叠加 TLS 握手，通过非对称加密协商对称密钥并验证数字证书，同时防窃听、防篡改、防冒充）。 三次握手与四次挥手 TCP 建连需要三次握手，核心目的是 让客户端与服务端双向确认彼此的发送能力与接收能力，并同步初始序列号（ / ） ： 1. 客户端发送 报文，进入 。 2. 服务端回复 ，确认收到并同步自己的初始序列号。 3. 客户端回复 ，连接正式进入 （之所以不能省去第三次，是为了防止失效的历史 滞留网络后突然到达服务端导致单向空建连浪费资源）。 断开连接比建连多一次挥手（四次挥手），是因为 TCP 连接是全双工的： 主动关闭方发 表示自己不再发送数据，但此时仍能接收对方尚未传完的剩余报文 ；被动关闭方先回 确认，等自己本地数据也发送完毕后再单独发送 ，最后由主动关闭方回 并等待 后彻底关闭。 HTTP/1.1 → HTTP/2 → HTTP/3 核心演进 | 协议版本 | 传输层基础 | 核心瓶颈或解决的关键问题 | | | | | | HTTP/1.0 | TCP（短连接） | 默认每次请求新建 TCP，连接复用能力极弱 | | HTTP/1.1 | TCP（长连接 ） | 同一连接内请求必须按序排队等待响应，存在 应用层队头阻塞（HOL Blocking） ，浏览器被迫同域名并发 6 条连接 | | HTTP/2 | TCP（单连接多路复用） | 引入 二进制分帧与多路复用 （同一 TCP 连接并行交错收发多路请求）与 HPACK 头部压缩 ，消除 HTTP 层队头阻塞 | | HTTP/3 | QUIC（基于 UDP） | 在传输层用独立流彻底消除 TCP 丢包导致的整条连接阻塞，结合 0 RTT/1 RTT 快速握手，大幅优化弱网和移动切换体验 | HTTP 状态码、浏览器缓存与跨域边界 常见 HTTP 状态码分组 排查网络请求先看第一位数字锁定责任域： 成功 ： 、 （资源创建成功）、 （如 预检或删除成功无响应体）、 （分片断点续传）。 重定向与缓存 ： 永久重定向与 临时重定向历史上允许浏览器把 改成 ；需要严格保留原请求方法和请求体时必须用 或 ； 表示协商缓存命中，直接复用本地副本。 客户端错误 ： 参数格式错、 未认证/凭证失效、 已认证但无权限、 资源不存在。 服务端错误 ： 服务内部崩溃、 网关收到上游无效响应、 服务过载维护、 上游网关超时。 浏览器缓存：强缓存优先，过期走协商缓存 浏览器缓存把请求拦截在本地还是放往后端校验，严格按两级顺序决策： 1. 强缓存（不发网络请求，DevTools 显示 或 ） ：优先读取 （如 或 / ），优先级高于旧式的 绝对时间。 注意： 仍会缓存资源，只是每次使用前必须先发请求做协商校验；彻底禁止缓存应写 。 2. 协商缓存（强缓存过期后携带验证头询问服务器） ：优先比对高精度内容指纹 / ，其次比对修改时间 / 。资源未变服务器返回 沿用本地缓存；资源已变则返回 + 新内容 。 线上静态部署的标准缓存组合是：HTML 入口文件设 每次走协商验证，带哈希指纹的 JS/CSS/图片设 永久走强缓存。 跨域（CORS）预检与解决方案 只要请求的 协议、域名、端口 任意一项与当前页面不同，即触发浏览器同源策略限制（注意：这是浏览器的安全读响应限制，服务端其实往往已经收到了请求，但浏览器拒绝把响应交给前端脚本）。 当跨域请求不满足“简单请求”条件（例如使用了 / 、带有 等自定义请求头，或 为 ）时，浏览器会在正式请求前自动先发一次 预检请求 ，向服务器确认允许的源、方法和头字段。 | 解决手段 | 适用环境 | 核心机制与边界 | | | | | | 开发代理（Vite/Webpack Proxy） | 本地开发 | 请求先发给同源本地 Dev Server，由 Node 进程转发到后端，绕开浏览器限制 | | CORS 响应头 | 生产直连 API | 后端返回 、 、 等；若带 Cookie 凭证，Origin 不能写通配符 ，必须精确指定域名并设 | | Nginx 反向代理 | 生产同域聚合 | 把前端静态资源与多组后端接口统一挂载在同一域名网关下，对外完全同源 | | JSONP（历史遗留） | 仅兼容老系统 | 利用 标签无视同源策略，仅支持 且存在注入风险，新项目已淘汰 | CORS 授权和 HTTP 缓存是两层独立校验：即便命中了 协商缓存，响应依然必须带有合法的 CORS 响应头，否则浏览器照样拦截报错。 实时通信选型：SSE 与 WebSocket 实时数据推送不必无脑上双向全双工通道，按通信方向选型最省资源： SSE（Server Sent Events） ：基于标准 HTTP 的 服务端到客户端单向持续推送 。服务端只需返回以下核心响应头，浏览器原生 即可通过 持续收包并在断线时自动重连（需自定义 POST 参数与请求头时也可用 流式读取）： WebSocket ：基于 / 协议的 全双工双向实时通信 ，适合聊天室、协同文档编辑、实时多人对战等需要客户端与服务端高频互发消息的场景；而 AI 流式输出、日志尾随、站内通知流用 SSE 更轻量。 JWT 鉴权流程与存储安全边界 JSON Web Token（JWT）由 三段 Base64URL 字符串拼接而成，服务器验证签名即可确认身份，无需在内存或 Redis 中强绑定中心化 Session。 JWT 的 Payload 只是 Base64URL 编码，任何人拿到都能直接解码明文内容；绝对不要把密码、密钥或敏感个人隐私放进 Payload。 设计前端 JWT 方案必须守住两条安全与失效边界： 1. 存储与防攻击权衡 ：放在 中容易被页面上的 XSS 攻击脚本直接盗取；放进 的 Cookie 里可以彻底隔离 JS 读取（防 XSS 盗取），但要同时配合 属性或 CSRF Token 防御跨站请求伪造。 2. 短有效期 + 主动吊销机制 ：JWT 一旦签发在过期前默认无法单方面作废。生产级方案通常使用 短生命周期 Access Token（如 15 分钟）+ 持久化 Refresh Token（可入库随时吊销/踢下线） ，或者在登出/封禁时将 Token 写入 Redis 黑名单校验。",
+  "readingMinutes": 11,
+  "coverImage": null,
+  "categories": [
+    "计算机基础"
+  ],
+  "tags": [
+    "计算机网络",
+    "HTTP",
+    "浏览器缓存",
+    "跨域",
+    "JWT"
+  ],
+  "html": "<p>在浏览器地址栏敲下回车后，请求要依次穿过 URL 解析、DNS 寻址、传输层建连、HTTP 缓存判定、同源跨域检查和身份鉴权，才能最终把数据安全送到页面手里。任何一环出现阻塞或策略配置失误——例如预检请求没放行、强缓存没设对指纹、JWT 存错了位置——都会直接反映为页面白屏、接口报错或账号凭证泄漏。</p>\n<h2 id=\"url-解析与-dns-域名寻址\">URL 解析与 DNS 域名寻址</h2>\n<p>浏览器首先拆解 URL 的六个组成部分：<code>协议://域名:端口/路径?查询参数#hash</code>。协议、域名和端口共同唯一确定一个“源（Origin）”以及请求打向哪台服务器；路径和查询参数发往服务端定位资源，<code>#hash</code> 仅在浏览器本地消费，<strong>不会随 HTTP 请求发给服务器</strong>。</p>\n<p>拿到域名后，浏览器按“由近及远”的顺序查出目标 IP（DNS 解析）：</p>\n<ol>\n<li><strong>本地查找链</strong>：依次检查浏览器自身 DNS 缓存 → 操作系统缓存 → 本地 <code>hosts</code> 文件。</li>\n<li><strong>远程递归与迭代查询</strong>：本地未命中时请求本地配置的递归 DNS 解析器（如运营商或公共 DNS），由它逐级向根域名服务器、顶级域（TLD）服务器与权威域名服务器查询，最终返回 IP 并按 TTL 缓存。</li>\n</ol>\n<h2 id=\"tcp-建连四次挥手与-http-协议演进\">TCP 建连、四次挥手与 HTTP 协议演进</h2>\n<p>在 HTTP/1.1 与 HTTP/2 下，浏览器通过 TCP 建立可靠字节流连接（HTTPS 则在 TCP 之上叠加 TLS 握手，通过非对称加密协商对称密钥并验证数字证书，同时防窃听、防篡改、防冒充）。</p>\n<h3 id=\"三次握手与四次挥手\">三次握手与四次挥手</h3>\n<p>TCP 建连需要三次握手，核心目的是<strong>让客户端与服务端双向确认彼此的发送能力与接收能力，并同步初始序列号（<code>seq</code> / <code>ack</code>）</strong>：</p>\n<ol>\n<li>客户端发送 <code>SYN</code> 报文，进入 <code>SYN_SENT</code>。</li>\n<li>服务端回复 <code>SYN + ACK</code>，确认收到并同步自己的初始序列号。</li>\n<li>客户端回复 <code>ACK</code>，连接正式进入 <code>ESTABLISHED</code>（之所以不能省去第三次，是为了防止失效的历史 <code>SYN</code> 滞留网络后突然到达服务端导致单向空建连浪费资源）。</li>\n</ol>\n<p><img src=\"/content-assets/browser-network-request-lifecycle/assets/139d05aa1ae1a11f454303d685779f90.png\" alt=\"TCP 三次握手建立连接流程\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/browser-network-request-lifecycle/assets/595b70cd9add41ba98e4e707346efccd.png\" alt=\"TCP 报文关键标志位示意\" loading=\"lazy\" decoding=\"async\"></p>\n<p>断开连接比建连多一次挥手（四次挥手），是因为 TCP 连接是全双工的：<strong>主动关闭方发 <code>FIN</code> 表示自己不再发送数据，但此时仍能接收对方尚未传完的剩余报文</strong>；被动关闭方先回 <code>ACK</code> 确认，等自己本地数据也发送完毕后再单独发送 <code>FIN</code>，最后由主动关闭方回 <code>ACK</code> 并等待 <code>2MSL</code> 后彻底关闭。</p>\n<p><img src=\"/content-assets/browser-network-request-lifecycle/assets/7cdee479a4722e0820bf307ca54df35a.png\" alt=\"TCP 四次挥手断开连接流程\" loading=\"lazy\" decoding=\"async\"></p>\n<p><img src=\"/content-assets/browser-network-request-lifecycle/assets/3d07da38be218e62281b8bc872eaee26.png\" alt=\"TCP 连接关闭状态转换示意\" loading=\"lazy\" decoding=\"async\"></p>\n<h3 id=\"http11--http2--http3-核心演进\">HTTP/1.1 → HTTP/2 → HTTP/3 核心演进</h3>\n<table>\n<thead>\n<tr>\n<th>协议版本</th>\n<th>传输层基础</th>\n<th>核心瓶颈或解决的关键问题</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>HTTP/1.0</td>\n<td>TCP（短连接）</td>\n<td>默认每次请求新建 TCP，连接复用能力极弱</td>\n</tr>\n<tr>\n<td>HTTP/1.1</td>\n<td>TCP（长连接 <code>keep-alive</code>）</td>\n<td>同一连接内请求必须按序排队等待响应，存在<strong>应用层队头阻塞（HOL Blocking）</strong>，浏览器被迫同域名并发 6 条连接</td>\n</tr>\n<tr>\n<td>HTTP/2</td>\n<td>TCP（单连接多路复用）</td>\n<td>引入<strong>二进制分帧与多路复用</strong>（同一 TCP 连接并行交错收发多路请求）与 <strong>HPACK 头部压缩</strong>，消除 HTTP 层队头阻塞</td>\n</tr>\n<tr>\n<td>HTTP/3</td>\n<td><strong>QUIC（基于 UDP）</strong></td>\n<td>在传输层用独立流彻底消除 TCP 丢包导致的整条连接阻塞，结合 0-RTT/1-RTT 快速握手，大幅优化弱网和移动切换体验</td>\n</tr>\n</tbody>\n</table>\n<h2 id=\"http-状态码浏览器缓存与跨域边界\">HTTP 状态码、浏览器缓存与跨域边界</h2>\n<h3 id=\"常见-http-状态码分组\">常见 HTTP 状态码分组</h3>\n<p>排查网络请求先看第一位数字锁定责任域：</p>\n<ul>\n<li><strong><code>2xx</code> 成功</strong>：<code>200 OK</code>、<code>201 Created</code>（资源创建成功）、<code>204 No Content</code>（如 <code>OPTIONS</code> 预检或删除成功无响应体）、<code>206 Partial Content</code>（分片断点续传）。</li>\n<li><strong><code>3xx</code> 重定向与缓存</strong>：<code>301</code> 永久重定向与 <code>302</code> 临时重定向历史上允许浏览器把 <code>POST</code> 改成 <code>GET</code>；需要严格保留原请求方法和请求体时必须用 <strong><code>307 Temporary Redirect</code></strong> 或 <strong><code>308 Permanent Redirect</code></strong>；<strong><code>304 Not Modified</code></strong> 表示协商缓存命中，直接复用本地副本。</li>\n<li><strong><code>4xx</code> 客户端错误</strong>：<code>400</code> 参数格式错、<code>401</code> 未认证/凭证失效、<code>403</code> 已认证但无权限、<code>404</code> 资源不存在。</li>\n<li><strong><code>5xx</code> 服务端错误</strong>：<code>500</code> 服务内部崩溃、<code>502</code> 网关收到上游无效响应、<code>503</code> 服务过载维护、<code>504</code> 上游网关超时。</li>\n</ul>\n<h3 id=\"浏览器缓存强缓存优先过期走协商缓存\">浏览器缓存：强缓存优先，过期走协商缓存</h3>\n<p>浏览器缓存把请求拦截在本地还是放往后端校验，严格按两级顺序决策：</p>\n<ol>\n<li><strong>强缓存（不发网络请求，DevTools 显示 <code>from memory cache</code> 或 <code>from disk cache</code>）</strong>：优先读取 <code>Cache-Control</code>（如 <code>max-age=31536000</code> 或 <code>no-cache</code>/<code>no-store</code>），优先级高于旧式的 <code>Expires</code> 绝对时间。<strong>注意：<code>Cache-Control: no-cache</code> 仍会缓存资源，只是每次使用前必须先发请求做协商校验；彻底禁止缓存应写 <code>no-store</code>。</strong></li>\n<li><strong>协商缓存（强缓存过期后携带验证头询问服务器）</strong>：优先比对高精度内容指纹 <strong><code>ETag</code> / <code>If-None-Match</code></strong>，其次比对修改时间 <strong><code>Last-Modified</code> / <code>If-Modified-Since</code></strong>。资源未变服务器返回 <strong><code>304</code></strong> 沿用本地缓存；资源已变则返回 <strong><code>200</code> + 新内容</strong>。</li>\n</ol>\n<p><strong>线上静态部署的标准缓存组合是：HTML 入口文件设 <code>Cache-Control: no-cache</code> 每次走协商验证，带哈希指纹的 JS/CSS/图片设 <code>Cache-Control: max-age=31536000, immutable</code> 永久走强缓存。</strong></p>\n<h3 id=\"跨域cors预检与解决方案\">跨域（CORS）预检与解决方案</h3>\n<p>只要请求的<strong>协议、域名、端口</strong>任意一项与当前页面不同，即触发浏览器同源策略限制（注意：这是浏览器的安全读响应限制，服务端其实往往已经收到了请求，但浏览器拒绝把响应交给前端脚本）。</p>\n<p>当跨域请求不满足“简单请求”条件（例如使用了 <code>PUT</code>/<code>DELETE</code>、带有 <code>Authorization</code> 等自定义请求头，或 <code>Content-Type</code> 为 <code>application/json</code>）时，浏览器会在正式请求前自动先发一次 <strong><code>OPTIONS</code> 预检请求</strong>，向服务器确认允许的源、方法和头字段。</p>\n<table>\n<thead>\n<tr>\n<th>解决手段</th>\n<th>适用环境</th>\n<th>核心机制与边界</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td><strong>开发代理（Vite/Webpack Proxy）</strong></td>\n<td>本地开发</td>\n<td>请求先发给同源本地 Dev Server，由 Node 进程转发到后端，绕开浏览器限制</td>\n</tr>\n<tr>\n<td><strong>CORS 响应头</strong></td>\n<td>生产直连 API</td>\n<td>后端返回 <code>Access-Control-Allow-Origin</code>、<code>Allow-Methods</code>、<code>Allow-Headers</code> 等；若带 Cookie 凭证，Origin 不能写通配符 <code>*</code>，必须精确指定域名并设 <code>Allow-Credentials: true</code></td>\n</tr>\n<tr>\n<td><strong>Nginx 反向代理</strong></td>\n<td>生产同域聚合</td>\n<td>把前端静态资源与多组后端接口统一挂载在同一域名网关下，对外完全同源</td>\n</tr>\n<tr>\n<td>JSONP（历史遗留）</td>\n<td>仅兼容老系统</td>\n<td>利用 <code>&lt;script&gt;</code> 标签无视同源策略，仅支持 <code>GET</code> 且存在注入风险，新项目已淘汰</td>\n</tr>\n</tbody>\n</table>\n<p><strong>CORS 授权和 HTTP 缓存是两层独立校验：即便命中了 <code>304</code> 协商缓存，响应依然必须带有合法的 CORS 响应头，否则浏览器照样拦截报错。</strong></p>\n<h2 id=\"实时通信选型sse-与-websocket\">实时通信选型：SSE 与 WebSocket</h2>\n<p>实时数据推送不必无脑上双向全双工通道，按通信方向选型最省资源：</p>\n<ul>\n<li><strong>SSE（Server-Sent Events）</strong>：基于标准 HTTP 的<strong>服务端到客户端单向持续推送</strong>。服务端只需返回以下核心响应头，浏览器原生 <code>EventSource</code> 即可通过 <code>onmessage</code> 持续收包并在断线时自动重连（需自定义 POST 参数与请求头时也可用 <code>fetch</code> 流式读取）：</li>\n</ul>\n<pre data-language=\"http\" class=\"shiki shiki-themes github-light github-dark\" style=\"--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e\"><code class=\"language-http\"><span class=\"line\"><span style=\"--shiki-light:#22863A;--shiki-dark:#85E89D\">Content-Type</span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">:</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> text/event-stream</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#22863A;--shiki-dark:#85E89D\">Cache-Control</span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">:</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> no-cache</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#22863A;--shiki-dark:#85E89D\">Connection</span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">:</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> keep-alive</span></span>\n<span class=\"line\"></span></code></pre>\n<ul>\n<li><strong>WebSocket</strong>：基于 <code>ws://</code>/<code>wss://</code> 协议的<strong>全双工双向实时通信</strong>，适合聊天室、协同文档编辑、实时多人对战等需要客户端与服务端高频互发消息的场景；而 AI 流式输出、日志尾随、站内通知流用 SSE 更轻量。</li>\n</ul>\n<h2 id=\"jwt-鉴权流程与存储安全边界\">JWT 鉴权流程与存储安全边界</h2>\n<p>JSON Web Token（JWT）由 <code>Header.Payload.Signature</code> 三段 Base64URL 字符串拼接而成，服务器验证签名即可确认身份，无需在内存或 Redis 中强绑定中心化 Session。</p>\n<p><strong>JWT 的 Payload 只是 Base64URL 编码，任何人拿到都能直接解码明文内容；绝对不要把密码、密钥或敏感个人隐私放进 Payload。</strong></p>\n<p>设计前端 JWT 方案必须守住两条安全与失效边界：</p>\n<ol>\n<li><strong>存储与防攻击权衡</strong>：放在 <code>localStorage</code> 中容易被页面上的 XSS 攻击脚本直接盗取；放进 <strong><code>HttpOnly; Secure; SameSite=Lax</code> 的 Cookie</strong> 里可以彻底隔离 JS 读取（防 XSS 盗取），但要同时配合 <code>SameSite</code> 属性或 CSRF Token 防御跨站请求伪造。</li>\n<li><strong>短有效期 + 主动吊销机制</strong>：JWT 一旦签发在过期前默认无法单方面作废。生产级方案通常使用<strong>短生命周期 Access Token（如 15 分钟）+ 持久化 Refresh Token（可入库随时吊销/踢下线）</strong>，或者在登出/封禁时将 Token <code>jti</code> 写入 Redis 黑名单校验。</li>\n</ol>\n",
+  "toc": [
+    {
+      "id": "url-解析与-dns-域名寻址",
+      "level": 2,
+      "text": "URL 解析与 DNS 域名寻址"
+    },
+    {
+      "id": "tcp-建连四次挥手与-http-协议演进",
+      "level": 2,
+      "text": "TCP 建连、四次挥手与 HTTP 协议演进"
+    },
+    {
+      "id": "三次握手与四次挥手",
+      "level": 3,
+      "text": "三次握手与四次挥手"
+    },
+    {
+      "id": "http11--http2--http3-核心演进",
+      "level": 3,
+      "text": "HTTP/1.1 → HTTP/2 → HTTP/3 核心演进"
+    },
+    {
+      "id": "http-状态码浏览器缓存与跨域边界",
+      "level": 2,
+      "text": "HTTP 状态码、浏览器缓存与跨域边界"
+    },
+    {
+      "id": "常见-http-状态码分组",
+      "level": 3,
+      "text": "常见 HTTP 状态码分组"
+    },
+    {
+      "id": "浏览器缓存强缓存优先过期走协商缓存",
+      "level": 3,
+      "text": "浏览器缓存：强缓存优先，过期走协商缓存"
+    },
+    {
+      "id": "跨域cors预检与解决方案",
+      "level": 3,
+      "text": "跨域（CORS）预检与解决方案"
+    },
+    {
+      "id": "实时通信选型sse-与-websocket",
+      "level": 2,
+      "text": "实时通信选型：SSE 与 WebSocket"
+    },
+    {
+      "id": "jwt-鉴权流程与存储安全边界",
+      "level": 2,
+      "text": "JWT 鉴权流程与存储安全边界"
+    }
+  ]
+}

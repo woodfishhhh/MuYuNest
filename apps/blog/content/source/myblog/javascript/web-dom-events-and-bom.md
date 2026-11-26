@@ -1,6 +1,8 @@
 ---
 title: "浏览器 DOM、事件委托、BOM 与表单校验"
 slug: "web-dom-events-and-bom"
+aliases:
+  - "web-api-dom-basics"
 date: 2025-11-21 12:41:04
 categories:
   - "前端开发"

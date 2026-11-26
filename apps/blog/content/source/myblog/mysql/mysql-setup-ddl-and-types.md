@@ -1,6 +1,9 @@
 ---
 title: "MySQL 入门实战：连接排错、字符集、数据类型与用户权限"
 slug: mysql-setup-ddl-and-types
+aliases:
+  - mysql-heima
+  - mysql-heima-01
 date: 2026-10-17
 categories:
   - "数据库"

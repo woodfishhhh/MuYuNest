@@ -1,6 +1,8 @@
 ---
 title: "浏览器异步请求实战：XHR、Fetch、Axios 与文件上传"
 slug: "web-http-fetch-and-axios"
+aliases:
+  - "ajax-basics-intro"
 date: 2025-12-20 12:00:04
 categories:
   - "前端开发"

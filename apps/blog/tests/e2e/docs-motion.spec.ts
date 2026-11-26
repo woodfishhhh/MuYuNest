@@ -60,7 +60,7 @@ test("mobile drawer and nested accordion support reversal and reduced motion", a
   await dialog.getByRole("button", { name: "展开前端开发", exact: true }).click();
   await dialog.getByRole("button", { name: "收起前端开发", exact: true }).click();
   await dialog.getByRole("button", { name: "展开前端开发", exact: true }).click();
-  await expect(dialog.getByRole("link", { name: "Vue 3 完全开发指南", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Vue 3 原理与实战", exact: true })).toBeVisible();
   await expect(dialog.locator(".docs-tree__groups > section").first()).toHaveCSS("opacity", "1");
   await page.screenshot({ path: info.outputPath("mobile-drawer.png") });
   await page.keyboard.press("Escape");
@@ -69,7 +69,7 @@ test("mobile drawer and nested accordion support reversal and reduced motion", a
   await page.emulateMedia({ reducedMotion: "reduce" });
   await menu.click();
   await expect(dialog).toHaveCSS("transform", "none");
-  await expect(dialog.getByRole("link", { name: "Vue 3 完全开发指南", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "Vue 3 原理与实战", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await page.reload();
   await expect(page.locator(root)).toHaveAttribute("data-docs-motion", "idle");

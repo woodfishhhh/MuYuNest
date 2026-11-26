@@ -1,6 +1,8 @@
 ---
 title: "Linux 目录结构、权限与高频命令速查"
 slug: "linux-cli-and-filesystem"
+aliases:
+  - "linux-d09e626e"
 date: 2025-10-06 12:05:09
 categories:
   - "工程实践"

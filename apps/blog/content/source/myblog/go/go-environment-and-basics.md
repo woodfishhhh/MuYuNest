@@ -1,6 +1,7 @@
 ---
 title: "Go 语言起步：环境配置、变量类型与流程控制"
 slug: go-environment-and-basics
+aliases: ["go-basics", "go-basics-01-environment"]
 date: "2026-10-13"
 categories: ["编程语言"]
 tags: ["Go", "Go基础", "变量类型", "流程控制", "Go Modules"]

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-label="一次 HTTP 请求的处理链">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#3b71b8" stroke-width="1.5"/></marker></defs>
+<rect width="1120" height="620" rx="20" fill="#f4f7fc"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#1c304c">
+<text x="40" y="51" font-size="27" font-weight="700">一次 HTTP 请求的处理链</text>
+<text x="40" y="85" font-size="17" fill="#52677e">按箭头与编号阅读：监听连接 → 选择路由 → 执行业务处理器。</text>
+<rect x="40" y="125" width="490" height="175" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="58" y="159" font-size="23" font-weight="700" fill="#245aa0">1. 客户端</text>
+<text x="58" y="192" font-size="20">GET /hello/Ada</text>
+<text x="58" y="219" font-size="20">发送方法、路径、请求头和请求体</text>
+<rect x="590" y="125" width="490" height="175" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="608" y="159" font-size="23" font-weight="700" fill="#245aa0">2. http.Server</text>
+<text x="608" y="192" font-size="20">监听 127.0.0.1:8080</text>
+<text x="608" y="219" font-size="20">处理 HTTP，调用 Handler.ServeHTTP</text>
+<rect x="590" y="345" width="490" height="175" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="608" y="379" font-size="23" font-weight="700" fill="#245aa0">3. 路由器</text>
+<text x="608" y="412" font-size="20">http.ServeMux</text>
+<text x="608" y="439" font-size="20">匹配 GET /hello/{name}，选择处理函数</text>
+<rect x="40" y="345" width="490" height="175" rx="12" fill="#e9f6f0" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="58" y="379" font-size="23" font-weight="700" fill="#22694d">4. 处理器</text>
+<text x="58" y="412" font-size="20">从 r.URL、r.Header、r.Body 读取输入</text>
+<text x="58" y="439" font-size="20">通过 w 写回状态码、响应头和正文</text>
+<path d="M530 210 L580 210" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<path d="M835 300 L835 335" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<path d="M590 430 L540 430" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<text x="40" y="565" font-size="20">r：*http.Request，保存客户端输入。</text>
+<text x="40" y="597" font-size="20">w：http.ResponseWriter，使用 Header、WriteHeader、Write 提交响应。</text>
+</g></svg>

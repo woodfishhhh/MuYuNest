@@ -1,6 +1,8 @@
 ---
 title: "JavaScript 事件循环、Promise 与 async/await"
 slug: "js-event-loop-and-async"
+aliases:
+  - "javascript-async-core"
 date: 2026-04-22 21:30:00
 categories:
   - "前端开发"

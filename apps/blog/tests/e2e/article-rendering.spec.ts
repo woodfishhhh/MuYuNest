@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "block" });
-const articlePath = "/posts/2-fab0b7c6?topic=database&series=database-foundations";
+const articlePath = "/posts/relational-model-and-algebra?topic=database&series=database-theory";
 const joinId = "3连接joinr-bowtie_atheta-b-s";
 
 for (const width of [1440, 390]) {
@@ -10,10 +10,10 @@ for (const width of [1440, 390]) {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(articlePath);
-    const paragraph = page.locator("#article-container p").filter({ hasText: "保留重复属性列" });
+    const paragraph = page.locator("#article-container p").filter({ hasText: "外码把两张表关联起来后" });
     await expect(paragraph.locator("mjx-container")).toHaveCount(3);
-    await expect(paragraph.locator("strong").first()).toContainText("等号");
-    await expect(paragraph.locator("strong").first().locator("svg")).toHaveCount(1);
+    await expect(paragraph.locator("strong").first()).toContainText("被参照关系");
+    await expect(paragraph.locator("strong").first().locator("svg")).toHaveCount(3);
     expect(await paragraph.textContent()).not.toMatch(/\\theta|\*\*|\$A=B\$/);
 
     if (width < 1280) await page.getByTestId("article-toc-mobile-toggle").click();
@@ -63,7 +63,7 @@ test("Shiki switches token colors with the site theme while keeping source copyi
   context,
 }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto("/posts/go-basics-02-input-output");
+  await page.goto("/posts/go-collections-arrays-slices-maps");
   const code = page.locator("#article-container pre.shiki code").first();
   await expect(code).toBeVisible();
   const source = await code.textContent();

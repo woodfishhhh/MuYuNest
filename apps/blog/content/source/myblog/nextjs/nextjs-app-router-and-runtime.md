@@ -1,6 +1,10 @@
 ---
 title: Next.js 16 工程结构、App Router 与服务端组件边界
 slug: nextjs-app-router-and-runtime
+aliases:
+  - nextjs16-ai-seo
+  - nextjs16-project-runtime
+  - nextjs16-app-router
 date: 2026-08-06
 categories:
   - 前端开发

@@ -10,7 +10,7 @@ test("scrolling up at the top of Blog stays in the knowledge base", async ({ pag
 });
 
 test("Blog restores scroll after searching and going back", async ({ page }) => {
-  await page.goto("/blog?topic=languages&series=go-basics");
+  await page.goto("/blog?topic=languages&series=go");
   const main = page.locator(".docs-main");
   await expect(page.locator(".docs-article-row").first()).toBeVisible();
   await main.evaluate((el) => {

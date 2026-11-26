@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 test.use({ serviceWorkers: "block" });
 
-test("Linux-generated legacy URLs resolve to the same canonical articles", async ({ page }) => {
+test("Legacy alias URLs resolve to the same canonical articles", async ({ page }) => {
   for (const [alias, canonical] of [
-    ["1-cc97fa54", "1-849fada0"],
-    ["07-de757c2c", "07-7c60a570"],
-    ["2-e25c70a2", "2-fab0b7c6"],
+    ["ajax-basics-intro", "web-http-fetch-and-axios"],
+    ["2-fab0b7c6", "relational-model-and-algebra"],
+    ["go-basics", "go-environment-and-basics"],
   ]) {
     await page.goto(`/posts/${alias}`);
     await expect(page).toHaveURL(new RegExp(`/posts/${canonical}$`));
@@ -15,7 +15,7 @@ test("Linux-generated legacy URLs resolve to the same canonical articles", async
 
 test("article changes preserve the shell and align the active marker", async ({ page }, info) => {
   await page.setViewportSize({ width: 1651, height: 871 });
-  await page.goto("/posts/1-849fada0?topic=frontend&series=react-notes");
+  await page.goto("/posts/react-mental-model-and-jsx?topic=frontend&series=react");
   await expect(page.locator(".docs-app")).toHaveAttribute("data-docs-motion", "idle");
   await page.evaluate(() => {
     const shell = document.querySelector(".docs-app")!;
@@ -33,7 +33,7 @@ test("article changes preserve the shell and align the active marker", async ({ 
     }
     requestAnimationFrame(frame);
   });
-  for (const slug of ["2-74508d71", "7-ebd3ff12", "1-849fada0"]) {
+  for (const slug of ["react-fiber-and-reconciliation", "react-state-zustand-and-redux", "react-mental-model-and-jsx"]) {
     await page.locator(`.docs-sidebar a[href^="/posts/${slug}?"]`).click();
     await expect(page.locator(`h1[id="article-title-${slug}"]`)).toBeVisible();
     await expect(page.locator(".docs-app")).toHaveAttribute("data-docs-motion", "idle");
@@ -62,7 +62,7 @@ test("article changes preserve the shell and align the active marker", async ({ 
 });
 
 test("YouYuan does not use corrupted synthesized bold and the scene dock stays visible", async ({ page }, info) => {
-  await page.goto("/posts/07-7c60a570?topic=frontend&series=vue3");
+  await page.goto("/posts/vue3-engineering-and-dataviz?topic=frontend&series=vue3");
   await expect(page.locator(".docs-app")).toHaveAttribute("data-docs-motion", "idle");
   for (const theme of ["day", "night"]) {
     if ((await page.locator("html").getAttribute("data-theme")) !== theme)

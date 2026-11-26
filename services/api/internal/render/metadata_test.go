@@ -30,7 +30,7 @@ func TestMetadataTypeScriptParity(t *testing.T) {
 	if err := json.NewDecoder(reader).Decode(&cases); err != nil {
 		t.Fatal(err)
 	}
-	if len(cases) < 246 {
+	if len(cases) < 106 {
 		t.Fatalf("corpus unexpectedly small: %d", len(cases))
 	}
 	for _, item := range cases {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "block" });
-const article = "/posts/2-fab0b7c6?topic=database&series=database-foundations";
+const article = "/posts/relational-model-and-algebra?topic=database&series=database-theory";
 
 for (const width of [1280, 1651, 1920]) {
   test(`outline fills the right rail without horizontal scrollers at ${width}px`, async ({ page }, info) => {

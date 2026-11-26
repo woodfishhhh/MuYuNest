@@ -117,6 +117,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
 });
 
 const timestampPattern = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+const validAliasSlugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 
 export async function buildSiteContent(
@@ -217,9 +218,14 @@ export async function buildSiteContent(
       publicDir: targetPublicDir,
       slug: slugResult.canonicalSlug,
     });
+    const frontmatterAliases = normalizeFrontmatterAliases(
+      parsed.data.aliases,
+      slugResult.canonicalSlug,
+    );
+    const aliases = Array.from(new Set([...slugResult.aliases, ...frontmatterAliases]));
     const entry: GeneratedPostArticle = {
       canonicalSlug: slugResult.canonicalSlug,
-      aliases: slugResult.aliases,
+      aliases,
       title,
       publishedAt,
       publishedLabel: formatPublishedDate(publishedAt),
@@ -249,6 +255,13 @@ export async function buildSiteContent(
       categories: entry.categories,
       tags: entry.tags,
     });
+  }
+
+  const canonicalSlugs = new Set(Object.keys(postsBySlug));
+  for (const entry of postIndex) {
+    const safeAliases = entry.aliases.filter((alias) => !canonicalSlugs.has(alias));
+    entry.aliases = safeAliases;
+    postsBySlug[entry.canonicalSlug].aliases = safeAliases;
   }
 
   postIndex.sort((left, right) => Date.parse(right.publishedAt) - Date.parse(left.publishedAt));
@@ -718,6 +731,16 @@ export function toStringArray(value: unknown) {
   }
 
   return value.map(readString).filter(Boolean);
+}
+
+function normalizeFrontmatterAliases(value: unknown, canonicalSlug: string) {
+  return Array.from(
+    new Set(
+      toStringArray(value)
+        .map((alias) => alias.trim().toLowerCase())
+        .filter((alias) => alias !== canonicalSlug && validAliasSlugPattern.test(alias)),
+    ),
+  );
 }
 
 function toIsoDate(value: string) {

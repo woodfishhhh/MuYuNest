@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.use({ serviceWorkers: "block" });
-const article = "/posts/2-fab0b7c6?topic=database&series=database-foundations";
+const article = "/posts/relational-model-and-algebra?topic=database&series=database-theory";
 
 test("reading surfaces share one palette in both themes", async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 960 });
@@ -40,7 +40,7 @@ test("drawer and collapsible navigation survive interruption and reduced motion"
   const topic = drawer.getByRole("button", { name: "展开前端开发", exact: true });
   await topic.click();
   await drawer.getByRole("button", { name: "收起前端开发", exact: true }).click();
-  await expect(drawer.getByRole("link", { name: "Vue 3 完全开发指南", exact: true })).toHaveCount(0);
+  await expect(drawer.getByRole("link", { name: "Vue 3 原理与实战", exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(drawer).not.toBeVisible();
   await expect(menu).toBeFocused();
@@ -51,9 +51,9 @@ test("drawer and collapsible navigation survive interruption and reduced motion"
   await page.getByTestId("article-toc-mobile-toggle").click();
   await page
     .locator(".article-toc--mobile")
-    .getByRole("button", { name: "三、关系代数怎样表达查询", exact: true })
+    .getByRole("button", { name: "关系代数：查询语句的数学等价表达", exact: true })
     .click();
-  await expect(page).toHaveURL(/#%E4%B8%89/);
+  await expect(page).toHaveURL(/#%E5%85%B3%E7%B3%BB/);
   await expect(page.getByTestId("article-toc-mobile-toggle")).toHaveAttribute("aria-expanded", "false");
   await page.screenshot({ animations: "disabled", path: info.outputPath("mobile-reader.png") });
 });

@@ -1,0 +1,105 @@
+{
+  "canonicalSlug": "jufe-cpp-onboarding-day1",
+  "aliases": [],
+  "title": "JUFE 新生编程语法培训 Day1：环境配置与第一个 C++ 程序",
+  "publishedAt": "2025-12-20T12:00:03.000Z",
+  "publishedLabel": "Dec 20, 2025",
+  "excerpt": "by woodfish",
+  "type": "Notes",
+  "searchText": "JUFE 新生编程语法培训 Day1：环境配置与第一个 C++ 程序 Notes 算法竞赛 C++入门 CodeBlocks VSCode配置 新生培训 开发环境 by woodfish 一、课前准备 1. 软件准备 ： 下载带 MinGW 编译器的 Code::Blocks 安装包（带 字样）； 一定要学会用 Code::Blocks ，因为蓝桥杯机房环境里大概率用的就是它。 二、安装与配置开发环境 安装开发工具：Code::Blocks 1. 什么是 IDE？ IDE（Integrated Development Environment） ：集成开发环境，集代码编辑、编译、运行、调试于一体。 类比一下：就像“Word”之于写作，“Photoshop”之于修图。 另外提一嘴，VS Code 更像编辑器，本身不自带 C++ 编译器；而集成好的 IDE 自带编译器，装好就能直接写代码并编译运行。 2. 安装步骤 1. 打开安装包 → 下一步 → 接受协议。 2. 关键点 ：组件选择务必勾选 Full installation （包含 MinGW 编译器）。 3. 安装路径避免中文或空格（如 ）。 4. 安装完成后启动，首次打开会自动检测编译器（GNU GCC / MinGW）。 3. 常见问题处理 如果启动后提示 / ： 优先检查是否误装了不带 MinGW 的精简包，重装 mingw setup 版本即可； 或者手动配置路径： ，将 Compiler's installation directory 指到 MinGW 安装目录（如 ），并在终端验证编译器是否可用： 配置 VS Code（可选） 如果习惯用 VS Code 写题，同样需要先把 MinGW（如 Code::Blocks 自带的 ）加到系统环境变量 中，再参考基础配置教程完成编译运行任务配置： VS Code 基础安装与 C++ 配置教程（Bilibili） 下载 Dev C++（可选） 如果电脑配置较低或习惯更轻量的传统工具，也可以备用 Dev C++： Dev C++ 下载安装与中文设置教程（Bilibili） 三、编写第一个程序：\"Hello, World!\" 1. 创建新项目 在 Code::Blocks 中选择 。 语言选择 C++ 。 项目名称填写 ，存放路径不要包含中文或空格。 编译器保持默认的 。 2. 认识代码结构 如果不用 IDE 工程，也可以在终端里用命令行手动编译运行： 3. 逐行讲解核心概念 ： 预处理指令 ，告诉编译器“我要用标准输入输出流”，就像借书卡一样把标准库功能引入当前文件。 ： 主函数 ，每个 C/C++ 程序必须有且仅有一个，是程序运行的入口。 ：输出语句，把右侧内容打印到终端屏幕。 和 ： 注释 ，写给人看的说明，编译器在编译时会直接忽略。写注释是很好的工程与做题习惯。 4. 上手练习 1. 把输出字符串改成 。 2. 在 里添加一行单行注释： 。 3. 点击 Build and Run（快捷键 ）完成编译并查看输出。 四、VS Code 必备插件推荐 用 VS Code 写 C++ 算法题，可以在左侧扩展商店（ ）按插件名搜索安装下面几类工具： 1. C/C++（Microsoft 官方插件， ） ：提供语法高亮、代码补全与断点调试基础能力，写 C++ 必装。 2. CodeSnap（ ） ：框选代码后右键即可生成高清代码块截图，向学长学姐或队友提问修 Bug 时比手机拍屏幕清楚得多。 3. Competitive Programming Helper ( , ) ：算法竞赛训练必备，可以直接抓取题目样例一键对拍运行，不用每次手动复制粘贴测试数据。 4. AI 编程辅助插件（如 GitHub Copilot / 通义灵码等） ：平时做语法练习遇到环境配置报错、低级语法错误时可以让它帮着排查。 但是！！！千万不要滥用，更绝对不能在正式比赛或考试中使用，那属于作弊行为。 5. 主题与图标美化插件（如 One Dark Pro、Material Icon Theme） ：纯属个人喜好，看着顺眼写代码心情也好一点，按需选用。 五、常用刷题网站 建议新生先注册下面三个主力 OJ： 1. 洛谷（Luogu） ： luogu.com.cn （中文题库与题单最友好，适合入门） 2. Codeforces ： codeforces.com （全球最活跃的算法竞赛周赛平台） 3. 牛客竞赛 ： ac.nowcoder.com/acm/contest/vip index （国内校赛、多校训练常用） 以下平台可按需选刷： AcWing： acwing.com AtCoder： atcoder.jp StarryCoding： starrycoding.com 六、网课学习建议 C 语言零基础可以先看浙大翁恺老师的课程（节奏紧凑，把核心语法过一遍就够了）： 浙江大学翁恺教你 C 语言程序设计（Bilibili） 学完 C 语言基础语法后，再快速过渡到 C++ 常用语法与 STL： C 语言转 C++ 简单教程（Bilibili）",
+  "readingMinutes": 6,
+  "coverImage": null,
+  "categories": [
+    "算法竞赛"
+  ],
+  "tags": [
+    "C++入门",
+    "CodeBlocks",
+    "VSCode配置",
+    "新生培训",
+    "开发环境"
+  ],
+  "html": "<p>by woodfish</p>\n<h2 id=\"一课前准备\">一、课前准备</h2>\n<ol>\n<li><strong>软件准备</strong>：\n<ul>\n<li>下载带 MinGW 编译器的 Code::Blocks 安装包（带 <code>mingw-setup</code> 字样）；</li>\n<li><strong>一定要学会用 Code::Blocks</strong>，因为蓝桥杯机房环境里大概率用的就是它。</li>\n</ul>\n</li>\n</ol>\n<h2 id=\"二安装与配置开发环境\">二、安装与配置开发环境</h2>\n<h3 id=\"安装开发工具codeblocks\">安装开发工具：Code::Blocks</h3>\n<h4 id=\"1-什么是-ide\">1. 什么是 IDE？</h4>\n<ul>\n<li><strong>IDE（Integrated Development Environment）</strong>：集成开发环境，集代码编辑、编译、运行、调试于一体。</li>\n<li>类比一下：就像“Word”之于写作，“Photoshop”之于修图。</li>\n<li>另外提一嘴，VS Code 更像编辑器，本身不自带 C++ 编译器；而集成好的 IDE 自带编译器，装好就能直接写代码并编译运行。</li>\n</ul>\n<h4 id=\"2-安装步骤\">2. 安装步骤</h4>\n<ol>\n<li>打开安装包 → 下一步 → 接受协议。</li>\n<li><strong>关键点</strong>：组件选择务必勾选 <strong>Full installation</strong>（包含 MinGW 编译器）。</li>\n<li>安装路径避免中文或空格（如 <code>D:\\codeblocks</code>）。</li>\n<li>安装完成后启动，首次打开会自动检测编译器（GNU GCC / MinGW）。</li>\n</ol>\n<h4 id=\"3-常见问题处理\">3. 常见问题处理</h4>\n<ul>\n<li>如果启动后提示 <code>Can't find compiler executable</code> / <code>no compiler found</code>：\n<ul>\n<li>优先检查是否误装了不带 MinGW 的精简包，重装 <strong>mingw-setup</strong> 版本即可；</li>\n<li>或者手动配置路径：<code>Settings → Compiler → Toolchain executables</code>，将 Compiler's installation directory 指到 MinGW 安装目录（如 <code>D:\\codeblocks\\MinGW</code>），并在终端验证编译器是否可用：</li>\n</ul>\n</li>\n</ul>\n<pre data-language=\"bash\" class=\"shiki shiki-themes github-light github-dark\" style=\"--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e\"><code class=\"language-bash\"><span class=\"line\"><span style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\">g++</span><span style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"> --version</span></span>\n<span class=\"line\"></span></code></pre>\n<h3 id=\"配置-vs-code可选\">配置 VS Code（可选）</h3>\n<p>如果习惯用 VS Code 写题，同样需要先把 MinGW（如 Code::Blocks 自带的 <code>MinGW\\bin</code>）加到系统环境变量 <code>PATH</code> 中，再参考基础配置教程完成编译运行任务配置：</p>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV15kavzWExk/\">VS Code 基础安装与 C++ 配置教程（Bilibili）</a></li>\n</ul>\n<h3 id=\"下载-dev-c-可选\">下载 Dev-C++（可选）</h3>\n<p>如果电脑配置较低或习惯更轻量的传统工具，也可以备用 Dev-C++：</p>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV1kC411G7CS/\">Dev-C++ 下载安装与中文设置教程（Bilibili）</a></li>\n</ul>\n<h2 id=\"三编写第一个程序hello-world\">三、编写第一个程序：\"Hello, World!\"</h2>\n<h3 id=\"1-创建新项目\">1. 创建新项目</h3>\n<ul>\n<li>在 Code::Blocks 中选择 <code>File → New → Project → Console Application → Go</code>。</li>\n<li>语言选择 <strong>C++</strong>。</li>\n<li>项目名称填写 <code>HelloWorld</code>，存放路径不要包含中文或空格。</li>\n<li>编译器保持默认的 <code>GNU GCC Compiler</code>。</li>\n</ul>\n<h3 id=\"2-认识代码结构\">2. 认识代码结构</h3>\n<pre data-language=\"cpp\" class=\"shiki shiki-themes github-light github-dark\" style=\"--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e\"><code class=\"language-cpp\"><span class=\"line\"><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">#include</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> &lt;iostream&gt;</span><span style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\">      // ← 包含输入输出库</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">using</span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"> namespace</span><span style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"> std</span><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">;</span><span style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\">     // ← 使用标准命名空间（简化写法）</span></span>\n<span class=\"line\"></span>\n<span class=\"line\"><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">int</span><span style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"> main</span><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">()</span><span style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\">               // ← 主函数，程序从这里开始执行</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">{</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">    cout </span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">&lt;&lt;</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> \"Hello, World!\"</span><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"> &lt;&lt;</span><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"> endl;</span><span style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\">  // ← 输出语句</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\">    return</span><span style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"> 0</span><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">;</span><span style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\">            // ← 返回 0，表示程序正常结束</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\">}</span></span>\n<span class=\"line\"></span></code></pre>\n<p>如果不用 IDE 工程，也可以在终端里用命令行手动编译运行：</p>\n<pre data-language=\"bash\" class=\"shiki shiki-themes github-light github-dark\" style=\"--shiki-light:#24292e;--shiki-dark:#e1e4e8;--shiki-light-bg:#fff;--shiki-dark-bg:#24292e\"><code class=\"language-bash\"><span class=\"line\"><span style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\">g++</span><span style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"> -std=c++17</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> main.cpp</span><span style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"> -o</span><span style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"> main</span></span>\n<span class=\"line\"><span style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\">./main</span></span>\n<span class=\"line\"></span></code></pre>\n<h3 id=\"3-逐行讲解核心概念\">3. 逐行讲解核心概念</h3>\n<ul>\n<li><code>#include &lt;iostream&gt;</code>：<strong>预处理指令</strong>，告诉编译器“我要用标准输入输出流”，就像借书卡一样把标准库功能引入当前文件。</li>\n<li><code>main()</code>：<strong>主函数</strong>，每个 C/C++ 程序必须有且仅有一个，是程序运行的入口。</li>\n<li><code>cout &lt;&lt; ...</code>：输出语句，把右侧内容打印到终端屏幕。</li>\n<li><code>//</code> 和 <code>/* ... */</code>：<strong>注释</strong>，写给人看的说明，编译器在编译时会直接忽略。写注释是很好的工程与做题习惯。</li>\n</ul>\n<h3 id=\"4-上手练习\">4. 上手练习</h3>\n<ol>\n<li>把输出字符串改成 <code>\"Hello, [你的名字]!\"</code>。</li>\n<li>在 <code>main()</code> 里添加一行单行注释：<code>// 我的第一个程序</code>。</li>\n<li>点击 Build and Run（快捷键 <code>F9</code>）完成编译并查看输出。</li>\n</ol>\n<h2 id=\"四vs-code-必备插件推荐\">四、VS Code 必备插件推荐</h2>\n<p>用 VS Code 写 C++ 算法题，可以在左侧扩展商店（<code>Ctrl + Shift + X</code>）按插件名搜索安装下面几类工具：</p>\n<ol>\n<li><strong>C/C++（Microsoft 官方插件，<code>ms-vscode.cpptools</code>）</strong>：提供语法高亮、代码补全与断点调试基础能力，写 C++ 必装。</li>\n<li><strong>CodeSnap（<code>adpyke.codesnap</code>）</strong>：框选代码后右键即可生成高清代码块截图，向学长学姐或队友提问修 Bug 时比手机拍屏幕清楚得多。</li>\n<li><strong>Competitive Programming Helper (<code>cph</code>, <code>DivyanshuAgrawal.competitive-programming-helper</code>)</strong>：算法竞赛训练必备，可以直接抓取题目样例一键对拍运行，不用每次手动复制粘贴测试数据。</li>\n<li><strong>AI 编程辅助插件（如 GitHub Copilot / 通义灵码等）</strong>：平时做语法练习遇到环境配置报错、低级语法错误时可以让它帮着排查。<strong>但是！！！千万不要滥用，更绝对不能在正式比赛或考试中使用，那属于作弊行为。</strong></li>\n<li><strong>主题与图标美化插件（如 One Dark Pro、Material Icon Theme）</strong>：纯属个人喜好，看着顺眼写代码心情也好一点，按需选用。</li>\n</ol>\n<h2 id=\"五常用刷题网站\">五、常用刷题网站</h2>\n<p>建议新生先注册下面三个主力 OJ：</p>\n<ol>\n<li><strong>洛谷（Luogu）</strong>：<a href=\"https://www.luogu.com.cn/\">luogu.com.cn</a>（中文题库与题单最友好，适合入门）</li>\n<li><strong>Codeforces</strong>：<a href=\"https://codeforces.com/\">codeforces.com</a>（全球最活跃的算法竞赛周赛平台）</li>\n<li><strong>牛客竞赛</strong>：<a href=\"https://ac.nowcoder.com/acm/contest/vip-index\">ac.nowcoder.com/acm/contest/vip-index</a>（国内校赛、多校训练常用）</li>\n</ol>\n<p>以下平台可按需选刷：</p>\n<ul>\n<li>AcWing：<a href=\"https://www.acwing.com/\">acwing.com</a></li>\n<li>AtCoder：<a href=\"https://atcoder.jp/\">atcoder.jp</a></li>\n<li>StarryCoding：<a href=\"https://www.starrycoding.com/\">starrycoding.com</a></li>\n</ul>\n<h2 id=\"六网课学习建议\">六、网课学习建议</h2>\n<p>C 语言零基础可以先看浙大翁恺老师的课程（节奏紧凑，把核心语法过一遍就够了）：</p>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV1dr4y1n7vA/\">浙江大学翁恺教你 C 语言程序设计（Bilibili）</a></li>\n</ul>\n<p>学完 C 语言基础语法后，再快速过渡到 C++ 常用语法与 STL：</p>\n<ul>\n<li><a href=\"https://www.bilibili.com/video/BV1UE411j7Ti/\">C 语言转 C++ 简单教程（Bilibili）</a></li>\n</ul>\n",
+  "toc": [
+    {
+      "id": "一课前准备",
+      "level": 2,
+      "text": "一、课前准备"
+    },
+    {
+      "id": "二安装与配置开发环境",
+      "level": 2,
+      "text": "二、安装与配置开发环境"
+    },
+    {
+      "id": "安装开发工具codeblocks",
+      "level": 3,
+      "text": "安装开发工具：Code::Blocks"
+    },
+    {
+      "id": "1-什么是-ide",
+      "level": 4,
+      "text": "1. 什么是 IDE？"
+    },
+    {
+      "id": "2-安装步骤",
+      "level": 4,
+      "text": "2. 安装步骤"
+    },
+    {
+      "id": "3-常见问题处理",
+      "level": 4,
+      "text": "3. 常见问题处理"
+    },
+    {
+      "id": "配置-vs-code可选",
+      "level": 3,
+      "text": "配置 VS Code（可选）"
+    },
+    {
+      "id": "下载-dev-c-可选",
+      "level": 3,
+      "text": "下载 Dev-C++（可选）"
+    },
+    {
+      "id": "三编写第一个程序hello-world",
+      "level": 2,
+      "text": "三、编写第一个程序：\"Hello, World!\""
+    },
+    {
+      "id": "1-创建新项目",
+      "level": 3,
+      "text": "1. 创建新项目"
+    },
+    {
+      "id": "2-认识代码结构",
+      "level": 3,
+      "text": "2. 认识代码结构"
+    },
+    {
+      "id": "3-逐行讲解核心概念",
+      "level": 3,
+      "text": "3. 逐行讲解核心概念"
+    },
+    {
+      "id": "4-上手练习",
+      "level": 3,
+      "text": "4. 上手练习"
+    },
+    {
+      "id": "四vs-code-必备插件推荐",
+      "level": 2,
+      "text": "四、VS Code 必备插件推荐"
+    },
+    {
+      "id": "五常用刷题网站",
+      "level": 2,
+      "text": "五、常用刷题网站"
+    },
+    {
+      "id": "六网课学习建议",
+      "level": 2,
+      "text": "六、网课学习建议"
+    }
+  ]
+}

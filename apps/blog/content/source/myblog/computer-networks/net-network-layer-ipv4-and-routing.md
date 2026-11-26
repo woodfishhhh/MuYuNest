@@ -1,6 +1,8 @@
 ---
 title: "网络层核心：IPv4 分组转发、路由选择协议、ICMP 与 SDN"
 slug: "net-network-layer-ipv4-and-routing"
+aliases:
+  - "network-layer-ipv4-routing"
 date: 2025-12-14 23:17:07
 categories:
   - "计算机基础"

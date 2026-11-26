@@ -1,6 +1,8 @@
 ---
 title: TypeScript 工程起步与核心类型系统：编译、接口与类
 slug: typescript-type-system-foundations
+aliases:
+  - typescript-practical-foundations
 date: 2026-07-12
 categories:
   - 编程语言

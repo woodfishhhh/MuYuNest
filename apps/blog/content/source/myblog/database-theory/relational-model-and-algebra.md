@@ -1,6 +1,9 @@
 ---
 title: "关系模型、完整性约束与关系代数运算"
 slug: relational-model-and-algebra
+aliases:
+  - 2-fab0b7c6
+  - 2-e25c70a2
 date: 2026-03-14
 categories:
   - "数据库"

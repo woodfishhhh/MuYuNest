@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="570" viewBox="0 0 1120 570" role="img" aria-label="参数绑定的三个阶段">
+<defs><marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#3b71b8" stroke-width="1.5"/></marker></defs>
+<rect width="1120" height="570" rx="20" fill="#f4f7fc"/>
+<g font-family="Microsoft YaHei, Noto Sans CJK SC, sans-serif" fill="#1c304c">
+<text x="40" y="51" font-size="27" font-weight="700">参数绑定的三个阶段</text>
+<text x="40" y="85" font-size="17" fill="#52677e">ShouldBind 返回错误，由调用方选择状态码和错误响应格式。</text>
+<rect x="40" y="125" width="310" height="165" rx="12" fill="#eaf1fd" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="58" y="159" font-size="23" font-weight="700" fill="#245aa0">1. 选择来源</text>
+<text x="58" y="192" font-size="20">query / path / header / body</text>
+<text x="58" y="219" font-size="20">显式指定，或按方法和</text>
+<text x="58" y="246" font-size="20">Content-Type 选择绑定器</text>
+<rect x="405" y="125" width="310" height="165" rx="12" fill="#ffffff" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="423" y="159" font-size="23" font-weight="700" fill="#245aa0">2. 解码与类型转换</text>
+<text x="423" y="192" font-size="20">字段名对应结构体标签</text>
+<text x="423" y="219" font-size="20">&quot;20&quot; 转换为 int(20)</text>
+<text x="423" y="246" font-size="20">&quot;abc&quot; 无法转换成 int</text>
+<rect x="770" y="125" width="310" height="165" rx="12" fill="#e9f6f0" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="788" y="159" font-size="23" font-weight="700" fill="#22694d">3. 执行校验</text>
+<text x="788" y="192" font-size="20">根据 binding 标签判断</text>
+<text x="788" y="219" font-size="20">required / gte / email 等</text>
+<text x="788" y="246" font-size="20">通过后才进入后续业务</text>
+<path d="M350 208 L394 208" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<path d="M715 208 L759 208" stroke="#3b71b8" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+<rect x="40" y="340" width="310" height="175" rx="12" fill="#fff6e8" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="58" y="374" font-size="23" font-weight="700" fill="#94620c">先限制请求体</text>
+<text x="58" y="407" font-size="20">先用 MaxBytesReader</text>
+<text x="58" y="434" font-size="20">约束读取请求体的大小</text>
+<text x="58" y="461" font-size="20">超出限制可响应 413</text>
+<rect x="405" y="340" width="310" height="175" rx="12" fill="#fff0ee" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="423" y="374" font-size="23" font-weight="700" fill="#a84539">转换失败</text>
+<text x="423" y="407" font-size="20">age=abc 还不是一个整数</text>
+<text x="423" y="434" font-size="20">不要继续使用结构体的默认值</text>
+<text x="423" y="461" font-size="20">处理器可响应 400</text>
+<rect x="770" y="340" width="310" height="175" rx="12" fill="#fff0ee" stroke="#d4dfed" stroke-width="1.5"/>
+<text x="788" y="374" font-size="23" font-weight="700" fill="#a84539">校验失败</text>
+<text x="788" y="407" font-size="20">age=-1 已经是整数</text>
+<text x="788" y="434" font-size="20">但不满足 gte=0</text>
+<text x="788" y="461" font-size="20">返回字段键和错误文案</text>
+</g></svg>

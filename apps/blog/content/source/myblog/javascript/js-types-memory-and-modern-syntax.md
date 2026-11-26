@@ -1,6 +1,8 @@
 ---
 title: "JavaScript 类型系统、内存模型与 ES6+ 语法精要"
 slug: "js-types-memory-and-modern-syntax"
+aliases:
+  - "javascript-basics-and-data-types"
 date: 2025-12-25 18:31:13
 categories:
   - "前端开发"

@@ -1,6 +1,9 @@
 ---
 title: "标准 SQL 精要：模式定义、复杂查询、三值空值逻辑与视图"
 slug: sql-standard-ddl-dml-and-views
+aliases:
+  - sql-advanced-updates-views
+  - sql-ddl-query-basics
 date: 2026-03-16
 categories:
   - "数据库"

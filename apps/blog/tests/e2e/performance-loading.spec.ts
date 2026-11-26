@@ -16,14 +16,14 @@ test("home defers the archive and opening a result requests one article", async 
   expect(requests.filter(url => /\/(post-index\.json|articles\/)/.test(url))).toEqual([]);
   await page.screenshot({ path: info.outputPath("home-avatar.png") });
   await page.getByTestId("site-nav-wide").getByRole("link", { name: "Blog", exact: true }).click();
-  await page.getByRole("searchbox", { name: "搜索文章", exact: true }).fill("输入与输出");
+  await page.getByRole("searchbox", { name: "搜索文章", exact: true }).fill("切片底层结构");
   await expect(page.locator(".docs-article-row")).toHaveCount(1);
   await page.locator(".docs-article-row").click();
   await expect(page.getByTestId("post-view-article")).toBeVisible();
   expect(requests.filter(url => url.endsWith("/post-index.json"))).toHaveLength(1);
-  expect(requests.filter(url => url.startsWith("/articles/"))).toEqual(["/articles/go-basics-02-input-output.json"]);
+  expect(requests.filter(url => url.startsWith("/articles/"))).toEqual(["/articles/go-collections-arrays-slices-maps.json"]);
   await page.getByTestId("post-view-back-link").click();
-  await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue("输入与输出");
+  await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue("切片底层结构");
   await page.locator(".docs-article-row").click();
   await expect(page.getByTestId("post-view-article")).toBeVisible();
   expect(requests.filter(url => url.startsWith("/articles/"))).toHaveLength(1);
@@ -44,7 +44,7 @@ test("failed archive exposes retry without downloading the corpus", async ({ pag
   await expect(page.getByRole("heading", { name: "知识库暂时无法加载" })).toBeVisible();
   expect(articles).toEqual([]);
   await page.getByRole("button", { name: "重新加载", exact: true }).click();
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
   expect(attempts).toBe(2);
 });
 
@@ -54,11 +54,11 @@ test("failed article retries without refetching the archive", async ({ page }) =
   page.on("request", request => {
     if (request.url().endsWith("/post-index.json")) indexes++;
   });
-  await page.route("**/articles/go-basics-02-input-output.json", route => {
+  await page.route("**/articles/go-collections-arrays-slices-maps.json", route => {
     attempts++;
     return attempts === 1 ? route.fulfill({ status: 503, body: "unavailable" }) : route.continue();
   });
-  await page.goto("/posts/go-basics-02-input-output");
+  await page.goto("/posts/go-collections-arrays-slices-maps");
   await expect(page.getByRole("heading", { name: "文章暂时无法加载" })).toBeVisible();
   await page.getByRole("button", { name: "重新加载", exact: true }).click();
   await expect(page.getByTestId("post-view-article")).toBeVisible();
@@ -72,7 +72,7 @@ test("avatar and navigation fit a 320px screen", async ({ page }, info) => {
   await expect(page.getByAltText("木鱼的头像")).toBeVisible();
   await page.getByRole("button", { name: "Toggle Menu" }).click();
   await page.locator("#site-navigation-menu").getByRole("link", { name: "Blog", exact: true }).click();
-  await expect(page.locator(".docs-topic-card")).toHaveCount(8);
+  await expect(page.locator(".docs-topic-card")).toHaveCount(7);
   await page.getByRole("button", { name: "☰ 文档目录" }).click();
   await expect(page.getByRole("dialog", { name: "文档目录" })).toBeVisible();
   await page.keyboard.press("Escape");

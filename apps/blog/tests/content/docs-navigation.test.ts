@@ -19,29 +19,33 @@ const post = (canonicalSlug: string, categories: string[] = []): PostSummary => 
 });
 describe("documentation navigation", () => {
   it("orders a series by curriculum, not publication or incoming index order", () => {
-    const posts = [post("go-basics-02-input-output"), post("go-basics"), post("go-basics-01-environment")];
+    const posts = [
+      post("go-functions-init-and-defer"),
+      post("go-environment-and-basics"),
+      post("go-collections-arrays-slices-maps"),
+    ];
     const topics = buildDocsNavigation(posts);
-    const place = findDocsPlacement(topics, "go-basics-01-environment");
+    const place = findDocsPlacement(topics, "go-collections-arrays-slices-maps");
     expect(place?.topic.id).toBe("languages");
     expect(place?.group.posts.map((p) => p.canonicalSlug)).toEqual([
-      "go-basics",
-      "go-basics-01-environment",
-      "go-basics-02-input-output",
+      "go-environment-and-basics",
+      "go-collections-arrays-slices-maps",
+      "go-functions-init-and-defer",
     ]);
-    expect(getDocsNeighbors(place).next?.canonicalSlug).toBe("go-basics-02-input-output");
-    expect(getDocsNeighbors(findDocsPlacement(topics, "go-basics-02-input-output")).next).toBeNull();
+    expect(getDocsNeighbors(place).next?.canonicalSlug).toBe("go-functions-init-and-defer");
+    expect(getDocsNeighbors(findDocsPlacement(topics, "go-functions-init-and-defer")).next).toBeNull();
   });
   it("normalizes Go categories and keeps loose notes separate from courses", () => {
     const topics = buildDocsNavigation([
       post("go-new", ["Go"]),
       post("go-old", ["Go语言"]),
-      post("go-basics"),
+      post("go-environment-and-basics"),
       post("unknown"),
     ]);
     expect(findDocsPlacement(topics, "go-new")?.topic.id).toBe("languages");
     expect(findDocsPlacement(topics, "go-old")?.group.id).toBe("languages-notes");
     expect(findDocsPlacement(topics, "unknown")?.topic.id).toBe("other");
-    expect(getDocsNeighbors(findDocsPlacement(topics, "go-basics")).next).toBeNull();
+    expect(getDocsNeighbors(findDocsPlacement(topics, "go-environment-and-basics")).next).toBeNull();
   });
   it("covers every loadable current article exactly once and never adds missing configured slugs", () => {
     const posts = JSON.parse(readFileSync("public/post-index.json", "utf8")) as PostSummary[];
@@ -59,8 +63,8 @@ describe("documentation navigation", () => {
     expect(new Set(slugs).size).toBe(slugs.length);
   });
   it("hides only the requested guides from discovery without turning them into loose notes", () => {
-    const hidden = seriesConfig.filter(s => s.id === "nestjs-guide" || s.id === "react19").flatMap(s => s.slugs);
-    const retained = seriesConfig.filter(s => s.id === "nestjs" || s.id === "react-notes").flatMap(s => s.slugs);
+    const hidden = seriesConfig.filter(s => s.id === "campus-notes").flatMap(s => s.slugs);
+    const retained = seriesConfig.filter(s => s.id === "nestjs" || s.id === "react").flatMap(s => s.slugs);
     const all = [...hidden, ...retained].map(slug => post(slug));
     expect(visiblePostSummaries(all).map(p => p.canonicalSlug)).toEqual(retained);
     const navigation = buildDocsNavigation(all);

@@ -1,6 +1,7 @@
 ---
 title: "从 net/http 到 Gin：请求处理链、JSON 响应与状态码约定"
 slug: gin-http-and-responses
+aliases: ["gin-basics", "gin-basics-01-net-http"]
 date: "2026-10-14"
 categories: ["后端开发"]
 tags: ["Go", "Gin", "net/http", "HTTP", "JSON"]
