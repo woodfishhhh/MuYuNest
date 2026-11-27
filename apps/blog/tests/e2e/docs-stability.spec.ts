@@ -3,8 +3,13 @@ test.use({ serviceWorkers: "block" });
 
 test("Legacy alias URLs resolve to the same canonical articles", async ({ page }) => {
   for (const [alias, canonical] of [
-    ["ajax-basics-intro", "web-http-fetch-and-axios"],
+    ["1-849fada0", "react-mental-model-and-jsx"],
+    ["1-cc97fa54", "react-mental-model-and-jsx"],
+    ["07-7c60a570", "vue3-engineering-and-dataviz"],
+    ["07-de757c2c", "vue3-engineering-and-dataviz"],
     ["2-fab0b7c6", "relational-model-and-algebra"],
+    ["2-e25c70a2", "relational-model-and-algebra"],
+    ["ajax-basics-intro", "web-http-fetch-and-axios"],
     ["go-basics", "go-environment-and-basics"],
   ]) {
     await page.goto(`/posts/${alias}`);

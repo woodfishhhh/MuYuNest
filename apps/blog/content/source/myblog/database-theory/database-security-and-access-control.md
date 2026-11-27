@@ -41,9 +41,9 @@ tags:
 
 标准 SQL 在建号层面也划分了明确的能力边界，禁止普通业务账号持有建库或全局管理权：
 
-- **超级用户**：$$\text{CREATE USER <用户名> WITH SUPERUSER [PASSWORD <密码>];}$$ 拥有全库全部权限，只能由初始化超级用户创建。
-- **建库用户**：$$\text{CREATE USER <用户名> WITH CREATEDB [PASSWORD <密码>];}$$ 可创建新数据库及模式并作为属主授权。
-- **普通用户**：$$\text{CREATE USER <用户名> PASSWORD <密码>;}$$ 初始无权，仅能执行被显式授予的对象操作。
+- **超级用户**：`CREATE USER <用户名> WITH SUPERUSER [PASSWORD <密码>];` 拥有全库全部权限，只能由初始化超级用户创建。
+- **建库用户**：`CREATE USER <用户名> WITH CREATEDB [PASSWORD <密码>];` 可创建新数据库及模式并作为属主授权。
+- **普通用户**：`CREATE USER <用户名> PASSWORD <密码>;` 初始无权，仅能执行被显式授予的对象操作。
 
 ## 自主存取控制（DAC）
 
@@ -107,12 +107,12 @@ MAC 把系统元素划分为两类，并各自打上不可剥离的敏感级标�
 
 ### 角色管理语法
 
-1. 创建角色：$$\text{CREATE ROLE <角色名>;}$$
-2. 为角色授予对象权限：$$\text{GRANT <权限> ON <对象> TO <角色名>;}$$
-3. 将角色授予用户或其他角色：$$\text{GRANT <角色名1> TO <用户/角色名2> [WITH ADMIN OPTION];}$$ 其中 `WITH ADMIN OPTION` 控制受授者能否继续转授该角色。
+1. 创建角色：`CREATE ROLE <角色名>;`
+2. 为角色授予对象权限：`GRANT <权限> ON <对象> TO <角色名>;`
+3. 将角色授予用户或其他角色：`GRANT <角色名1> TO <用户/角色名2> [WITH ADMIN OPTION];` 其中 `WITH ADMIN OPTION` 控制受授者能否继续转授该角色。
 4. 收回角色权限或收回用户持有的角色：
-   $$\text{REVOKE <权限> ON <对象> FROM <角色名>;}$$
-   $$\text{REVOKE <角色名> FROM <用户/其他角色>;}$$
+   - `REVOKE <权限> ON <对象> FROM <角色名>;`
+   - `REVOKE <角色名> FROM <用户/其他角色>;`
 
 ```sql
 CREATE ROLE R1;
@@ -125,7 +125,9 @@ REVOKE R1 FROM 王平;
 
 角色解决的是“表级/列级操作集”的复用，若要按业务行（例如只看本院系学生）做精细隔离，需配合带 `WITH CHECK OPTION` 的视图：
 
-$$\text{CREATE VIEW <视图名> AS <查询语句> [WITH CHECK OPTION];}$$
+```sql
+CREATE VIEW <视图名> AS <查询语句> [WITH CHECK OPTION];
+```
 
 ```sql
 CREATE VIEW CS_Student AS

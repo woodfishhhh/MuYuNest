@@ -35,8 +35,8 @@ test("outline anchors, syntax colors, clipboard and curriculum neighbors", async
   await expect(code).toBeVisible();
   await expect.poll(() => page.locator(".article-toc--desktop [aria-current=location]").textContent()).toBe("数组是固定长度的值类型");
   const original = await code.textContent();
-  await page.getByRole("button", { name: "复制 Go 代码", exact: true }).first().click();
-  await expect(page.getByRole("button", { name: "复制 Go 代码", exact: true }).first()).toHaveText("已复制");
+  await page.getByRole("button", { name: "复制 go 代码", exact: true }).first().click();
+  await expect(page.getByRole("button", { name: "复制 go 代码", exact: true }).first()).toHaveText("已复制");
   expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n")).toBe(
     original?.replace(/\r\n/g, "\n"),
   );

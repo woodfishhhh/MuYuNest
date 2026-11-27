@@ -258,8 +258,18 @@ export async function buildSiteContent(
   }
 
   const canonicalSlugs = new Set(Object.keys(postsBySlug));
+  const aliasOwners = new Map<string, string>();
   for (const entry of postIndex) {
     const safeAliases = entry.aliases.filter((alias) => !canonicalSlugs.has(alias));
+    for (const alias of safeAliases) {
+      const existingOwner = aliasOwners.get(alias);
+      if (existingOwner && existingOwner !== entry.canonicalSlug) {
+        throw new Error(
+          `Duplicate post alias "${alias}" declared by "${existingOwner}" and "${entry.canonicalSlug}".`,
+        );
+      }
+      aliasOwners.set(alias, entry.canonicalSlug);
+    }
     entry.aliases = safeAliases;
     postsBySlug[entry.canonicalSlug].aliases = safeAliases;
   }
@@ -734,9 +744,14 @@ export function toStringArray(value: unknown) {
 }
 
 function normalizeFrontmatterAliases(value: unknown, canonicalSlug: string) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
   return Array.from(
     new Set(
-      toStringArray(value)
+      value
+        .filter((item): item is string => typeof item === "string")
         .map((alias) => alias.trim().toLowerCase())
         .filter((alias) => alias !== canonicalSlug && validAliasSlugPattern.test(alias)),
     ),

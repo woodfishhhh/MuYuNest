@@ -68,6 +68,22 @@ export function buildDocsNavigation(posts: PostSummary[]): DocsTopic[] {
   return topics.filter((topic) => topic.count > 0);
 }
 
+export const legacySeriesAliases: Readonly<Record<string, string>> = {
+  "go-basics": "go",
+  "go-internals": "go",
+  "react-notes": "react",
+  nextjs16: "nextjs",
+  "database-foundations": "database-theory",
+  networks: "computer-networks",
+  systems: "computer-architecture",
+  linux: "engineering-practice",
+};
+
+export function resolveSeriesId(seriesId?: string): string | undefined {
+  if (!seriesId) return undefined;
+  return legacySeriesAliases[seriesId] ?? seriesId;
+}
+
 export function findDocsPlacement(topics: DocsTopic[], slug: string): DocsPlacement | undefined {
   for (const topic of topics)
     for (const group of topic.groups) {

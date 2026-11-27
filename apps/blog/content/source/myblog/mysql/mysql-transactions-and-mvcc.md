@@ -30,7 +30,7 @@ INSERT INTO account VALUES (1, '张三', 2000), (2, '李四', 2000);
 START TRANSACTION;
 SELECT id, balance FROM account WHERE id IN (1, 2) ORDER BY id FOR UPDATE;
 UPDATE account SET balance = balance - 1000 WHERE id = 1 AND balance >= 1000;
--- 应用层必须检查 ROW_COUNT() === 1，若为 0 说明余额不足，直接 ROLLBACK
+-- 应用层必须检查 ROW_COUNT() = 1，若为 0 说明余额不足，直接 ROLLBACK
 UPDATE account SET balance = balance + 1000 WHERE id = 2;
 COMMIT;
 ```

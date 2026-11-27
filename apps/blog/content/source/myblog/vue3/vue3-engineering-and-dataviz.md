@@ -1,6 +1,9 @@
 ---
 title: Vue 3 工程化、性能优化与 ECharts 大屏实战
 slug: vue3-engineering-and-dataviz
+aliases:
+  - 07-7c60a570
+  - 07-de757c2c
 date: 2026-07-13
 categories:
   - 前端开发
@@ -124,7 +127,7 @@ Vue 3.3–3.5 在 `<script setup>` 编译宏上补齐了类型化组件所需的
 
 ## ECharts 三栏数据大屏全链路实战
 
-做一个可长期维护的三栏数据大屏，重点不在把图表配置项背熟，而是把上游清洗、并发竞态防护、Pinia 源状态、派生计算与图表实例生命周期彻底拆开：
+做一个可长期维护的三栏数据大屏，需要把上游清洗、并发竞态防护、Pinia 源状态、派生计算与图表实例生命周期彻底拆开：
 
 ```text
 上游数据源
@@ -177,7 +180,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 })
 ```
 
-### 2. ECharts 地图组件生命周期与销毁闭环
+### 2. ECharts 地图组件生命周期与销毁清理
 
 **ECharts 实例绝对不能放进普通 `ref` 或 `reactive`，必须用 `shallowRef` 保存；同时要在 `onMounted` 确保容器已挂载后再 `init()`，通过 `ResizeObserver` 同步窗口变化，并在 `onBeforeUnmount` 里断开观察器并调用 `chart.value?.dispose()` 释放显存与事件监听器。**
 

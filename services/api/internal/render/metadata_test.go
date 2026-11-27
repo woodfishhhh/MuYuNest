@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -30,8 +31,17 @@ func TestMetadataTypeScriptParity(t *testing.T) {
 	if err := json.NewDecoder(reader).Decode(&cases); err != nil {
 		t.Fatal(err)
 	}
-	if len(cases) < 106 {
-		t.Fatalf("corpus unexpectedly small: %d", len(cases))
+	articleCount := 0
+	edgeCount := 0
+	for _, item := range cases {
+		if strings.HasPrefix(item.Name, "edge/") {
+			edgeCount++
+		} else {
+			articleCount++
+		}
+	}
+	if articleCount < 106 || edgeCount == 0 {
+		t.Fatalf("corpus unexpectedly small: articles=%d edge=%d", articleCount, edgeCount)
 	}
 	for _, item := range cases {
 		t.Run(item.Name, func(t *testing.T) {

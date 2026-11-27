@@ -9,9 +9,11 @@ test("hidden guides stay out of navigation and search while existing URLs work",
   for (const id of ["campus-notes"]) {
     await expect(page.locator(`a[href*="series=${id}"]`)).toHaveCount(0);
   }
-  for (const query of ["NestJS", "React"]) {
-    await page.goto(`/blog?q=${query}`);
+  for (const query of ["管理学", "马克思主义", "中国近代史"]) {
+    await page.goto(`/blog?q=${encodeURIComponent(query)}`);
     await expect(page.locator(".docs-search-panel")).toBeVisible();
+    await expect(page.getByRole("searchbox", { name: "搜索文章", exact: true })).toHaveValue(query);
+    await expect(page.locator(".docs-article-list")).toBeVisible();
     for (const slug of hidden) await expect(page.locator(`a[href^="/posts/${slug}"]`)).toHaveCount(0);
   }
   await page.goto("/blog?topic=frontend");

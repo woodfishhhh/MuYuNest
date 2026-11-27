@@ -1,6 +1,9 @@
 ---
 title: React 组件心智模型、JSX 编译与 Vite 工程化
 slug: react-mental-model-and-jsx
+aliases:
+  - 1-849fada0
+  - 1-cc97fa54
 date: 2026-07-13
 categories:
   - 前端开发

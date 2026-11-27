@@ -1,6 +1,9 @@
 {
   "canonicalSlug": "react-mental-model-and-jsx",
-  "aliases": [],
+  "aliases": [
+    "1-849fada0",
+    "1-cc97fa54"
+  ],
   "title": "React 组件心智模型、JSX 编译与 Vite 工程化",
   "publishedAt": "2026-07-13T00:00:00.000Z",
   "publishedLabel": "Jul 13, 2026",

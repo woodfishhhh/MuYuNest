@@ -75,7 +75,7 @@ test("Shiki switches token colors with the site theme while keeping source copyi
     .click();
   await page.waitForFunction(() => !document.documentElement.style.getPropertyValue("--theme-switch-radius"));
   expect(await token.evaluate((el) => getComputedStyle(el).color)).not.toBe(before);
-  await page.getByRole("button", { name: "复制 Go 代码", exact: true }).first().click();
-  await expect(page.getByRole("button", { name: "复制 Go 代码", exact: true }).first()).toHaveText("已复制");
+  await page.getByRole("button", { name: "复制 go 代码", exact: true }).first().click();
+  await expect(page.getByRole("button", { name: "复制 go 代码", exact: true }).first()).toHaveText("已复制");
   expect((await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n")).toBe(source);
 });

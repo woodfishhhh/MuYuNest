@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, shallowRef } from "vue";
 import { useRoute } from "vue-router";
 import { useDocsPage } from "@/composables/useDocsPage";
-import { buildDocsNavigation, findDocsPlacement } from "@/content/docs-navigation";
+import { buildDocsNavigation, findDocsPlacement, resolveSeriesId } from "@/content/docs-navigation";
 import { getPostSummaries } from "@/content/posts";
 import { buildBlogFacets, filterBlogPosts, sortBlogPosts } from "@/content/blog-hub";
 import { useBlogQueryState } from "@/composables/useBlogQueryState";
@@ -15,7 +15,10 @@ const error = ref(false);
 const navigation = computed(() => buildDocsNavigation(posts.value));
 const scrollContainer = useDocsPage({ topics: () => navigation.value, ready: () => !loading.value });
 const topic = computed(() => navigation.value.find((item) => item.id === route.query.topic));
-const group = computed(() => topic.value?.groups.find((item) => item.id === route.query.series));
+const group = computed(() => {
+  const seriesId = resolveSeriesId(typeof route.query.series === "string" ? route.query.series : undefined);
+  return seriesId ? topic.value?.groups.find((item) => item.id === seriesId) : undefined;
+});
 const { searchQuery, selectedType, selectedCategory, selectedTag, sortKey, filters, hasActiveFilters, clearFilters } =
   useBlogQueryState();
 const facets = computed(() => buildBlogFacets(posts.value));

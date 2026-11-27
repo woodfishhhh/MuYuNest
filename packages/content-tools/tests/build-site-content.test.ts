@@ -38,6 +38,7 @@ describe("buildSiteContent frontmatter aliases", () => {
         "  - sql-standard-ddl-dml-and-views",
         "  - 'invalid slug!'",
         "  - '../escape'",
+        "  - 123",
         "  - legacy-ajax-v1",
         "categories:",
         "  - 前端开发",
@@ -84,20 +85,63 @@ describe("buildSiteContent frontmatter aliases", () => {
     expect(httpArticle?.aliases).toEqual(["ajax-basics-intro", "legacy-ajax-v1"]);
     expect(httpIndex?.aliases).not.toContain("sql-standard-ddl-dml-and-views");
     expect(httpIndex?.aliases).not.toContain("web-http-fetch-and-axios");
+    expect(httpIndex?.aliases).not.toContain("123");
     expect(sqlIndex?.aliases).toEqual(["sql-advanced-updates-views", "sql-ddl-query-basics"]);
 
-    // Verify redirect mapping from aliases to canonical slugs
-    const redirectMap = new Map<string, string>();
-    for (const entry of result.postIndex) {
-      for (const alias of entry.aliases) {
-        redirectMap.set(alias, entry.canonicalSlug);
-      }
-      redirectMap.set(entry.canonicalSlug, entry.canonicalSlug);
-    }
+    // Verify generated index and article entries match without alias/canonical collisions
+    expect(result.postIndex.map((entry) => entry.canonicalSlug)).toEqual([
+      "sql-standard-ddl-dml-and-views",
+      "web-http-fetch-and-axios",
+    ]);
+    expect(result.postsBySlug["sql-standard-ddl-dml-and-views"]?.aliases).toEqual([
+      "sql-advanced-updates-views",
+      "sql-ddl-query-basics",
+    ]);
+  });
 
-    expect(redirectMap.get("ajax-basics-intro")).toBe("web-http-fetch-and-axios");
-    expect(redirectMap.get("sql-advanced-updates-views")).toBe("sql-standard-ddl-dml-and-views");
-    expect(redirectMap.get("sql-ddl-query-basics")).toBe("sql-standard-ddl-dml-and-views");
-    expect(redirectMap.get("sql-standard-ddl-dml-and-views")).toBe("sql-standard-ddl-dml-and-views");
+  it("throws when two different canonical posts declare the same alias", async () => {
+    tempRoot = await mkdtemp(path.join(os.tmpdir(), "content-tools-alias-conflict-"));
+    const sourceRoot = path.join(tempRoot, "blog");
+    const postDir = path.join(sourceRoot, "content", "source", "myblog", "go");
+    await mkdir(postDir, { recursive: true });
+
+    await writeFile(
+      path.join(postDir, "first-post.md"),
+      [
+        "---",
+        'title: "First Post"',
+        "slug: first-post",
+        "date: 2026-04-01",
+        "aliases:",
+        "  - shared-legacy-slug",
+        "---",
+        "",
+        "First body.",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await writeFile(
+      path.join(postDir, "second-post.md"),
+      [
+        "---",
+        'title: "Second Post"',
+        "slug: second-post",
+        "date: 2026-04-02",
+        "aliases:",
+        "  - shared-legacy-slug",
+        "---",
+        "",
+        "Second body.",
+      ].join("\n"),
+      "utf8",
+    );
+
+    await expect(
+      buildSiteContent({
+        sourceProjectRoot: sourceRoot,
+        targetPublicDir: path.join(tempRoot, "public"),
+      }),
+    ).rejects.toThrow(/Duplicate post alias "shared-legacy-slug".*first-post.*second-post/);
   });
 });

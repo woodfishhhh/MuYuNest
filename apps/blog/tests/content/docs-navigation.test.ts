@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDocsNavigation, findDocsPlacement, getDocsNeighbors } from "@/content/docs-navigation";
+import { buildDocsNavigation, findDocsPlacement, getDocsNeighbors, resolveSeriesId } from "@/content/docs-navigation";
 import seriesConfig from "@/content/docs-series.json";
 import { visiblePostSummaries } from "@/content/post-visibility";
 import type { PostSummary } from "@/types/content";
@@ -70,5 +70,17 @@ describe("documentation navigation", () => {
     const navigation = buildDocsNavigation(all);
     for (const slug of hidden) expect(findDocsPlacement(navigation, slug)).toBeUndefined();
     for (const slug of retained) expect(findDocsPlacement(navigation, slug)).toBeDefined();
+  });
+  it("resolves legacy series aliases to their renamed series ids", () => {
+    expect(resolveSeriesId("go-basics")).toBe("go");
+    expect(resolveSeriesId("go-internals")).toBe("go");
+    expect(resolveSeriesId("react-notes")).toBe("react");
+    expect(resolveSeriesId("nextjs16")).toBe("nextjs");
+    expect(resolveSeriesId("database-foundations")).toBe("database-theory");
+    expect(resolveSeriesId("networks")).toBe("computer-networks");
+    expect(resolveSeriesId("systems")).toBe("computer-architecture");
+    expect(resolveSeriesId("linux")).toBe("engineering-practice");
+    expect(resolveSeriesId("go")).toBe("go");
+    expect(resolveSeriesId(undefined)).toBeUndefined();
   });
 });
